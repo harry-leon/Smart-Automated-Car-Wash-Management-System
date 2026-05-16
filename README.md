@@ -77,29 +77,3 @@ Dự án được xây dựng với kiến trúc Web-based, sử dụng các cô
 ### 🛡️ Security & Khác
 * 🔐 **JWT (JSON Web Token)**: Xác thực và phân quyền (Role-Based Access Control - RBAC) chặt chẽ cho Customer, Staff và Admin.
 * 🛡️ **Server-side Validation**: Đảm bảo tất cả các rules của hệ thống luôn được kiểm tra an toàn tại backend trước khi lưu.
-
----
-
-## 🎨 4. PROMTS AI bằng ngôn ngữ tự nhiên
-```
-Tạo prototype web cho hệ thống quản lý rửa xe AutoWash Pro, giao diện tiếng Việt. Cần demo được luồng nghiệp vụ chính từ đầu đến cuối:
-
-• Khách hàng đăng ký bằng số điện thoại (10 số, duy nhất) và biển số xe. Tier mặc định là Member, tự động nâng lên Silver / Gold / Platinum theo điểm tích lũy.
-
-• Khách đặt lịch rửa xe trước theo đúng booking window của tier (Member 7 ngày, Silver 10, Gold 12, Platinum 14). Tối đa 3 lịch active cùng lúc. Platinum được ưu tiên slot khi trùng giờ.
-
-• Nhân viên check-in, ghi nhận dịch vụ và số tiền, rồi checkout. Hệ thống tự tính điểm: floor(số tiền / 10.000) × hệ số tier (Member ×1, Silver ×1.5, Gold ×2, Platinum ×3).
-
-• Tại checkout áp dụng theo thứ tự: giảm giá tier → promotion đúng tier → đổi điểm (nếu khách muốn). Không kết hợp promotion + đổi điểm nếu stackable = false.
-
-• Admin tạo promotion có ngày bắt đầu/kết thúc và chọn tier mục tiêu. Promotion chỉ hiện với đúng tier đó, không lộ cho tier thấp hơn.
-
-• Có nút "Chạy review tier" để giả lập tác vụ tháng: nâng tier khi đủ điểm tích lũy, hạ tier nếu hoạt động 12 tháng yếu 2 tháng liên tiếp.
-
-• Hiển thị thông báo: xác nhận booking ngay lập tức, nhắc lịch trước 1 giờ, cảnh báo điểm hết hạn trước 30 ngày và 7 ngày.
-
-• Có 3 giao diện riêng (Customer / Staff / Admin) với nút chuyển role để demo toàn bộ luồng mà không cần đăng nhập thật.
-
-• Dùng dữ liệu mẫu sẵn: 2 khách hàng (1 Member, 1 Gold), 3 lịch đặt, 2 promotion, 5 lịch sử rửa xe.
-
-• Không cần: thanh toán online, kết nối phần cứng máy rửa, app mobile.```
