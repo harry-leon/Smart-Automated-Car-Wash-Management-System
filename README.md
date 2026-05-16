@@ -38,15 +38,16 @@ Danh sách các thành viên trong nhóm và vai trò dự kiến:
 
 | STT | 🧑‍💼 Họ và Tên | 🆔 MSSV | 🛠️ Vai trò trong nhóm |
 | :---: | :--- | :--- | :--- |
-| **1** | 👑 **Hà Thúc Quốc Hùng** | `SE191116` | Nhóm trưởng / Fullstack Developer |
-| **2** | 💻 **Phạm Hoàng Gia Huy** | `SE192041` | Backend Developer |
-| **3** | 🎨 **Trương Nguyễn Minh Khương** | `SE193311` | Frontend Developer |
-| **4** | 📋 **Lê Đoàn Gia Hưng** | `SE193449` | Business Analyst (BA) / System Design |
-| **5** | 🧪 **Tống Vỹ Thuận** | `SE194643` | UI/UX Designer / Tester |
+| **1** |  **Hà Thúc Quốc Hùng** | `SE191116` | Nhóm trưởng / Fullstack Developer |
+| **2** |  **Phạm Hoàng Gia Huy** | `SE192041` | Backend Developer |
+| **3** |  **Trương Nguyễn Minh Khương** | `SE193311` | Frontend Developer |
+| **4** |  **Lê Đoàn Gia Hưng** | `SE193449` | Fullstack Developer |
+| **5** | **Tống Vỹ Thuận** | `SE194643` | Backend Developer |
 
 <br />
 
 <details>
+
 <summary><b>🎭 Các Vai trò (Actors) trực tiếp trong hệ thống</b></summary>
 <br/>
 
@@ -79,11 +80,26 @@ Dự án được xây dựng với kiến trúc Web-based, sử dụng các cô
 
 ---
 
-## 🎨 4. Prototype & UI Design
+## 🎨 4. PROMTS AI bằng ngôn ngữ tự nhiên
+```
+Tạo prototype web cho hệ thống quản lý rửa xe AutoWash Pro, giao diện tiếng Việt. Cần demo được luồng nghiệp vụ chính từ đầu đến cuối:
 
-Nhằm mục đích hình dung nghiệp vụ ban đầu và tạo nhanh luồng chạy thực tế (Main Flow), dự án đã sử dụng công cụ **Lovable.dev** để thiết kế Prototype nhanh chóng thông qua Prompt.
+• Khách hàng đăng ký bằng số điện thoại (10 số, duy nhất) và biển số xe. Tier mặc định là Member, tự động nâng lên Silver / Gold / Platinum theo điểm tích lũy.
 
-* 🖌️ **Công cụ thiết kế:** Lovable.dev
-* 🚀 **Mục đích:** Khảo sát UI/UX, mô phỏng các tính năng cốt lõi (Customer Registration, Advance Booking, Wash-session tracking, Point Redemption) trước khi tiến hành code thực tế.
-* 🔗 **Link Prototype:** *(Điền link Lovable.dev của nhóm vào đây)*
-* 💡 **Mô tả (Prompt):** *(Có thể bổ sung prompt bạn đã dùng trên Lovable.dev vào đây)*
+• Khách đặt lịch rửa xe trước theo đúng booking window của tier (Member 7 ngày, Silver 10, Gold 12, Platinum 14). Tối đa 3 lịch active cùng lúc. Platinum được ưu tiên slot khi trùng giờ.
+
+• Nhân viên check-in, ghi nhận dịch vụ và số tiền, rồi checkout. Hệ thống tự tính điểm: floor(số tiền / 10.000) × hệ số tier (Member ×1, Silver ×1.5, Gold ×2, Platinum ×3).
+
+• Tại checkout áp dụng theo thứ tự: giảm giá tier → promotion đúng tier → đổi điểm (nếu khách muốn). Không kết hợp promotion + đổi điểm nếu stackable = false.
+
+• Admin tạo promotion có ngày bắt đầu/kết thúc và chọn tier mục tiêu. Promotion chỉ hiện với đúng tier đó, không lộ cho tier thấp hơn.
+
+• Có nút "Chạy review tier" để giả lập tác vụ tháng: nâng tier khi đủ điểm tích lũy, hạ tier nếu hoạt động 12 tháng yếu 2 tháng liên tiếp.
+
+• Hiển thị thông báo: xác nhận booking ngay lập tức, nhắc lịch trước 1 giờ, cảnh báo điểm hết hạn trước 30 ngày và 7 ngày.
+
+• Có 3 giao diện riêng (Customer / Staff / Admin) với nút chuyển role để demo toàn bộ luồng mà không cần đăng nhập thật.
+
+• Dùng dữ liệu mẫu sẵn: 2 khách hàng (1 Member, 1 Gold), 3 lịch đặt, 2 promotion, 5 lịch sử rửa xe.
+
+• Không cần: thanh toán online, kết nối phần cứng máy rửa, app mobile.```
