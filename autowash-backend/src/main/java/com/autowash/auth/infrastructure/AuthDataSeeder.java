@@ -24,8 +24,9 @@ public class AuthDataSeeder implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         seedIfMissing("AutoWash Admin", "0900000001", "admin@autowash.local", "Admin@123", UserRole.ADMIN);
-        seedIfMissing("AutoWash Staff", "0900000002", "staff@autowash.local", "Staff@123", UserRole.STAFF);
-        seedIfMissing("Demo Customer", "0900000003", "customer@autowash.local", "Customer@123", UserRole.CUSTOMER);
+        seedIfMissing("AutoWash Staff 1", "0900000002", "staff@autowash.local", "Staff@123", UserRole.STAFF);
+        seedIfMissing("AutoWash Staff 2", "0900000003", "staff2@autowash.local", "Staff@123", UserRole.STAFF);
+        seedIfMissing("Demo Customer", "0900000004", "customer@autowash.local", "Customer@123", UserRole.CUSTOMER);
     }
 
     private void seedIfMissing(String fullName, String phone, String email, String password, UserRole role) {
