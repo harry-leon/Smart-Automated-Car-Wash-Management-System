@@ -1,0 +1,5 @@
+autowash-frontend/node_modules/
+autowash-frontend/.next/
+autowash-frontend/.codex-dev.log
+autowash-frontend/tsconfig.tsbuildinfo
+autowash-frontend/.env*.local

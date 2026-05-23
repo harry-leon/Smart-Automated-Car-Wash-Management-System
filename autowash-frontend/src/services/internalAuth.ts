@@ -1,4 +1,4 @@
-import type { AuthSession, BackendLoginData, InternalRole } from "@/types/auth.types";
+import type { InternalAuthSession, InternalLoginResponseData, InternalRole } from "@/types/auth.types";
 
 const TOKEN_KEY = "autowash_internal_access_token";
 const REFRESH_TOKEN_KEY = "autowash_internal_refresh_token";
@@ -57,7 +57,7 @@ export function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export function toAuthSession(data: BackendLoginData): AuthSession {
+export function toAuthSession(data: InternalLoginResponseData): InternalAuthSession {
   const accessToken = data.accessToken ?? data.token;
   const role = normalizeRole(data.user?.role ?? data.role);
 
@@ -69,15 +69,15 @@ export function toAuthSession(data: BackendLoginData): AuthSession {
     accessToken,
     refreshToken: data.refreshToken,
     user: {
-      id: data.user?.id,
-      email: data.user?.email,
-      fullName: data.user?.fullName ?? data.user?.name,
+      id: data.user?.id ?? data.user?.userId ?? data.id ?? data.userId,
+      email: data.user?.email ?? data.email,
+      fullName: data.user?.fullName ?? data.user?.name ?? data.fullName ?? data.name,
       role
     }
   };
 }
 
-export function saveInternalSession(session: AuthSession) {
+export function saveInternalSession(session: InternalAuthSession) {
   if (typeof window === "undefined") {
     return;
   }

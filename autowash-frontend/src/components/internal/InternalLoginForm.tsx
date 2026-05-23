@@ -2,13 +2,13 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiRequest, ApiError } from "@/services/api";
+import { getDisplayErrorMessage } from "@/lib/api-errors";
+import { apiRequest } from "@/lib/api";
 import { saveInternalSession, toAuthSession } from "@/services/internalAuth";
 import type {
-  ApiResponse,
-  BackendLoginData,
   InternalRole,
-  LoginCredentials
+  InternalLoginCredentials,
+  InternalLoginResponseData
 } from "@/types/auth.types";
 
 interface InternalLoginFormProps {
@@ -19,7 +19,7 @@ interface InternalLoginFormProps {
 
 export function InternalLoginForm({ expectedRole, title, redirectTo }: InternalLoginFormProps) {
   const router = useRouter();
-  const [credentials, setCredentials] = useState<LoginCredentials>({ email: "", password: "" });
+  const [credentials, setCredentials] = useState<InternalLoginCredentials>({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,11 +29,16 @@ export function InternalLoginForm({ expectedRole, title, redirectTo }: InternalL
     setIsSubmitting(true);
 
     try {
-      const response = await apiRequest<ApiResponse<BackendLoginData>>("/auth/login", {
+      const identifier = credentials.email.trim();
+      const response = await apiRequest<InternalLoginResponseData, InternalLoginCredentials & { phone?: string }>({
         method: "POST",
-        body: JSON.stringify(credentials)
+        url: "/auth/login",
+        data: {
+          ...credentials,
+          phone: /^0[0-9]{9}$/.test(identifier) ? identifier : undefined
+        }
       });
-      const session = toAuthSession(response.data);
+      const session = toAuthSession(response);
 
       if (session.user.role !== expectedRole) {
         setError("Tai khoan nay khong co quyen truy cap khu vuc nay.");
@@ -43,13 +48,7 @@ export function InternalLoginForm({ expectedRole, title, redirectTo }: InternalL
       saveInternalSession(session);
       router.replace(redirectTo);
     } catch (requestError) {
-      if (requestError instanceof ApiError && (requestError.status === 400 || requestError.status === 401)) {
-        setError(requestError.message);
-      } else if (requestError instanceof Error) {
-        setError(requestError.message);
-      } else {
-        setError("Dang nhap that bai. Vui long thu lai.");
-      }
+      setError(getDisplayErrorMessage(requestError));
     } finally {
       setIsSubmitting(false);
     }
@@ -60,7 +59,7 @@ export function InternalLoginForm({ expectedRole, title, redirectTo }: InternalL
       <h1>{title}</h1>
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 16 }}>
         <label style={{ display: "grid", gap: 6 }}>
-          Email
+          Email or phone
           <input
             type="email"
             value={credentials.email}

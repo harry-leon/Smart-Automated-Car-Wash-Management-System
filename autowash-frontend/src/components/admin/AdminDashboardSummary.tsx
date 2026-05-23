@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiRequest, ApiError } from "@/services/api";
-import type { ApiResponse } from "@/types/auth.types";
+import { getDisplayErrorMessage } from "@/lib/api-errors";
+import { apiRequest } from "@/lib/api";
+import { getAuthHeaders } from "@/services/internalAuth";
 
 type DashboardSummary = Record<string, unknown>;
 
@@ -19,24 +20,21 @@ export function AdminDashboardSummary() {
       setError("");
 
       try {
-        const response = await apiRequest<ApiResponse<DashboardSummary>>("/admin/dashboard/metrics", {
+        const response = await apiRequest<DashboardSummary>({
           method: "GET",
-          auth: true
+          url: "/admin/dashboard/metrics",
+          headers: getAuthHeaders()
         });
 
         if (isMounted) {
-          setData(response.data);
+          setData(response);
         }
       } catch (requestError) {
         if (!isMounted) {
           return;
         }
 
-        if (requestError instanceof ApiError || requestError instanceof Error) {
-          setError(requestError.message);
-        } else {
-          setError("Khong tai duoc du lieu dashboard.");
-        }
+        setError(getDisplayErrorMessage(requestError));
       } finally {
         if (isMounted) {
           setIsLoading(false);
