@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 
 export const metadata: Metadata = {
   title: "AutoWash Pro",
-  description: "Customer authentication data layer foundation"
+  description: "AutoWash Pro authentication foundation"
 };
 
 export default function RootLayout({

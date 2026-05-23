@@ -39,3 +39,46 @@ export type AuthSession = {
   expiresIn: number;
   user: AuthUser;
 };
+
+export type InternalRole = "staff" | "admin";
+
+export type InternalLoginCredentials = {
+  email: string;
+  password: string;
+};
+
+export type InternalLoginResponseData = {
+  userId?: string;
+  id?: string;
+  fullName?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  role?: UserRole | InternalRole | string;
+  status?: UserStatus;
+  accessToken?: string;
+  token?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  user?: {
+    id?: string;
+    userId?: string;
+    email?: string;
+    fullName?: string;
+    name?: string;
+    role?: UserRole | InternalRole | string;
+  };
+};
+
+export type InternalAuthUser = {
+  id?: string;
+  email?: string;
+  fullName?: string;
+  role: InternalRole;
+};
+
+export type InternalAuthSession = {
+  accessToken: string;
+  refreshToken?: string;
+  user: InternalAuthUser;
+};
