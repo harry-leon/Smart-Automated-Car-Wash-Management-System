@@ -40,17 +40,17 @@ graph TD
     classDef db fill:#eceff1,stroke:#37474f,stroke-width:2px;
 
     subgraph "Client Workspaces (Next.js Application)"
-        C[📱 Customer Portal <br> /customer/*]:::customer
-        S[🔧 Staff Operations <br> /staff/*]:::staff
-        A[📊 Admin Dashboard <br> /admin/*]:::admin
+        C["📱 Customer Portal <br> /customer/*"]:::customer
+        S["🔧 Staff Operations <br> /staff/*"]:::staff
+        A["📊 Admin Dashboard <br> /admin/*"]:::admin
     end
 
     subgraph "Server Core (Spring Boot Monolith)"
-        B[☕ API Gateway & Security <br> auth, user, vehicle, booking, operation, loyalty...]:::backend
+        B["☕ API Gateway & Security <br> auth, user, vehicle, booking, operation, loyalty..."]:::backend
     end
 
     subgraph "Database Layer"
-        DB[(🗄️ PostgreSQL Database)]:::db
+        DB[("🗄️ PostgreSQL Database")]:::db
     end
 
     C -->|REST / WebSockets| B
