@@ -159,4 +159,4 @@ Tạo nhánh mới (feature/*) ➔ Lập trình & Test cục bộ ➔ Push lên 
 * 📖 **Đặc tả API Contracts:** [autowash_api_contracts.md](file:///d:/CarWash/docs/specs/autowash_api_contracts.md)
 
 ---
-*Bản quyền phát triển © 2026 bởi đội ngũ kỹ sư AutoWash Pro. Bảo lưu mọi quyền.*
+*Bản quyền phát triển © 2026 bởi nhóm sinh viên Trường Đại học FPT TP.HCM (FPT University HCMC). Bảo lưu mọi quyền.*
