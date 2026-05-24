@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dang nhap - AutoWash Pro</title>
+    <link rel="stylesheet" href="/src/styles/main.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="/index.html"><img src="/src/assets/images/logo.png" alt="" />AutoWash Pro</a>
+        <nav class="nav"><a data-nav-link href="/src/pages/auth/register.html">Dang ky</a></nav>
+      </div>
+    </header>
+    <main class="auth-page">
+      <section class="surface panel auth-card">
+        <header>
+          <h1 class="section-title">Dang nhap</h1>
+          <p class="text-muted">Chon role de vao workspace demo phu hop.</p>
+        </header>
+        <form class="form" data-login-form>
+          <div class="field">
+            <label for="phone">So dien thoai</label>
+            <input id="phone" name="phone" autocomplete="tel" value="0901234567" required />
+          </div>
+          <div class="field">
+            <label for="password">Mat khau</label>
+            <input id="password" name="password" type="password" value="Password@1" required />
+          </div>
+          <div class="field">
+            <label for="role">Workspace</label>
+            <select id="role" name="role">
+              <option value="CUSTOMER">Customer</option>
+              <option value="STAFF">Staff</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
+          <button class="button" type="submit">Dang nhap</button>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="/src/scripts/main.js"></script>
+  </body>
+</html>

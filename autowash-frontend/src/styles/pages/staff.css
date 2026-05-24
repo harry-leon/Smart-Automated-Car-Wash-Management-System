@@ -1,0 +1,14 @@
+.queue-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: var(--space-4);
+  overflow-x: auto;
+}
+
+.queue-column {
+  min-width: 220px;
+}
+
+.queue-column h2 {
+  margin-top: 0;
+}

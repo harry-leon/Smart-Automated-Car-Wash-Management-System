@@ -98,6 +98,44 @@ CarWash/
     └── specs/                        # Đặc tả hợp đồng API và hành vi Prototype
 ```
 
+### Frontend static handoff
+
+Frontend hien co them lop HTML/CSS/JS tach rieng de de gan voi Java Servlet/JSP sau nay:
+
+- HTML pages: `autowash-frontend/src/pages`
+- CSS tokens/components/pages: `autowash-frontend/src/styles`
+- JavaScript utils/API/store/modules: `autowash-frontend/src/scripts`
+- Assets: `autowash-frontend/src/assets`
+- React prototype tu repo cu van duoc giu trong `autowash-frontend/src/app`, `src/components`, `src/lib`, `src/hooks` de doi chieu logic.
+
+```text
+autowash-frontend/src/
+├── assets/
+│   ├── images/
+│   ├── icons/
+│   └── fonts/
+├── pages/
+│   ├── auth/
+│   ├── customer/
+│   ├── staff/
+│   └── admin/
+├── styles/
+│   ├── variables.css
+│   ├── components/
+│   ├── pages/
+│   └── utilities.css
+├── scripts/
+│   ├── utils/
+│   ├── api/
+│   ├── store/
+│   ├── modules/
+│   └── main.js
+├── app/
+├── components/
+├── hooks/
+└── lib/
+```
+
 ---
 
 ## 🚀 Hướng dẫn Cài đặt & Khởi chạy cục bộ (Local Setup)

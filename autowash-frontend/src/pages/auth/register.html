@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dang ky - AutoWash Pro</title>
+    <link rel="stylesheet" href="/src/styles/main.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="/index.html"><img src="/src/assets/images/logo.png" alt="" />AutoWash Pro</a>
+        <nav class="nav"><a data-nav-link href="/src/pages/auth/login.html">Dang nhap</a></nav>
+      </div>
+    </header>
+    <main class="auth-page">
+      <section class="surface panel auth-card">
+        <header>
+          <h1 class="section-title">Tao tai khoan</h1>
+          <p class="text-muted">OTP demo se duoc xac thuc o buoc tiep theo.</p>
+        </header>
+        <form class="form" data-register-form>
+          <div class="field">
+            <label for="fullName">Ho va ten</label>
+            <input id="fullName" name="fullName" required />
+          </div>
+          <div class="field">
+            <label for="phone">So dien thoai</label>
+            <input id="phone" name="phone" placeholder="0901234567" required />
+            <span class="field-error" data-error-for="phone"></span>
+          </div>
+          <div class="field">
+            <label for="password">Mat khau</label>
+            <input id="password" name="password" type="password" required />
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Xac nhan mat khau</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" required />
+            <span class="field-error" data-error-for="password"></span>
+          </div>
+          <button class="button" type="submit">Gui OTP</button>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="/src/scripts/main.js"></script>
+  </body>
+</html>
