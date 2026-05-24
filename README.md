@@ -39,17 +39,17 @@ graph TD
     classDef backend fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
     classDef db fill:#eceff1,stroke:#37474f,stroke-width:2px;
 
-    subgraph Client Workspaces (Next.js Application)
+    subgraph "Client Workspaces (Next.js Application)"
         C[📱 Customer Portal <br> /customer/*]:::customer
         S[🔧 Staff Operations <br> /staff/*]:::staff
         A[📊 Admin Dashboard <br> /admin/*]:::admin
     end
 
-    subgraph Server Core (Spring Boot Monolith)
+    subgraph "Server Core (Spring Boot Monolith)"
         B[☕ API Gateway & Security <br> auth, user, vehicle, booking, operation, loyalty...]:::backend
     end
 
-    subgraph Database Layer
+    subgraph "Database Layer"
         DB[(🗄️ PostgreSQL Database)]:::db
     end
 
