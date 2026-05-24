@@ -1,9 +1,4 @@
-# 🚗 AutoWash Pro — AURA CAR CARE
-> **Smart Automated Car Wash Management System**
->
-> Một giải pháp toàn diện quản lý chuỗi rửa xe tự động thông minh, bao gồm ứng dụng đặt lịch cho khách hàng (Customer Portal), bảng điều khiển vận hành cho nhân viên (Staff Operations), và hệ thống quản trị chuyên sâu (Admin Dashboard).
-
-<p align="left">
+<p align="center">
   <img src="https://img.shields.io/badge/Next.js-black?style=flat&logo=next.js&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/React-20232a?style=flat&logo=react&logoColor=61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -13,137 +8,155 @@
   <img src="https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white" alt="PostgreSQL" />
 </p>
 
+<h1 align="center">🚗 AutoWash Pro / AURA CAR CARE</h1>
+<p align="center">
+  <strong>Hệ Thống Quản Lý &amp; Vận Hành Chuỗi Rửa Xe Tự Động Thông Minh</strong>
+</p>
+
+<p align="center">
+  <a href="file:///d:/CarWash/.github/workflows/ci.yml"><img src="https://github.com/harry-leon/Smart-Automated-Car-Wash-Management-System/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
+  <a href="file:///d:/CarWash/.github/dependabot.yml"><img src="https://img.shields.io/badge/dependabot-enabled-blue.svg?logo=dependabot" alt="Dependabot" /></a>
+  <a href="file:///d:/CarWash/.github/pull_request_template.md"><img src="https://img.shields.io/badge/PR_Template-configured-brightgreen.svg" alt="PR Template" /></a>
+  <img src="https://img.shields.io/badge/branches-protected-red.svg" alt="Protected Branches" />
+</p>
 
 ---
 
-## 🛡️ Trạng thái Hệ thống & CI/CD
-
-[![Continuous Integration (CI)](https://github.com/harry-leon/Smart-Automated-Car-Wash-Management-System/actions/workflows/ci.yml/badge.svg)](file:///d:/CarWash/.github/workflows/ci.yml)
-[![Dependabot](https://img.shields.io/badge/dependabot-enabled-blue.svg?logo=dependabot)](file:///d:/CarWash/.github/dependabot.yml)
-[![PR Template](https://img.shields.io/badge/PR_Template-configured-brightgreen.svg)](file:///d:/CarWash/.github/pull_request_template.md)
-[![Protected Branches](https://img.shields.io/badge/branches-protected-red.svg)](#-quy-trình-phát-triển--cộng-tác-nhóm)
+## 📖 Giới thiệu Dự án
+**AutoWash Pro** là giải pháp phần mềm toàn diện (Modular Monolith) giúp số hóa toàn bộ quy trình của một trung tâm dịch vụ chăm sóc xe hơi hiện đại. Hệ thống tích hợp đầy đủ từ việc khách đặt lịch trực tuyến, nhân viên vận hành tại quầy/khoang rửa xe, cho tới ban quản lý kiểm soát doanh thu, nhân sự và các chương trình khuyến mãi/ loyalty.
 
 ---
 
-## 🧭 Kiến trúc Workspaces (Phân hệ Hệ thống)
+## 🧭 Kiến trúc Hệ thống & Phân hệ (Workspaces)
 
-Hệ thống được chia tách rõ rệt thành **3 phân hệ độc lập (Workspaces)**, đảm bảo bảo mật và ranh giới nghiệp vụ rõ ràng:
+Hệ thống được thiết kế theo mô hình tách biệt ranh giới nghiệp vụ (Business Boundaries) với 3 phân hệ độc lập:
 
-| Workspace | Người dùng | URL Route Prefix | Nhiệm vụ chính |
-|---|---|---|---|
-| **📱 [Customer Portal](file:///d:/CarWash/autowash-frontend/src/app/customer)** | Khách hàng | `/customer/*` | Quản lý xe, Đặt lịch rửa xe (Checkout 7 bước), Tích điểm & Đổi thưởng, Theo dõi tiến độ rửa xe realtime. |
-| **🔧 [Staff Operations](file:///d:/CarWash/autowash-frontend/src/app/staff)** | Nhân viên vận hành | `/staff/*` | Check-in xe, Quản lý hàng đợi rửa xe (Kanban board), Điều khiển bộ đếm thời gian rửa xe, Xác nhận hoàn thành. |
-| **📊 [Admin Dashboard](file:///d:/CarWash/autowash-frontend/src/app/admin)** | Quản trị viên | `/admin/*` | Theo dõi KPI doanh thu/đơn đặt, CRUD gói dịch vụ/khuyến mãi/vouchers, Phân công nhân sự, Báo cáo & Phân tích chuyên sâu. |
+```mermaid
+graph TD
+    classDef customer fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef staff fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px;
+    classDef admin fill:#fbe9e7,stroke:#d84315,stroke-width:2px;
+    classDef backend fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef db fill:#eceff1,stroke:#37474f,stroke-width:2px;
+
+    subgraph Client Workspaces (Next.js Application)
+        C[📱 Customer Portal <br> /customer/*]:::customer
+        S[🔧 Staff Operations <br> /staff/*]:::staff
+        A[📊 Admin Dashboard <br> /admin/*]:::admin
+    end
+
+    subgraph Server Core (Spring Boot Monolith)
+        B[☕ API Gateway & Security <br> auth, user, vehicle, booking, operation, loyalty...]:::backend
+    end
+
+    subgraph Database Layer
+        DB[(🗄️ PostgreSQL Database)]:::db
+    end
+
+    C -->|REST / WebSockets| B
+    S -->|REST / WebSockets| B
+    A -->|REST / WebSockets| B
+    B -->|Spring JPA| DB
+```
+
+### 🔹 Phân hệ chính:
+* **📱 [Customer Portal](file:///d:/CarWash/autowash-frontend/src/app/customer):** Dành cho khách hàng đặt lịch trực tuyến qua quy trình 7 bước tối ưu, quản lý danh sách xe, tích điểm nâng hạng thành viên (`MEMBER`, `SILVER`, `GOLD`, `PLATINUM`), đổi voucher khuyến mãi, và theo dõi tiến độ rửa xe trực tiếp.
+* **🔧 [Staff Operations](file:///d:/CarWash/autowash-frontend/src/app/staff):** Giao diện Kanban board trực quan dành cho kỹ thuật viên điều phối hàng đợi xe (`PENDING` ➔ `CHECKED_IN` ➔ `IN_PROGRESS` ➔ `COMPLETED`), tích hợp bộ đếm giờ (Wash Timer) cho từng khoang rửa.
+* **📊 [Admin Dashboard](file:///d:/CarWash/autowash-frontend/src/app/admin):** Trung tâm chỉ huy dành cho quản trị viên cấu hình dịch vụ, thiết lập chương trình khuyến mãi (Vouchers, Combos), phân công công việc cho nhân viên và theo dõi biểu đồ doanh thu (Recharts).
 
 ---
 
-## ⚡ Stack Công Nghệ (Technology Stack)
+## 🛠️ Stack Công Nghệ & Thư viện Sử dụng
 
-### **Frontend**
-* **Core:** Next.js 14 (App Router) & TypeScript
-* **Styling:** Tailwind CSS & Lucide Icons
-* **State Management:** Zustand (Client state) & TanStack Query v5 (Server state)
-* **Realtime Communication:** Native WebSocket API
-* **Charts:** Recharts
-
-### **Backend**
-* **Core:** Spring Boot 3.3.5 (Java 21) & Spring Security
-* **Database:** PostgreSQL (Production) / H2 Database (Testing)
-* **Authentication:** JWT (Access Token 1h & Refresh Token 30 ngày)
-* **API Documentation:** OpenAPI v3 / Swagger UI
+| Phân hệ | Công nghệ cốt lõi | Các thư viện nổi bật |
+|---|---|---|
+| **Frontend** | `Next.js 14 (App Router)` · `TypeScript` · `Tailwind CSS` | `Zustand` (State) · `TanStack Query v5` (API Cache) · `Axios` · `React Hook Form` + `Zod` · `Recharts` |
+| **Backend** | `Spring Boot 3.3.5` · `Java 21` · `Spring Security` | `Spring Data JPA` · `JSON Web Token (JJWT)` · `Lombok` · `PostgreSQL Driver` |
+| **DevOps & Tools** | `GitHub Actions` · `Dependabot` · `OpenAPI / Swagger` | Tự động hóa CI/CD, tự động vá lỗ hổng thư viện, tự động xuất tài liệu API. |
 
 ---
 
-## 📂 Cấu Trúc Dự Án (Folder Directory)
+## 📂 Sơ đồ Thư mục Dự án
 
 ```text
 CarWash/
 ├── .github/                          # Cấu hình GitHub Actions, Dependabot & PR Template
-├── autowash-frontend/                # 💻 Next.js Frontend App
-│   ├── public/                       # Assets tĩnh (logo, ảnh...)
+├── autowash-frontend/                # 💻 Mã nguồn Phân hệ Frontend (Next.js)
+│   ├── public/                       # File tĩnh (Logo, hình ảnh...)
 │   └── src/
-│       ├── app/                      # Các trang theo cấu trúc App Router (3 Workspaces)
-│       ├── components/               # UI Primitives & Components theo từng phân hệ
-│       ├── hooks/                    # Custom Hooks (useAuth, useWebSocket, useBookings...)
-│       ├── lib/                      # Axios Instance, Validators & Constants
-│       ├── store/                    # Zustand Stores (auth, booking, user...)
-│       └── types/                    # TypeScript Type Definitions
-├── autowash-backend/                 # ☕ Spring Boot Backend Application
-│   ├── src/
-│   │   ├── main/java/com/autowash/   # Modular Monolith packages (auth, booking, loyalty...)
-│   │   └── main/resources/           # Cấu hình hệ thống (application.yml, db migrations...)
-│   └── pom.xml                       # Quản lý thư viện Maven Backend
-└── docs/                             # 📚 Tài liệu thiết kế & Đặc tả hệ thống
-    ├── master/                       # PROJECT.md (Tài liệu chuẩn của dự án)
-    ├── context/                      # Context chi tiết cho Frontend & Backend
-    └── specs/                        # Đặc tả API contracts & Prototype Behaviors
+│       ├── app/                      # Cây thư mục Routing (Customer, Staff, Admin)
+│       ├── components/               # Giao diện UI dùng chung và riêng cho từng phân hệ
+│       ├── hooks/                    # Custom React Hooks (Auth, WebSocket, Bookings...)
+│       ├── lib/                      # Cấu hình Axios API Client, Validators, Constants
+│       └── store/                    # Zustand quản lý Client-side State
+├── autowash-backend/                 # ☕ Mã nguồn Phân hệ Backend (Spring Boot)
+│   ├── src/main/java/com/autowash/   # Cấu trúc Modular Monolith theo Domain
+│   └── pom.xml                       # Quản lý dependency Maven
+└── docs/                             # 📚 Tài liệu kỹ thuật dự án
+    ├── master/                       # PROJECT.md (Tài liệu gốc quy chuẩn dự án)
+    ├── context/                      # Context chi tiết của Frontend và Backend
+    └── specs/                        # Đặc tả hợp đồng API và hành vi Prototype
 ```
 
 ---
 
-## 🛠️ Hướng Dẫn Chạy Local (Local Development Setup)
+## 🚀 Hướng dẫn Cài đặt & Khởi chạy cục bộ (Local Setup)
 
-### **1. Yêu cầu hệ thống (Prerequisites)**
-* **Node.js** v18+ & **npm** v9+
-* **Java JDK** 21
+### **1. Yêu cầu Môi trường**
+* **Node.js** v18+
+* **Java JDK** v21 (Khuyên dùng Eclipse Temurin hoặc OpenJDK)
 * **Maven** v3.9+
-* **PostgreSQL** v15+ (hoặc sử dụng H2 mặc định khi test)
+* Cài đặt cơ sở dữ liệu **PostgreSQL** (hoặc hệ thống sẽ chạy ở chế độ kiểm thử H2 Database trong bộ nhớ).
 
-### **2. Chạy Frontend**
+### **2. Cài đặt Frontend**
 ```bash
 # Di chuyển vào thư mục Frontend
 cd autowash-frontend
 
-# Cài đặt thư viện
+# Cài đặt toàn bộ thư viện cần thiết
 npm install
 
-# Khởi chạy môi trường Development
+# Khởi chạy môi trường lập trình local
 npm run dev
 ```
-👉 Truy cập giao diện tại: [http://localhost:3000](http://localhost:3000)
+👉 Giao diện hiển thị tại: [http://localhost:3000](http://localhost:3000)
 
-### **3. Chạy Backend**
+### **3. Cài đặt Backend**
 ```bash
 # Di chuyển vào thư mục Backend
 cd autowash-backend
 
-# Biên dịch và build dự án
+# Build và biên dịch ứng dụng
 mvn clean install
 
-# Chạy ứng dụng Spring Boot
+# Chạy server Spring Boot
 mvn spring-boot:run
 ```
-👉 Xem tài liệu API Swagger tại: `http://localhost:8080/swagger-ui/index.html` (khi server chạy)
+👉 Xem và test API qua Swagger UI tại: `http://localhost:8080/swagger-ui/index.html`
 
 ---
 
-## 🤝 Quy Trình Phát Triển & Cộng Tác Nhóm
+## 🤝 Quy trình Hợp tác & Phát triển mã nguồn
 
-Để đảm bảo chất lượng mã nguồn khi phát triển đông thành viên, dự án áp dụng nghiêm ngặt quy trình phát triển sau:
+Dự án áp dụng quy chuẩn làm việc nhóm khép kín nhằm bảo vệ tính ổn định của sản phẩm:
 
-### **1. Bảo vệ nhánh chính (Branch Protection)**
-* Cả hai nhánh **`main`** và **`dev`** đều được bảo vệ bằng **GitHub Rulesets**.
-* Lập trình viên **không thể push trực tiếp** lên hai nhánh này. Mọi thay đổi bắt buộc phải thông qua **Pull Request (PR)**.
-* Tài khoản quản trị viên (Admin) được cấu hình trong danh sách *Bypass* để hỗ trợ merge khẩn cấp.
+```text
+Tạo nhánh mới (feature/*) ➔ Lập trình & Test cục bộ ➔ Push lên GitHub ➔ Tạo Pull Request (PR) 
+     ➔ Chạy tự động CI Check (Build & Test) ➔ Reviewer phê duyệt ➔ Merge vào main/dev
+```
 
-### **2. Quy trình gửi code (Pull Request Workflow)**
-1. Lập trình viên tạo nhánh phụ từ máy cá nhân (Ví dụ: `git checkout -b feature/auth`).
-2. Thực hiện lập trình, chạy thử và kiểm tra định dạng code cục bộ.
-3. Push nhánh phụ lên GitHub: `git push origin feature/auth`.
-4. Tạo Pull Request trên GitHub. Biểu mẫu mô tả chuẩn [PR Template](file:///d:/CarWash/.github/pull_request_template.md) sẽ tự động được hiển thị. Lập trình viên điền thông tin mô tả chi tiết và hoàn thành checklist kiểm tra chất lượng.
-5. Người quản trị (Admin) review code, phê duyệt và thực hiện Merge PR vào nhánh chính.
-
-### **3. Tích hợp liên tục & Bảo mật tự động (CI & Dependabot)**
-* **GitHub Actions (CI):** Mỗi khi có PR gửi vào `dev` hoặc `main`, hệ thống tự động kiểm thử build Frontend Next.js và chạy Maven Build kèm unit test của Spring Boot để đảm bảo code không gây lỗi biên dịch.
-* **Dependabot:** Tự động quét và cảnh báo các thư viện Frontend/Backend lỗi thời hoặc chứa lỗ hổng bảo mật hàng tuần, tự động tạo PR nâng cấp thư viện lên phiên bản an toàn.
+* **Branch Protection:** Nhánh `main` và `dev` được khóa chặt qua GitHub Rulesets. Lập trình viên bắt buộc phải tạo PR và vượt qua các bài kiểm tra tự động trước khi code được gộp vào.
+* **Mẫu mô tả PR:** Sử dụng [Mẫu PR chuẩn](file:///d:/CarWash/.github/pull_request_template.md) để ghi rõ mô tả thay đổi, cách test, và checklist tự kiểm tra chất lượng.
+* **Hệ thống CI tự động:** GitHub Actions tự động kiểm tra lỗi biên dịch của Next.js Frontend và chạy Maven Test của Backend trên mỗi Pull Request.
+* **Cập nhật bảo mật:** Dependabot quét các lỗ hổng thư viện hàng tuần và tự động tạo PR cập nhật các thư viện an toàn.
 
 ---
 
-## 📚 Tài Liệu Hướng Dẫn & Đặc Tả
-* 📖 **Tài liệu master:** [PROJECT.md](file:///d:/CarWash/docs/master/PROJECT.md)
-* 💻 **Context Frontend:** [FRONTEND_CONTEXT.md](file:///d:/CarWash/docs/context/FRONTEND_CONTEXT.md)
-* ☕ **Context Backend:** [BACKEND_CONTEXT.md](file:///d:/CarWash/docs/context/BACKEND_CONTEXT.md)
-* ⚡ **Đặc tả API Contracts:** [autowash_api_contracts.md](file:///d:/CarWash/docs/specs/autowash_api_contracts.md)
+## 📚 Liên kết Tài liệu hữu ích
+* 📋 **Tài liệu gốc chuẩn của dự án:** [PROJECT.md](file:///d:/CarWash/docs/master/PROJECT.md)
+* 💻 **Đặc tả logic Frontend:** [FRONTEND_CONTEXT.md](file:///d:/CarWash/docs/context/FRONTEND_CONTEXT.md)
+* ☕ **Đặc tả nghiệp vụ Backend:** [BACKEND_CONTEXT.md](file:///d:/CarWash/docs/context/BACKEND_CONTEXT.md)
+* 📖 **Đặc tả API Contracts:** [autowash_api_contracts.md](file:///d:/CarWash/docs/specs/autowash_api_contracts.md)
 
 ---
-*Phát triển bởi đội ngũ kỹ sư của dự án AutoWash Pro. Cập nhật tháng 05/2026.*
+*Bản quyền phát triển © 2026 bởi đội ngũ kỹ sư AutoWash Pro. Bảo lưu mọi quyền.*
