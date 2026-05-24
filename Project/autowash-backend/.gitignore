@@ -1,7 +1,0 @@
-target/
-.mvn/apache-maven-*/
-!.mvn/wrapper/
-*.log
-.env
-.env.*
-!.env.example
