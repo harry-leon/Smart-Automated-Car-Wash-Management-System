@@ -152,6 +152,20 @@ Tạo nhánh mới (feature/*) ➔ Lập trình & Test cục bộ ➔ Push lên 
 
 ---
 
+## 👥 Đội ngũ Phát triển (Development Team)
+
+Dự án được nghiên cứu và thực hiện bởi nhóm sinh viên **Trường Đại học FPT TP.HCM**:
+
+| MSSV | Họ và tên | Email liên hệ |
+| :---: | :--- | :--- |
+| **SE191116** | Hà Thúc Quốc Hùng | [htquochung.nt@gmail.com](mailto:htquochung.nt@gmail.com) |
+| **SE192041** | Phạm Hoàng Gia Huy | [giahuy250349@gmail.com](mailto:giahuy250349@gmail.com) |
+| **SE193449** | Lê Đoàn Gia Hưng | [lhung291005@gmail.com](mailto:lhung291005@gmail.com) |
+| **SE194643** | Tống Vỹ Thuận | [tongvy900@gmail.com](mailto:tongvy900@gmail.com) |
+| **SE193311** | Trương Nguyễn Minh Khương | [minhkhuong06072005@gmail.com](mailto:minhkhuong06072005@gmail.com) |
+
+---
+
 ## 📚 Liên kết Tài liệu hữu ích
 * 📋 **Tài liệu gốc chuẩn của dự án:** [PROJECT.md](file:///d:/CarWash/docs/master/PROJECT.md)
 * 💻 **Đặc tả logic Frontend:** [FRONTEND_CONTEXT.md](file:///d:/CarWash/docs/context/FRONTEND_CONTEXT.md)
