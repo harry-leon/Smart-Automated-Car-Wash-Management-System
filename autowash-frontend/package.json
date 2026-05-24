@@ -7,16 +7,21 @@
     "node": ">=18.18"
   },
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "build:pages": "vite build --config vite.pages.config.ts",
-    "build:dev": "vite build --mode development",
-    "preview": "vite preview",
-    "lint": "echo \"No lint configured for static frontend\"",
-    "format": "echo \"No formatter configured for static frontend\""
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "dependencies": {},
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@tanstack/react-query": "^5.4.0"
+  },
   "devDependencies": {
-    "vite": "^5.4.21"
+    "typescript": "^5.5.4",
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0"
   }
 }
