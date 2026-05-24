@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Cập nhật cho npm (Next.js Frontend)
+  - package-ecosystem: "npm"
+    directory: "/autowash-frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Cập nhật cho Maven (Spring Boot Backend)
+  - package-ecosystem: "maven"
+    directory: "/autowash-backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

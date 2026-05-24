@@ -1,0 +1,54 @@
+name: Continuous Integration (CI)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-frontend:
+    name: Build Frontend (Next.js)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: autowash-frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+        working-directory: autowash-frontend
+
+      - name: Run Build
+        run: npm run build
+        working-directory: autowash-frontend
+
+  build-backend:
+    name: Build Backend (Spring Boot)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests=false
+        working-directory: autowash-backend

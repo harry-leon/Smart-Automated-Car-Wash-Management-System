@@ -1,0 +1,32 @@
+.filtersWrap {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .filtersWrap {
+    grid-template-columns: 1.5fr 1fr 1fr auto;
+    align-items: end;
+  }
+}
+
+.tableShell {
+  border-radius: 1rem;
+  border: 1px solid hsl(var(--border) / 0.5);
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
