@@ -1,0 +1,30 @@
+{
+  "name": "autowash-frontend",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "engines": {
+    "node": ">=18.18"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "echo \"No lint configured for Next skeleton\"",
+    "format": "echo \"No formatter configured for Next skeleton\""
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.100.13",
+    "axios": "^1.16.1",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "@types/react": "^18.3.29",
+    "@types/react-dom": "^18.3.7",
+    "typescript": "^5.9.3"
+  }
+}

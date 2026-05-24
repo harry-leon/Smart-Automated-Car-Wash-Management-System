@@ -1,0 +1,27 @@
+.hero-band {
+  padding: var(--space-8) 0;
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0fdfa 55%, #fffbeb 100%);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.booking-steps {
+  counter-reset: steps;
+}
+
+.booking-step {
+  position: relative;
+}
+
+.booking-step::before {
+  counter-increment: steps;
+  content: counter(steps);
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-bottom: var(--space-3);
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
+}

@@ -1,0 +1,62 @@
+{
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "src/app/**/*",
+    "src/components/providers/**/*",
+    "src/hooks/use-auth.ts",
+    "src/lib/api.ts",
+    "src/lib/api-errors.ts",
+    "src/lib/auth-service.ts",
+    "src/lib/query-client.ts",
+    "src/store/auth.store.ts",
+    "src/types/**/*.ts",
+    "src/middleware.ts",
+    "eslint.config.js"
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "jsx": "preserve",
+    "module": "ESNext",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    /* Bundler mode */
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": false,
+    "noEmit": true,
+    /* Linting */
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "allowJs": true,
+    "incremental": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "exclude": [
+    "node_modules",
+    "prototype-src",
+    "src/app/modules",
+    "src/components/ui",
+    "src/pages",
+    "src/scripts"
+  ]
+}
