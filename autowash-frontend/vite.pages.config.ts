@@ -1,7 +1,0 @@
-import { defineConfig } from "vite";
-import baseConfig from "./vite.config";
-
-export default defineConfig({
-  ...baseConfig,
-  base: "/Smart-Automated-Car-Wash-Management-System/",
-});
