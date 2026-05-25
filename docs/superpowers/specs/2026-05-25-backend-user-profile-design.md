@@ -76,6 +76,12 @@ Reasoning:
 - Direct columns are easier to validate and query than a JSON blob.
 - This keeps migrations and entity mapping simple while the product is still in mandatory-first scope.
 
+Migration note:
+
+- add a new Flyway migration after the auth module migration
+- use a versioned file name in sequence, for example `V2__add_user_preferences_to_auth_users.sql`
+- do not modify or overwrite the existing auth migration
+
 ## Authenticated Current User
 
 Current-user resolution must come from the authenticated JWT principal, not from request payload or query params.
@@ -112,6 +118,7 @@ Behavior:
 Scope decision:
 
 - `loyaltyBalance` is returned as `0` for now because real loyalty accounting is out of scope, but the response shape stays contract-ready.
+- When implementing this field, leave a short code comment explaining that `0` is an intentional temporary value for mandatory-first scope, not an omitted loyalty integration.
 
 ### `PUT /api/v1/users/profile`
 
