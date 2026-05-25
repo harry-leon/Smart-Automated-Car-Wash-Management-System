@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { QueryProvider } from "@/components/providers/query-provider";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AutoWash Pro",
