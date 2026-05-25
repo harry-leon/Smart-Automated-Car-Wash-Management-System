@@ -1,6 +1,7 @@
 package com.autowash.shared.exception;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
@@ -32,13 +33,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApiException(ApiException exception) {
-        return ResponseEntity.status(exception.getStatus()).body(Map.of(
-                "success", false,
-                "statusCode", exception.getStatus().value(),
-                "message", exception.getMessage(),
-                "errorCode", exception.getErrorCode(),
-                "timestamp", Instant.now().toString()
-        ));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("success", false);
+        body.put("statusCode", exception.getStatus().value());
+        body.put("message", exception.getMessage());
+        body.put("errorCode", exception.getErrorCode());
+        if (exception.getError() != null) {
+            body.put("error", exception.getError());
+        }
+        body.put("timestamp", Instant.now().toString());
+        return ResponseEntity.status(exception.getStatus()).body(body);
     }
 
     private Map<String, String> toFieldError(FieldError error) {

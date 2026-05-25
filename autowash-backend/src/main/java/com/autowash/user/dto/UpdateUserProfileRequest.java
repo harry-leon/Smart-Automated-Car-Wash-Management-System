@@ -2,6 +2,7 @@ package com.autowash.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdateUserProfileRequest(
@@ -10,6 +11,10 @@ public record UpdateUserProfileRequest(
         String fullName,
 
         @Email(message = "Email must be valid")
-        String email
+        String email,
+
+        @NotBlank(message = "Phone is required")
+        @Pattern(regexp = "^0[0-9]{9}$", message = "Phone must start with 0 and be 10 digits")
+        String phone
 ) {
 }

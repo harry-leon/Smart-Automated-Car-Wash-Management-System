@@ -155,9 +155,10 @@ public class AuthUser {
         return updatedAt;
     }
 
-    public void updateProfile(String fullName, String email) {
+    public void updateProfile(String fullName, String email, String phone) {
         this.fullName = fullName;
         this.email = email;
+        this.phone = phone;
         this.updatedAt = Instant.now();
     }
 

@@ -7,14 +7,19 @@ public record ApiResponse<T>(
         int statusCode,
         String message,
         T data,
+        PaginationMeta pagination,
         Instant timestamp
 ) {
 
     public static <T> ApiResponse<T> ok(String message, T data) {
-        return new ApiResponse<>(true, 200, message, data, Instant.now());
+        return new ApiResponse<>(true, 200, message, data, null, Instant.now());
+    }
+
+    public static <T> ApiResponse<T> ok(String message, T data, PaginationMeta pagination) {
+        return new ApiResponse<>(true, 200, message, data, pagination, Instant.now());
     }
 
     public static <T> ApiResponse<T> created(String message, T data) {
-        return new ApiResponse<>(true, 201, message, data, Instant.now());
+        return new ApiResponse<>(true, 201, message, data, null, Instant.now());
     }
 }

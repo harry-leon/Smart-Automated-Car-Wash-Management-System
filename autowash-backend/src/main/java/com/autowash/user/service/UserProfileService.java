@@ -1,12 +1,15 @@
 package com.autowash.user.service;
 
 import com.autowash.auth.entity.AuthUser;
+import com.autowash.auth.repository.AuthUserRepository;
+import com.autowash.shared.exception.ApiException;
 import com.autowash.user.dto.UpdateUserProfileRequest;
 import com.autowash.user.dto.UpdateUserProfileResponse;
 import com.autowash.user.dto.UpdateUserPreferencesRequest;
 import com.autowash.user.dto.UpdateUserPreferencesResponse;
 import com.autowash.user.dto.UserPreferencesDto;
 import com.autowash.user.dto.UserProfileResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,9 +19,11 @@ public class UserProfileService {
     private static final int TEMPORARY_LOYALTY_BALANCE = 0;
 
     private final CurrentUserService currentUserService;
+    private final AuthUserRepository authUserRepository;
 
-    public UserProfileService(CurrentUserService currentUserService) {
+    public UserProfileService(CurrentUserService currentUserService, AuthUserRepository authUserRepository) {
         this.currentUserService = currentUserService;
+        this.authUserRepository = authUserRepository;
     }
 
     public UserProfileResponse getCurrentUserProfile() {
@@ -48,7 +53,11 @@ public class UserProfileService {
     @Transactional
     public UpdateUserProfileResponse updateProfile(UpdateUserProfileRequest request) {
         AuthUser user = currentUserService.getCurrentUser();
-        user.updateProfile(request.fullName(), request.email());
+        if (authUserRepository.existsByPhoneAndIdNot(request.phone(), user.getId())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Phone number already in use", "DUPLICATE_PHONE");
+        }
+
+        user.updateProfile(request.fullName(), request.email(), request.phone());
 
         return new UpdateUserProfileResponse(
                 user.getId().toString(),
@@ -82,12 +91,9 @@ public class UserProfileService {
         );
 
         return new UpdateUserPreferencesResponse(
-                user.getId().toString(),
                 user.getLanguage().name(),
                 user.getTheme().name(),
                 user.isNotificationsEnabled(),
-                user.isEmailNotifications(),
-                user.isSmsNotifications(),
                 user.getUpdatedAt()
         );
     }

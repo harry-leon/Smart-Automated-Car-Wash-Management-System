@@ -49,7 +49,7 @@ class UserProfileControllerIntegrationTest {
     }
 
     @Test
-    void updateProfileUpdatesFullNameAndEmail() throws Exception {
+    void updateProfileUpdatesFullNameEmailAndPhone() throws Exception {
         String accessToken = registerActivateAndLogin("0901234581");
 
         mockMvc.perform(put("/api/v1/users/profile")
@@ -58,12 +58,33 @@ class UserProfileControllerIntegrationTest {
                         .content("""
                                 {
                                   "fullName": "Nguyen Van Updated",
-                                  "email": "updated@example.com"
+                                  "email": "updated@example.com",
+                                  "phone": "0901234591"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.fullName").value("Nguyen Van Updated"))
-                .andExpect(jsonPath("$.data.email").value("updated@example.com"));
+                .andExpect(jsonPath("$.data.email").value("updated@example.com"))
+                .andExpect(jsonPath("$.data.phone").value("0901234591"));
+    }
+
+    @Test
+    void updateProfileRejectsDuplicatePhone() throws Exception {
+        String firstAccessToken = registerActivateAndLogin("0901234585");
+        registerActivateAndLogin("0901234586");
+
+        mockMvc.perform(put("/api/v1/users/profile")
+                        .header("Authorization", "Bearer " + firstAccessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "fullName": "Nguyen Van Updated",
+                                  "email": "updated@example.com",
+                                  "phone": "0901234586"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_PHONE"));
     }
 
     @Test
@@ -114,7 +135,11 @@ class UserProfileControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.language").value("EN"))
                 .andExpect(jsonPath("$.data.theme").value("DARK"))
-                .andExpect(jsonPath("$.data.smsNotifications").value(false));
+                .andExpect(jsonPath("$.data.notificationsEnabled").value(true))
+                .andExpect(jsonPath("$.data.updatedAt").isString())
+                .andExpect(jsonPath("$.data.userId").doesNotExist())
+                .andExpect(jsonPath("$.data.emailNotifications").doesNotExist())
+                .andExpect(jsonPath("$.data.smsNotifications").doesNotExist());
     }
 
     @Test
@@ -122,6 +147,22 @@ class UserProfileControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/users/profile")
                         .header("Authorization", "Bearer invalid-token"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void openApiDocumentsProfileAndPreferencesSchemas() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.fullName.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.email.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.UpdateUserProfileRequest.properties.phone.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.language.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.theme.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.notificationsEnabled.type").value("boolean"))
+                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.updatedAt.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.userId").doesNotExist())
+                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.emailNotifications").doesNotExist())
+                .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.smsNotifications").doesNotExist());
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {
