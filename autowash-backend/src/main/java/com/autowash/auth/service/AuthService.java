@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
+    private static final String PHONE_PATTERN = "^0[0-9]{9}$";
 
     private final AuthUserRepository authUserRepository;
     private final OtpRecordRepository otpRecordRepository;
@@ -90,6 +91,7 @@ public class AuthService {
     public SendOtpResponse sendRegistrationOtp(String phone) {
         AuthUser user = authUserRepository.findByPhone(phone)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+        requirePendingUser(user);
 
         String code = otpService.generateOtp();
         OtpRecord otpRecord = new OtpRecord(user, OtpPurpose.REGISTRATION, code, Instant.now().plusSeconds(otpExpirationSeconds));
@@ -108,6 +110,7 @@ public class AuthService {
     public LoginResponse verifyRegistrationOtp(String phone, String otp) {
         AuthUser user = authUserRepository.findByPhone(phone)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+        requirePendingUser(user);
 
         OtpRecord otpRecord = otpRecordRepository.findFirstByUserAndPurposeAndVerifiedFalseOrderByCreatedAtDesc(user, OtpPurpose.REGISTRATION)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP"));
@@ -136,7 +139,7 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        AuthUser user = authUserRepository.findByPhone(request.phone())
+        AuthUser user = resolveLoginUser(request.identifier())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid credentials", "INVALID_CREDENTIALS"));
 
         if (user.getStatus() == UserStatus.BLOCKED) {
@@ -211,5 +214,23 @@ public class AuthService {
 
     private String maskPhone(String phone) {
         return phone.substring(0, 4) + "****" + phone.substring(phone.length() - 2);
+    }
+
+    private void requirePendingUser(AuthUser user) {
+        if (user.getStatus() != UserStatus.PENDING) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Account is not pending OTP verification",
+                    "RESOURCE_LOCKED"
+            );
+        }
+    }
+
+    private java.util.Optional<AuthUser> resolveLoginUser(String identifier) {
+        String normalizedIdentifier = identifier.trim();
+        if (normalizedIdentifier.matches(PHONE_PATTERN)) {
+            return authUserRepository.findByPhone(normalizedIdentifier);
+        }
+        return authUserRepository.findByEmailIgnoreCase(normalizedIdentifier);
     }
 }

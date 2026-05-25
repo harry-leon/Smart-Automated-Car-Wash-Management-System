@@ -39,7 +39,7 @@ public class VehicleService {
         AuthUser user = currentUserService.getCurrentUser();
         String normalizedPlate = normalizePlate(request.plate());
 
-        if (customerVehicleRepository.existsByOwnerAndPlateAndStatus(user, normalizedPlate, VehicleStatus.ACTIVE)) {
+        if (customerVehicleRepository.existsByOwnerAndPlate(user, normalizedPlate)) {
             throw new ApiException(HttpStatus.CONFLICT, "Plate already exists for this customer", "DUPLICATE_PLATE");
         }
 

@@ -122,7 +122,27 @@ class AuthControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "0901234571",
+                                  "identifier": "0901234571",
+                                  "password": "SecurePass1!",
+                                  "rememberMe": false
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").isString())
+                .andExpect(jsonPath("$.data.refreshToken").isString());
+    }
+
+    @Test
+    void loginAcceptsEmailIdentifierForActiveAccount() throws Exception {
+        registerCustomer("0901234578");
+        String otp = sendOtpAndExtractDevOtp("0901234578");
+        verifyOtp("0901234578", otp);
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "identifier": "0901234578@example.com",
                                   "password": "SecurePass1!",
                                   "rememberMe": false
                                 }
@@ -177,13 +197,46 @@ class AuthControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "0901234574",
+                                  "identifier": "0901234574",
                                   "password": "SecurePass1!",
                                   "rememberMe": false
                                 }
                                 """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorCode").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void sendOtpRejectsActiveAccount() throws Exception {
+        registerCustomer("0901234579");
+        String otp = sendOtpAndExtractDevOtp("0901234579");
+        verifyOtp("0901234579", otp);
+
+        mockMvc.perform(post("/api/v1/auth/otp/send")
+                        .contentType("application/json")
+                        .content("""
+                                { "phone": "0901234579" }
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("RESOURCE_LOCKED"));
+    }
+
+    @Test
+    void verifyOtpRejectsActiveAccount() throws Exception {
+        registerCustomer("0901234580");
+        String otp = sendOtpAndExtractDevOtp("0901234580");
+        verifyOtp("0901234580", otp);
+
+        mockMvc.perform(post("/api/v1/auth/otp/verify")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "phone": "0901234580",
+                                  "otp": "%s"
+                                }
+                                """.formatted(otp)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("RESOURCE_LOCKED"));
     }
 
     @Test
@@ -211,11 +264,11 @@ class AuthControllerIntegrationTest {
                                 {
                                   "fullName": "Nguyen Van A",
                                   "phone": "%s",
-                                  "email": "a@example.com",
+                                  "email": "%s@example.com",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
-                                """.formatted(phone)))
+                                """.formatted(phone, phone)))
                 .andExpect(status().isCreated());
     }
 

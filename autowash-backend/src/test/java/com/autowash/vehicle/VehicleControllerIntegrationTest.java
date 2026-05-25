@@ -170,6 +170,32 @@ class VehicleControllerIntegrationTest {
     }
 
     @Test
+    void createVehicleRejectsReusingDeletedPlateForSameCustomer() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234610");
+        String vehicleId = createVehicle(accessToken, "30H-123465", "Toyota", "Camry");
+
+        mockMvc.perform(delete("/api/v1/customers/vehicles/{vehicleId}", vehicleId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/v1/customers/vehicles")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "plate": "30H-123465",
+                                  "type": "CAR",
+                                  "brand": "Honda",
+                                  "model": "Civic",
+                                  "year": 2024,
+                                  "color": "Black"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_PLATE"));
+    }
+
+    @Test
     void openApiDocumentsVehicleSchemas() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())

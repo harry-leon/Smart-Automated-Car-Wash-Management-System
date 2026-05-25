@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CustomerVehicleRepository extends JpaRepository<CustomerVehicle, UUID> {
 
-    boolean existsByOwnerAndPlateAndStatus(AuthUser owner, String plate, VehicleStatus status);
+    boolean existsByOwnerAndPlate(AuthUser owner, String plate);
 
     Optional<CustomerVehicle> findByOwnerAndIdAndStatus(AuthUser owner, UUID id, VehicleStatus status);
 

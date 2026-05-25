@@ -12,4 +12,6 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
     boolean existsByPhoneAndIdNot(String phone, UUID id);
 
     Optional<AuthUser> findByPhone(String phone);
+
+    Optional<AuthUser> findByEmailIgnoreCase(String email);
 }

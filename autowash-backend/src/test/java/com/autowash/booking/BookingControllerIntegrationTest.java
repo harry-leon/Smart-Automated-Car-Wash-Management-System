@@ -141,6 +141,28 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
+    void createBookingRejectsInvalidBookingTimeFormatWithValidationError() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234710");
+        String vehicleId = createVehicle(accessToken, "30H-223460");
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "packageId": "pkg_001",
+                                  "bookingDate": "2026-06-10",
+                                  "bookingTime": "2pm",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.errors[0].field").value("bookingTime"));
+    }
+
+    @Test
     void getBookingsAndDetailAreOwnerScoped() throws Exception {
         String firstToken = registerActivateAndLogin("0901234706");
         String secondToken = registerActivateAndLogin("0901234707");

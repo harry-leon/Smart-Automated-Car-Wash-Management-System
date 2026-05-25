@@ -29,12 +29,12 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void getProfileReturnsAuthenticatedCustomerProfile() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234580");
+        String accessToken = registerActivateAndLogin("0901234680");
 
         mockMvc.perform(get("/api/v1/users/profile")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.phone").value("0901234580"))
+                .andExpect(jsonPath("$.data.phone").value("0901234680"))
                 .andExpect(jsonPath("$.data.role").value("CUSTOMER"))
                 .andExpect(jsonPath("$.data.tier").value("MEMBER"))
                 .andExpect(jsonPath("$.data.loyaltyBalance").value(0))
@@ -50,7 +50,7 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void updateProfileUpdatesFullNameEmailAndPhone() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234581");
+        String accessToken = registerActivateAndLogin("0901234681");
 
         mockMvc.perform(put("/api/v1/users/profile")
                         .header("Authorization", "Bearer " + accessToken)
@@ -89,7 +89,7 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void updateProfileRejectsInvalidEmail() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234582");
+        String accessToken = registerActivateAndLogin("0901234682");
 
         mockMvc.perform(put("/api/v1/users/profile")
                         .header("Authorization", "Bearer " + accessToken)
@@ -106,7 +106,7 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void getPreferencesReturnsCurrentUserPreferences() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234583");
+        String accessToken = registerActivateAndLogin("0901234683");
 
         mockMvc.perform(get("/api/v1/users/preferences")
                         .header("Authorization", "Bearer " + accessToken))
@@ -118,7 +118,7 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void updatePreferencesPersistsNewValues() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234584");
+        String accessToken = registerActivateAndLogin("0901234684");
 
         mockMvc.perform(put("/api/v1/users/preferences")
                         .header("Authorization", "Bearer " + accessToken)
@@ -172,11 +172,11 @@ class UserProfileControllerIntegrationTest {
                                 {
                                   "fullName": "Nguyen Van A",
                                   "phone": "%s",
-                                  "email": "a@example.com",
+                                  "email": "%s@example.com",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
-                                """.formatted(phone)))
+                                """.formatted(phone, phone)))
                 .andExpect(status().isCreated());
 
         MvcResult sendOtpResult = mockMvc.perform(post("/api/v1/auth/otp/send")

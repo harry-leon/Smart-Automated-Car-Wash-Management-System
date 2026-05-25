@@ -5,6 +5,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -17,6 +18,7 @@ public record CreateBookingRequest(
         @Future(message = "Booking date must be in the future")
         LocalDate bookingDate,
         @NotBlank(message = "Booking time is required")
+        @Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$", message = "Booking time must be in HH:mm format")
         String bookingTime,
         String voucherCode,
         @NotNull(message = "Payment method is required")
