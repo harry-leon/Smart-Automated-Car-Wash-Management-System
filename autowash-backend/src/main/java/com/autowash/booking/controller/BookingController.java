@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -51,7 +52,9 @@ public class BookingController {
     @GetMapping
     @Operation(summary = "List customer's bookings")
     public ApiResponse<List<BookingListItemResponse>> listBookings(
-            @RequestParam(required = false) String status,
+            @RequestParam(required = false)
+            @Pattern(regexp = "^(CONFIRMED|CANCELLED|CHECKED_IN|IN_PROGRESS|COMPLETED)$", message = "Status must be a valid booking status")
+            String status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(defaultValue = "1") @Min(1) int page,

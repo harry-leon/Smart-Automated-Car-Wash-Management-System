@@ -188,6 +188,18 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
+    void listBookingsRejectsInvalidStatusWithValidationError() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234711");
+
+        mockMvc.perform(get("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .param("status", "INVALID_STATUS"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.errors[0].field").value("status"));
+    }
+
+    @Test
     void cancelBookingTransitionsConfirmedBookingToCancelled() throws Exception {
         String accessToken = registerActivateAndLogin("0901234708");
         String vehicleId = createVehicle(accessToken, "30H-223459");

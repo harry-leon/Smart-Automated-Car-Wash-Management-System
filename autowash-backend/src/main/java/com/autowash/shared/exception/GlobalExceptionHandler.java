@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -19,6 +20,27 @@ public class GlobalExceptionHandler {
                 .getFieldErrors()
                 .stream()
                 .map(this::toFieldError)
+                .toList();
+
+        return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "statusCode", 400,
+                "message", "Validation failed",
+                "errorCode", "VALIDATION_ERROR",
+                "errors", errors,
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException exception) {
+        List<Map<String, String>> errors = exception.getConstraintViolations()
+                .stream()
+                .map(violation -> Map.of(
+                        "field", extractConstraintField(violation.getPropertyPath().toString()),
+                        "message", violation.getMessage() == null ? "Invalid value" : violation.getMessage(),
+                        "code", "INVALID_FORMAT"
+                ))
                 .toList();
 
         return ResponseEntity.badRequest().body(Map.of(
@@ -51,5 +73,10 @@ public class GlobalExceptionHandler {
                 "message", error.getDefaultMessage() == null ? "Invalid value" : error.getDefaultMessage(),
                 "code", "INVALID_FORMAT"
         );
+    }
+
+    private String extractConstraintField(String propertyPath) {
+        int dotIndex = propertyPath.lastIndexOf('.');
+        return dotIndex >= 0 ? propertyPath.substring(dotIndex + 1) : propertyPath;
     }
 }
