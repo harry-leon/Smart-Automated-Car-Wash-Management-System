@@ -1,4 +1,5 @@
 import { createStore } from "zustand/vanilla";
+import { useStore } from "zustand";
 import { AuthSession, AuthUser } from "@/types/auth.types";
 
 type AuthState = {
@@ -42,6 +43,10 @@ const authStore = createStore<AuthStore>()((set) => ({
       user: null
     })
 }));
+
+export function useAuthStore<T>(selector: (state: AuthStore) => T) {
+  return useStore(authStore, selector);
+}
 
 export function getAuthState() {
   return authStore.getState();

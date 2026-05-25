@@ -5,6 +5,7 @@ import axios, {
   AxiosRequestConfig,
   InternalAxiosRequestConfig
 } from "axios";
+import { getApiErrorCode } from "@/lib/api-errors";
 import { clearAuthSession, getAccessToken, getRefreshToken, setAccessToken } from "@/store/auth.store";
 import { ApiErrorResponse, ApiSuccessResponse } from "@/types/api.types";
 
@@ -42,7 +43,7 @@ apiClient.interceptors.response.use(
 
     const isExpiredToken =
       error.response?.status === 401 &&
-      error.response.data?.errorCode === "TOKEN_EXPIRED";
+      getApiErrorCode(error.response.data) === "TOKEN_EXPIRED";
 
     if (!isExpiredToken || request._retry) {
       if (error.response?.status === 401) {
