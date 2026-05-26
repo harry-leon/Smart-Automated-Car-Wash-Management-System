@@ -181,4 +181,9 @@ public class AuthUser {
         this.status = UserStatus.ACTIVE;
         this.updatedAt = Instant.now();
     }
+
+    public void updateTier(LoyaltyTier tier) {
+        this.tier = tier;
+        this.updatedAt = Instant.now();
+    }
 }

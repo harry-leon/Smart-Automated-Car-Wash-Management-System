@@ -49,8 +49,6 @@ springdoc:
 
 autowash:
   currency: VND
-  loyalty:
-    points-unit-amount: 10000
   api:
     version: v1
     base-path: /api/v1

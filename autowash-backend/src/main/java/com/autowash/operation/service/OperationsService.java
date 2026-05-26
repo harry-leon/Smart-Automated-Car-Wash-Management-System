@@ -3,6 +3,8 @@ package com.autowash.operation.service;
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.entity.CustomerBooking;
 import com.autowash.booking.service.BookingService;
+import com.autowash.loyalty.dto.EarnPointsResponse;
+import com.autowash.loyalty.service.LoyaltyService;
 import com.autowash.operation.dto.CheckInWashSessionResponse;
 import com.autowash.operation.dto.CompleteWashSessionResponse;
 import com.autowash.operation.dto.CreateWashSessionRequest;
@@ -33,18 +35,18 @@ public class OperationsService {
 
     private final BookingService bookingService;
     private final WashSessionRepository washSessionRepository;
-    private final LoyaltyPointService loyaltyPointService;
+    private final LoyaltyService loyaltyService;
     private final String currency;
 
     public OperationsService(
             BookingService bookingService,
             WashSessionRepository washSessionRepository,
-            LoyaltyPointService loyaltyPointService,
+            LoyaltyService loyaltyService,
             @Value("${autowash.currency}") String currency
     ) {
         this.bookingService = bookingService;
         this.washSessionRepository = washSessionRepository;
-        this.loyaltyPointService = loyaltyPointService;
+        this.loyaltyService = loyaltyService;
         this.currency = currency;
     }
 
@@ -88,10 +90,7 @@ public class OperationsService {
     public CheckInWashSessionResponse checkInSession(UUID sessionId) {
         WashSession session = requireSession(sessionId);
         CustomerBooking booking = session.getBooking();
-        int projectedPoints = loyaltyPointService.calculateProjectedPoints(
-                booking.getFinalAmount(),
-                booking.getCustomer().getTier()
-        );
+        int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
         Instant checkedInAt = Instant.now();
         session.checkIn(checkedInAt, booking.getFinalAmount(), currency, projectedPoints);
@@ -117,16 +116,20 @@ public class OperationsService {
     @Transactional
     public CompleteWashSessionResponse completeSession(UUID sessionId) {
         WashSession session = requireSession(sessionId);
-        int awardedPoints = loyaltyPointService.awardPoints(session.getProjectedLoyaltyPoints() == null ? 0 : session.getProjectedLoyaltyPoints());
+        int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
         Instant completedAt = Instant.now();
-        session.complete(completedAt, awardedPoints);
+        session.complete(completedAt, projectedPoints);
+        EarnPointsResponse earnResult = loyaltyService.postEarnTransaction(
+                session.getBooking().getCustomer().getId(),
+                sessionId
+        );
         bookingService.updateStatus(session.getBooking(), BookingStatus.COMPLETED);
         return new CompleteWashSessionResponse(
                 session.getId(),
                 session.getStatus().name(),
                 session.getCompletedAt(),
-                session.getAwardedLoyaltyPoints()
+                earnResult.pointsAwarded()
         );
     }
 
