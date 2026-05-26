@@ -41,6 +41,7 @@ public class BookingService {
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
             BookingStatus.CONFIRMED,
+            BookingStatus.SESSION_CREATED,
             BookingStatus.CHECKED_IN,
             BookingStatus.IN_PROGRESS
     );
@@ -209,6 +210,17 @@ public class BookingService {
                 booking.getRefundStatus(),
                 "Refund will be processed within 3-5 business days"
         );
+    }
+
+    @Transactional(readOnly = true)
+    public CustomerBooking requireBookingForOperations(String bookingId) {
+        return customerBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
+    }
+
+    @Transactional
+    public void updateStatus(CustomerBooking booking, BookingStatus status) {
+        booking.updateStatus(status);
     }
 
     private CustomerBooking findOwnedBooking(String bookingId) {

@@ -168,4 +168,8 @@ public class CustomerBooking {
         this.refundStatus = "INITIATED";
         this.cancelReason = reason;
     }
+
+    public void updateStatus(BookingStatus status) {
+        this.status = status;
+    }
 }
