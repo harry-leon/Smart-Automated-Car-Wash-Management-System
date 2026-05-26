@@ -2,6 +2,7 @@ package com.autowash.user.service;
 
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.auth.repository.AuthUserRepository;
+import com.autowash.loyalty.service.CustomerLoyaltyService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.user.dto.UpdateUserProfileRequest;
 import com.autowash.user.dto.UpdateUserProfileResponse;
@@ -16,14 +17,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserProfileService {
 
-    private static final int TEMPORARY_LOYALTY_BALANCE = 0;
-
     private final CurrentUserService currentUserService;
     private final AuthUserRepository authUserRepository;
+    private final CustomerLoyaltyService customerLoyaltyService;
 
-    public UserProfileService(CurrentUserService currentUserService, AuthUserRepository authUserRepository) {
+    public UserProfileService(
+            CurrentUserService currentUserService,
+            AuthUserRepository authUserRepository,
+            CustomerLoyaltyService customerLoyaltyService
+    ) {
         this.currentUserService = currentUserService;
         this.authUserRepository = authUserRepository;
+        this.customerLoyaltyService = customerLoyaltyService;
     }
 
     public UserProfileResponse getCurrentUserProfile() {
@@ -37,8 +42,7 @@ public class UserProfileService {
                 user.getRole().name(),
                 user.getTier().name(),
                 user.isNewCustomer(),
-                // Intentionally fixed at 0 for mandatory-first scope until loyalty accounting is implemented.
-                TEMPORARY_LOYALTY_BALANCE,
+                customerLoyaltyService.getCurrentBalance(user),
                 user.getCreatedAt(),
                 new UserPreferencesDto(
                         user.getLanguage().name(),

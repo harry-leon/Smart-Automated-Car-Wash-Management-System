@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
-import { ArrowRightFromLine, Home, PackageSearch, CarFront, Gift, Bell } from "lucide-react";
+import { ArrowRightFromLine, Home, PackageSearch, CarFront, Gift, Bell, History, Sparkles } from "lucide-react";
 import { getAuthRedirectPath } from "@/lib/auth-session";
 import { useCustomerLogout } from "@/hooks/use-auth";
 import { useAuthStore } from "@/store/auth.store";
@@ -71,8 +71,10 @@ export function CustomerWorkspaceShell({
           <nav className="flex flex-wrap items-center gap-2">
             <NavLink href="/customer/home" icon={Home} label="Home" />
             <NavLink href="/customer/bookings/new" icon={PackageSearch} label="Booking" />
+            <NavLink href="/customer/history" icon={History} label="History" />
             <NavLink href="/customer/vehicles" icon={CarFront} label="Vehicles" />
             <NavLink href="/customer/loyalty" icon={Gift} label="Loyalty" />
+            <NavLink href="/customer/promotions" icon={Sparkles} label="Promotions" />
             <NavLink href="/customer/notifications" icon={Bell} label="Notifications" />
             <button
               disabled={logoutMutation.isPending}

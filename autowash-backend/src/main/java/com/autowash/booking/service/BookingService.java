@@ -21,6 +21,8 @@ import com.autowash.catalog.service.CatalogService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.user.service.CurrentUserService;
+import com.autowash.operation.repository.WashSessionRepository;
+import com.autowash.operation.entity.WashSessionStatus;
 import com.autowash.vehicle.entity.CustomerVehicle;
 import com.autowash.vehicle.entity.VehicleStatus;
 import com.autowash.vehicle.repository.CustomerVehicleRepository;
@@ -52,6 +54,7 @@ public class BookingService {
     private final CatalogService catalogService;
     private final ServicePackageRepository servicePackageRepository;
     private final ServiceComboRepository serviceComboRepository;
+    private final WashSessionRepository washSessionRepository;
 
     public BookingService(
             CurrentUserService currentUserService,
@@ -59,7 +62,8 @@ public class BookingService {
             CustomerBookingRepository customerBookingRepository,
             CatalogService catalogService,
             ServicePackageRepository servicePackageRepository,
-            ServiceComboRepository serviceComboRepository
+            ServiceComboRepository serviceComboRepository,
+            WashSessionRepository washSessionRepository
     ) {
         this.currentUserService = currentUserService;
         this.customerVehicleRepository = customerVehicleRepository;
@@ -67,6 +71,7 @@ public class BookingService {
         this.catalogService = catalogService;
         this.servicePackageRepository = servicePackageRepository;
         this.serviceComboRepository = serviceComboRepository;
+        this.washSessionRepository = washSessionRepository;
     }
 
     @Transactional
@@ -231,6 +236,9 @@ public class BookingService {
 
     private BookingListItemResponse toListItem(CustomerBooking booking) {
         String packageName = resolvePackageName(booking);
+        var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
+                .orElse(null);
+        String washStatus = washSession == null ? null : washSession.getStatus().name();
         return new BookingListItemResponse(
                 booking.getId(),
                 booking.getVehicle().getPlate(),
@@ -239,9 +247,9 @@ public class BookingService {
                 booking.getBookingTime().toString(),
                 booking.getFinalAmount(),
                 booking.getStatus().name(),
-                null,
+                washStatus,
                 booking.getCreatedAt(),
-                null
+                washSession == null ? null : washSession.getCompletedAt()
         );
     }
 
