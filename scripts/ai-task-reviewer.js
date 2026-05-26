@@ -128,8 +128,8 @@ async function main() {
 
     // Initialize Gemini API client
     console.log('📋 Initializing Gemini API client...');
-    const client = new GoogleGenerativeAI(apiKey);
-    const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Get linked issues from GitHub context
     const linkedIssues = getLinkedIssuesFromContext();
