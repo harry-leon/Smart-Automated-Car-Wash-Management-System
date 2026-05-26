@@ -1,440 +1,741 @@
-import { useEffect, useMemo, useState, type ElementType } from "react";
-import {
-  Calendar as CalIcon,
-  Car,
-  Check,
-  Droplets,
-  Gauge,
-  Shield,
-  Sparkles,
-  Star,
-  Wind,
-  Zap,
-} from "lucide-react";
-import {
-  fmtBookingMoney,
-  BookingStatus,
-  useAvailableServices,
-  useBookings,
-  useCurrentVehicles,
-} from "@/lib/booking-store";
-import { formatDateISO, useCarwashStore } from "@/lib/carwash-store";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { Textarea } from "@/components/ui/textarea";
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Loader2, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDisplayErrorMessage, getFieldErrorMessage } from "@/lib/api-errors";
+import {
+  BOOKING_TIME_SLOTS,
+  buildBookingSummary,
+  formatBookingCurrency,
+  getModeLabel,
+  getPaymentMethodLabel,
+  validateBookingDraft,
+} from "@/lib/booking-format";
+import {
+  useBookingAddons,
+  useBookingCombos,
+  useBookingPackages,
+  useCreateCustomerBooking,
+  useValidateBookingVoucher,
+} from "@/hooks/use-bookings";
+import { useCustomerVehicles } from "@/hooks/use-customer-vehicles";
+import {
+  EMPTY_BOOKING_DRAFT,
+  resetBookingDraft,
+  setLastCreatedBooking,
+  useBookingStore,
+} from "@/store/booking.store";
+import type { BookingDraft, PaymentMethod, VoucherValidationResult } from "@/types/booking.types";
 
-const ICONS: Record<string, ElementType> = {
-  Droplets,
-  Sparkles,
-  Wind,
-  Shield,
-  Star,
-  Car,
-  Gauge,
-  Zap,
-};
-const SLOTS = [
-  "08:00 AM",
-  "09:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "01:00 PM",
-  "02:00 PM",
-  "03:00 PM",
-  "04:00 PM",
-];
-const ACTIVE_STATUSES: BookingStatus[] = ["Pending", "Confirmed", "Checked-in"];
+const PAYMENT_METHODS: PaymentMethod[] = ["BANK_TRANSFER", "E_WALLET", "CASH_AT_COUNTER"];
 
-export function CustomerBookingForm({ onBooked }: { onBooked: () => void }) {
-  const { addBooking, bookings } = useBookings();
-  const { customers, currentCustomerId } = useCarwashStore();
-  const vehicles = useCurrentVehicles();
-  const services = useAvailableServices();
-  const [mounted, setMounted] = useState(false);
-  const [vehicleId, setVehicleId] = useState(vehicles[0]?.id ?? "");
-  const [serviceIds, setServiceIds] = useState<string[]>(services[0] ? [services[0].id] : []);
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [slot, setSlot] = useState<string>("09:00 AM");
-  const [notes, setNotes] = useState("");
+function getTomorrowDate() {
+  const next = new Date();
+  next.setDate(next.getDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
 
-  const vehicle = vehicles.find((item) => item.id === vehicleId) ?? vehicles[0];
-  const currentCustomer = customers.find((item) => item.id === currentCustomerId);
-  const isPlatinum = currentCustomer?.tier === "Platinum";
-  const selectedServices = services.filter((item) => serviceIds.includes(item.id));
-  const dateISO = date ? formatDateISO(date) : "";
-  const total = useMemo(
-    () => selectedServices.reduce((sum, service) => sum + service.price, 0),
-    [selectedServices],
-  );
-  const blockedSlots = useMemo(() => {
-    const counts = new Map<string, number>();
-    const platinumLoads = new Set<string>();
-    const blocked = new Set<string>();
+export function CustomerBookingForm() {
+  const draft = useBookingStore((state) => state.draft);
+  const updateDraft = useBookingStore((state) => state.updateDraft);
+  const lastCreatedBooking = useBookingStore((state) => state.lastCreatedBooking);
+  const vehiclesQuery = useCustomerVehicles();
+  const packagesQuery = useBookingPackages();
+  const addonsQuery = useBookingAddons();
+  const combosQuery = useBookingCombos();
+  const voucherMutation = useValidateBookingVoucher();
+  const createBookingMutation = useCreateCustomerBooking();
+  const [validatedVoucher, setValidatedVoucher] = useState<VoucherValidationResult | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
 
-    bookings
-      .filter((booking) => booking.dateISO === dateISO && ACTIVE_STATUSES.includes(booking.status))
-      .forEach((booking) => {
-        const timeSlot = booking.scheduledAt.split(" ").slice(-2).join(" ");
-        counts.set(timeSlot, (counts.get(timeSlot) ?? 0) + 1);
-        const bookingCustomer = customers.find((item) => item.id === booking.customerId);
-        if (bookingCustomer?.tier === "Platinum") {
-          platinumLoads.add(timeSlot);
-        }
-        if (vehicle && booking.vehiclePlate === vehicle.plate) {
-          blocked.add(timeSlot);
-        }
+  const isLoadingCatalog =
+    vehiclesQuery.isPending ||
+    packagesQuery.isPending ||
+    addonsQuery.isPending ||
+    combosQuery.isPending;
+  const catalogError =
+    vehiclesQuery.error ?? packagesQuery.error ?? addonsQuery.error ?? combosQuery.error ?? null;
+
+  const vehicles = vehiclesQuery.data?.items ?? [];
+  const packages = packagesQuery.data ?? [];
+  const addons = addonsQuery.data ?? [];
+  const combos = combosQuery.data ?? [];
+
+  useEffect(() => {
+    if (!draft.bookingDate) {
+      updateDraft({ bookingDate: getTomorrowDate() });
+    }
+  }, [draft.bookingDate, updateDraft]);
+
+  useEffect(() => {
+    if (!draft.vehicleId && vehicles.length > 0) {
+      updateDraft({
+        vehicleId: vehicles.find((item) => item.isPrimary)?.vehicleId ?? vehicles[0].vehicleId,
       });
-
-    for (const [timeSlot, count] of counts.entries()) {
-      if (count >= 3) blocked.add(timeSlot);
-      if (!isPlatinum && count >= 2 && !platinumLoads.has(timeSlot)) {
-        blocked.add(timeSlot);
-      }
     }
-
-    return blocked;
-  }, [bookings, customers, dateISO, isPlatinum, vehicle]);
-  const firstAvailableSlot = SLOTS.find((item) => !blockedSlots.has(item)) ?? "";
+  }, [draft.vehicleId, updateDraft, vehicles]);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (draft.mode === "PACKAGE" && !draft.packageId && packages.length > 0) {
+      updateDraft({ packageId: packages[0].packageId });
+    }
+  }, [draft.mode, draft.packageId, packages, updateDraft]);
 
   useEffect(() => {
-    if (slot && !blockedSlots.has(slot)) return;
-    if (firstAvailableSlot && slot !== firstAvailableSlot) {
-      setSlot(firstAvailableSlot);
+    if (draft.mode === "COMBO" && !draft.comboId && combos.length > 0) {
+      updateDraft({ comboId: combos[0].comboId });
     }
-  }, [blockedSlots, firstAvailableSlot, slot]);
+  }, [combos, draft.comboId, draft.mode, updateDraft]);
 
-  const toggleService = (id: string) =>
-    setServiceIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
+  const summary = useMemo(
+    () =>
+      buildBookingSummary(draft, {
+        packages,
+        addons,
+        combos,
+        voucher: validatedVoucher,
+      }),
+    [addons, combos, draft, packages, validatedVoucher],
+  );
 
-  const confirm = () => {
-    if (!vehicle || !date || !slot || serviceIds.length === 0) {
-      toast.error("Please complete all booking fields.");
+  const errors = useMemo(() => {
+    const validationSummary =
+      draft.voucherCode.trim().length > 0 && !validatedVoucher
+        ? null
+        : summary;
+
+    return validateBookingDraft(draft, validationSummary);
+  }, [draft, summary, validatedVoucher]);
+
+  const selectedPackageAddons =
+    draft.mode === "PACKAGE" && draft.packageId
+      ? addons.filter(
+          (addon) =>
+            addon.status === "ACTIVE" && addon.applicableToPackages.includes(draft.packageId),
+        )
+      : [];
+
+  const validateVoucher = async () => {
+    if (!draft.voucherCode.trim() || !summary) {
+      setValidatedVoucher(null);
       return;
     }
 
-    const dateLabel = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
     try {
-      const id = addBooking({
-        vehiclePlate: vehicle.plate,
-        vehicleName: vehicle.name,
-        vehicleType: vehicle.type,
-        services: selectedServices.map((item) => item.name),
-        totalPrice: total,
-        scheduledAt: `${dateLabel} ${slot}`,
-        dateISO,
-        status: "Pending",
-        notes: notes.trim() || undefined,
+      const result = await voucherMutation.mutateAsync({
+        voucherCode: draft.voucherCode.trim().toUpperCase(),
+        packageId: draft.mode === "PACKAGE" ? draft.packageId : undefined,
+        amount: summary.subtotal,
       });
-      toast.success(`Booking ${id} created and waiting for check-in.`);
-      onBooked();
+      setValidatedVoucher(result);
+      updateDraft({ voucherCode: result.voucherCode });
+      toast.success(`Voucher ${result.voucherCode} applied.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to create booking.");
+      setValidatedVoucher(null);
+      toast.error(getDisplayErrorMessage(error));
     }
   };
 
-  if (!mounted) {
+  const clearVoucher = () => {
+    setValidatedVoucher(null);
+    updateDraft({ voucherCode: "" });
+    voucherMutation.reset();
+  };
+
+  const handleSubmit = async () => {
+    setShowValidation(true);
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    try {
+      await createBookingMutation.mutateAsync(draft);
+      toast.success("Booking created successfully.");
+    } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
+    }
+  };
+
+  const updateMode = (mode: BookingDraft["mode"]) => {
+    setValidatedVoucher(null);
+    updateDraft({
+      mode,
+      packageId: mode === "PACKAGE" ? packages[0]?.packageId ?? "" : "",
+      comboId: mode === "COMBO" ? combos[0]?.comboId ?? "" : "",
+      addonIds: [],
+      voucherCode: "",
+    });
+  };
+
+  if (lastCreatedBooking) {
     return (
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card className="rounded-[1.5rem] border-border/50 bg-card/60 p-8 backdrop-blur-xl shadow-lg">
-            <h3 className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
-              Loading booking options
-            </h3>
-            <p className="text-sm font-medium text-muted-foreground">
-              Preparing available vehicles, services, and booking slots.
-            </p>
-          </Card>
-        </div>
-        <div className="lg:col-span-1">
-          <Card className="rounded-[1.5rem] border-border/50 bg-card/60 p-8 backdrop-blur-xl shadow-lg">
-            <h3 className="mb-2 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
-              Summary
-            </h3>
-            <p className="text-sm font-medium text-muted-foreground">
-              Loading current booking draft...
-            </p>
-          </Card>
-        </div>
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+        <Card className="border-emerald-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+          <CardHeader>
+            <div className="flex items-center gap-3 text-emerald-700">
+              <CheckCircle2 className="h-6 w-6" />
+              <CardTitle>Booking created</CardTitle>
+            </div>
+            <CardDescription>
+              The checkout completed with the real booking API. You can review the result immediately.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <dl className="grid gap-4 md:grid-cols-2">
+              <SummaryItem label="Booking ID" value={lastCreatedBooking.bookingId} />
+              <SummaryItem label="Confirmation" value={lastCreatedBooking.confirmationNumber} />
+              <SummaryItem label="Vehicle" value={lastCreatedBooking.vehiclePlate} />
+              <SummaryItem label="Service" value={lastCreatedBooking.packageName} />
+              <SummaryItem
+                label="Schedule"
+                value={`${lastCreatedBooking.bookingDate} ${lastCreatedBooking.bookingTime}`}
+              />
+              <SummaryItem
+                label="Payment"
+                value={`${getPaymentMethodLabel(lastCreatedBooking.paymentMethod)} / ${lastCreatedBooking.paymentStatus}`}
+              />
+              <SummaryItem
+                label="Final amount"
+                value={formatBookingCurrency(lastCreatedBooking.finalAmount)}
+              />
+              <SummaryItem label="Status" value={lastCreatedBooking.status} />
+            </dl>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild>
+                <Link href={`/customer/bookings/${lastCreatedBooking.bookingId}`}>View booking detail</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/customer/bookings">View booking list</Link>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setLastCreatedBooking(null);
+                  resetBookingDraft();
+                  setValidatedVoucher(null);
+                  setShowValidation(false);
+                  updateDraft({
+                    ...EMPTY_BOOKING_DRAFT,
+                    bookingDate: getTomorrowDate(),
+                    vehicleId:
+                      vehicles.find((item) => item.isPrimary)?.vehicleId ??
+                      vehicles[0]?.vehicleId ??
+                      "",
+                    packageId: packages[0]?.packageId ?? "",
+                  });
+                }}
+              >
+                Create another booking
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
+  if (isLoadingCatalog) {
+    return <BookingPageLoadingState />;
+  }
+
+  if (catalogError) {
+    return (
+      <BookingPageErrorState
+        title="Unable to load booking checkout"
+        description={getDisplayErrorMessage(catalogError)}
+        onRetry={() => {
+          void Promise.all([
+            vehiclesQuery.refetch(),
+            packagesQuery.refetch(),
+            addonsQuery.refetch(),
+            combosQuery.refetch(),
+          ]);
+        }}
+      />
+    );
+  }
+
+  if (vehicles.length === 0) {
+    return (
+      <BookingPageErrorState
+        title="No active vehicles found"
+        description="Add at least one customer vehicle before creating a booking."
+        actionHref="/customer/vehicles/add"
+        actionLabel="Add vehicle"
+      />
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      <div className="space-y-8 lg:col-span-2">
-        <Card className="rounded-[1.5rem] border-border/50 bg-card/60 p-8 backdrop-blur-xl shadow-lg transition-all hover:shadow-xl">
-          <h3 className="mb-6 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary">
-              1
-            </span>
-            Select Vehicle
-          </h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {vehicles.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setVehicleId(item.id)}
-                className={cn(
-                  "group flex items-center gap-4 rounded-[1.2rem] border-2 p-5 text-left transition-all duration-300",
-                  vehicleId === item.id
-                    ? "border-primary bg-primary/5 shadow-md shadow-primary/10 scale-[1.02]"
-                    : "border-border/60 bg-background/50 hover:border-primary/40 hover:bg-accent/40",
-                )}
-              >
-                <div
-                  className={cn(
-                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors",
-                    vehicleId === item.id
-                      ? "bg-primary text-primary-foreground shadow-inner"
-                      : "bg-muted text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary",
-                  )}
-                >
-                  <Car className="h-6 w-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div
-                    className={cn(
-                      "font-bold truncate",
-                      vehicleId === item.id ? "text-primary" : "text-foreground",
-                    )}
+    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.6fr,1fr]">
+        <div className="space-y-6">
+          <CheckoutSection step="1" title="Select vehicle">
+            <div className="grid gap-3 md:grid-cols-2">
+              {vehicles.map((vehicle) => {
+                const active = draft.vehicleId === vehicle.vehicleId;
+                return (
+                  <button
+                    key={vehicle.vehicleId}
+                    type="button"
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      active
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-200 bg-white hover:border-slate-400"
+                    }`}
+                    onClick={() => updateDraft({ vehicleId: vehicle.vehicleId })}
                   >
-                    {item.name}
-                  </div>
-                  <div className="text-xs font-semibold text-muted-foreground mt-1 truncate">
-                    {item.type} <span className="mx-1 opacity-50">/</span>{" "}
-                    <span className="font-mono bg-background px-1 rounded border border-border/50">
-                      {item.plate}
-                    </span>
-                  </div>
-                </div>
-                {vehicleId === item.id && (
-                  <Check className="h-5 w-5 text-primary shrink-0 drop-shadow-sm" />
-                )}
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        <Card className="rounded-[1.5rem] border-border/50 bg-card/60 p-8 backdrop-blur-xl shadow-lg transition-all hover:shadow-xl">
-          <h3 className="mb-6 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary">
-              4
-            </span>
-            Notes
-          </h3>
-          <Textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="Special instructions for staff..."
-            className="min-h-28 rounded-xl border-border/50 bg-background/50 text-sm shadow-sm"
-          />
-          <p className="mt-2 text-xs font-medium text-muted-foreground">
-            Inappropriate words are automatically masked as *** before the note is saved.
-          </p>
-        </Card>
-
-        <Card className="rounded-[1.5rem] border-border/50 bg-card/60 p-8 backdrop-blur-xl shadow-lg transition-all hover:shadow-xl">
-          <h3 className="mb-6 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary">
-              2
-            </span>
-            Choose Services
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => {
-              const Icon = ICONS[service.icon] ?? Sparkles;
-              const active = serviceIds.includes(service.id);
-              return (
-                <button
-                  key={service.id}
-                  type="button"
-                  onClick={() => toggleService(service.id)}
-                  className={cn(
-                    "group flex flex-col rounded-[1.2rem] border-2 p-5 text-left transition-all duration-300 relative overflow-hidden",
-                    active
-                      ? "border-primary bg-primary/5 shadow-md shadow-primary/10"
-                      : "border-border/60 bg-background/50 hover:border-primary/40 hover:bg-accent/40 hover:-translate-y-0.5",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 transition-opacity duration-300",
-                      active ? "opacity-100" : "group-hover:opacity-50",
-                    )}
-                  />
-                  <div className="relative z-10 flex flex-col items-start">
-                    <div
-                      className={cn(
-                        "mb-3 flex h-10 w-10 items-center justify-center rounded-xl shadow-inner transition-colors",
-                        active
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-primary/10 text-primary group-hover:bg-primary/20",
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
+                    <div className="text-sm font-semibold uppercase tracking-[0.2em]">
+                      {vehicle.plate}
                     </div>
-                    <div className={cn("font-bold", active ? "text-primary" : "text-foreground")}>
-                      {service.name}
+                    <div className="mt-2 text-lg font-bold">
+                      {vehicle.brand} {vehicle.model}
                     </div>
-                    <div className="mt-1 text-sm font-semibold text-muted-foreground">
-                      {fmtBookingMoney(service.price)}
+                    <div className={`mt-1 text-sm ${active ? "text-slate-200" : "text-slate-500"}`}>
+                      {vehicle.type} {vehicle.isPrimary ? "• Primary vehicle" : ""}
                     </div>
-                  </div>
-                  {active && <Check className="absolute top-5 right-5 h-4 w-4 text-primary" />}
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-
-        <Card className="rounded-[1.5rem] border-border/50 bg-card/60 p-8 backdrop-blur-xl shadow-lg transition-all hover:shadow-xl">
-          <h3 className="mb-6 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary">
-              3
-            </span>
-            Pick Date & Time
-          </h3>
-          <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-            <div className="flex justify-center rounded-[1.2rem] border border-border/50 bg-background/50 p-4 shadow-sm">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="w-full max-w-sm"
-                classNames={{
-                  day_selected:
-                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground shadow-sm",
-                  day_today: "bg-accent text-accent-foreground font-bold",
-                }}
-              />
+                  </button>
+                );
+              })}
             </div>
-            <div className="min-w-0 flex flex-col">
-              <div className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                <CalIcon className="h-4 w-4 text-primary" /> Available slots
-              </div>
-              <div className="grid grid-cols-2 gap-3 flex-1">
-                {SLOTS.map((item) => {
-                  const unavailable = blockedSlots.has(item);
+            <FieldError message={showValidation ? errors.vehicleId : null} />
+          </CheckoutSection>
+
+          <CheckoutSection step="2" title="Choose booking type">
+            <div className="grid gap-3 md:grid-cols-2">
+              {(["PACKAGE", "COMBO"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`rounded-2xl border p-4 text-left transition ${
+                    draft.mode === mode
+                      ? "border-sky-600 bg-sky-50"
+                      : "border-slate-200 bg-white hover:border-slate-400"
+                  } ${mode === "COMBO" && combos.length === 0 ? "cursor-not-allowed opacity-60" : ""}`}
+                  disabled={mode === "COMBO" && combos.length === 0}
+                  onClick={() => updateMode(mode)}
+                >
+                  <div className="text-base font-bold">{getModeLabel(mode)}</div>
+                  <div className="mt-1 text-sm text-slate-500">
+                    {mode === "PACKAGE"
+                      ? "Select one package and optional add-ons."
+                      : "Book directly against the available combo catalog."}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CheckoutSection>
+
+          <CheckoutSection
+            step="3"
+            title={draft.mode === "PACKAGE" ? "Select wash package" : "Select combo"}
+          >
+            <div className="grid gap-3">
+              {draft.mode === "PACKAGE"
+                ? packages.map((item) => (
+                    <button
+                      key={item.packageId}
+                      type="button"
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        draft.packageId === item.packageId
+                          ? "border-slate-900 bg-white shadow-md"
+                          : "border-slate-200 bg-white hover:border-slate-400"
+                      }`}
+                      onClick={() =>
+                        updateDraft({
+                          packageId: item.packageId,
+                          addonIds: [],
+                          voucherCode: "",
+                        })
+                      }
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <div className="text-lg font-bold text-slate-900">{item.name}</div>
+                          <div className="mt-1 text-sm text-slate-500">{item.duration} min</div>
+                        </div>
+                        <div className="text-base font-semibold text-slate-900">
+                          {formatBookingCurrency(item.basePrice)}
+                        </div>
+                      </div>
+                      <p className="mt-3 text-sm text-slate-600">{item.description}</p>
+                    </button>
+                  ))
+                : combos.map((item) => (
+                    <button
+                      key={item.comboId}
+                      type="button"
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        draft.comboId === item.comboId
+                          ? "border-slate-900 bg-white shadow-md"
+                          : "border-slate-200 bg-white hover:border-slate-400"
+                      }`}
+                      onClick={() => updateDraft({ comboId: item.comboId, voucherCode: "" })}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <div className="text-lg font-bold text-slate-900">{item.name}</div>
+                          <div className="mt-1 text-sm text-slate-500">
+                            {item.durationDays} days • max {item.maxServices} services
+                          </div>
+                        </div>
+                        <div className="text-base font-semibold text-slate-900">
+                          {formatBookingCurrency(item.basePrice)}
+                        </div>
+                      </div>
+                      <p className="mt-3 text-sm text-slate-600">{item.description}</p>
+                    </button>
+                  ))}
+            </div>
+            <FieldError
+              message={
+                showValidation
+                  ? draft.mode === "PACKAGE"
+                    ? errors.packageId
+                    : errors.comboId
+                  : null
+              }
+            />
+          </CheckoutSection>
+
+          <CheckoutSection step="4" title="Select add-ons">
+            {draft.mode === "COMBO" ? (
+              <p className="text-sm text-slate-500">
+                Add-ons are currently enabled for package bookings only in the mandatory-first checkout scope.
+              </p>
+            ) : selectedPackageAddons.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No active add-ons are available for the selected package.
+              </p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {selectedPackageAddons.map((addon) => {
+                  const active = draft.addonIds.includes(addon.addonId);
                   return (
                     <button
-                      key={item}
+                      key={addon.addonId}
                       type="button"
-                      disabled={unavailable}
-                      onClick={() => setSlot(item)}
-                      className={cn(
-                        "rounded-xl border-2 py-3 text-sm font-bold transition-all duration-300",
-                        unavailable
-                          ? "cursor-not-allowed border-border/50 bg-muted/50 text-muted-foreground/40 line-through"
-                          : slot === item
-                            ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-[1.02]"
-                            : "border-border/60 bg-background/50 text-foreground hover:border-primary/40 hover:bg-accent/40",
-                      )}
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        active
+                          ? "border-emerald-600 bg-emerald-50"
+                          : "border-slate-200 bg-white hover:border-slate-400"
+                      }`}
+                      onClick={() =>
+                        updateDraft({
+                          addonIds: active
+                            ? draft.addonIds.filter((addonId) => addonId !== addon.addonId)
+                            : [...draft.addonIds, addon.addonId],
+                          voucherCode: "",
+                        })
+                      }
                     >
-                      {item}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-semibold text-slate-900">{addon.name}</div>
+                        <div className="text-sm text-slate-700">
+                          {formatBookingCurrency(addon.price)}
+                        </div>
+                      </div>
+                      <div className="mt-1 text-sm text-slate-500">{addon.duration} min</div>
+                      <p className="mt-2 text-sm text-slate-600">{addon.description}</p>
                     </button>
                   );
                 })}
               </div>
-              {!firstAvailableSlot && (
-                <div className="mt-4 flex items-center gap-2 rounded-lg bg-rose-500/10 p-3 text-sm font-semibold text-rose-600 border border-rose-200/50">
-                  No valid slots remain for this vehicle on the selected date.
-                </div>
-              )}
-              {!isPlatinum && (
-                <div className="mt-4 rounded-lg border border-amber-200/60 bg-amber-500/10 p-3 text-xs font-semibold text-amber-700">
-                  One bay per slot is reserved for Platinum priority when not yet claimed.
-                </div>
-              )}
-            </div>
-          </div>
-        </Card>
-      </div>
+            )}
+          </CheckoutSection>
 
-      <div className="lg:col-span-1">
-        <Card className="sticky top-6 rounded-[1.5rem] border-border/50 bg-card/60 p-8 backdrop-blur-xl shadow-xl transition-all hover:shadow-2xl">
-          <h3 className="mb-6 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            Summary
-          </h3>
-          <div className="space-y-5 text-sm">
-            <div className="rounded-xl border border-border/50 bg-background/50 p-4 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                Customer
+          <CheckoutSection step="5" title="Choose schedule">
+            <div className="grid gap-4 xl:grid-cols-[220px,1fr]">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Booking date</label>
+                <input
+                  type="date"
+                  min={getTomorrowDate()}
+                  value={draft.bookingDate}
+                  onChange={(event) => updateDraft({ bookingDate: event.target.value })}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                />
+                <FieldError message={showValidation ? errors.bookingDate : null} />
               </div>
-              <div className="font-bold text-base text-foreground truncate">
-                {currentCustomer?.name ?? "Current customer"}
-              </div>
-              <div className="font-mono text-muted-foreground mt-0.5 text-xs">
-                {currentCustomer?.phone ?? "-"}
-              </div>
-            </div>
-            <div className="rounded-xl border border-border/50 bg-background/50 p-4 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                Vehicle
-              </div>
-              <div className="font-bold text-base text-foreground truncate">{vehicle?.name}</div>
-              <div className="font-mono text-primary mt-0.5 text-sm">{vehicle?.plate}</div>
-            </div>
-            <div className="rounded-xl border border-border/50 bg-background/50 p-4 shadow-sm">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                Scheduled
-              </div>
-              <div className="font-bold text-base text-foreground">
-                {date?.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </div>
-              <div className="font-bold text-primary mt-0.5">{slot}</div>
-            </div>
-            <div className="rounded-xl border border-border/50 bg-accent/20 p-4 shadow-sm">
-              <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 pb-2">
-                Services
-              </div>
-              {selectedServices.length === 0 && (
-                <div className="italic text-muted-foreground font-medium text-xs">
-                  None selected
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Booking time</label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {BOOKING_TIME_SLOTS.map((time) => (
+                    <button
+                      key={time}
+                      type="button"
+                      className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                        draft.bookingTime === time
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-300 bg-white hover:border-slate-500"
+                      }`}
+                      onClick={() => updateDraft({ bookingTime: time })}
+                    >
+                      {time}
+                    </button>
+                  ))}
                 </div>
-              )}
-              <div className="space-y-2">
-                {selectedServices.map((service) => (
-                  <div key={service.id} className="flex justify-between items-center text-sm">
-                    <span className="font-semibold text-foreground/90">{service.name}</span>
-                    <span className="font-bold text-muted-foreground">
-                      {fmtBookingMoney(service.price)}
-                    </span>
-                  </div>
-                ))}
+                <FieldError message={showValidation ? errors.bookingTime : null} />
               </div>
             </div>
-            <div className="flex justify-between items-end border-t border-border/50 pt-5 px-1 text-base">
-              <span className="font-bold text-foreground">Total</span>
-              <span className="text-2xl font-black text-primary tracking-tight">
-                {fmtBookingMoney(total)}
-              </span>
+          </CheckoutSection>
+
+          <CheckoutSection step="6" title="Validate voucher">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input
+                type="text"
+                value={draft.voucherCode}
+                onChange={(event) => {
+                  setValidatedVoucher(null);
+                  updateDraft({ voucherCode: event.target.value });
+                }}
+                placeholder="Enter voucher code"
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm uppercase"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void validateVoucher()}
+                disabled={!draft.voucherCode.trim() || voucherMutation.isPending || !summary}
+              >
+                {voucherMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Validate
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={clearVoucher}
+                disabled={!draft.voucherCode && !validatedVoucher}
+              >
+                Clear
+              </Button>
             </div>
-          </div>
-          <Button
-            className="mt-8 w-full rounded-xl h-12 font-bold shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:-translate-y-0.5"
-            size="lg"
-            onClick={confirm}
-            disabled={!vehicle || !date || !slot || serviceIds.length === 0 || !firstAvailableSlot}
-          >
-            Confirm Booking
-          </Button>
-        </Card>
+            <p className="text-sm text-slate-500">
+              Voucher validation uses the real contract with the current subtotal.
+            </p>
+            {validatedVoucher ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {validatedVoucher.voucherCode} applied. Discount{" "}
+                {formatBookingCurrency(validatedVoucher.discountAmount)}.
+              </div>
+            ) : null}
+            <FieldError
+              message={
+                showValidation
+                  ? errors.voucherCode
+                  : getFieldErrorMessage(voucherMutation.error?.errors, "voucherCode")
+              }
+            />
+          </CheckoutSection>
+
+          <CheckoutSection step="7" title="Choose payment and review">
+            <div className="grid gap-3 md:grid-cols-3">
+              {PAYMENT_METHODS.map((method) => {
+                const active = draft.paymentMethod === method;
+                return (
+                  <button
+                    key={method}
+                    type="button"
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      active
+                        ? "border-indigo-600 bg-indigo-50"
+                        : "border-slate-200 bg-white hover:border-slate-400"
+                    }`}
+                    onClick={() => updateDraft({ paymentMethod: method })}
+                  >
+                    <div className="font-semibold text-slate-900">
+                      {getPaymentMethodLabel(method)}
+                    </div>
+                    <div className="mt-1 text-sm text-slate-500">
+                      Demo checkout only. No real bank or wallet transaction is executed.
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <FieldError message={showValidation ? errors.paymentMethod : null} />
+            {createBookingMutation.isError ? (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {getDisplayErrorMessage(createBookingMutation.error)}
+              </div>
+            ) : null}
+            <Button
+              type="button"
+              className="w-full sm:w-auto"
+              onClick={() => void handleSubmit()}
+              disabled={createBookingMutation.isPending}
+            >
+              {createBookingMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Submit booking
+            </Button>
+          </CheckoutSection>
+        </div>
+
+        <div className="lg:sticky lg:top-6 lg:self-start">
+          <Card className="border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+            <CardHeader>
+              <CardTitle>Checkout review</CardTitle>
+              <CardDescription>
+                The summary reflects the actual API payload and validated voucher result.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {summary ? (
+                <>
+                  <SummaryItem label="Booking type" value={getModeLabel(summary.itemType)} />
+                  <SummaryItem label="Selected item" value={summary.itemName} />
+                  <SummaryItem
+                    label="Vehicle"
+                    value={vehicles.find((item) => item.vehicleId === draft.vehicleId)?.plate ?? "--"}
+                  />
+                  <SummaryItem
+                    label="Schedule"
+                    value={
+                      draft.bookingDate && draft.bookingTime
+                        ? `${draft.bookingDate} ${draft.bookingTime}`
+                        : "--"
+                    }
+                  />
+                  <SummaryItem label="Estimated duration" value={summary.estimatedDurationLabel} />
+                  <SummaryItem
+                    label="Base amount"
+                    value={formatBookingCurrency(summary.baseAmount)}
+                  />
+                  <SummaryItem label="Add-ons" value={formatBookingCurrency(summary.addonsTotal)} />
+                  <SummaryItem label="Subtotal" value={formatBookingCurrency(summary.subtotal)} />
+                  <SummaryItem
+                    label="Voucher discount"
+                    value={formatBookingCurrency(summary.discountAmount)}
+                  />
+                  <SummaryItem
+                    label="Payment method"
+                    value={
+                      draft.paymentMethod ? getPaymentMethodLabel(draft.paymentMethod) : "--"
+                    }
+                  />
+                  <SummaryItem
+                    label="Final amount"
+                    value={formatBookingCurrency(summary.finalAmount)}
+                    emphasize
+                  />
+                </>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  Complete the checkout steps to build a valid booking summary.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function CheckoutSection({
+  step,
+  title,
+  children,
+}: {
+  step: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+      <CardHeader>
+        <CardDescription>Step {step}</CardDescription>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">{children}</CardContent>
+    </Card>
+  );
+}
+
+function SummaryItem({
+  label,
+  value,
+  emphasize = false,
+}: {
+  label: string;
+  value: string;
+  emphasize?: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 text-sm last:border-b-0 last:pb-0">
+      <dt className="text-slate-500">{label}</dt>
+      <dd
+        className={`text-right ${
+          emphasize ? "text-base font-bold text-slate-900" : "font-medium text-slate-800"
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function FieldError({ message }: { message: string | null | undefined }) {
+  if (!message) {
+    return null;
+  }
+
+  return <p className="text-sm text-rose-600">{message}</p>;
+}
+
+function BookingPageLoadingState() {
+  return (
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="h-48 animate-pulse rounded-3xl bg-slate-100" />
+        <div className="h-48 animate-pulse rounded-3xl bg-slate-100" />
+        <div className="h-48 animate-pulse rounded-3xl bg-slate-100" />
+      </div>
+    </div>
+  );
+}
+
+function BookingPageErrorState({
+  title,
+  description,
+  onRetry,
+  actionHref,
+  actionLabel,
+}: {
+  title: string;
+  description: string;
+  onRetry?: () => void;
+  actionHref?: string;
+  actionLabel?: string;
+}) {
+  return (
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <Card className="mx-auto max-w-3xl border-slate-200 bg-white">
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-3">
+          {onRetry ? (
+            <Button type="button" variant="outline" onClick={onRetry}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          ) : null}
+          {actionHref && actionLabel ? (
+            <Button asChild>
+              <Link href={actionHref}>{actionLabel}</Link>
+            </Button>
+          ) : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }
