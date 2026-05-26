@@ -67,7 +67,6 @@ public class OperationsService {
         }
 
         WashSession session = washSessionRepository.save(new WashSession(booking, request.notes()));
-        bookingService.updateStatus(booking, BookingStatus.SESSION_CREATED);
         return new CreateWashSessionResponse(
                 session.getId(),
                 session.getStatus().name(),
