@@ -21,7 +21,7 @@ export type RegisterResponseData = {
 };
 
 export type LoginRequest = {
-  phone: string;
+  identifier: string;
   password: string;
   rememberMe?: boolean;
 };

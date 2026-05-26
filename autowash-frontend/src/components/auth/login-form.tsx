@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, LockKeyhole, Phone, Sparkles } from "lucide-react";
+import { ArrowRight, Loader2, LockKeyhole, Sparkles, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,15 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import { getAuthRedirectPath } from "@/lib/auth-session";
+import {
+  getLoginIdentifierValidationMessage,
+  normalizeLoginIdentifier,
+} from "@/lib/login-identifier";
 import { useCustomerLogin } from "@/hooks/use-auth";
-import { phonePattern } from "@/lib/validators";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
 
 export function LoginForm() {
   const router = useRouter();
   const loginMutation = useCustomerLogin();
-  const [phone, setPhone] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const user = useAuthStore((state) => state.user);
@@ -34,27 +37,25 @@ export function LoginForm() {
     }
   }, [accessToken, router, user]);
 
-  const phoneValidationMessage =
-    phone.length > 0 && !phonePattern.test(phone)
-      ? "Phone must use Vietnamese format 0XXXXXXXXX."
-      : null;
+  const normalizedIdentifier = normalizeLoginIdentifier(identifier);
+  const identifierValidationMessage = getLoginIdentifierValidationMessage(normalizedIdentifier);
   const passwordValidationMessage =
     password.length > 0 && password.length < 8
       ? "Password must have at least 8 characters."
       : null;
 
   const canSubmit =
-    phonePattern.test(phone) && password.length >= 8 && !loginMutation.isPending;
+    identifierValidationMessage === null && password.length >= 8 && !loginMutation.isPending;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!phonePattern.test(phone) || password.length < 8) {
+    if (identifierValidationMessage !== null || password.length < 8) {
       return;
     }
 
     await loginMutation.mutateAsync({
-      phone,
+      identifier: normalizedIdentifier,
       password,
       rememberMe,
     });
@@ -63,24 +64,24 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid gap-2">
-        <Label htmlFor="phone" className="text-sm font-semibold text-slate-700">
-          Phone
+        <Label htmlFor="identifier" className="text-sm font-semibold text-slate-700">
+          Phone number or email
         </Label>
         <div className="relative">
-          <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
-            id="phone"
-            autoComplete="tel"
-            inputMode="tel"
-            name="phone"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value.replace(/\s/g, ""))}
-            placeholder="0901234567"
+            id="identifier"
+            autoComplete="username"
+            inputMode="text"
+            name="identifier"
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value.replace(/\s/g, ""))}
+            placeholder="0901234567 or you@gmail.com"
             className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
           />
         </div>
-        {phoneValidationMessage ? (
-          <p className="text-sm text-rose-600">{phoneValidationMessage}</p>
+        {identifierValidationMessage ? (
+          <p className="text-sm text-rose-600">{identifierValidationMessage}</p>
         ) : null}
       </div>
 
@@ -119,7 +120,7 @@ export function LoginForm() {
       <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-blue-50 p-4 text-sm text-slate-600">
         <div className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
           <Sparkles className="h-4 w-4 text-sky-600" />
-          Sign in with your phone number
+          Sign in with your phone number or email
         </div>
         <div>Customer login redirects to the customer workspace automatically.</div>
       </div>

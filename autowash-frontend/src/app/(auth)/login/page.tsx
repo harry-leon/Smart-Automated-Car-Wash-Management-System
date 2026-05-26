@@ -3,23 +3,29 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { EyeOff, Loader2, Mail } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail } from "lucide-react";
 import { PublicAuthShell } from "@/components/auth/public-auth-shell";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import { getAuthRedirectPath } from "@/lib/auth-session";
+import {
+  getLoginIdentifierValidationMessage,
+  normalizeLoginIdentifier,
+} from "@/lib/login-identifier";
+import { getPasswordVisibilityState } from "@/lib/password-visibility";
 import { useCustomerLogin } from "@/hooks/use-auth";
-import { phonePattern } from "@/lib/validators";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
   const loginMutation = useCustomerLogin();
-  const [phone, setPhone] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const user = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
+  const passwordVisibility = getPasswordVisibilityState(isPasswordVisible);
 
   const errorMessage = useMemo(
     () => (loginMutation.error ? getDisplayErrorMessage(loginMutation.error) : null),
@@ -32,20 +38,19 @@ export default function LoginPage() {
     }
   }, [accessToken, router, user]);
 
-  const phoneValidationMessage =
-    phone.length > 0 && !phonePattern.test(phone)
-      ? "Phone must use Vietnamese format 0XXXXXXXXX."
-      : null;
+  const normalizedIdentifier = normalizeLoginIdentifier(identifier);
+  const identifierValidationMessage = getLoginIdentifierValidationMessage(normalizedIdentifier);
   const passwordValidationMessage =
     password.length > 0 && password.length < 8 ? "Password must have at least 8 characters." : null;
-  const canSubmit = phonePattern.test(phone) && password.length >= 8 && !loginMutation.isPending;
+  const canSubmit =
+    identifierValidationMessage === null && password.length >= 8 && !loginMutation.isPending;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!phonePattern.test(phone) || password.length < 8) return;
+    if (identifierValidationMessage !== null || password.length < 8) return;
 
     await loginMutation.mutateAsync({
-      phone,
+      identifier: normalizedIdentifier,
       password,
       rememberMe,
     });
@@ -66,24 +71,36 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit} className="space-y-7">
         <div className="space-y-7">
           <Field
-            label="Email"
+            label="Phone number or email"
             icon={<Mail className="h-5 w-5" />}
-            value={phone}
-            onChange={(event) => setPhone(event.target.value.replace(/\s/g, ""))}
-            placeholder=""
-            autoComplete="tel"
-            inputMode="tel"
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value.replace(/\s/g, ""))}
+            placeholder="0901234567 or you@gmail.com"
+            autoComplete="username"
+            inputMode="text"
           />
-          {phoneValidationMessage ? <p className="text-sm text-rose-200">{phoneValidationMessage}</p> : null}
+          {identifierValidationMessage ? (
+            <p className="text-sm text-rose-700">{identifierValidationMessage}</p>
+          ) : null}
 
           <div className="space-y-2">
             <Field
               label="Password"
-              icon={<EyeOff className="h-5 w-5" />}
+              icon={
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordVisible((current) => !current)}
+                  aria-label={passwordVisibility.actionLabel}
+                  aria-pressed={isPasswordVisible}
+                  className="rounded-full p-1 transition hover:bg-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60"
+                >
+                  {isPasswordVisible ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                </button>
+              }
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder=""
-              type="password"
+              type={passwordVisibility.inputType}
               autoComplete="current-password"
             />
             <div className="flex justify-end">
@@ -92,9 +109,7 @@ export default function LoginPage() {
               </Link>
             </div>
           </div>
-          {passwordValidationMessage ? (
-            <p className="text-sm text-rose-200">{passwordValidationMessage}</p>
-          ) : null}
+          {passwordValidationMessage ? <p className="text-sm text-rose-700">{passwordValidationMessage}</p> : null}
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -138,7 +153,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {errorMessage ? <p className="text-center text-sm text-rose-200">{errorMessage}</p> : null}
+        {errorMessage ? <p className="text-center text-sm text-rose-700">{errorMessage}</p> : null}
       </form>
     </PublicAuthShell>
   );

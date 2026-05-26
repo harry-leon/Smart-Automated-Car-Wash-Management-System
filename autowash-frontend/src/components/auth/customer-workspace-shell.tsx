@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { ArrowRightFromLine, Home, PackageSearch, CarFront, Gift, Bell } from "lucide-react";
 import { getAuthRedirectPath } from "@/lib/auth-session";
@@ -19,8 +19,17 @@ export function CustomerWorkspaceShell({
   const logoutMutation = useCustomerLogout();
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) {
+      return;
+    }
+
     if (!accessToken || !user) {
       router.replace("/login");
       return;
@@ -29,7 +38,11 @@ export function CustomerWorkspaceShell({
     if (user.role !== "CUSTOMER") {
       router.replace(getAuthRedirectPath(user.role));
     }
-  }, [accessToken, router, user]);
+  }, [accessToken, isMounted, router, user]);
+
+  if (!isMounted) {
+    return <main style={{ padding: 24 }}>Loading workspace...</main>;
+  }
 
   if (!accessToken || !user) {
     return <main style={{ padding: 24 }}>Redirecting to login...</main>;
