@@ -43,7 +43,6 @@ public class BookingService {
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
             BookingStatus.CONFIRMED,
-            BookingStatus.SESSION_CREATED,
             BookingStatus.CHECKED_IN,
             BookingStatus.IN_PROGRESS
     );
