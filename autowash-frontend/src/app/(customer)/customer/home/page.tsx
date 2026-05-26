@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth.store";
+import { WorkspacePage } from "@/components/workspace/workspace-page";
 import { cn } from "@/lib/utils";
 
 export default function CustomerHomePage() {
@@ -56,13 +56,8 @@ export default function CustomerHomePage() {
   ];
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-blue-100/60 blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto flex max-w-7xl flex-col gap-8">
+    <WorkspacePage className="space-y-8">
+      <div className="flex flex-col gap-8">
         <section className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-4">
@@ -161,7 +156,7 @@ export default function CustomerHomePage() {
           </Link>
         </section>
       </div>
-    </div>
+    </WorkspacePage>
   );
 }
 

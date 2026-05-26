@@ -1,4 +1,8 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { Card } from "@/components/ui/card";
+import { WorkspacePage } from "@/components/workspace/workspace-page";
+import { cn } from "@/lib/utils";
 
 type WorkspacePlaceholderProps = {
   workspace: "Customer" | "Staff" | "Admin" | "Auth";
@@ -9,6 +13,15 @@ type WorkspacePlaceholderProps = {
     href: string;
     label: string;
   }>;
+  badge?: string;
+  children?: ReactNode;
+};
+
+const WORKSPACE_BADGE: Record<WorkspacePlaceholderProps["workspace"], string> = {
+  Customer: "border-sky-200 bg-sky-50 text-sky-700",
+  Staff: "border-violet-200 bg-violet-50 text-violet-700",
+  Admin: "border-orange-200 bg-orange-50 text-orange-700",
+  Auth: "border-slate-200 bg-slate-50 text-slate-700",
 };
 
 export function WorkspacePlaceholder({
@@ -16,49 +29,60 @@ export function WorkspacePlaceholder({
   title,
   description,
   endpoints = [],
-  links = []
+  links = [],
+  badge,
+  children,
 }: WorkspacePlaceholderProps) {
   return (
-    <main style={{ padding: 24 }}>
-      <section
-        style={{
-          margin: "0 auto",
-          maxWidth: 960,
-          border: "1px solid #e5e7eb",
-          borderRadius: 12,
-          padding: 24,
-          background: "#fff"
-        }}
-      >
-        <p style={{ margin: 0, color: "#6b7280", fontSize: 12, textTransform: "uppercase" }}>
-          {workspace}
-        </p>
-        <h1 style={{ margin: "12px 0 8px", fontSize: 32 }}>{title}</h1>
-        <p style={{ margin: 0, color: "#374151" }}>{description}</p>
+    <WorkspacePage>
+      <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
+        <div className="border-b border-border/60 bg-muted/30 px-6 py-5">
+          <span
+            className={cn(
+              "inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+              WORKSPACE_BADGE[workspace],
+            )}
+          >
+            {badge ?? workspace}
+          </span>
+          <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground">{title}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
+        </div>
 
-        {endpoints.length > 0 ? (
-          <div style={{ marginTop: 20 }}>
-            <h2 style={{ margin: "0 0 8px", fontSize: 16 }}>API contract</h2>
-            <ul style={{ margin: 0, paddingLeft: 20, color: "#374151" }}>
-              {endpoints.map((endpoint) => (
-                <li key={endpoint}>
-                  <code>{endpoint}</code>
-                </li>
+        <div className="space-y-6 px-6 py-6">
+          {children}
+
+          {endpoints.length > 0 ? (
+            <section>
+              <h3 className="text-sm font-bold text-foreground">API contract</h3>
+              <ul className="mt-3 space-y-2">
+                {endpoints.map((endpoint) => (
+                  <li
+                    key={endpoint}
+                    className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 font-mono text-xs text-muted-foreground"
+                  >
+                    {endpoint}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {links.length > 0 ? (
+            <nav className="flex flex-wrap gap-2">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="inline-flex h-10 items-center rounded-full border border-border/60 bg-background px-4 text-sm font-semibold text-foreground transition hover:border-primary/30 hover:text-primary"
+                >
+                  {link.label}
+                </Link>
               ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {links.length > 0 ? (
-          <nav style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 20 }}>
-            {links.map((link) => (
-              <Link key={link.href} href={link.href}>
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        ) : null}
-      </section>
-    </main>
+            </nav>
+          ) : null}
+        </div>
+      </Card>
+    </WorkspacePage>
   );
 }
