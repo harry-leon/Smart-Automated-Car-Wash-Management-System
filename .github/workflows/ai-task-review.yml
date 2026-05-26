@@ -22,8 +22,57 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install Dependencies
+        run: npm install @google/generative-ai
+
+      - name: Get Linked Issues
+        id: linked_issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            console.log(`📌 PR #${pr.number}: ${pr.title}`);
+            
+            // Extract issue references from PR body
+            const issueRegex = /#(\d+)|closes?\s+#(\d+)|fix\s+#(\d+)/gi;
+            const matches = pr.body?.matchAll(issueRegex) || [];
+            const issueNumbers = new Set();
+            
+            for (const match of matches) {
+              const num = match[1] || match[2] || match[3];
+              if (num) issueNumbers.add(num);
+            }
+            
+            // Fetch issue details
+            const linkedIssues = [];
+            for (const issueNum of issueNumbers) {
+              try {
+                const issue = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNum),
+                });
+                
+                linkedIssues.push({
+                  number: issue.data.number,
+                  title: issue.data.title,
+                  description: issue.data.body || '',
+                  labels: issue.data.labels.map(l => l.name),
+                  status: issue.data.state,
+                });
+                
+                console.log(`  ✓ Found issue #${issueNum}: ${issue.data.title}`);
+              } catch (error) {
+                console.warn(`  ⚠️  Could not fetch issue #${issueNum}`);
+              }
+            }
+            
+            console.log(`\n📋 Total linked issues: ${linkedIssues.length}`);
+            core.setOutput('issues', JSON.stringify(linkedIssues));
+
       - name: Run Task Reviewer
         run: node scripts/ai-task-reviewer.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LINKED_ISSUES_JSON: ${{ steps.linked_issues.outputs.issues }}
