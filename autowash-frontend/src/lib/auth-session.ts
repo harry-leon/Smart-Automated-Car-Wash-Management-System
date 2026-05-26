@@ -1,8 +1,10 @@
 import type {
   AuthResponseData,
   AuthSession,
+  AuthUser,
   UserRole,
 } from "../types/auth.types.ts";
+import type { UserProfile } from "../types/profile.types.ts";
 
 const AUTH_REDIRECT_PATH: Record<UserRole, string> = {
   CUSTOMER: "/customer/home",
@@ -34,4 +36,31 @@ export function buildAuthSession(data: AuthResponseData): AuthSession {
       loyaltyBalance: data.loyaltyBalance ?? null,
     },
   };
+}
+
+export function applyProfileToAuthUser(user: AuthUser, profile: UserProfile): AuthUser {
+  return {
+    ...user,
+    userId: profile.userId,
+    fullName: profile.fullName,
+    phone: profile.phone,
+    email: profile.email,
+    role: profile.role,
+    status: profile.status,
+    tier: profile.tier,
+    loyaltyBalance: profile.loyaltyBalance,
+  };
+}
+
+export function isAuthUserInSyncWithProfile(user: AuthUser, profile: UserProfile) {
+  return (
+    user.userId === profile.userId &&
+    user.fullName === profile.fullName &&
+    user.phone === profile.phone &&
+    user.email === profile.email &&
+    user.role === profile.role &&
+    user.status === profile.status &&
+    user.tier === profile.tier &&
+    user.loyaltyBalance === profile.loyaltyBalance
+  );
 }

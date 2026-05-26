@@ -8,9 +8,14 @@ spring:
     enabled: true
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
+    generate-ddl: false
     hibernate:
       ddl-auto: none
     open-in-view: false
+    properties:
+      hibernate:
+        hbm2ddl:
+          auto: none
 autowash:
   auth:
     otp:

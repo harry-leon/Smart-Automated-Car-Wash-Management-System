@@ -175,12 +175,6 @@ export function RegisterForm() {
         ) : null}
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-sm text-slate-600">
-        <div className="font-semibold text-slate-900">New customer defaults</div>
-        <div>Account status: PENDING until OTP verification completes.</div>
-        <div>Tier: MEMBER, points: 0, workspace: Customer.</div>
-      </div>
-
       <Button
         type="submit"
         size="lg"

@@ -128,33 +128,37 @@ export default function CustomerHomePage() {
             </div>
           </Card>
 
-          <Card className="overflow-hidden border-slate-200/80 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+          <Link
+            href="/customer/profile"
+            className="group overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-[0_22px_60px_rgba(15,23,42,0.12)]"
+            aria-label="Open profile page"
+          >
             <div className="border-b border-slate-200/70 bg-slate-50/80 px-6 py-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <ShieldCheck className="h-4 w-4 text-sky-700" />
-                Current account state
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <ShieldCheck className="h-4 w-4 text-sky-700" />
+                  Current account state
+                </div>
+                <div className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 transition group-hover:bg-sky-100">
+                  Open profile
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </div>
               </div>
             </div>
             <div className="space-y-4 p-6">
               <InfoRow label="Status" value={user?.status ?? "ACTIVE"} />
               <InfoRow label="Role" value={user?.role ?? "CUSTOMER"} />
               <InfoRow label="Email" value={user?.email ?? "Not provided"} />
-              <InfoRow
-                label="Workspace"
-                value="Customer"
-                emphasized
-              />
+              <InfoRow label="Workspace" value="Customer" emphasized />
               <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-sm text-slate-600">
                 Live wash tracking and booking data are wired through the real backend contract.
               </div>
-              <Button asChild size="lg" className="h-12 w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800">
-                <Link href="/customer/bookings/new" className="inline-flex items-center justify-center gap-2">
-                  Continue main flow
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+              <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm font-semibold text-slate-700 transition group-hover:border-sky-200 group-hover:bg-sky-50">
+                <span>View and edit your profile details</span>
+                <ArrowRight className="h-4 w-4" />
+              </div>
             </div>
-          </Card>
+          </Link>
         </section>
       </div>
     </div>
