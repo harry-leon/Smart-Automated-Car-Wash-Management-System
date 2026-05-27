@@ -27,33 +27,38 @@ public class CustomerLoyaltyService {
     private final WashSessionRepository washSessionRepository;
     private final ServicePackageRepository servicePackageRepository;
     private final ServiceComboRepository serviceComboRepository;
+    private final LoyaltyService loyaltyService;
 
     public CustomerLoyaltyService(
             CurrentUserService currentUserService,
             WashSessionRepository washSessionRepository,
             ServicePackageRepository servicePackageRepository,
-            ServiceComboRepository serviceComboRepository
+            ServiceComboRepository serviceComboRepository,
+            LoyaltyService loyaltyService
     ) {
         this.currentUserService = currentUserService;
         this.washSessionRepository = washSessionRepository;
         this.servicePackageRepository = servicePackageRepository;
         this.serviceComboRepository = serviceComboRepository;
+        this.loyaltyService = loyaltyService;
     }
 
     @Transactional(readOnly = true)
     public LoyaltyAccountResponse getAccount() {
         AuthUser user = currentUserService.getCurrentUser();
         List<WashSession> completedSessions = loadCompletedSessions(user);
-        int currentPoints = completedSessions.stream()
+        int totalEarnedPoints = completedSessions.stream()
                 .mapToInt(session -> session.getAwardedLoyaltyPoints() == null ? 0 : session.getAwardedLoyaltyPoints())
                 .sum();
+        LoyaltyAccountResponse account = loyaltyService.getAccount(user.getId());
 
         return new LoyaltyAccountResponse(
                 user.getId().toString(),
-                user.getTier().name(),
-                currentPoints,
-                currentPoints,
-                completedSessions.size()
+                account.tier(),
+                account.currentPoints(),
+                totalEarnedPoints,
+                completedSessions.size(),
+                account.updatedAt()
         );
     }
 
