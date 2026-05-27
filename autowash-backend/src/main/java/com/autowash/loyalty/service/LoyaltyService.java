@@ -253,9 +253,11 @@ public class LoyaltyService {
 
     private LoyaltyAccountResponse toAccountResponse(LoyaltyAccount account) {
         return new LoyaltyAccountResponse(
-                account.getCustomer().getId(),
-                account.getCurrentPoints(),
+                account.getCustomer().getId().toString(),
                 account.getTier().name(),
+                account.getCurrentPoints(),
+                account.getCurrentPoints(),
+                0,
                 account.getUpdatedAt()
         );
     }

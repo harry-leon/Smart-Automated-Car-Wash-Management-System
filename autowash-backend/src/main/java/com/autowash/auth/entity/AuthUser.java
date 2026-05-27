@@ -186,4 +186,9 @@ public class AuthUser {
         this.tier = tier;
         this.updatedAt = Instant.now();
     }
+
+    public void markNotNewCustomer() {
+        this.isNewCustomer = false;
+        this.updatedAt = Instant.now();
+    }
 }

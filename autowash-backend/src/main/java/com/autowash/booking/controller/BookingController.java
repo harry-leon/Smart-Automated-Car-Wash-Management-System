@@ -53,7 +53,7 @@ public class BookingController {
     @Operation(summary = "List customer's bookings")
     public ApiResponse<List<BookingListItemResponse>> listBookings(
             @RequestParam(required = false)
-            @Pattern(regexp = "^(CONFIRMED|SESSION_CREATED|CANCELLED|CHECKED_IN|IN_PROGRESS|COMPLETED)$", message = "Status must be a valid booking status")
+            @Pattern(regexp = "^(CONFIRMED|CANCELLED|CHECKED_IN|IN_PROGRESS|COMPLETED)$", message = "Status must be a valid booking status")
             String status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,

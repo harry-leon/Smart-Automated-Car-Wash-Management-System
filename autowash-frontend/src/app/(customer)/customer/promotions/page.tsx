@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { CustomerPromotionsPageContent } from "@/components/customer-loyalty/customer-promotions-page";
 
 export default function CustomerPromotionsPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Customer"
-      title="Promotions"
-      description="Customer promotion list shell."
-      endpoints={["GET /promotions/active"]}
-    />
-  );
+  return <CustomerPromotionsPageContent />;
 }

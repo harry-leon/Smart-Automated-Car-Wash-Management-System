@@ -51,6 +51,7 @@ class OperationsControllerIntegrationTest {
         CustomerBooking booking = createConfirmedBooking("OPS_BK_001", "0901777001", 270000);
 
         String sessionId = createSession(booking.getId());
+        assertBookingStatus(booking.getId(), "CONFIRMED");
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
                         .with(user("staff").roles("STAFF")))
@@ -58,6 +59,7 @@ class OperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.sessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.status").value("QUEUED"))
                 .andExpect(jsonPath("$.data.queuedAt").exists());
+        assertBookingStatus(booking.getId(), "CONFIRMED");
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
                         .with(user("staff").roles("STAFF")))
@@ -66,12 +68,13 @@ class OperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.fee.amount").value(270000))
                 .andExpect(jsonPath("$.data.fee.currency").value("VND"))
                 .andExpect(jsonPath("$.data.projectedLoyaltyPoints").value(27));
-        customerBookingRepository.flush();
+        assertBookingStatus(booking.getId(), "CHECKED_IN");
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
                         .with(user("staff").roles("STAFF")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.data.startedAt").exists());
+        assertBookingStatus(booking.getId(), "IN_PROGRESS");
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/complete", sessionId)
                         .with(user("staff").roles("STAFF")))
@@ -80,8 +83,7 @@ class OperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.completedAt").exists())
                 .andExpect(jsonPath("$.data.awardedLoyaltyPoints").value(27));
 
-        CustomerBooking completedBooking = customerBookingRepository.findById(booking.getId()).orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(completedBooking.getStatus().name()).isEqualTo("COMPLETED");
+        assertBookingStatus(booking.getId(), "COMPLETED");
     }
 
     @Test
@@ -155,6 +157,12 @@ class OperationsControllerIntegrationTest {
                 finalAmount,
                 30
         ));
+    }
+
+    private void assertBookingStatus(String bookingId, String status) {
+        customerBookingRepository.flush();
+        CustomerBooking booking = customerBookingRepository.findById(bookingId).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(booking.getStatus().name()).isEqualTo(status);
     }
 
     private JsonNode readJson(MvcResult result) throws Exception {

@@ -2,7 +2,6 @@ package com.autowash.loyalty.controller;
 
 import com.autowash.loyalty.dto.EarnPointsRequest;
 import com.autowash.loyalty.dto.EarnPointsResponse;
-import com.autowash.loyalty.dto.LoyaltyAccountResponse;
 import com.autowash.loyalty.dto.PointTransactionResponse;
 import com.autowash.loyalty.dto.RedeemPointsRequest;
 import com.autowash.loyalty.dto.RedeemPointsResponse;
@@ -40,16 +39,6 @@ public class LoyaltyController {
     public LoyaltyController(LoyaltyService loyaltyService, CurrentUserService currentUserService) {
         this.loyaltyService = loyaltyService;
         this.currentUserService = currentUserService;
-    }
-
-    @GetMapping("/account")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    @Operation(summary = "Get current customer's loyalty account")
-    public ApiResponse<LoyaltyAccountResponse> getAccount() {
-        return ApiResponse.ok(
-                "Loyalty account retrieved",
-                loyaltyService.getAccount(currentUserService.getCurrentUser().getId())
-        );
     }
 
     @PostMapping("/earn")

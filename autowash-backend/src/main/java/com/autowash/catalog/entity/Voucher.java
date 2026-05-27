@@ -34,6 +34,9 @@ public class Voucher {
     @Column(name = "new_customer_only", nullable = false)
     private boolean newCustomerOnly;
 
+    @Column(name = "target_tiers_csv", length = 100)
+    private String targetTiersCsv;
+
     protected Voucher() {
     }
 
@@ -44,4 +47,5 @@ public class Voucher {
     public Instant getExpiresAt() { return expiresAt; }
     public boolean isActive() { return active; }
     public boolean isNewCustomerOnly() { return newCustomerOnly; }
+    public String getTargetTiersCsv() { return targetTiersCsv; }
 }

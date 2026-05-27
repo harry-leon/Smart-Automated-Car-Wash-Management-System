@@ -14,6 +14,7 @@ import com.autowash.operation.dto.StartWashSessionResponse;
 import com.autowash.operation.entity.WashSession;
 import com.autowash.operation.entity.WashSessionStatus;
 import com.autowash.operation.repository.WashSessionRepository;
+import com.autowash.auth.entity.AuthUser;
 import com.autowash.shared.exception.ApiException;
 import java.time.Instant;
 import java.util.Set;
@@ -69,7 +70,6 @@ public class OperationsService {
         }
 
         WashSession session = washSessionRepository.save(new WashSession(booking, request.notes()));
-        bookingService.updateStatus(booking, BookingStatus.SESSION_CREATED);
         return new CreateWashSessionResponse(
                 session.getId(),
                 session.getStatus().name(),
@@ -125,12 +125,19 @@ public class OperationsService {
                 sessionId
         );
         bookingService.updateStatus(session.getBooking(), BookingStatus.COMPLETED);
+        markCustomerAsNotNew(session.getBooking().getCustomer());
         return new CompleteWashSessionResponse(
                 session.getId(),
                 session.getStatus().name(),
                 session.getCompletedAt(),
                 earnResult.pointsAwarded()
         );
+    }
+
+    private void markCustomerAsNotNew(AuthUser customer) {
+        if (customer.isNewCustomer()) {
+            customer.markNotNewCustomer();
+        }
     }
 
     private WashSession requireSession(UUID sessionId) {
