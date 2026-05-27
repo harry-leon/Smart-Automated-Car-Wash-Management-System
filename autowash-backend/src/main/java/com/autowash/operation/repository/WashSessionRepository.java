@@ -33,4 +33,7 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
 
     @EntityGraph(attributePaths = {"booking"})
     Optional<WashSession> findFirstByBookingIdOrderByCompletedAtDesc(String bookingId);
+
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle"})
+    java.util.List<WashSession> findAllByOrderByCreatedAtDesc();
 }

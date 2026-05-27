@@ -1,5 +1,5 @@
-import { StaffCheckInView } from "@/components/workspace/staff-check-in-view";
+import { StaffOperationsFlow } from "@/components/staff-operations/staff-operations-flow";
 
 export default function StaffCheckInPage() {
-  return <StaffCheckInView />;
+  return <StaffOperationsFlow mode="check-in" />;
 }

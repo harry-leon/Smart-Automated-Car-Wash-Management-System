@@ -1,5 +1,5 @@
-import { StaffOperationsBoard } from "@/components/workspace/staff-operations-board";
+import { StaffOperationsFlow } from "@/components/staff-operations/staff-operations-flow";
 
 export default function StaffOperationsPage() {
-  return <StaffOperationsBoard />;
+  return <StaffOperationsFlow mode="board" />;
 }

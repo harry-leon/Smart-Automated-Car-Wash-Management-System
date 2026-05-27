@@ -53,6 +53,14 @@ class OperationsControllerIntegrationTest {
         String sessionId = createSession(booking.getId());
         assertBookingStatus(booking.getId(), "CONFIRMED");
 
+        mockMvc.perform(get("/api/v1/operations/queue")
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.summary.total").exists())
+                .andExpect(jsonPath("$.data.columns[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.data.columns[0].sessions[0].sessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.columns[0].sessions[0].bookingId").value(booking.getId()));
+
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
                         .with(user("staff").roles("STAFF")))
                 .andExpect(status().isOk())
