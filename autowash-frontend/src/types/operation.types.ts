@@ -21,6 +21,9 @@ export type OperationsQueueSession = {
   customerPhone: string;
   vehiclePlate: string;
   packageId?: string | null;
+  servicePackage?: string | null;
+  assignedStaffId?: string | null;
+  assignedStaffName?: string | null;
   status: WashSessionStatus;
   bookingDate: string;
   bookingTime: string;

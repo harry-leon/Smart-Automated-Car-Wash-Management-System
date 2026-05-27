@@ -94,6 +94,7 @@ public class OperationsService {
                 ));
 
         List<OperationsQueueResponse.QueueColumn> columns = List.of(
+                // QUEUED -> Pending (pre-assignment state, treated as not yet actionable)
                 column("PENDING", "Pending", cardsByStatus, WashSessionStatus.PENDING, WashSessionStatus.QUEUED),
                 column(WashSessionStatus.CHECKED_IN, "Checked-In", cardsByStatus),
                 column(WashSessionStatus.IN_PROGRESS, "In Progress", cardsByStatus),
