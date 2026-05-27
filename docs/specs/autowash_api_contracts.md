@@ -2037,7 +2037,8 @@ Or with response:
 
 **Query Parameters:**
 - `page=1&limit=20`
-- `tier=SILVER,GOLD` (optional)
+
+Customer tier is resolved from the authenticated customer token; clients do not pass another customer's tier.
 
 **Response (200 OK):**
 ```json
@@ -2054,10 +2055,12 @@ Or with response:
       "discountValue": 20,
       "startDate": "2026-06-01T00:00:00Z",
       "endDate": "2026-08-31T23:59:59Z",
-      "targetingMode": "ALL_MEMBERS",
-      "applicableTiers": null,
+      "targetingMode": "ALL_TIERS",
+      "applicableTiers": ["MEMBER", "SILVER", "GOLD", "PLATINUM"],
+      "maxUsagePerCustomer": 1,
       "status": "ACTIVE",
-      "banner": "https://..."
+      "createdAt": "2026-05-23T10:30:00Z",
+      "updatedAt": "2026-05-23T10:30:00Z"
     }
   ],
   "pagination": {
@@ -2611,7 +2614,10 @@ Or with response:
   "discountValue": 20,
   "startDate": "2026-06-01T00:00:00Z",
   "endDate": "2026-08-31T23:59:59Z",
-  "targetingMode": "ALL_MEMBERS"
+  "targetingMode": "ALL_TIERS",
+  "applicableTiers": null,
+  "maxUsagePerCustomer": 1,
+  "status": "ACTIVE"
 }
 ```
 
@@ -2624,11 +2630,31 @@ Or with response:
   "data": {
     "promotionId": "promo_001",
     "name": "Summer Sale",
+    "description": "20% off all services",
+    "discountType": "PERCENT",
+    "discountValue": 20,
+    "startDate": "2026-06-01T00:00:00Z",
+    "endDate": "2026-08-31T23:59:59Z",
+    "targetingMode": "ALL_TIERS",
+    "applicableTiers": ["MEMBER", "SILVER", "GOLD", "PLATINUM"],
+    "maxUsagePerCustomer": 1,
     "status": "ACTIVE",
-    "createdAt": "2026-05-23T10:30:00Z"
+    "createdAt": "2026-05-23T10:30:00Z",
+    "updatedAt": "2026-05-23T10:30:00Z"
   }
 }
 ```
+
+**Admin promotion endpoints:**
+- `GET /api/v1/admin/promotions?page=1&limit=20` - List all promotions for admin.
+- `GET /api/v1/admin/promotions/{promotionId}` - Get promotion by id.
+- `PUT /api/v1/admin/promotions/{promotionId}` - Update promotion with the same request shape as create.
+- `DELETE /api/v1/admin/promotions/{promotionId}` - Deactivate promotion by setting `status=INACTIVE`.
+
+**Validation:**
+- `startDate <= endDate`
+- `discountType=PERCENT` requires `discountValue` between 1 and 100
+- `targetingMode=SELECTED_TIERS` requires at least one `applicableTiers` value from `MEMBER`, `SILVER`, `GOLD`, `PLATINUM`
 
 ---
 
