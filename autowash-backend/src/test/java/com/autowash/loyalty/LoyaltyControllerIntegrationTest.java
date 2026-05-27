@@ -97,6 +97,15 @@ class LoyaltyControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
                 .andExpect(jsonPath("$.data.newBalance").value(10));
 
+        mockMvc.perform(post("/api/v1/loyalty/redeem")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                { "pointsToRedeem": 201, "referenceId": "LOY_CTL_001" }
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value("Maximum redemption is 200 points"));
+
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/loyalty/account']").exists())

@@ -109,6 +109,10 @@ class LoyaltyServiceTest {
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Minimum redemption is 50 points");
 
+        assertThatThrownBy(() -> loyaltyService.redeemPoints(data.customer().getId(), 201, null))
+                .isInstanceOf(ApiException.class)
+                .hasMessage("Maximum redemption is 200 points");
+
         assertThatThrownBy(() -> loyaltyService.redeemPoints(data.customer().getId(), 50, null))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Insufficient points: have 0, need 50");
