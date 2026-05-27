@@ -182,6 +182,11 @@ public class AuthUser {
         this.updatedAt = Instant.now();
     }
 
+    public void updateTier(LoyaltyTier tier) {
+        this.tier = tier;
+        this.updatedAt = Instant.now();
+    }
+
     public void markNotNewCustomer() {
         this.isNewCustomer = false;
         this.updatedAt = Instant.now();

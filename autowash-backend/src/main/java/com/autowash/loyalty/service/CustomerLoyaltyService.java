@@ -8,6 +8,7 @@ import com.autowash.catalog.repository.ServiceComboRepository;
 import com.autowash.catalog.repository.ServicePackageRepository;
 import com.autowash.loyalty.dto.LoyaltyAccountResponse;
 import com.autowash.loyalty.dto.LoyaltyTransactionResponse;
+import com.autowash.loyalty.dto.PointTransactionResponse;
 import com.autowash.loyalty.dto.WashHistoryItemResponse;
 import com.autowash.operation.entity.WashSession;
 import com.autowash.operation.entity.WashSessionStatus;
@@ -15,6 +16,8 @@ import com.autowash.operation.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.user.service.CurrentUserService;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -27,50 +30,58 @@ public class CustomerLoyaltyService {
     private final WashSessionRepository washSessionRepository;
     private final ServicePackageRepository servicePackageRepository;
     private final ServiceComboRepository serviceComboRepository;
+    private final LoyaltyService loyaltyService;
 
     public CustomerLoyaltyService(
             CurrentUserService currentUserService,
             WashSessionRepository washSessionRepository,
             ServicePackageRepository servicePackageRepository,
-            ServiceComboRepository serviceComboRepository
+            ServiceComboRepository serviceComboRepository,
+            LoyaltyService loyaltyService
     ) {
         this.currentUserService = currentUserService;
         this.washSessionRepository = washSessionRepository;
         this.servicePackageRepository = servicePackageRepository;
         this.serviceComboRepository = serviceComboRepository;
+        this.loyaltyService = loyaltyService;
     }
 
     @Transactional(readOnly = true)
     public LoyaltyAccountResponse getAccount() {
         AuthUser user = currentUserService.getCurrentUser();
         List<WashSession> completedSessions = loadCompletedSessions(user);
-        int currentPoints = completedSessions.stream()
+        int totalEarnedPoints = completedSessions.stream()
                 .mapToInt(session -> session.getAwardedLoyaltyPoints() == null ? 0 : session.getAwardedLoyaltyPoints())
                 .sum();
+        LoyaltyAccountResponse account = loyaltyService.getAccount(user.getId());
 
         return new LoyaltyAccountResponse(
                 user.getId().toString(),
-                user.getTier().name(),
-                currentPoints,
-                currentPoints,
-                completedSessions.size()
+                account.tier(),
+                account.currentPoints(),
+                totalEarnedPoints,
+                completedSessions.size(),
+                account.updatedAt()
         );
     }
 
     @Transactional(readOnly = true)
     public LoyaltyTransactionPage listTransactions(int page, int limit) {
         AuthUser user = currentUserService.getCurrentUser();
-        Page<WashSession> sessions = washSessionRepository.findByBookingCustomerAndStatusOrderByCompletedAtDesc(
-                user,
-                WashSessionStatus.COMPLETED,
-                PageRequest.of(Math.max(page - 1, 0), limit)
+        LoyaltyService.TransactionPage transactionPage = loyaltyService.getTransactionHistory(
+                user.getId(),
+                null,
+                null,
+                null,
+                page,
+                limit
         );
 
-        List<LoyaltyTransactionResponse> items = sessions.getContent().stream()
+        List<LoyaltyTransactionResponse> items = transactionPage.items().stream()
                 .map(this::toTransaction)
                 .toList();
 
-        return new LoyaltyTransactionPage(items, toPagination(sessions));
+        return new LoyaltyTransactionPage(items, transactionPage.pagination());
     }
 
     @Transactional(readOnly = true)
@@ -100,18 +111,30 @@ public class CustomerLoyaltyService {
         return washSessionRepository.findByBookingCustomerAndStatusOrderByCompletedAtDesc(user, WashSessionStatus.COMPLETED);
     }
 
-    private LoyaltyTransactionResponse toTransaction(WashSession session) {
-        CustomerBooking booking = session.getBooking();
-        int points = session.getAwardedLoyaltyPoints() == null ? 0 : session.getAwardedLoyaltyPoints();
+    private LoyaltyTransactionResponse toTransaction(PointTransactionResponse transaction) {
+        Optional<WashSession> session = findReferencedSession(transaction.referenceId());
+        String sessionId = session.map(value -> value.getId().toString()).orElse(null);
+        String bookingId = session.map(value -> value.getBooking().getId()).orElse(transaction.referenceId());
         return new LoyaltyTransactionResponse(
-                "LOYALTY_" + session.getId(),
-                session.getId().toString(),
-                booking.getId(),
-                "EARN",
-                points,
-                "Points earned from completed wash " + booking.getId(),
-                session.getCompletedAt()
+                transaction.transactionId().toString(),
+                sessionId,
+                bookingId,
+                transaction.type(),
+                transaction.points(),
+                transaction.reason(),
+                transaction.createdAt()
         );
+    }
+
+    private Optional<WashSession> findReferencedSession(String referenceId) {
+        if (referenceId == null || referenceId.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return washSessionRepository.findWithBookingById(UUID.fromString(referenceId));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
     }
 
     private WashHistoryItemResponse toWashHistoryItem(WashSession session) {
