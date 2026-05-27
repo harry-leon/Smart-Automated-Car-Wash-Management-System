@@ -10,6 +10,10 @@ export default function StaffSessionPage({ params }: { params: { id: string } })
         "POST /operations/wash-sessions/:sessionId/start",
         "POST /operations/wash-sessions/:sessionId/complete"
       ]}
+      links={[
+        { href: "/staff/operations", label: "Back to operations" },
+        { href: "/staff/check-in", label: "Check in another vehicle" }
+      ]}
     />
   );
 }
