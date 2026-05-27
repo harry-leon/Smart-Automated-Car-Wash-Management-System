@@ -1367,7 +1367,7 @@ Or with response:
     {
       "bookingId": "BK_20260523_001",
       "vehiclePlate": "30H-123456",
-      "packageName": "Basic Wash",
+      "servicePackageName": "Basic Wash",
       "bookingDate": "2026-06-10",
       "bookingTime": "14:00",
       "finalAmount": 270000,
@@ -2271,17 +2271,20 @@ Customer tier is resolved from the authenticated customer token; clients do not 
     {
       "bookingId": "BK_20260523_001",
       "confirmationNumber": "BK_20260523_001",
+      "customerId": "user_123",
       "customerName": "Nguyễn Văn A",
       "customerPhone": "0901234567",
       "vehiclePlate": "30H-123456",
+      "servicePackageId": "pkg_001",
       "packageName": "Basic Wash",
       "bookingDate": "2026-06-10",
       "bookingTime": "14:00",
       "finalAmount": 270000,
       "paymentMethod": "E_WALLET",
+      "paymentStatus": "CONFIRMED",
       "status": "CONFIRMED",
+      "sessionId": null,
       "washStatus": null,
-      "staffName": null,
       "createdAt": "2026-05-23T10:30:00Z"
     }
   ],
@@ -2456,20 +2459,22 @@ Customer tier is resolved from the authenticated customer token; clients do not 
       "phone": "0901234567",
       "email": "nguyenvana@example.com",
       "status": "ACTIVE",
+      "tier": "SILVER",
       "registeredAt": "2026-01-15T10:30:00Z"
     },
     "loyalty": {
-      "currentTier": "SILVER",
-      "totalPoints": 2500,
-      "availableBalance": 1250,
-      "nextTierThreshold": 5000
+      "currentPoints": 1250,
+      "tier": "SILVER",
+      "updatedAt": "2026-05-20T11:15:00Z"
     },
-    "stats": {
+    "summary": {
       "totalBookings": 5,
       "completedBookings": 4,
       "cancelledBookings": 1,
+      "totalWashSessions": 4,
       "totalSpent": 1350000,
-      "averageOrderValue": 270000,
+      "totalPointsEarned": 135,
+      "totalPointsSpent": 50,
       "lastBookingDate": "2026-05-20T11:15:00Z",
       "lastBookingAmount": 350000
     }
@@ -2505,7 +2510,92 @@ Customer tier is resolved from the authenticated customer token; clients do not 
 
 ---
 
-### 12.8 PUT /admin/customers/{customerId}/status
+### 12.8 GET /admin/customers/{customerId}/wash-sessions
+
+**Get customer's completed wash sessions**
+
+**Query Parameters:**
+- `page=1&limit=20`
+- `dateFrom=2026-01-01T00:00:00Z` (optional)
+- `dateTo=2026-12-31T23:59:59Z` (optional)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Customer wash sessions retrieved",
+  "data": [
+    {
+      "sessionId": "81e6f022-c58f-42fe-8ae2-d1eb512bd8ad",
+      "bookingId": "BK_20260523_001",
+      "vehiclePlate": "30H-123456",
+      "servicePackage": { "id": "pkg_001", "name": "Basic Wash" },
+      "status": "COMPLETED",
+      "bookingDate": "2026-06-10",
+      "bookingTime": "14:00",
+      "startedAt": "2026-06-10T07:15:00Z",
+      "completedAt": "2026-06-10T07:45:00Z",
+      "fee": { "amount": 270000, "currency": "VND" },
+      "pointsAwarded": 27
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 4,
+    "totalPages": 1,
+    "hasMore": false
+  }
+}
+```
+
+Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/wash-history`.
+
+---
+
+### 12.9 GET /admin/customers/{customerId}/point-transactions
+
+**Get customer's loyalty point transactions**
+
+**Query Parameters:**
+- `page=1&limit=20`
+- `type=EARN` (optional; valid values: `EARN`, `REDEEM`, `TIER_UPGRADE`, `ADJUST`, `EXPIRE`)
+- `dateFrom=2026-01-01T00:00:00Z` (optional)
+- `dateTo=2026-12-31T23:59:59Z` (optional)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Customer point transactions retrieved",
+  "data": [
+    {
+      "transactionId": "7b4be8cf-bab0-4073-8922-166ff2cf64b1",
+      "type": "EARN",
+      "points": 27,
+      "balanceAfter": 27,
+      "reason": "Wash completed",
+      "referenceId": "81e6f022-c58f-42fe-8ae2-d1eb512bd8ad",
+      "createdAt": "2026-06-10T07:45:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "totalPages": 1,
+    "hasMore": false
+  }
+}
+```
+
+Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/point-history`.
+
+---
+
+### 12.10 PUT /admin/customers/{customerId}/status
 
 **Update customer status (block/suspend)**
 
