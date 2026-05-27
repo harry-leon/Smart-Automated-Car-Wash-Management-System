@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { StaffOperationsFlow } from "@/components/staff-operations/staff-operations-flow";
 
 export default function StaffCheckInPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Staff"
-      title="Check-in"
-      description="License plate check-in shell for staff wash session intake."
-      endpoints={["POST /operations/wash-sessions/:sessionId/check-in"]}
-    />
-  );
+  return <StaffOperationsFlow mode="check-in" />;
 }

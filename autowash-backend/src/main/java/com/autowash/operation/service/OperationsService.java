@@ -9,6 +9,7 @@ import com.autowash.operation.dto.CheckInWashSessionResponse;
 import com.autowash.operation.dto.CompleteWashSessionResponse;
 import com.autowash.operation.dto.CreateWashSessionRequest;
 import com.autowash.operation.dto.CreateWashSessionResponse;
+import com.autowash.operation.dto.OperationsQueueResponse;
 import com.autowash.operation.dto.QueueWashSessionResponse;
 import com.autowash.operation.dto.StartWashSessionResponse;
 import com.autowash.operation.entity.WashSession;
@@ -17,8 +18,13 @@ import com.autowash.operation.repository.WashSessionRepository;
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.shared.exception.ApiException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -75,6 +81,38 @@ public class OperationsService {
                 session.getStatus().name(),
                 booking.getId(),
                 session.getCreatedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public OperationsQueueResponse getQueue() {
+        List<WashSession> sessions = washSessionRepository.findAllByOrderByCreatedAtDesc();
+        Map<WashSessionStatus, List<OperationsQueueResponse.WashSessionCard>> cardsByStatus = sessions.stream()
+                .map(this::toQueueCard)
+                .collect(Collectors.groupingBy(
+                        card -> WashSessionStatus.valueOf(card.status()),
+                        () -> new java.util.EnumMap<>(WashSessionStatus.class),
+                        Collectors.toCollection(ArrayList::new)
+                ));
+
+        List<OperationsQueueResponse.QueueColumn> columns = List.of(
+                // QUEUED -> Pending (pre-assignment state, treated as not yet actionable)
+                column("PENDING", "Pending", cardsByStatus, WashSessionStatus.PENDING, WashSessionStatus.QUEUED),
+                column(WashSessionStatus.CHECKED_IN, "Checked-In", cardsByStatus),
+                column(WashSessionStatus.IN_PROGRESS, "In Progress", cardsByStatus),
+                column(WashSessionStatus.COMPLETED, "Completed", cardsByStatus)
+        );
+
+        return new OperationsQueueResponse(
+                new OperationsQueueResponse.QueueSummary(
+                        sessions.size(),
+                        count(sessions, WashSessionStatus.PENDING) + count(sessions, WashSessionStatus.QUEUED),
+                        count(sessions, WashSessionStatus.CHECKED_IN),
+                        count(sessions, WashSessionStatus.IN_PROGRESS),
+                        count(sessions, WashSessionStatus.COMPLETED)
+                ),
+                columns,
+                Instant.now()
         );
     }
 
@@ -143,5 +181,57 @@ public class OperationsService {
     private WashSession requireSession(UUID sessionId) {
         return washSessionRepository.findWithBookingById(sessionId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
+    }
+
+    private OperationsQueueResponse.QueueColumn column(
+            WashSessionStatus status,
+            String label,
+            Map<WashSessionStatus, List<OperationsQueueResponse.WashSessionCard>> cardsByStatus
+    ) {
+        return column(status.name(), label, cardsByStatus, status);
+    }
+
+    private OperationsQueueResponse.QueueColumn column(
+            String status,
+            String label,
+            Map<WashSessionStatus, List<OperationsQueueResponse.WashSessionCard>> cardsByStatus,
+            WashSessionStatus... includedStatuses
+    ) {
+        List<OperationsQueueResponse.WashSessionCard> sessions = java.util.Arrays.stream(includedStatuses)
+                .flatMap(includedStatus -> cardsByStatus.getOrDefault(includedStatus, List.of()).stream())
+                .sorted(Comparator.comparing(OperationsQueueResponse.WashSessionCard::bookingDate)
+                        .thenComparing(OperationsQueueResponse.WashSessionCard::bookingTime))
+                .toList();
+        return new OperationsQueueResponse.QueueColumn(status, label, sessions);
+    }
+
+    private OperationsQueueResponse.WashSessionCard toQueueCard(WashSession session) {
+        CustomerBooking booking = session.getBooking();
+        return new OperationsQueueResponse.WashSessionCard(
+                session.getId(),
+                booking.getId(),
+                booking.getCustomer().getFullName(),
+                booking.getCustomer().getPhone(),
+                booking.getVehicle().getPlate(),
+                booking.getPackageId(),
+                session.getStatus().name(),
+                booking.getBookingDate(),
+                booking.getBookingTime(),
+                booking.getEstimatedDurationMinutes(),
+                session.getFeeAmount(),
+                session.getFeeCurrency(),
+                session.getProjectedLoyaltyPoints(),
+                session.getAwardedLoyaltyPoints(),
+                session.getQueuedAt(),
+                session.getCheckedInAt(),
+                session.getStartedAt(),
+                session.getCompletedAt()
+        );
+    }
+
+    private int count(List<WashSession> sessions, WashSessionStatus status) {
+        return (int) sessions.stream()
+                .filter(session -> session.getStatus() == status)
+                .count();
     }
 }
