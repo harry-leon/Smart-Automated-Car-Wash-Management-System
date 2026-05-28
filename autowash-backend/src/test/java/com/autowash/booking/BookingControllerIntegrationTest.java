@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.autowash.booking.entity.BookingStatus;
+import com.autowash.booking.repository.CustomerBookingRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,9 @@ class BookingControllerIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private CustomerBookingRepository customerBookingRepository;
 
     @Test
     void getPackagesReturnsPaginatedActivePackages() throws Exception {
@@ -236,6 +241,64 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
+    void cancelBookingAllowsPendingBooking() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234713");
+        String vehicleId = createVehicle(accessToken, "30H-223462");
+        String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
+        setBookingStatus(bookingId, BookingStatus.PENDING);
+
+        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/cancel", bookingId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "reason": "Pending booking no longer needed"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.data.refundStatus").value("INITIATED"));
+    }
+
+    @Test
+    void cancelBookingRejectsInProgressBookingWithResourceLocked() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234714");
+        String vehicleId = createVehicle(accessToken, "30H-223463");
+        String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
+        setBookingStatus(bookingId, BookingStatus.IN_PROGRESS);
+
+        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/cancel", bookingId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "reason": "Trying to cancel after wash started"
+                                }
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("RESOURCE_LOCKED"));
+    }
+
+    @Test
+    void cancelBookingRejectsCompletedBookingWithResourceLocked() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234715");
+        String vehicleId = createVehicle(accessToken, "30H-223464");
+        String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
+        setBookingStatus(bookingId, BookingStatus.COMPLETED);
+
+        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/cancel", bookingId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "reason": "Trying to cancel completed service"
+                                }
+                                """))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("RESOURCE_LOCKED"));
+    }
+
+    @Test
     void openApiDocumentsBookingAndCatalogSchemas() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
@@ -296,6 +359,12 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
         return readJson(result).path("data").path("vehicleId").asText();
+    }
+
+    private void setBookingStatus(String bookingId, BookingStatus status) {
+        var booking = customerBookingRepository.findById(bookingId).orElseThrow();
+        booking.updateStatus(status);
+        customerBookingRepository.saveAndFlush(booking);
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {

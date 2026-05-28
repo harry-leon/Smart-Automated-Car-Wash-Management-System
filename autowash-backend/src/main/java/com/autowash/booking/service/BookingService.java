@@ -45,6 +45,10 @@ public class BookingService {
             BookingStatus.CHECKED_IN,
             BookingStatus.IN_PROGRESS
     );
+    private static final Set<BookingStatus> CANCELLABLE_BOOKING_STATUSES = Set.of(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED
+    );
 
     private final CurrentUserService currentUserService;
     private final CustomerVehicleRepository customerVehicleRepository;
@@ -201,7 +205,7 @@ public class BookingService {
     @Transactional
     public CancelBookingResponse cancelBooking(String bookingId, String reason) {
         CustomerBooking booking = findOwnedBooking(bookingId);
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (!CANCELLABLE_BOOKING_STATUSES.contains(booking.getStatus())) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", "RESOURCE_LOCKED");
         }
         booking.cancel(reason);

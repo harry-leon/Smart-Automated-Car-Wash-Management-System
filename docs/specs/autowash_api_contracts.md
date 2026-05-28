@@ -1510,6 +1510,9 @@ Or with response:
 }
 ```
 
+**Cancellation Rules:**
+- `200` - Booking can be cancelled while `PENDING` or `CONFIRMED`
+
 **Error Responses:**
 - `422` - Cannot cancel (IN_PROGRESS or COMPLETED) - RESOURCE_LOCKED
 
