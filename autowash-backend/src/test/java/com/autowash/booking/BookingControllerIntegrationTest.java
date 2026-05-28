@@ -1,5 +1,6 @@
 package com.autowash.booking;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -188,6 +189,22 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
+    void getBookingDetailIncludesLinkedWashSession() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234712");
+        String vehicleId = createVehicle(accessToken, "30H-223461");
+        String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
+        String sessionId = createWashSession(bookingId, "Customer arrived at bay 2");
+
+        mockMvc.perform(get("/api/v1/customers/bookings/{bookingId}", bookingId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bookingId").value(bookingId))
+                .andExpect(jsonPath("$.data.washSessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.washStatus").value("PENDING"))
+                .andExpect(jsonPath("$.data.notes").value("Customer arrived at bay 2"));
+    }
+
+    @Test
     void listBookingsRejectsInvalidStatusWithValidationError() throws Exception {
         String accessToken = registerActivateAndLogin("0901234711");
 
@@ -245,6 +262,21 @@ class BookingControllerIntegrationTest {
                                 """.formatted(vehicleId)))
                 .andReturn();
         return readJson(result);
+    }
+
+    private String createWashSession(String bookingId, String notes) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
+                        .with(user("staff").roles("STAFF"))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "bookingId": "%s",
+                                  "notes": "%s"
+                                }
+                                """.formatted(bookingId, notes)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return readJson(result).path("data").path("sessionId").asText();
     }
 
     private String createVehicle(String accessToken, String plate) throws Exception {
