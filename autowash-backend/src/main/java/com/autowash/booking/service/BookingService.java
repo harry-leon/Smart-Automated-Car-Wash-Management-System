@@ -22,7 +22,6 @@ import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.user.service.CurrentUserService;
 import com.autowash.operation.repository.WashSessionRepository;
-import com.autowash.operation.entity.WashSessionStatus;
 import com.autowash.vehicle.entity.CustomerVehicle;
 import com.autowash.vehicle.entity.VehicleStatus;
 import com.autowash.vehicle.repository.CustomerVehicleRepository;
@@ -254,6 +253,8 @@ public class BookingService {
 
     private BookingDetailResponse toDetailResponse(CustomerBooking booking) {
         String packageName = resolvePackageName(booking);
+        var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
+                .orElse(null);
         return new BookingDetailResponse(
                 booking.getId(),
                 booking.getId(),
@@ -289,10 +290,10 @@ public class BookingService {
                         booking.getCreatedAt()
                 ),
                 booking.getStatus().name(),
+                washSession == null ? null : washSession.getId().toString(),
                 null,
-                null,
-                null,
-                null,
+                washSession == null ? null : washSession.getStatus().name(),
+                washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt()
         );
     }
