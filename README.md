@@ -146,10 +146,38 @@ autowash-frontend/src/
 * **Maven** v3.9+
 * Cài đặt cơ sở dữ liệu **PostgreSQL** (hoặc hệ thống sẽ chạy ở chế độ kiểm thử H2 Database trong bộ nhớ).
 
-### **2. Cài đặt Frontend**
+### **2. Quy định cổng mặc định (Port Convention)**
+
+> ⚠️ **Toàn bộ thành viên phải tuân thủ quy định cổng bên dưới để đảm bảo Frontend và Backend kết nối đúng khi chạy local.**
+
+| Dịch vụ | Cổng mặc định | Địa chỉ truy cập |
+|---|---|---|
+| **Frontend (Next.js)** | `3000` | [http://localhost:3000](http://localhost:3000) |
+| **Backend (Spring Boot)** | `8080` | [http://localhost:8080](http://localhost:8080) |
+| **Backend API base path** | — | `http://localhost:8080/api/v1` |
+| **Swagger UI** | — | [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) |
+| **PostgreSQL** | `5432` | `jdbc:postgresql://localhost:5432/autowash` |
+
+### **3. Cài đặt Backend** *(chạy trước)*
+```bash
+# Di chuyển vào thư mục Backend
+cd autowash-backend
+
+# Build và biên dịch ứng dụng
+mvn clean install
+
+# Chạy server Spring Boot (profile local sử dụng PostgreSQL)
+mvn spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+👉 Xem và test API qua Swagger UI tại: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
+### **4. Cài đặt Frontend**
 ```bash
 # Di chuyển vào thư mục Frontend
 cd autowash-frontend
+
+# Tạo file cấu hình local (chỉ cần làm 1 lần)
+cp .env.example .env.local
 
 # Cài đặt toàn bộ thư viện cần thiết
 npm install
@@ -159,18 +187,7 @@ npm run dev
 ```
 👉 Giao diện hiển thị tại: [http://localhost:3000](http://localhost:3000)
 
-### **3. Cài đặt Backend**
-```bash
-# Di chuyển vào thư mục Backend
-cd autowash-backend
-
-# Build và biên dịch ứng dụng
-mvn clean install
-
-# Chạy server Spring Boot
-mvn spring-boot:run
-```
-👉 Xem và test API qua Swagger UI tại: `http://localhost:8080/swagger-ui/index.html`
+> **Lưu ý:** File `.env.local` đã được thêm vào `.gitignore` và sẽ KHÔNG bị push lên repository. Mỗi lập trình viên tự tạo file này từ `.env.example` khi clone dự án lần đầu.
 
 ---
 
