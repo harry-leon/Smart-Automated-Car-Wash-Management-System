@@ -22,7 +22,6 @@ import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.user.service.CurrentUserService;
 import com.autowash.operation.repository.WashSessionRepository;
-import com.autowash.operation.entity.WashSessionStatus;
 import com.autowash.vehicle.entity.CustomerVehicle;
 import com.autowash.vehicle.entity.VehicleStatus;
 import com.autowash.vehicle.repository.CustomerVehicleRepository;
@@ -45,6 +44,10 @@ public class BookingService {
             BookingStatus.CONFIRMED,
             BookingStatus.CHECKED_IN,
             BookingStatus.IN_PROGRESS
+    );
+    private static final Set<BookingStatus> CANCELLABLE_BOOKING_STATUSES = Set.of(
+            BookingStatus.PENDING,
+            BookingStatus.CONFIRMED
     );
 
     private final CurrentUserService currentUserService;
@@ -202,7 +205,7 @@ public class BookingService {
     @Transactional
     public CancelBookingResponse cancelBooking(String bookingId, String reason) {
         CustomerBooking booking = findOwnedBooking(bookingId);
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (!CANCELLABLE_BOOKING_STATUSES.contains(booking.getStatus())) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", "RESOURCE_LOCKED");
         }
         booking.cancel(reason);
@@ -254,6 +257,8 @@ public class BookingService {
 
     private BookingDetailResponse toDetailResponse(CustomerBooking booking) {
         String packageName = resolvePackageName(booking);
+        var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
+                .orElse(null);
         return new BookingDetailResponse(
                 booking.getId(),
                 booking.getId(),
@@ -289,10 +294,10 @@ public class BookingService {
                         booking.getCreatedAt()
                 ),
                 booking.getStatus().name(),
+                washSession == null ? null : washSession.getId().toString(),
                 null,
-                null,
-                null,
-                null,
+                washSession == null ? null : washSession.getStatus().name(),
+                washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt()
         );
     }
