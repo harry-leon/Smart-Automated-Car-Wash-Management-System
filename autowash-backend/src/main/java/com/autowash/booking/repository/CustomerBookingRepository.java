@@ -39,10 +39,10 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
               and (:dateTo is null or booking.bookingDate <= :dateTo)
               and (
                     :searchQuery is null
-                    or lower(booking.id) like lower(concat('%', :searchQuery, '%'))
-                    or lower(booking.customer.fullName) like lower(concat('%', :searchQuery, '%'))
-                    or lower(booking.customer.phone) like lower(concat('%', :searchQuery, '%'))
-                    or lower(booking.vehicle.plate) like lower(concat('%', :searchQuery, '%'))
+                    or cast(booking.id as string) ilike concat('%', :searchQuery, '%')
+                    or cast(booking.customer.fullName as string) ilike concat('%', :searchQuery, '%')
+                    or cast(booking.customer.phone as string) ilike concat('%', :searchQuery, '%')
+                    or cast(booking.vehicle.plate as string) ilike concat('%', :searchQuery, '%')
               )
             """)
     Page<CustomerBooking> searchAdmin(
