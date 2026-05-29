@@ -22,7 +22,7 @@ export function AdminBookingsPageContent() {
   });
 
   const canGoPrev = page > 1;
-  const canGoNext = Boolean(bookingsQuery.data?.pagination.page < (bookingsQuery.data?.pagination.totalPages || 0));
+  const canGoNext = Boolean((bookingsQuery.data?.pagination.page || 1) < (bookingsQuery.data?.pagination.totalPages || 0));
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
