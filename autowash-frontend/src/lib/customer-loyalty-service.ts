@@ -6,6 +6,7 @@ import type {
   LoyaltyTransaction,
   WashHistoryItem,
 } from "@/types/loyalty.types";
+import type { Promotion } from "@/types/promotion.types";
 
 export function getCustomerLoyaltyAccount() {
   return apiRequest<LoyaltyAccount>({
@@ -37,8 +38,22 @@ export async function listCustomerWashHistory(page = 1, limit = 20) {
 }
 
 export function listCustomerPromotions() {
-  return apiRequest<CustomerPromotion[]>({
-    method: "GET",
-    url: "/promotions/active",
-  });
+  return apiClient
+    .get<ApiPaginatedResponse<Promotion>>("/promotions", {
+      params: { page: 1, limit: 20 },
+    })
+    .then((response) =>
+      response.data.data.map((promotion) => ({
+        promotionId: promotion.promotionId,
+        name: promotion.name,
+        description: promotion.description,
+        promotionType: promotion.targetingMode,
+        targetTiers: promotion.applicableTiers,
+        discountType: promotion.discountType,
+        discountValue: promotion.discountValue,
+        startDate: promotion.startDate,
+        expiresAt: promotion.endDate,
+        status: promotion.status,
+      })),
+    );
 }
