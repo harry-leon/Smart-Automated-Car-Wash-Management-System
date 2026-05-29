@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { StaffOperationsFlow } from "@/components/staff-operations/staff-operations-flow";
 
 export default function AdminBookingsPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Admin"
-      title="Admin bookings"
-      description="Booking management shell with full filters and pagination."
-      endpoints={["GET /admin/bookings"]}
-    />
-  );
+  return <StaffOperationsFlow mode="board" />;
 }
