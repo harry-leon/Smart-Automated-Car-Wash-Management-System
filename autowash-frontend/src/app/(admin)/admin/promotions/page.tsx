@@ -3,3 +3,4 @@ import { AdminPromotionsPageContent } from "@/components/admin-promotions/admin-
 export default function AdminPromotionsPage() {
   return <AdminPromotionsPageContent />;
 }
+

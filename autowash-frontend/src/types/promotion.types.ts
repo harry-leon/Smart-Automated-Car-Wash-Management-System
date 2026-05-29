@@ -43,3 +43,4 @@ export type PromotionRequest = {
   maxUsagePerCustomer: number | null;
   status: PromotionStatus;
 };
+
