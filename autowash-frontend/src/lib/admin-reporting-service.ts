@@ -1,0 +1,24 @@
+import { apiClient } from "@/lib/api";
+import type { ApiPaginatedResponse } from "@/types/api.types";
+import type { AdminBookingResponse, AdminBookingListPage } from "@/types/admin-reporting.types";
+
+export async function listAdminBookings(
+  page = 1,
+  limit = 20,
+  filters?: {
+    status?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    customerId?: string;
+    searchQuery?: string;
+  }
+): Promise<AdminBookingListPage> {
+  const response = await apiClient.get<ApiPaginatedResponse<AdminBookingResponse>>("/admin/bookings", {
+    params: { page, limit, ...filters },
+  });
+
+  return {
+    items: response.data.data,
+    pagination: response.data.pagination,
+  };
+}

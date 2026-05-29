@@ -1,5 +1,5 @@
-import { StaffOperationsFlow } from "@/components/staff-operations/staff-operations-flow";
+import { AdminBookingsPageContent } from "@/components/admin-bookings/admin-bookings-page";
 
 export default function AdminBookingsPage() {
-  return <StaffOperationsFlow mode="board" />;
+  return <AdminBookingsPageContent />;
 }

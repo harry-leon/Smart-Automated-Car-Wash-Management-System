@@ -17,16 +17,44 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth.store";
 import { cn } from "@/lib/utils";
+import { useCustomerProfile } from "@/hooks/use-customer-profile";
+import { useCustomerBookings } from "@/hooks/use-bookings";
+import { useCustomerVehicles } from "@/hooks/use-customer-vehicles";
 
 export default function CustomerHomePage() {
   const user = useAuthStore((state) => state.user);
 
+  const profileQuery = useCustomerProfile();
+  const bookingsQuery = useCustomerBookings();
+  const vehiclesQuery = useCustomerVehicles();
+
   const stats = [
-    { label: "Bookings", value: "12", icon: ClipboardList, color: "text-sky-700 bg-sky-50" },
-    { label: "Loyalty points", value: "2,450", icon: Gift, color: "text-emerald-700 bg-emerald-50" },
-    { label: "Notifications", value: "3", icon: Bell, color: "text-amber-700 bg-amber-50" },
-    { label: "Wallet balance", value: "450k", icon: Wallet, color: "text-violet-700 bg-violet-50" },
+    {
+      label: "Bookings",
+      value: bookingsQuery.isLoading ? "..." : String(bookingsQuery.data?.pagination.total ?? 0),
+      icon: ClipboardList,
+      color: "text-sky-700 bg-sky-50",
+    },
+    {
+      label: "Loyalty points",
+      value: profileQuery.isLoading ? "..." : (profileQuery.data?.loyaltyBalance !== undefined && profileQuery.data?.loyaltyBalance !== null ? profileQuery.data.loyaltyBalance.toLocaleString("vi-VN") : "0"),
+      icon: Gift,
+      color: "text-emerald-700 bg-emerald-50",
+    },
+    {
+      label: "Notifications",
+      value: "3", // Mocked as there is no backend notification center yet
+      icon: Bell,
+      color: "text-amber-700 bg-amber-50",
+    },
+    {
+      label: "Vehicles",
+      value: vehiclesQuery.isLoading ? "..." : String(vehiclesQuery.data?.pagination.total ?? 0),
+      icon: CarFront,
+      color: "text-violet-700 bg-violet-50",
+    },
   ];
+
 
   const shortcuts = [
     {

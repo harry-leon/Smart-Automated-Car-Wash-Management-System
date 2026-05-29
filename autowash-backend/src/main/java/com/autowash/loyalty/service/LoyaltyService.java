@@ -151,13 +151,20 @@ public class LoyaltyService {
     public TransactionPage getTransactionHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit) {
         AuthUser customer = requireCustomer(customerId);
         PointTransactionType transactionType = parseType(type);
-        Page<PointTransaction> transactions = pointTransactionRepository.search(
-                customer,
-                transactionType,
-                dateFrom,
-                dateTo,
-                PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
-        );
+        PageRequest pageRequest = PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending());
+        Page<PointTransaction> transactions;
+        
+        if (transactionType == null && dateFrom == null && dateTo == null) {
+            transactions = pointTransactionRepository.findByCustomer(customer, pageRequest);
+        } else {
+            transactions = pointTransactionRepository.search(
+                    customer,
+                    transactionType,
+                    dateFrom,
+                    dateTo,
+                    pageRequest
+            );
+        }
         List<PointTransactionResponse> items = transactions.getContent().stream()
                 .map(this::toTransactionResponse)
                 .toList();

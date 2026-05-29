@@ -1,0 +1,51 @@
+feat(admin,loyalty): Fix PostgreSQL null bug and Connect Admin Bookings API
+
+# Pull Request
+
+## Mô t? thay d?i (Description)
+
+- **Tóm t?t:** Fix l?i hi?n th? l?ch s? di?m thu?ng (PointTransaction) và K?t n?i giao di?n trang Admin Bookings v?i Backend API.
+- **Task/Issue liên quan:** N/A
+- **Chi ti?t thay d?i:**
+  - Backend: Thêm hàm findByCustomer trong PointTransactionRepository và g?i hàm này khi không truy?n filter trong LoyaltyService d? tránh l?i SpEL / PostgreSQL ép ki?u null.
+  - Frontend: Xây d?ng Schema, Service, Hook (useAdminBookings) d? g?i GET /api/v1/admin/bookings.
+  - Frontend: Thay th? Placeholder ? /admin/bookings b?ng trang Data Table (phân trang, tìm ki?m) hoàn ch?nh.
+
+## Lo?i thay d?i (Type of Change)
+
+- [x] ?? S?a l?i (Bug fix)
+- [x] ? Tính nang m?i (New feature)
+- [ ] ?? C?p nh?t tài li?u (Documentation update)
+- [ ] ?? Refactor/Style code
+- [ ] ?? T?i uu hi?u nang (Performance optimization)
+- [ ] ?? C?p nh?t b?o m?t (Security update)
+- [ ] ?? C?u hình/CI/CD (Config/CI/CD)
+- [ ] ?? C?p nh?t test (Test update)
+
+## Ph?m vi ?nh hu?ng (Impact Scope)
+
+- [x] Frontend/UI
+- [x] Backend/API
+- [ ] Database
+- [ ] Authentication/Authorization
+- [ ] Build/Deploy
+- [ ] Không ?nh hu?ng logic chính
+
+## Cách ki?m th? (How to Test)
+
+1. M? trang Customer Home và Loyalty transactions d? xác nh?n không còn l?i Unexpected error.
+2. Truy c?p /admin/bookings, xác nh?n b?ng d? li?u load tr?c ti?p t? API.
+
+## Ki?m tra ch?t lu?ng (Quality Check)
+
+- [x] Ðã ch?y build c?c b? không có l?i
+- [x] Ðã ch?y test liên quan, n?u có
+- [x] Ðã t? ki?m tra ch?c nang ho?t d?ng dúng
+- [x] Code không ch?a file nh?y c?m ho?c file th?a
+- [x] Không t?o l?i lint/format m?i
+- [x] Không có log/debug code không c?n thi?t
+
+## Breaking Changes
+
+- [x] Không có breaking change
+- [ ] Có breaking change
