@@ -23,7 +23,8 @@ export type AdminBookingListPage = {
   pagination: {
     page: number;
     limit: number;
-    totalElements: number;
+    total: number;
     totalPages: number;
+    hasMore: boolean;
   };
 };
