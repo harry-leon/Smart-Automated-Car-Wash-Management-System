@@ -1,26 +1,46 @@
-import type { ApiPaginatedResponse } from "@/types/api.types";
 import type { LoyaltyTier } from "@/types/loyalty.types";
 
-export type AdminPromotionStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "EXPIRED";
-export type AdminPromotionTargetingMode = "ALL_MEMBERS" | "SELECTED_TIERS" | "NEW_CUSTOMERS";
+export type PromotionDiscountType = "PERCENT" | "FIXED";
+export type PromotionTargetingMode = "ALL_TIERS" | "SELECTED_TIERS";
+export type PromotionStatus = "ACTIVE" | "INACTIVE";
 
-export type AdminPromotion = {
+export type Promotion = {
   promotionId: string;
   name: string;
-  description: string;
-  discountType: "PERCENT" | "FIXED";
+  description: string | null;
+  discountType: PromotionDiscountType;
   discountValue: number;
   startDate: string;
   endDate: string;
-  targetingMode: AdminPromotionTargetingMode;
+  targetingMode: PromotionTargetingMode;
   applicableTiers: LoyaltyTier[];
   maxUsagePerCustomer: number | null;
-  status: AdminPromotionStatus;
+  status: PromotionStatus;
   createdAt: string;
   updatedAt: string;
 };
 
-export type AdminPromotionListPage = {
-  items: AdminPromotion[];
-  pagination: ApiPaginatedResponse<never>["pagination"];
+export type PromotionListPage = {
+  items: Promotion[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
 };
+
+export type PromotionRequest = {
+  name: string;
+  description: string | null;
+  discountType: PromotionDiscountType;
+  discountValue: number;
+  startDate: string;
+  endDate: string;
+  targetingMode: PromotionTargetingMode;
+  applicableTiers: LoyaltyTier[] | null;
+  maxUsagePerCustomer: number | null;
+  status: PromotionStatus;
+};
+

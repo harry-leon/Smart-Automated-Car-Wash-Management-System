@@ -32,4 +32,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
             @Param("dateTo") Instant dateTo,
             Pageable pageable
     );
+
+    @Query("select coalesce(sum(pt.points), 0) from PointTransaction pt where pt.customer = :customer and pt.type = :type")
+    long sumPointsByCustomerAndType(@Param("customer") AuthUser customer, @Param("type") PointTransactionType type);
 }

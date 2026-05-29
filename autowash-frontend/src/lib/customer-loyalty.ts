@@ -40,7 +40,7 @@ export function formatLoyaltyTransactionType(type: LoyaltyTransactionType) {
 
 export function formatPromotionType(type: PromotionType) {
   switch (type) {
-    case "ALL_MEMBERS":
+    case "ALL_TIERS":
       return "All members";
     case "SELECTED_TIERS":
       return "Selected tiers";
