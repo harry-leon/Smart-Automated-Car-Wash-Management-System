@@ -2,12 +2,21 @@ import { apiRequest } from "@/lib/api";
 import type {
   CheckInWashSessionResponse,
   CompleteWashSessionResponse,
+  CreateWashSessionResponse,
   OperationsQueue,
   QueueWashSessionResponse,
   StartWashSessionResponse,
 } from "@/types/operation.types";
 
 const SESSION_BASE_URL = "/operations/sessions";
+
+export function createWashSession(bookingId: string, notes?: string) {
+  return apiRequest<CreateWashSessionResponse, { bookingId: string; notes?: string }>({
+    method: "POST",
+    url: SESSION_BASE_URL,
+    data: { bookingId, notes },
+  });
+}
 
 export function getOperationsQueue() {
   return apiRequest<OperationsQueue>({

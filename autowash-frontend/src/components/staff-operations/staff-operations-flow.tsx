@@ -20,9 +20,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   checkInWashSession,
   completeWashSession,
+  createWashSession,
   getOperationsQueue,
   queueWashSession,
   startWashSession,
@@ -36,7 +46,7 @@ type StaffOperationsFlowProps = {
   sessionId?: string;
 };
 
-type ActionType = "check-in" | "start" | "complete";
+type ActionType = "queue" | "check-in" | "start" | "complete";
 type BoardStatus = "PENDING" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED";
 type TimeBucket = "ALL" | "morning" | "afternoon" | "evening";
 type LifecycleActionResponse = {
@@ -91,6 +101,9 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [blockedActionMessage, setBlockedActionMessage] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newBookingId, setNewBookingId] = useState("");
+  const [newNotes, setNewNotes] = useState("");
 
   const queueQuery = useQuery({
     queryKey: QUEUE_QUERY_KEY,
@@ -104,6 +117,26 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
   const staffOptions = useMemo(() => buildStaffOptions(sessions), [sessions]);
   const activeSessionId = mode === "session" ? sessionId : selectedSessionId;
   const activeSession = sessions.find((session) => session.sessionId === activeSessionId);
+
+  const createSessionMutation = useMutation({
+    mutationFn: ({ bookingId, notes }: { bookingId: string; notes?: string }) =>
+      createWashSession(bookingId, notes),
+    onMutate: () => {
+      setNotice(null);
+      setActionError(null);
+      setBlockedActionMessage(null);
+    },
+    onSuccess: (response) => {
+      setNotice(`Wash session created for booking ${response.bookingId}.`);
+      setCreateDialogOpen(false);
+      setNewBookingId("");
+      setNewNotes("");
+      void queryClient.invalidateQueries({ queryKey: QUEUE_QUERY_KEY });
+    },
+    onError: (error: ApiErrorResponse) => {
+      setActionError(error.message || error.error?.message || "Unable to create wash session.");
+    },
+  });
 
   const actionMutation = useMutation({
     mutationFn: ({ action, session }: { action: ActionType; session: OperationsQueueSession }) => runAction(action, session),
@@ -121,7 +154,13 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
     },
   });
 
-  const canAct = !actionMutation.isPending;
+  const handleCreateSession = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBookingId.trim()) return;
+    createSessionMutation.mutate({ bookingId: newBookingId.trim(), notes: newNotes.trim() });
+  };
+
+  const canAct = !actionMutation.isPending && !createSessionMutation.isPending;
   const handleAction = (action: ActionType, session: OperationsQueueSession) => {
     const blockedReason = getBlockedReason(action, session.status);
     if (blockedReason) {
@@ -140,10 +179,15 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
             {mode === "board" ? "Operations queue" : mode === "check-in" ? "Check-in" : "Wash session"}
           </h1>
         </div>
-        <Button variant="outline" onClick={() => queueQuery.refetch()} disabled={queueQuery.isFetching}>
-          {queueQuery.isFetching ? <Loader2 className="animate-spin" /> : <RotateCw />}
-          Refresh
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            Create Session
+          </Button>
+          <Button variant="outline" onClick={() => queueQuery.refetch()} disabled={queueQuery.isFetching}>
+            {queueQuery.isFetching ? <Loader2 className="animate-spin" /> : <RotateCw />}
+            Refresh
+          </Button>
+        </div>
       </header>
 
       {queueQuery.isLoading ? <LoadingState /> : null}
@@ -196,6 +240,46 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
           />
         </div>
       ) : null}
+
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Wash Session</DialogTitle>
+            <DialogDescription>
+              Enter a confirmed booking ID to initialize a new wash session.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateSession} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bookingId">Booking ID</Label>
+              <Input
+                id="bookingId"
+                placeholder="BK_..."
+                value={newBookingId}
+                onChange={(e) => setNewBookingId(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="Optional notes for staff..."
+                value={newNotes}
+                onChange={(e) => setNewNotes(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createSessionMutation.isPending}>
+                {createSessionMutation.isPending ? "Creating..." : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
@@ -439,6 +523,7 @@ function SessionCard({
   selected?: boolean;
 }) {
   const primaryAction = nextAction(session.status);
+  const queueReason = getBlockedReason("queue", session.status);
   const checkInReason = getBlockedReason("check-in", session.status);
   const startReason = getBlockedReason("start", session.status);
   const completeReason = getBlockedReason("complete", session.status);
@@ -492,7 +577,7 @@ function SessionCard({
             title={getBlockedReason(primaryAction.type, session.status) ?? primaryAction.label}
             onClick={() => onAction(primaryAction.type, session)}
           >
-            {primaryAction.type === "start" ? <Play /> : primaryAction.type === "complete" ? <CheckCircle2 /> : <ClipboardList />}
+            {primaryAction.type === "start" ? <Play /> : primaryAction.type === "complete" ? <CheckCircle2 /> : primaryAction.type === "check-in" ? <Wrench /> : <ClipboardList />}
             {primaryAction.label}
           </Button>
         ) : null}
@@ -503,6 +588,18 @@ function SessionCard({
         ) : null}
         {onAction ? (
           <>
+            {primaryAction?.type !== "queue" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!canAct || Boolean(queueReason)}
+                title={queueReason ?? "Queue"}
+                onClick={() => onAction("queue", session)}
+              >
+                <ClipboardList />
+                Queue
+              </Button>
+            ) : null}
             {primaryAction?.type !== "check-in" ? (
               <Button
                 size="sm"
@@ -542,6 +639,7 @@ function SessionCard({
           </>
         ) : null}
       </div>
+      {queueReason ? <p className="text-xs text-amber-700">Queue disabled: {queueReason}</p> : null}
       {checkInReason ? <p className="text-xs text-amber-700">Check In disabled: {checkInReason}</p> : null}
       {startReason ? <p className="text-xs text-amber-700">Start disabled: {startReason}</p> : null}
       {completeReason ? <p className="text-xs text-amber-700">Complete disabled: {completeReason}</p> : null}
@@ -693,28 +791,24 @@ function buildStaffOptions(sessions: OperationsQueueSession[]) {
 }
 
 function nextAction(status: WashSessionStatus): { type: ActionType; label: string } | null {
-  if (status === "PENDING" || status === "QUEUED") return { type: "check-in", label: "Check In" };
+  if (status === "PENDING") return { type: "queue", label: "Queue" };
+  if (status === "QUEUED") return { type: "check-in", label: "Check In" };
   if (status === "CHECKED_IN") return { type: "start", label: "Start" };
   if (status === "IN_PROGRESS") return { type: "complete", label: "Complete" };
   return null;
 }
 
 function getBlockedReason(action: ActionType, status: WashSessionStatus) {
+  if (action === "queue" && status !== "PENDING") return "Must be pending";
+  if (action === "check-in" && status !== "QUEUED") return "Must be queued first";
   if (action === "start" && status !== "CHECKED_IN") return "Must check in first";
   if (action === "complete" && status !== "IN_PROGRESS") return "Must start service first";
-  if (action === "check-in" && (status === "CHECKED_IN" || status === "IN_PROGRESS" || status === "COMPLETED")) {
-    return "Already checked in";
-  }
   return null;
 }
 
 async function runAction(action: ActionType, session: OperationsQueueSession): Promise<LifecycleActionResponse> {
-  if (action === "check-in") {
-    if (session.status === "PENDING") {
-      await queueWashSession(session.sessionId);
-    }
-    return checkInWashSession(session.sessionId);
-  }
+  if (action === "queue") return queueWashSession(session.sessionId);
+  if (action === "check-in") return checkInWashSession(session.sessionId);
   if (action === "start") return startWashSession(session.sessionId);
   return completeWashSession(session.sessionId);
 }

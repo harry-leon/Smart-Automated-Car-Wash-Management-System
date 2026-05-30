@@ -79,3 +79,11 @@ export type CompleteWashSessionResponse = {
   completedAt: string;
   awardedLoyaltyPoints: number;
 };
+
+export type CreateWashSessionResponse = {
+  sessionId: string;
+  status: string;
+  bookingId: string;
+  createdAt: string;
+};
+
