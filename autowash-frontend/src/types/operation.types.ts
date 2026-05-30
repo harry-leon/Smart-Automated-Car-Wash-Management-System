@@ -50,6 +50,13 @@ export type OperationsQueue = {
   generatedAt: string;
 };
 
+export type CreateWashSessionResponse = {
+  sessionId: string;
+  status: WashSessionStatus;
+  bookingId: string;
+  createdAt: string;
+};
+
 export type QueueWashSessionResponse = {
   sessionId: string;
   status: WashSessionStatus;

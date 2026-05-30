@@ -9,7 +9,6 @@ import {
   ClipboardList,
   Filter,
   Loader2,
-  Play,
   RotateCw,
   Search,
   Wrench,
@@ -22,10 +21,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   checkInWashSession,
-  completeWashSession,
+  createWashSession,
   getOperationsQueue,
   queueWashSession,
-  startWashSession,
 } from "@/lib/operations-service";
 import { cn } from "@/lib/utils";
 import type { ApiErrorResponse } from "@/types/api.types";
@@ -36,7 +34,7 @@ type StaffOperationsFlowProps = {
   sessionId?: string;
 };
 
-type ActionType = "check-in" | "start" | "complete";
+type ActionType = "queue" | "check-in";
 type BoardStatus = "PENDING" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED";
 type TimeBucket = "ALL" | "morning" | "afternoon" | "evening";
 type LifecycleActionResponse = {
@@ -76,8 +74,7 @@ const DEFAULT_FILTERS: Filters = {
 
 const statusMeta: Record<WashSessionStatus, { label: string; className: string }> = {
   PENDING: { label: "Pending", className: "border-yellow-200 bg-yellow-50 text-yellow-800" },
-  // QUEUED → Pending (pre-assignment state, treated as not yet actionable)
-  QUEUED: { label: "Pending", className: "border-yellow-200 bg-yellow-50 text-yellow-800" },
+  QUEUED: { label: "Queued", className: "border-blue-200 bg-blue-50 text-blue-800" },
   CHECKED_IN: { label: "Checked-In", className: "border-purple-200 bg-purple-50 text-purple-800" },
   IN_PROGRESS: { label: "In Progress", className: "border-orange-200 bg-orange-50 text-orange-800" },
   COMPLETED: { label: "Completed", className: "border-green-200 bg-green-50 text-green-800" },
@@ -91,6 +88,8 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [blockedActionMessage, setBlockedActionMessage] = useState<string | null>(null);
+  const [newBookingId, setNewBookingId] = useState("");
+  const [newNotes, setNewNotes] = useState("");
 
   const queueQuery = useQuery({
     queryKey: QUEUE_QUERY_KEY,
@@ -121,7 +120,27 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
     },
   });
 
+  const createSessionMutation = useMutation({
+    mutationFn: ({ bookingId, notes }: { bookingId: string; notes?: string }) => createWashSession(bookingId, notes),
+    onMutate: () => {
+      setNotice(null);
+      setActionError(null);
+      setBlockedActionMessage(null);
+    },
+    onSuccess: (response) => {
+      setNotice(`Wash session ${response.sessionId} created for booking ${response.bookingId}.`);
+      setNewBookingId("");
+      setNewNotes("");
+      setSelectedSessionId(response.sessionId);
+      void queryClient.invalidateQueries({ queryKey: QUEUE_QUERY_KEY });
+    },
+    onError: (error: ApiErrorResponse) => {
+      setActionError(error.message || error.error?.message || "Unable to create wash session.");
+    },
+  });
+
   const canAct = !actionMutation.isPending;
+  const canCreate = !createSessionMutation.isPending;
   const handleAction = (action: ActionType, session: OperationsQueueSession) => {
     const blockedReason = getBlockedReason(action, session.status);
     if (blockedReason) {
@@ -129,6 +148,14 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
       return;
     }
     actionMutation.mutate({ action, session });
+  };
+  const handleCreateSession = () => {
+    const bookingId = newBookingId.trim();
+    if (!bookingId) {
+      setBlockedActionMessage("Booking ID is required to create a wash session.");
+      return;
+    }
+    createSessionMutation.mutate({ bookingId, notes: newNotes.trim() || undefined });
   };
 
   return (
@@ -170,12 +197,22 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
                 />
               ))}
             </div>
-            <DetailPanel
-              session={activeSession}
-              onAction={handleAction}
-              canAct={canAct}
-              emptyMessage="Select a board card to view details and run lifecycle actions."
-            />
+            <div className="space-y-5">
+              <CreateSessionPanel
+                bookingId={newBookingId}
+                notes={newNotes}
+                onBookingIdChange={setNewBookingId}
+                onNotesChange={setNewNotes}
+                onCreate={handleCreateSession}
+                canCreate={canCreate}
+              />
+              <DetailPanel
+                session={activeSession}
+                onAction={handleAction}
+                canAct={canAct}
+                emptyMessage="Select a board card to view details and run intake actions."
+              />
+            </div>
           </div>
         </>
       ) : null}
@@ -218,6 +255,57 @@ function Metric({ label, value }: { label: string; value: number }) {
       <CardContent className="p-4">
         <p className="text-xs font-medium uppercase text-slate-500">{label}</p>
         <p className="mt-1 text-2xl font-semibold text-slate-950">{value}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CreateSessionPanel({
+  bookingId,
+  notes,
+  onBookingIdChange,
+  onNotesChange,
+  onCreate,
+  canCreate,
+}: {
+  bookingId: string;
+  notes: string;
+  onBookingIdChange: (value: string) => void;
+  onNotesChange: (value: string) => void;
+  onCreate: () => void;
+  canCreate: boolean;
+}) {
+  return (
+    <Card className="rounded-lg shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ClipboardList className="h-4 w-4" />
+          Create session
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-2">
+          <Label htmlFor="bookingId">Booking ID</Label>
+          <Input
+            id="bookingId"
+            value={bookingId}
+            onChange={(event) => onBookingIdChange(event.target.value)}
+            placeholder="BK_20260530_001"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="sessionNotes">Notes</Label>
+          <Input
+            id="sessionNotes"
+            value={notes}
+            onChange={(event) => onNotesChange(event.target.value)}
+            placeholder="Optional intake note"
+          />
+        </div>
+        <Button className="w-full" onClick={onCreate} disabled={!canCreate}>
+          {canCreate ? <ClipboardList /> : <Loader2 className="animate-spin" />}
+          Create wash session
+        </Button>
       </CardContent>
     </Card>
   );
@@ -439,9 +527,8 @@ function SessionCard({
   selected?: boolean;
 }) {
   const primaryAction = nextAction(session.status);
+  const queueReason = getBlockedReason("queue", session.status);
   const checkInReason = getBlockedReason("check-in", session.status);
-  const startReason = getBlockedReason("start", session.status);
-  const completeReason = getBlockedReason("complete", session.status);
 
   return (
     <article
@@ -492,7 +579,7 @@ function SessionCard({
             title={getBlockedReason(primaryAction.type, session.status) ?? primaryAction.label}
             onClick={() => onAction(primaryAction.type, session)}
           >
-            {primaryAction.type === "start" ? <Play /> : primaryAction.type === "complete" ? <CheckCircle2 /> : <ClipboardList />}
+            {primaryAction.type === "queue" ? <ClipboardList /> : <Wrench />}
             {primaryAction.label}
           </Button>
         ) : null}
@@ -503,6 +590,18 @@ function SessionCard({
         ) : null}
         {onAction ? (
           <>
+            {primaryAction?.type !== "queue" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!canAct || Boolean(queueReason)}
+                title={queueReason ?? "Queue"}
+                onClick={() => onAction("queue", session)}
+              >
+                <ClipboardList />
+                Queue
+              </Button>
+            ) : null}
             {primaryAction?.type !== "check-in" ? (
               <Button
                 size="sm"
@@ -515,36 +614,11 @@ function SessionCard({
                 Check In
               </Button>
             ) : null}
-            {primaryAction?.type !== "start" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!canAct || Boolean(startReason)}
-                title={startReason ?? "Start service"}
-                onClick={() => onAction("start", session)}
-              >
-                <Play />
-                Start
-              </Button>
-            ) : null}
-            {primaryAction?.type !== "complete" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!canAct || Boolean(completeReason)}
-                title={completeReason ?? "Complete service"}
-                onClick={() => onAction("complete", session)}
-              >
-                <CheckCircle2 />
-                Complete
-              </Button>
-            ) : null}
           </>
         ) : null}
       </div>
+      {queueReason ? <p className="text-xs text-amber-700">Queue disabled: {queueReason}</p> : null}
       {checkInReason ? <p className="text-xs text-amber-700">Check In disabled: {checkInReason}</p> : null}
-      {startReason ? <p className="text-xs text-amber-700">Start disabled: {startReason}</p> : null}
-      {completeReason ? <p className="text-xs text-amber-700">Complete disabled: {completeReason}</p> : null}
     </article>
   );
 }
@@ -693,15 +767,14 @@ function buildStaffOptions(sessions: OperationsQueueSession[]) {
 }
 
 function nextAction(status: WashSessionStatus): { type: ActionType; label: string } | null {
-  if (status === "PENDING" || status === "QUEUED") return { type: "check-in", label: "Check In" };
-  if (status === "CHECKED_IN") return { type: "start", label: "Start" };
-  if (status === "IN_PROGRESS") return { type: "complete", label: "Complete" };
+  if (status === "PENDING") return { type: "queue", label: "Queue" };
+  if (status === "QUEUED") return { type: "check-in", label: "Check In" };
   return null;
 }
 
 function getBlockedReason(action: ActionType, status: WashSessionStatus) {
-  if (action === "start" && status !== "CHECKED_IN") return "Must check in first";
-  if (action === "complete" && status !== "IN_PROGRESS") return "Must start service first";
+  if (action === "queue" && status !== "PENDING") return "Only pending sessions can be queued";
+  if (action === "check-in" && status === "PENDING") return "Must queue first";
   if (action === "check-in" && (status === "CHECKED_IN" || status === "IN_PROGRESS" || status === "COMPLETED")) {
     return "Already checked in";
   }
@@ -709,14 +782,8 @@ function getBlockedReason(action: ActionType, status: WashSessionStatus) {
 }
 
 async function runAction(action: ActionType, session: OperationsQueueSession): Promise<LifecycleActionResponse> {
-  if (action === "check-in") {
-    if (session.status === "PENDING") {
-      await queueWashSession(session.sessionId);
-    }
-    return checkInWashSession(session.sessionId);
-  }
-  if (action === "start") return startWashSession(session.sessionId);
-  return completeWashSession(session.sessionId);
+  if (action === "queue") return queueWashSession(session.sessionId);
+  return checkInWashSession(session.sessionId);
 }
 
 function readError(error: unknown) {

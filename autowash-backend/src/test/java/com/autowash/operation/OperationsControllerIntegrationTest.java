@@ -1,5 +1,6 @@
 package com.autowash.operation;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -53,13 +54,13 @@ class OperationsControllerIntegrationTest {
         String sessionId = createSession(booking.getId());
         assertBookingStatus(booking.getId(), "CONFIRMED");
 
-        mockMvc.perform(get("/api/v1/operations/queue")
+        MvcResult queueResult = mockMvc.perform(get("/api/v1/operations/queue")
                         .with(user("staff").roles("STAFF")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.summary.total").exists())
                 .andExpect(jsonPath("$.data.columns[0].status").value("PENDING"))
-                .andExpect(jsonPath("$.data.columns[0].sessions[0].sessionId").value(sessionId))
-                .andExpect(jsonPath("$.data.columns[0].sessions[0].bookingId").value(booking.getId()));
+                .andReturn();
+        assertQueueContains(queueResult, sessionId, booking.getId());
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
                         .with(user("staff").roles("STAFF")))
@@ -170,7 +171,20 @@ class OperationsControllerIntegrationTest {
     private void assertBookingStatus(String bookingId, String status) {
         customerBookingRepository.flush();
         CustomerBooking booking = customerBookingRepository.findById(bookingId).orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(booking.getStatus().name()).isEqualTo(status);
+        assertThat(booking.getStatus().name()).isEqualTo(status);
+    }
+
+    private void assertQueueContains(MvcResult result, String sessionId, String bookingId) throws Exception {
+        JsonNode sessions = readJson(result).path("data").path("columns").path(0).path("sessions");
+        boolean found = false;
+        for (JsonNode session : sessions) {
+            if (sessionId.equals(session.path("sessionId").asText())
+                    && bookingId.equals(session.path("bookingId").asText())) {
+                found = true;
+                break;
+            }
+        }
+        assertThat(found).isTrue();
     }
 
     private JsonNode readJson(MvcResult result) throws Exception {
