@@ -35,7 +35,7 @@ export function AdminDashboardView() {
     refetchInterval: 30_000,
   });
   const promotionsQuery = useAdminPromotions(1, 100);
-  const activeBookingsQuery = useAdminBookings(1, 1, { status: "PENDING,CONFIRMED" });
+  const activeBookingsQuery = useAdminBookings({ status: "PENDING" }, 1, 1);
 
   const summary = queueQuery.data?.summary ?? {
     total: 0,
