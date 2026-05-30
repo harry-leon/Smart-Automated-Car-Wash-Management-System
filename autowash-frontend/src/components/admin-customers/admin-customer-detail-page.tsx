@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Loader2, RefreshCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,18 +10,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
+import type { ApiErrorResponse } from "@/types/api.types";
+import type { AdminCustomerStatus } from "@/types/admin-reporting.types";
 import {
   useAdminBookings,
   useAdminCustomerDetail,
   useAdminCustomerPointTransactions,
+  useAdminCustomerTierHistory,
+  useAdminCustomerVehicles,
   useAdminCustomerWashHistory,
+  useUpdateAdminCustomerStatus,
 } from "@/hooks/use-admin-reporting";
 
 type AdminCustomerDetailPageContentProps = {
   customerId: string;
 };
 
-type CustomerTab = "overview" | "bookings" | "wash-history" | "point-transactions";
+type CustomerTab =
+  | "overview"
+  | "vehicles"
+  | "bookings"
+  | "wash-history"
+  | "point-transactions"
+  | "tier-history";
 
 type DateRangeDraft = {
   dateFrom: string;
@@ -32,16 +43,23 @@ const PAGE_LIMIT = 20;
 
 const CUSTOMER_TABS: Array<{ id: CustomerTab; label: string }> = [
   { id: "overview", label: "Overview" },
+  { id: "vehicles", label: "Vehicles" },
   { id: "bookings", label: "Bookings" },
   { id: "wash-history", label: "Wash history" },
   { id: "point-transactions", label: "Point transactions" },
+  { id: "tier-history", label: "Tier history" },
 ];
 
 export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDetailPageContentProps) {
   const [activeTab, setActiveTab] = useState<CustomerTab>("overview");
+  const [vehiclesPage, setVehiclesPage] = useState(1);
   const [bookingsPage, setBookingsPage] = useState(1);
   const [washPage, setWashPage] = useState(1);
   const [pointPage, setPointPage] = useState(1);
+  const [tierPage, setTierPage] = useState(1);
+  const [statusDraft, setStatusDraft] = useState<AdminCustomerStatus>("ACTIVE");
+  const [statusReasonDraft, setStatusReasonDraft] = useState("");
+  const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
 
   const [washDateDraft, setWashDateDraft] = useState<DateRangeDraft>({ dateFrom: "", dateTo: "" });
   const [washDateRange, setWashDateRange] = useState<DateRangeDraft>({ dateFrom: "", dateTo: "" });
@@ -54,7 +72,12 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
     dateTo: "",
   });
 
-  const detailQuery = useAdminCustomerDetail(customerId, { enabled: activeTab === "overview" });
+  const detailQuery = useAdminCustomerDetail(customerId);
+  const vehiclesQuery = useAdminCustomerVehicles(
+    customerId,
+    { page: vehiclesPage, limit: PAGE_LIMIT },
+    { enabled: activeTab === "vehicles" },
+  );
   const bookingsQuery = useAdminBookings(
     { customerId },
     bookingsPage,
@@ -82,6 +105,25 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
     },
     { enabled: activeTab === "point-transactions" },
   );
+  const tierHistoryQuery = useAdminCustomerTierHistory(
+    customerId,
+    { page: tierPage, limit: PAGE_LIMIT },
+    { enabled: activeTab === "tier-history" },
+  );
+  const updateStatusMutation = useUpdateAdminCustomerStatus(customerId);
+
+  useEffect(() => {
+    if (!detailQuery.data?.profile.status) {
+      return;
+    }
+
+    if (detailQuery.data.profile.status === "BLOCKED" || detailQuery.data.profile.status === "SUSPENDED") {
+      setStatusDraft(detailQuery.data.profile.status);
+      return;
+    }
+
+    setStatusDraft("ACTIVE");
+  }, [detailQuery.data?.profile.status]);
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -91,7 +133,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
             <div>
               <CardTitle>Customer Detail</CardTitle>
               <CardDescription>
-                Required tabs wired to `/api/v1/admin` customer, bookings, wash history and point history APIs.
+                Tabs follow admin customer detail scope: overview, vehicles, bookings, wash history, point transactions, tier history.
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -120,7 +162,34 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
           </CardContent>
         </Card>
 
-        {activeTab === "overview" ? <OverviewTab query={detailQuery} /> : null}
+        {activeTab === "overview" ? (
+          <OverviewTab
+            query={detailQuery}
+            statusDraft={statusDraft}
+            statusReasonDraft={statusReasonDraft}
+            onStatusDraftChange={setStatusDraft}
+            onStatusReasonDraftChange={setStatusReasonDraft}
+            onSubmitStatus={async () => {
+              setStatusFeedback(null);
+              try {
+                await updateStatusMutation.mutateAsync({
+                  status: statusDraft,
+                  reason: statusReasonDraft.trim() || undefined,
+                });
+                await detailQuery.refetch();
+                setStatusFeedback("Customer status updated.");
+              } catch (error) {
+                setStatusFeedback(getDisplayErrorMessage(error));
+              }
+            }}
+            isUpdatingStatus={updateStatusMutation.isPending}
+            statusFeedback={statusFeedback}
+          />
+        ) : null}
+
+        {activeTab === "vehicles" ? (
+          <VehiclesTab query={vehiclesQuery} page={vehiclesPage} onPageChange={setVehiclesPage} />
+        ) : null}
 
         {activeTab === "bookings" ? (
           <BookingsTab query={bookingsQuery} page={bookingsPage} onPageChange={setBookingsPage} />
@@ -159,6 +228,10 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
             }}
           />
         ) : null}
+
+        {activeTab === "tier-history" ? (
+          <TierHistoryTab query={tierHistoryQuery} page={tierPage} onPageChange={setTierPage} />
+        ) : null}
       </div>
     </div>
   );
@@ -166,6 +239,10 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   async function refreshActiveTab(tab: CustomerTab) {
     if (tab === "overview") {
       await detailQuery.refetch();
+      return;
+    }
+    if (tab === "vehicles") {
+      await vehiclesQuery.refetch();
       return;
     }
     if (tab === "bookings") {
@@ -176,11 +253,33 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
       await washHistoryQuery.refetch();
       return;
     }
-    await pointTransactionsQuery.refetch();
+    if (tab === "point-transactions") {
+      await pointTransactionsQuery.refetch();
+      return;
+    }
+    await tierHistoryQuery.refetch();
   }
 }
 
-function OverviewTab({ query }: { query: ReturnType<typeof useAdminCustomerDetail> }) {
+function OverviewTab({
+  query,
+  statusDraft,
+  statusReasonDraft,
+  onStatusDraftChange,
+  onStatusReasonDraftChange,
+  onSubmitStatus,
+  isUpdatingStatus,
+  statusFeedback,
+}: {
+  query: ReturnType<typeof useAdminCustomerDetail>;
+  statusDraft: AdminCustomerStatus;
+  statusReasonDraft: string;
+  onStatusDraftChange: (value: AdminCustomerStatus) => void;
+  onStatusReasonDraftChange: (value: string) => void;
+  onSubmitStatus: () => Promise<void>;
+  isUpdatingStatus: boolean;
+  statusFeedback: string | null;
+}) {
   if (query.isPending) {
     return <LoadingCard message="Loading customer detail..." />;
   }
@@ -233,7 +332,109 @@ function OverviewTab({ query }: { query: ReturnType<typeof useAdminCustomerDetai
           <InfoRow label="Points spent" value={String(summary.totalPointsSpent)} />
         </CardContent>
       </Card>
+
+      <Card className="border-slate-200 bg-white lg:col-span-3">
+        <CardHeader>
+          <CardTitle>Customer status</CardTitle>
+          <CardDescription>Update customer account state when backend endpoint supports it.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-4">
+          <select
+            className="h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+            value={statusDraft}
+            onChange={(event) => onStatusDraftChange(event.target.value as AdminCustomerStatus)}
+          >
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="BLOCKED">BLOCKED</option>
+            <option value="SUSPENDED">SUSPENDED</option>
+          </select>
+          <Input
+            placeholder="Reason (optional)"
+            value={statusReasonDraft}
+            onChange={(event) => onStatusReasonDraftChange(event.target.value)}
+          />
+          <Button type="button" onClick={() => void onSubmitStatus()} disabled={isUpdatingStatus}>
+            {isUpdatingStatus ? "Updating..." : "Update status"}
+          </Button>
+          <div className="text-xs text-slate-500">
+            Endpoint: <code>PUT /api/v1/admin/customers/:customerId/status</code>
+          </div>
+        </CardContent>
+        {statusFeedback ? (
+          <CardContent className="pt-0">
+            <p className="text-sm text-slate-700">{statusFeedback}</p>
+          </CardContent>
+        ) : null}
+      </Card>
     </div>
+  );
+}
+
+function VehiclesTab({
+  query,
+  page,
+  onPageChange,
+}: {
+  query: ReturnType<typeof useAdminCustomerVehicles>;
+  page: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (query.isPending) {
+    return <LoadingCard message="Loading customer vehicles..." />;
+  }
+  if (query.isError) {
+    return (
+      <ApiGapAwareError
+        error={query.error}
+        fallbackMessage="Failed to load customer vehicles."
+        endpoint="/api/v1/admin/customers/:customerId/vehicles"
+      />
+    );
+  }
+  if (!query.data || query.data.items.length === 0) {
+    return <EmptyCard message="No vehicles for this customer." />;
+  }
+
+  return (
+    <Card className="border-slate-200 bg-white">
+      <CardHeader>
+        <CardTitle>Vehicles</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Plate</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Model</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Primary</TableHead>
+              <TableHead>Last service</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {query.data.items.map((vehicle) => (
+              <TableRow key={vehicle.vehicleId}>
+                <TableCell>{vehicle.plate}</TableCell>
+                <TableCell>{vehicle.type}</TableCell>
+                <TableCell>{[vehicle.brand, vehicle.model].filter(Boolean).join(" ") || "N/A"}</TableCell>
+                <TableCell>
+                  <StatusBadge value={vehicle.status} />
+                </TableCell>
+                <TableCell>{vehicle.isPrimary ? "Yes" : "No"}</TableCell>
+                <TableCell>{vehicle.lastServiceDate ? formatDateTime(vehicle.lastServiceDate) : "N/A"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <Pagination
+          page={page}
+          hasMore={query.data.pagination.hasMore}
+          onPrevious={() => onPageChange(Math.max(1, page - 1))}
+          onNext={() => onPageChange(page + 1)}
+        />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -491,6 +692,98 @@ function PointTransactionsTab({
       </CardContent>
     </Card>
   );
+}
+
+function TierHistoryTab({
+  query,
+  page,
+  onPageChange,
+}: {
+  query: ReturnType<typeof useAdminCustomerTierHistory>;
+  page: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (query.isPending) {
+    return <LoadingCard message="Loading tier history..." />;
+  }
+  if (query.isError) {
+    return (
+      <ApiGapAwareError
+        error={query.error}
+        fallbackMessage="Failed to load tier history."
+        endpoint="/api/v1/admin/customers/:customerId/tier-history"
+      />
+    );
+  }
+  if (!query.data || query.data.items.length === 0) {
+    return <EmptyCard message="No tier history for this customer." />;
+  }
+
+  return (
+    <Card className="border-slate-200 bg-white">
+      <CardHeader>
+        <CardTitle>Tier history</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>From tier</TableHead>
+              <TableHead>To tier</TableHead>
+              <TableHead>Points</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Changed at</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {query.data.items.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.fromTier ? <StatusBadge value={item.fromTier} /> : "N/A"}</TableCell>
+                <TableCell>
+                  <StatusBadge value={item.toTier} />
+                </TableCell>
+                <TableCell>{item.pointsAtChange ?? "N/A"}</TableCell>
+                <TableCell>{item.reason ?? "N/A"}</TableCell>
+                <TableCell>{formatDateTime(item.changedAt)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <Pagination
+          page={page}
+          hasMore={query.data.pagination.hasMore}
+          onPrevious={() => onPageChange(Math.max(1, page - 1))}
+          onNext={() => onPageChange(page + 1)}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ApiGapAwareError({
+  error,
+  fallbackMessage,
+  endpoint,
+}: {
+  error: ApiErrorResponse;
+  fallbackMessage: string;
+  endpoint: string;
+}) {
+  if (error.statusCode === 404 || error.statusCode === 405) {
+    return (
+      <Card className="border-amber-300 bg-amber-50">
+        <CardHeader>
+          <CardTitle>API Contract Gap</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-amber-900">
+          <p>Endpoint chưa sẵn sàng từ backend: <code>{endpoint}</code>.</p>
+          <p>Tab này đã được giữ lại để đúng scope customer detail tabs của issue #78.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return <ErrorCard message={fallbackMessage} />;
 }
 
 function Pagination({

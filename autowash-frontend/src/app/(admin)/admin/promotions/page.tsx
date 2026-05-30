@@ -1,12 +1,6 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { AdminPromotionsPageContent } from "@/components/admin-promotions/admin-promotions-page";
 
 export default function AdminPromotionsPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Admin"
-      title="Promotions"
-      description="Promotion management shell."
-      endpoints={["GET /admin/promotions", "POST /admin/promotions"]}
-    />
-  );
+  return <AdminPromotionsPageContent />;
 }
+

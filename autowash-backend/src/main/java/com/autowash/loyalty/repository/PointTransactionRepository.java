@@ -14,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface PointTransactionRepository extends JpaRepository<PointTransaction, UUID> {
 
+    Page<PointTransaction> findByCustomer(AuthUser customer, Pageable pageable);
+
     Optional<PointTransaction> findByTypeAndReferenceId(PointTransactionType type, String referenceId);
 
     long countByTypeAndReferenceId(PointTransactionType type, String referenceId);
@@ -21,9 +23,9 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
     @Query("""
             select pt from PointTransaction pt
             where pt.customer = :customer
-              and (:type is null or pt.type = :type)
-              and (:dateFrom is null or pt.createdAt >= :dateFrom)
-              and (:dateTo is null or pt.createdAt <= :dateTo)
+              and (:#{#type == null} = true or pt.type = :type)
+              and (:#{#dateFrom == null} = true or pt.createdAt >= :dateFrom)
+              and (:#{#dateTo == null} = true or pt.createdAt <= :dateTo)
             """)
     Page<PointTransaction> search(
             @Param("customer") AuthUser customer,

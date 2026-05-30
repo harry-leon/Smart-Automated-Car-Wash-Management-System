@@ -1,14 +1,20 @@
-import { apiClient } from "@/lib/api";
+import { apiClient, apiRequest } from "@/lib/api";
 import type { ApiPaginatedResponse } from "@/types/api.types";
 import type {
   AdminBooking,
   AdminBookingsFilters,
   AdminBookingsPage,
   AdminCustomerDetail,
+  AdminCustomerVehiclesPage,
   AdminPointTransaction,
   AdminPointTransactionsPage,
+  AdminTierHistoryItem,
+  AdminTierHistoryPage,
   AdminWashHistoryItem,
   AdminWashHistoryPage,
+  AdminCustomerVehicle,
+  UpdateAdminCustomerStatusPayload,
+  UpdateAdminCustomerStatusResult,
 } from "@/types/admin-reporting.types";
 
 export async function listAdminBookings(
@@ -33,6 +39,46 @@ export async function listAdminBookings(
 export async function getAdminCustomerDetail(customerId: string): Promise<AdminCustomerDetail> {
   const response = await apiClient.get(`/admin/customers/${customerId}`);
   return response.data.data;
+}
+
+export async function listAdminCustomerVehicles(
+  customerId: string,
+  params: { page?: number; limit?: number } = {},
+): Promise<AdminCustomerVehiclesPage> {
+  const response = await apiClient.get<ApiPaginatedResponse<AdminCustomerVehicle>>(
+    `/admin/customers/${customerId}/vehicles`,
+    {
+      params: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 20,
+      },
+    },
+  );
+
+  return {
+    items: response.data.data,
+    pagination: response.data.pagination,
+  };
+}
+
+export async function listAdminCustomerTierHistory(
+  customerId: string,
+  params: { page?: number; limit?: number } = {},
+): Promise<AdminTierHistoryPage> {
+  const response = await apiClient.get<ApiPaginatedResponse<AdminTierHistoryItem>>(
+    `/admin/customers/${customerId}/tier-history`,
+    {
+      params: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 20,
+      },
+    },
+  );
+
+  return {
+    items: response.data.data,
+    pagination: response.data.pagination,
+  };
 }
 
 export async function listAdminCustomerWashHistory(
@@ -89,6 +135,17 @@ export async function listAdminCustomerPointTransactions(
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export function updateAdminCustomerStatus(
+  customerId: string,
+  payload: UpdateAdminCustomerStatusPayload,
+) {
+  return apiRequest<UpdateAdminCustomerStatusResult, UpdateAdminCustomerStatusPayload>({
+    method: "PUT",
+    url: `/admin/customers/${customerId}/status`,
+    data: payload,
+  });
 }
 
 function normalizeDateTimeParam(value?: string) {

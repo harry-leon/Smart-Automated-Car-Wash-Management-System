@@ -1,17 +1,22 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   adminBookingsQueryKey,
   adminCustomerDetailQueryKey,
   adminCustomerPointTransactionsQueryKey,
+  adminCustomerTierHistoryQueryKey,
+  adminCustomerVehiclesQueryKey,
   adminCustomerWashHistoryQueryKey,
 } from "@/hooks/admin-reporting-query";
 import {
   getAdminCustomerDetail,
   listAdminBookings,
   listAdminCustomerPointTransactions,
+  listAdminCustomerTierHistory,
+  listAdminCustomerVehicles,
   listAdminCustomerWashHistory,
+  updateAdminCustomerStatus,
 } from "@/lib/admin-reporting-service";
 import { useAuthStore } from "@/store/auth.store";
 import type { ApiErrorResponse } from "@/types/api.types";
@@ -19,8 +24,12 @@ import type {
   AdminBookingsFilters,
   AdminBookingsPage,
   AdminCustomerDetail,
+  AdminCustomerVehiclesPage,
   AdminPointTransactionsPage,
+  AdminTierHistoryPage,
   AdminWashHistoryPage,
+  UpdateAdminCustomerStatusPayload,
+  UpdateAdminCustomerStatusResult,
 } from "@/types/admin-reporting.types";
 
 function useAdminReportingContext() {
@@ -71,6 +80,34 @@ export function useAdminCustomerWashHistory(
   });
 }
 
+export function useAdminCustomerVehicles(
+  customerId: string,
+  params: { page?: number; limit?: number },
+  options?: { enabled?: boolean },
+) {
+  const { userId, enabled } = useAdminReportingContext();
+
+  return useQuery<AdminCustomerVehiclesPage, ApiErrorResponse>({
+    queryKey: adminCustomerVehiclesQueryKey(userId, customerId, params),
+    queryFn: () => listAdminCustomerVehicles(customerId, params),
+    enabled: enabled && customerId.length > 0 && (options?.enabled ?? true),
+  });
+}
+
+export function useAdminCustomerTierHistory(
+  customerId: string,
+  params: { page?: number; limit?: number },
+  options?: { enabled?: boolean },
+) {
+  const { userId, enabled } = useAdminReportingContext();
+
+  return useQuery<AdminTierHistoryPage, ApiErrorResponse>({
+    queryKey: adminCustomerTierHistoryQueryKey(userId, customerId, params),
+    queryFn: () => listAdminCustomerTierHistory(customerId, params),
+    enabled: enabled && customerId.length > 0 && (options?.enabled ?? true),
+  });
+}
+
 export function useAdminCustomerPointTransactions(
   customerId: string,
   params: { page?: number; limit?: number; type?: string; dateFrom?: string; dateTo?: string },
@@ -82,5 +119,11 @@ export function useAdminCustomerPointTransactions(
     queryKey: adminCustomerPointTransactionsQueryKey(userId, customerId, params),
     queryFn: () => listAdminCustomerPointTransactions(customerId, params),
     enabled: enabled && customerId.length > 0 && (options?.enabled ?? true),
+  });
+}
+
+export function useUpdateAdminCustomerStatus(customerId: string) {
+  return useMutation<UpdateAdminCustomerStatusResult, ApiErrorResponse, UpdateAdminCustomerStatusPayload>({
+    mutationFn: (payload) => updateAdminCustomerStatus(customerId, payload),
   });
 }

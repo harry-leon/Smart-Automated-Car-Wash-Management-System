@@ -19,7 +19,7 @@ export function CustomerPromotionsPageContent() {
             <div>
               <CardTitle>Available promotions</CardTitle>
               <CardDescription>
-                Only active promotions that match your current tier or new-customer audience are shown here.
+                Only active promotions that match your current tier are shown here.
               </CardDescription>
             </div>
             <Button type="button" variant="outline" onClick={() => promotionsQuery.refetch()}>
@@ -47,19 +47,19 @@ export function CustomerPromotionsPageContent() {
             <CardHeader>
               <CardTitle>No promotions available</CardTitle>
               <CardDescription>
-                There are no active promotions matching your current customer audience right now.
+                There are no active promotions matching your current tier right now.
               </CardDescription>
             </CardHeader>
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {promotionsQuery.data.map((promotion) => (
-              <Card key={promotion.promotionCode} className="border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+              <Card key={promotion.promotionId} className="border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
                 <CardContent className="space-y-4 p-6">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-black text-slate-900">{promotion.promotionCode}</div>
-                      <div className="mt-1 text-sm text-slate-600">{promotion.title}</div>
+                      <div className="text-sm font-black text-slate-900">{promotion.name}</div>
+                      <div className="mt-1 text-sm text-slate-600">{promotion.description ?? "Promotion campaign"}</div>
                     </div>
                     <Badge className="bg-sky-50 text-sky-700 hover:bg-sky-50">
                       {formatPromotionType(promotion.promotionType)}
@@ -72,9 +72,6 @@ export function CustomerPromotionsPageContent() {
                       {promotion.discountType === "PERCENT"
                         ? `${promotion.discountValue}%`
                         : `${promotion.discountValue.toLocaleString("vi-VN")} VND`}
-                    </div>
-                    <div className="mt-2 text-sm text-slate-600">
-                      Minimum spend {promotion.minAmount.toLocaleString("vi-VN")} VND
                     </div>
                   </div>
 
@@ -90,7 +87,7 @@ export function CustomerPromotionsPageContent() {
                   </div>
 
                   <div className="text-sm text-slate-500">
-                    Expires {new Date(promotion.expiresAt).toLocaleDateString("vi-VN")}
+                    Active from {new Date(promotion.startDate).toLocaleDateString("vi-VN")} · Expires {new Date(promotion.expiresAt).toLocaleDateString("vi-VN")}
                   </div>
                 </CardContent>
               </Card>

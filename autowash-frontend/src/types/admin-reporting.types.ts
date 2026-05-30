@@ -26,15 +26,17 @@ export type AdminBookingsFilters = {
   searchQuery?: string;
 };
 
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+};
+
 export type AdminBookingsPage = {
   items: AdminBooking[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
+  pagination: PaginationMeta;
 };
 
 export type AdminCustomerDetail = {
@@ -65,6 +67,38 @@ export type AdminCustomerDetail = {
   };
 };
 
+export type AdminCustomerVehicle = {
+  vehicleId: string;
+  plate: string;
+  type: string;
+  brand: string | null;
+  model: string | null;
+  color: string | null;
+  status: string;
+  isPrimary: boolean;
+  lastServiceDate: string | null;
+  totalServices: number | null;
+};
+
+export type AdminCustomerVehiclesPage = {
+  items: AdminCustomerVehicle[];
+  pagination: PaginationMeta;
+};
+
+export type AdminTierHistoryItem = {
+  id: string;
+  fromTier: string | null;
+  toTier: string;
+  reason: string | null;
+  pointsAtChange: number | null;
+  changedAt: string;
+};
+
+export type AdminTierHistoryPage = {
+  items: AdminTierHistoryItem[];
+  pagination: PaginationMeta;
+};
+
 export type AdminWashHistoryItem = {
   sessionId: string;
   bookingId: string;
@@ -87,13 +121,7 @@ export type AdminWashHistoryItem = {
 
 export type AdminWashHistoryPage = {
   items: AdminWashHistoryItem[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
+  pagination: PaginationMeta;
 };
 
 export type AdminPointTransaction = {
@@ -108,11 +136,18 @@ export type AdminPointTransaction = {
 
 export type AdminPointTransactionsPage = {
   items: AdminPointTransaction[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
+  pagination: PaginationMeta;
+};
+
+export type AdminCustomerStatus = "ACTIVE" | "BLOCKED" | "SUSPENDED";
+
+export type UpdateAdminCustomerStatusPayload = {
+  status: AdminCustomerStatus;
+  reason?: string;
+};
+
+export type UpdateAdminCustomerStatusResult = {
+  customerId: string;
+  status: string;
+  updatedAt: string;
 };

@@ -18,6 +18,22 @@ export function adminCustomerWashHistoryQueryKey(
   return [...adminReportingScope(userId), "customer-wash-history", customerId ?? "", params ?? {}] as const;
 }
 
+export function adminCustomerVehiclesQueryKey(
+  userId?: string | null,
+  customerId?: string,
+  params?: unknown,
+) {
+  return [...adminReportingScope(userId), "customer-vehicles", customerId ?? "", params ?? {}] as const;
+}
+
+export function adminCustomerTierHistoryQueryKey(
+  userId?: string | null,
+  customerId?: string,
+  params?: unknown,
+) {
+  return [...adminReportingScope(userId), "customer-tier-history", customerId ?? "", params ?? {}] as const;
+}
+
 export function adminCustomerPointTransactionsQueryKey(
   userId?: string | null,
   customerId?: string,

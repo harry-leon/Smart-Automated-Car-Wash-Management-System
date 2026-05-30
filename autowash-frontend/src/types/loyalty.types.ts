@@ -38,16 +38,17 @@ export type WashHistoryItem = {
   completedAt: string;
 };
 
-export type PromotionType = "ALL_MEMBERS" | "SELECTED_TIERS" | "NEW_CUSTOMERS";
+export type PromotionType = "ALL_TIERS" | "SELECTED_TIERS" | "NEW_CUSTOMERS";
 
 export type CustomerPromotion = {
-  promotionCode: string;
-  title: string;
+  promotionId: string;
+  name: string;
+  description: string | null;
   promotionType: PromotionType;
   targetTiers: LoyaltyTier[];
   discountType: "PERCENT" | "FIXED";
   discountValue: number;
-  minAmount: number;
-  newCustomerOnly: boolean;
+  startDate: string;
   expiresAt: string;
+  status: "ACTIVE" | "INACTIVE";
 };
