@@ -46,8 +46,8 @@ export function AdminDashboardView() {
   };
 
   const activeWashSessions = summary.pending + summary.checkedIn + summary.inProgress;
-  const totalActiveBookings = activeBookingsQuery.data?.pagination.totalItems ?? 0;
-  const totalPromotions = promotionsQuery.data?.pagination.totalItems ?? 0;
+  const totalActiveBookings = activeBookingsQuery.data?.pagination.total ?? 0;
+  const totalPromotions = promotionsQuery.data?.pagination.total ?? 0;
 
   const kpiCards = [
     {

@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api";
-import type { ApiPaginatedResponse, ApiResponse } from "@/types/api.types";
+import type { ApiPaginatedResponse, ApiSuccessResponse } from "@/types/api.types";
 import type { AdminBookingResponse, AdminBookingListPage } from "@/types/admin-reporting.types";
 import type { BookingDetail } from "@/types/booking.types";
 
@@ -25,6 +25,6 @@ export async function listAdminBookings(
 }
 
 export async function getAdminBookingDetail(id: string): Promise<BookingDetail> {
-  const response = await apiClient.get<ApiResponse<BookingDetail>>(`/admin/bookings/${id}`);
+  const response = await apiClient.get<ApiSuccessResponse<BookingDetail>>(`/admin/bookings/${id}`);
   return response.data.data;
 }

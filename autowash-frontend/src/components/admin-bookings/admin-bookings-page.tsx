@@ -156,7 +156,6 @@ export function AdminBookingsPageContent() {
                         setFilters({ ...filters, date: "" });
                       }
                     }}
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -189,7 +188,7 @@ export function AdminBookingsPageContent() {
           </Card>
         ) : !bookingsQuery.data || bookingsQuery.data.items.length === 0 ? (
           <Card className="border-border/50 bg-card/60 p-10 text-center text-sm text-muted-foreground backdrop-blur-xl">
-            No bookings match the current filters.
+            Không có dữ liệu.
           </Card>
         ) : (
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm border border-slate-100">

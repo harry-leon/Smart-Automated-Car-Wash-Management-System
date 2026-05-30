@@ -340,7 +340,7 @@ export function AdminPromotionsPageContent() {
                 </div>
               ) : !promotionsQuery.data || promotionsQuery.data.items.length === 0 ? (
                 <div className="rounded-md border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                  No promotions found.
+                  Không có dữ liệu.
                 </div>
               ) : (
                 <>
