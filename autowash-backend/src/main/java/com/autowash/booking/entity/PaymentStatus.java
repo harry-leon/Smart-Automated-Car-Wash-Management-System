@@ -2,5 +2,7 @@ package com.autowash.booking.entity;
 
 public enum PaymentStatus {
     CONFIRMED,
-    PENDING
+    PENDING,
+    PAID,
+    REFUNDED
 }

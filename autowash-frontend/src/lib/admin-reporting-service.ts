@@ -1,10 +1,11 @@
 import { apiClient, apiRequest } from "@/lib/api";
-import type { ApiPaginatedResponse } from "@/types/api.types";
+import type { ApiPaginatedResponse, ApiSuccessResponse } from "@/types/api.types";
 import type {
   AdminBooking,
   AdminBookingsFilters,
   AdminBookingsPage,
   AdminCustomerDetail,
+  AdminCustomerVehicle,
   AdminCustomerVehiclesPage,
   AdminPointTransaction,
   AdminPointTransactionsPage,
@@ -12,10 +13,10 @@ import type {
   AdminTierHistoryPage,
   AdminWashHistoryItem,
   AdminWashHistoryPage,
-  AdminCustomerVehicle,
   UpdateAdminCustomerStatusPayload,
   UpdateAdminCustomerStatusResult,
 } from "@/types/admin-reporting.types";
+import type { BookingDetail } from "@/types/booking.types";
 
 export async function listAdminBookings(
   filters: AdminBookingsFilters,
@@ -34,6 +35,11 @@ export async function listAdminBookings(
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export async function getAdminBookingDetail(id: string): Promise<BookingDetail> {
+  const response = await apiClient.get<ApiSuccessResponse<BookingDetail>>(`/admin/bookings/${id}`);
+  return response.data.data;
 }
 
 export async function getAdminCustomerDetail(customerId: string): Promise<AdminCustomerDetail> {

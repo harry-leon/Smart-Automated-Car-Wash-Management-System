@@ -55,6 +55,12 @@ public class AdminReportingController {
         return ApiResponse.ok("Bookings retrieved", bookingPage.items(), bookingPage.pagination());
     }
 
+    @GetMapping("/bookings/{bookingId}")
+    @Operation(summary = "Get booking detail for admin")
+    public ApiResponse<com.autowash.booking.dto.BookingDetailResponse> getBookingDetail(@PathVariable String bookingId) {
+        return ApiResponse.ok("Booking retrieved", adminReportingService.getBookingDetail(bookingId));
+    }
+
     @GetMapping("/customers/{customerId}")
     @Operation(summary = "Get customer detail for admin")
     public ApiResponse<AdminCustomerDetailResponse> getCustomerDetail(@PathVariable UUID customerId) {
