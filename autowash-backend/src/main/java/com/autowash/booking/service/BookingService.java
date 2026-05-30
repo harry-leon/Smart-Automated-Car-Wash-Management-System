@@ -255,7 +255,7 @@ public class BookingService {
         );
     }
 
-    private BookingDetailResponse toDetailResponse(CustomerBooking booking) {
+    public BookingDetailResponse toDetailResponse(CustomerBooking booking) {
         String packageName = resolvePackageName(booking);
         var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);

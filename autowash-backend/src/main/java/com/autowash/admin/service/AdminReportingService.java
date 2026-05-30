@@ -80,13 +80,15 @@ public class AdminReportingService {
     ) {
         validateDateRange(dateFrom, dateTo);
         List<BookingStatus> statuses = parseStatuses(status);
+        String normalizedSearch = normalizeSearch(searchQuery);
+        String searchLike = normalizedSearch == null ? null : "%" + normalizedSearch.toLowerCase() + "%";
         Page<CustomerBooking> bookings = bookingRepository.searchAdmin(
                 statuses,
                 !statuses.isEmpty(),
                 customerId,
                 dateFrom,
                 dateTo,
-                normalizeSearch(searchQuery),
+                searchLike,
                 PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
         );
 
@@ -96,6 +98,72 @@ public class AdminReportingService {
                 .map(booking -> toBookingResponse(booking, sessionsByBookingId.get(booking.getId()), serviceNames))
                 .toList();
         return new BookingPage(items, pagination(bookings));
+    }
+
+    @Transactional(readOnly = true)
+    public com.autowash.booking.dto.BookingDetailResponse getBookingDetail(String bookingId) {
+        CustomerBooking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
+        
+        String packageName = null;
+        if (booking.getPackageId() != null) {
+            packageName = servicePackageRepository.findById(booking.getPackageId())
+                    .map(com.autowash.catalog.entity.ServicePackage::getName)
+                    .orElse(booking.getPackageId());
+        } else if (booking.getComboId() != null) {
+            packageName = serviceComboRepository.findById(booking.getComboId())
+                    .map(com.autowash.catalog.entity.ServiceCombo::getName)
+                    .orElse(booking.getComboId());
+        }
+
+        var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
+                .orElse(null);
+
+        List<com.autowash.booking.dto.AddonSelectionResponse> addonSelections = booking.getAddons().stream()
+                .map(addon -> new com.autowash.booking.dto.AddonSelectionResponse(addon.getAddonId(), addon.getAddonName(), addon.getAddonPrice()))
+                .toList();
+
+        return new com.autowash.booking.dto.BookingDetailResponse(
+                booking.getId(),
+                booking.getId(),
+                booking.getCustomer().getId().toString(),
+                booking.getCustomer().getFullName(),
+                booking.getCustomer().getPhone(),
+                booking.getVehicle().getId().toString(),
+                booking.getVehicle().getPlate(),
+                booking.getVehicle().getBrand(),
+                booking.getVehicle().getModel(),
+                booking.getPackageId(),
+                packageName,
+                addonSelections,
+                new com.autowash.booking.dto.BookingDetailResponse.Pricing(
+                        booking.getBasePrice(),
+                        booking.getAddonsTotal(),
+                        booking.getBasePrice() + booking.getAddonsTotal(),
+                        booking.getVoucherCode(),
+                        booking.getVoucherDiscount(),
+                        booking.getFinalAmount(),
+                        "VND"
+                ),
+                new com.autowash.booking.dto.BookingDetailResponse.Scheduling(
+                        booking.getBookingDate(),
+                        booking.getBookingTime().toString(),
+                        booking.getEstimatedDurationMinutes(),
+                        booking.getBookingTime().plusMinutes(booking.getEstimatedDurationMinutes()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+                ),
+                new com.autowash.booking.dto.BookingDetailResponse.Payment(
+                        booking.getPaymentMethod().name(),
+                        booking.getPaymentStatus().name(),
+                        "TXN_" + booking.getId(),
+                        booking.getCreatedAt()
+                ),
+                booking.getStatus().name(),
+                washSession == null ? null : washSession.getId().toString(),
+                null,
+                washSession == null ? null : washSession.getStatus().name(),
+                washSession == null ? null : washSession.getNotes(),
+                booking.getCreatedAt()
+        );
     }
 
     @Transactional
