@@ -65,4 +65,9 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
     long sumFinalAmountByCustomerAndStatus(@Param("customer") AuthUser customer, @Param("status") BookingStatus status);
 
     Optional<CustomerBooking> findFirstByCustomerOrderByCreatedAtDesc(AuthUser customer);
+
+    long countByStatus(BookingStatus status);
+
+    @Query("select coalesce(sum(b.finalAmount), 0) from CustomerBooking b where b.status = :status")
+    long sumFinalAmountByStatus(@Param("status") BookingStatus status);
 }

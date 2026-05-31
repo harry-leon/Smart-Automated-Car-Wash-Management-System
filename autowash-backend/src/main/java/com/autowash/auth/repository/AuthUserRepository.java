@@ -1,5 +1,6 @@
 package com.autowash.auth.repository;
 
+import com.autowash.auth.entity.UserRole;
 import com.autowash.auth.entity.AuthUser;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,4 +15,6 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
     Optional<AuthUser> findByPhone(String phone);
 
     Optional<AuthUser> findByEmailIgnoreCase(String email);
+
+    long countByRole(UserRole role);
 }

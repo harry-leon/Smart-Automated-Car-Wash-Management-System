@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Pencil, Plus, RefreshCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import {
+  useAdminPromotion,
   useAdminPromotions,
   useCreateAdminPromotion,
   useDeleteAdminPromotion,
@@ -68,12 +69,14 @@ const EMPTY_FORM: PromotionFormValues = {
 export function AdminPromotionsPageContent() {
   const [page, setPage] = useState(1);
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
+  const [editingPromotionId, setEditingPromotionId] = useState<string | null>(null);
   const [form, setForm] = useState<PromotionFormValues>(EMPTY_FORM);
   const [showValidation, setShowValidation] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const promotionsQuery = useAdminPromotions(page, PAGE_LIMIT);
+  const promotionDetailQuery = useAdminPromotion(editingPromotionId);
   const createMutation = useCreateAdminPromotion();
   const updateMutation = useUpdateAdminPromotion();
   const deleteMutation = useDeleteAdminPromotion();
@@ -87,8 +90,16 @@ export function AdminPromotionsPageContent() {
   const canGoPrev = page > 1;
   const canGoNext = Boolean(promotionsQuery.data?.pagination.hasMore);
 
+  useEffect(() => {
+    if (promotionDetailQuery.data) {
+      setEditingPromotion(promotionDetailQuery.data);
+      setForm(toFormValues(promotionDetailQuery.data));
+    }
+  }, [promotionDetailQuery.data]);
+
   const handleResetForm = () => {
     setEditingPromotion(null);
+    setEditingPromotionId(null);
     setForm(EMPTY_FORM);
     setShowValidation(false);
     createMutation.reset();
@@ -97,6 +108,7 @@ export function AdminPromotionsPageContent() {
 
   const handleEdit = (promotion: Promotion) => {
     setEditingPromotion(promotion);
+    setEditingPromotionId(promotion.promotionId);
     setForm(toFormValues(promotion));
     setShowValidation(false);
     createMutation.reset();
@@ -170,7 +182,13 @@ export function AdminPromotionsPageContent() {
         </div>
 
         <div className="grid gap-6">
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <Dialog
+            open={isModalOpen}
+            onOpenChange={(open) => {
+              setIsModalOpen(open);
+              if (!open) handleResetForm();
+            }}
+          >
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{isEditing ? "Edit promotion" : "Create promotion"}</DialogTitle>
@@ -179,6 +197,19 @@ export function AdminPromotionsPageContent() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
+                {promotionDetailQuery.isFetching && editingPromotionId ? (
+                  <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading latest promotion details...
+                  </div>
+                ) : null}
+
+                {promotionDetailQuery.isError && editingPromotionId ? (
+                  <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                    {getDisplayErrorMessage(promotionDetailQuery.error)}
+                  </p>
+                ) : null}
+
                 {activeMutationError ? (
                   <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                     {getDisplayErrorMessage(activeMutationError)}
@@ -312,7 +343,11 @@ export function AdminPromotionsPageContent() {
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || promotionDetailQuery.isFetching}
+                >
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isEditing ? "Save changes" : "Create promotion"}
                 </Button>
