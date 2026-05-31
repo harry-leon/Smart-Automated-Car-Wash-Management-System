@@ -87,8 +87,9 @@ public class PromotionService {
     @Transactional
     public PromotionResponse delete(String promotionId) {
         Promotion promotion = requirePromotion(promotionId);
-        promotion.deactivate();
-        return toResponse(promotion);
+        PromotionResponse response = toResponse(promotion);
+        promotionRepository.delete(promotion);
+        return response;
     }
 
     @Transactional(readOnly = true)

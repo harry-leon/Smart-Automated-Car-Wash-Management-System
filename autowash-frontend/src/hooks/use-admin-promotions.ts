@@ -76,8 +76,29 @@ export function useDeleteAdminPromotion() {
 
   return useMutation<Promotion, ApiErrorResponse, string>({
     mutationFn: deleteAdminPromotion,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminPromotionsQueryScope(userId) });
+    onSuccess: (_data, deletedPromotionId) => {
+      queryClient.setQueriesData<PromotionListPage>(
+        { queryKey: adminPromotionsQueryScope(userId) },
+        (current) => {
+          if (!current) {
+            return current;
+          }
+
+          const items = current.items.filter((item) => item.promotionId !== deletedPromotionId);
+          if (items.length === current.items.length) {
+            return current;
+          }
+
+          return {
+            ...current,
+            items,
+            pagination: {
+              ...current.pagination,
+              total: Math.max(0, current.pagination.total - 1),
+            },
+          };
+        },
+      );
     },
   });
 }

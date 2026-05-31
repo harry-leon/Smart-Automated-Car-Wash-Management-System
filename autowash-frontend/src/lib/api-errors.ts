@@ -49,6 +49,13 @@ export function getDisplayErrorMessage(error: unknown): string {
     return error.message;
   }
 
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+
   return "Unexpected error";
 }
 

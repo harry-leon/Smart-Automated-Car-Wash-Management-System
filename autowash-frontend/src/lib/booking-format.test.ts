@@ -187,6 +187,26 @@ test("validates the required customer booking selections", () => {
   );
 });
 
+test("rejects voucher codes that are not uppercase or contain spaces", () => {
+  assert.equal(
+    validateBookingDraft(
+      {
+        mode: "PACKAGE",
+        vehicleId: "vehicle_001",
+        packageId: "pkg_001",
+        comboId: "",
+        addonIds: [],
+        bookingDate: "2026-06-10",
+        bookingTime: "14:00",
+        voucherCode: "welcome 20",
+        paymentMethod: "E_WALLET",
+      },
+      null,
+    ).voucherCode,
+    "Mã giảm giá phải viết hoa và không chứa khoảng trắng.",
+  );
+});
+
 test("labels backend statuses and payment methods for customer pages", () => {
   assert.equal(getBookingStatusLabel("CHECKED_IN"), "Checked in");
   assert.equal(getPaymentMethodLabel("CASH_AT_COUNTER"), "Cash at counter");

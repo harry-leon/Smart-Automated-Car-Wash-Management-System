@@ -1,16 +1,40 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Pencil, Plus, RefreshCcw, Trash2 } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Loader2,
+  Megaphone,
+  Pencil,
+  Percent,
+  Plus,
+  RefreshCcw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  promotionNameFormatMessage,
+  sanitizePromotionNameInput,
+} from "@/lib/validators";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +62,6 @@ import type { LoyaltyTier } from "@/types/loyalty.types";
 
 type PromotionFormValues = {
   name: string;
-  description: string;
   discountType: PromotionDiscountType;
   discountValue: string;
   startDate: string;
@@ -51,11 +74,17 @@ type PromotionFormValues = {
 
 type PromotionFormErrors = Partial<Record<keyof PromotionFormValues, string>>;
 
-const PAGE_LIMIT = 20;
+const PAGE_LIMIT = 10;
+const FETCH_LIMIT = 100;
 const ALL_TIERS: LoyaltyTier[] = ["MEMBER", "SILVER", "GOLD", "PLATINUM"];
+
+type PromotionFilters = {
+  name: string;
+  status: "ALL" | PromotionStatus;
+  date: string;
+};
 const EMPTY_FORM: PromotionFormValues = {
   name: "",
-  description: "",
   discountType: "PERCENT",
   discountValue: "",
   startDate: "",
@@ -67,7 +96,8 @@ const EMPTY_FORM: PromotionFormValues = {
 };
 
 export function AdminPromotionsPageContent() {
-  const [page, setPage] = useState(1);
+  const [displayPage, setDisplayPage] = useState(1);
+  const [filters, setFilters] = useState<PromotionFilters>({ name: "", status: "ALL", date: "" });
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
   const [editingPromotionId, setEditingPromotionId] = useState<string | null>(null);
   const [form, setForm] = useState<PromotionFormValues>(EMPTY_FORM);
@@ -75,7 +105,7 @@ export function AdminPromotionsPageContent() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const promotionsQuery = useAdminPromotions(page, PAGE_LIMIT);
+  const promotionsQuery = useAdminPromotions(1, FETCH_LIMIT);
   const promotionDetailQuery = useAdminPromotion(editingPromotionId);
   const createMutation = useCreateAdminPromotion();
   const updateMutation = useUpdateAdminPromotion();
@@ -86,9 +116,29 @@ export function AdminPromotionsPageContent() {
   const clientErrors = useMemo(() => validatePromotionForm(form), [form]);
   const displayErrors = mergeFormErrors(clientErrors, activeMutationError, showValidation);
 
+  const filteredPromotions = useMemo(
+    () => filterPromotions(promotionsQuery.data?.items ?? [], filters),
+    [promotionsQuery.data?.items, filters],
+  );
+
+  const totalDisplayPages = Math.max(1, Math.ceil(filteredPromotions.length / PAGE_LIMIT));
+  const paginatedPromotions = useMemo(() => {
+    const start = (displayPage - 1) * PAGE_LIMIT;
+    return filteredPromotions.slice(start, start + PAGE_LIMIT);
+  }, [filteredPromotions, displayPage]);
+
   const isEditing = Boolean(editingPromotion);
-  const canGoPrev = page > 1;
-  const canGoNext = Boolean(promotionsQuery.data?.pagination.hasMore);
+  const canGoPrev = displayPage > 1;
+  const canGoNext = displayPage < totalDisplayPages;
+  const hasActiveFilters = Boolean(filters.name || filters.status !== "ALL" || filters.date);
+
+  useEffect(() => {
+    setDisplayPage(1);
+  }, [filters]);
+
+  const handleResetFilters = () => {
+    setFilters({ name: "", status: "ALL", date: "" });
+  };
 
   useEffect(() => {
     if (promotionDetailQuery.data) {
@@ -141,20 +191,27 @@ export function AdminPromotionsPageContent() {
   const handleDelete = async (promotionId: string) => {
     try {
       await deleteMutation.mutateAsync(promotionId);
-      toast.success("Promotion deactivated.");
+      toast.success("Promotion deleted.");
       setConfirmDeleteId(null);
-    } catch {
-      toast.error("Unable to delete promotion.");
+    } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
     }
   };
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Promotions</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage promotion campaigns and tier targeting rules.</p>
+    <div className="p-4 md:p-8 lg:p-10">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25">
+              <Megaphone className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Promotions</h1>
+              <p className="mt-0.5 text-sm text-slate-500">
+                Manage campaigns, discounts, and tier targeting rules.
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button
@@ -175,11 +232,107 @@ export function AdminPromotionsPageContent() {
               onClick={() => promotionsQuery.refetch()}
               disabled={promotionsQuery.isFetching}
             >
-              <RefreshCcw className="mr-2 h-4 w-4" />
+              <RefreshCcw className={cn("mr-2 h-4 w-4", promotionsQuery.isFetching && "animate-spin")} />
               Refresh
             </Button>
           </div>
         </div>
+
+        <Card className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end">
+            <div className="flex-[1.5] space-y-1.5">
+              <Label
+                htmlFor="filter-name"
+                className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Promotion name
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="filter-name"
+                  value={filters.name}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Search by promotion name..."
+                  className="border-slate-200 bg-slate-50/50 pl-9 focus:bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-1.5">
+              <Label
+                htmlFor="filter-status"
+                className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Status
+              </Label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) =>
+                  setFilters((prev) => ({ ...prev, status: value as PromotionFilters["status"] }))
+                }
+              >
+                <SelectTrigger id="filter-status" className="border-slate-200 bg-slate-50/50">
+                  <SelectValue placeholder="All status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All status</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-1 space-y-1.5">
+              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Active on date
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start border-slate-200 bg-slate-50/50 text-left font-normal",
+                      !filters.date && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.date ? formatFilterDate(filters.date) : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={filters.date ? new Date(filters.date) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, "0");
+                        const day = String(date.getDate()).padStart(2, "0");
+                        setFilters((prev) => ({ ...prev, date: `${year}-${month}-${day}` }));
+                      } else {
+                        setFilters((prev) => ({ ...prev, date: "" }));
+                      }
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="flex items-center gap-2 pb-0.5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleResetFilters}
+                disabled={!hasActiveFilters}
+                className="gap-1.5 rounded-full"
+              >
+                <X className="h-3.5 w-3.5" />
+                Reset
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid gap-6">
           <Dialog
@@ -219,18 +372,16 @@ export function AdminPromotionsPageContent() {
               <FormField label="Name" error={displayErrors.name}>
                 <Input
                   value={form.name}
-                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                  placeholder="Promotion name"
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, name: sanitizePromotionNameInput(event.target.value) }))
+                  }
+                  placeholder="VD: SUMMER2026"
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="font-medium tracking-wide"
                 />
-              </FormField>
-
-              <FormField label="Description" error={displayErrors.description}>
-                <Textarea
-                  value={form.description}
-                  onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-                  rows={3}
-                  placeholder="Optional campaign description"
-                />
+                <p className="text-xs text-slate-500">{promotionNameFormatMessage}</p>
               </FormField>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -356,139 +507,216 @@ export function AdminPromotionsPageContent() {
             </DialogContent>
           </Dialog>
 
-          <Card className="border-border/50 bg-white shadow-sm rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border/50 bg-slate-50/50 px-6 py-4">
-              <div>
-                <CardTitle className="text-lg">Promotion list</CardTitle>
-                <CardDescription>All active and inactive campaigns</CardDescription>
+          <Card className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-6 py-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="text-lg font-semibold text-slate-900">Promotion list</CardTitle>
+                  <CardDescription>
+                    {promotionsQuery.data
+                      ? `Showing ${paginatedPromotions.length} of ${filteredPromotions.length} promotion${filteredPromotions.length !== 1 ? "s" : ""}`
+                      : "All active and inactive campaigns"}
+                  </CardDescription>
+                </div>
+                {hasActiveFilters ? (
+                  <Badge variant="outline" className="w-fit border-orange-200 bg-orange-50 text-orange-700">
+                    Filters applied
+                  </Badge>
+                ) : null}
               </div>
-            </div>
-            <CardContent className="space-y-4">
+            </CardHeader>
+            <CardContent className="p-0">
               {promotionsQuery.isPending ? (
-                <div className="flex items-center gap-2 rounded-md border border-slate-200 p-3 text-sm text-slate-600">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="flex items-center justify-center gap-2 p-12 text-sm text-slate-600">
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   Loading promotions...
                 </div>
               ) : promotionsQuery.isError ? (
-                <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                <div className="m-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
                   {getDisplayErrorMessage(promotionsQuery.error)}
                 </div>
-              ) : !promotionsQuery.data || promotionsQuery.data.items.length === 0 ? (
-                <div className="rounded-md border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-                  Không có dữ liệu.
+              ) : filteredPromotions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 p-12 text-center">
+                  <Megaphone className="h-10 w-10 text-slate-300" />
+                  <p className="text-sm font-medium text-slate-600">
+                    {hasActiveFilters ? "No promotions match your filters." : "No promotions yet."}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {hasActiveFilters ? "Try adjusting search or filter criteria." : "Create your first campaign to get started."}
+                  </p>
                 </div>
               ) : (
                 <>
-                  <Table>
-                    <TableHeader className="bg-slate-50/80">
-                      <TableRow>
-                        <TableHead className="text-xs font-semibold uppercase text-slate-500">Name</TableHead>
-                        <TableHead className="text-xs font-semibold uppercase text-slate-500">Discount</TableHead>
-                        <TableHead className="text-xs font-semibold uppercase text-slate-500">Targeting</TableHead>
-                        <TableHead className="text-xs font-semibold uppercase text-slate-500">Date range</TableHead>
-                        <TableHead className="text-xs font-semibold uppercase text-slate-500">Status</TableHead>
-                        <TableHead className="text-right text-xs font-semibold uppercase text-slate-500">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {promotionsQuery.data.items.map((promotion) => (
-                        <TableRow key={promotion.promotionId}>
-                          <TableCell>
-                            <div className="font-medium text-slate-900">{promotion.name}</div>
-                            <div className="text-xs text-slate-500">{promotion.promotionId}</div>
-                          </TableCell>
-                          <TableCell>{formatDiscount(promotion.discountType, promotion.discountValue)}</TableCell>
-                          <TableCell>
-                            <div className="text-sm">{promotion.targetingMode}</div>
-                            <div className="text-xs text-slate-500">
-                              {promotion.applicableTiers.length > 0 ? promotion.applicableTiers.join(", ") : "All tiers"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">{formatDate(promotion.startDate)}</div>
-                            <div className="text-xs text-slate-500">to {formatDate(promotion.endDate)}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant="outline" 
-                              className={promotion.status === "ACTIVE" 
-                                ? "border-emerald-200 bg-emerald-50 text-emerald-700" 
-                                : "border-slate-200 bg-slate-50 text-slate-600"}
-                            >
-                              {promotion.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex justify-end gap-2">
-                              <Button type="button" size="sm" variant="outline" onClick={() => handleEdit(promotion)}>
-                                <Pencil className="mr-2 h-3.5 w-3.5" />
-                                Edit
-                              </Button>
-                              {confirmDeleteId === promotion.promotionId ? (
-                                <>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleDelete(promotion.promotionId)}
-                                    disabled={deleteMutation.isPending}
-                                  >
-                                    {deleteMutation.isPending ? (
-                                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="mr-2 h-3.5 w-3.5" />
-                                    )}
-                                    Confirm
-                                  </Button>
-                                  <Button type="button" size="sm" variant="outline" onClick={() => setConfirmDeleteId(null)}>
-                                    Cancel
-                                  </Button>
-                                </>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader className="bg-slate-50/80">
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="pl-6 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Name
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Discount
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Targeting
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Date range
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Status
+                          </TableHead>
+                          <TableHead className="pr-6 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedPromotions.map((promotion) => (
+                          <TableRow key={promotion.promotionId} className="group hover:bg-orange-50/30">
+                            <TableCell className="pl-6">
+                              <div className="font-medium text-slate-900">{promotion.name}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "rounded-full border-0 px-2.5 py-0.5 font-semibold",
+                                  promotion.discountType === "PERCENT"
+                                    ? "bg-violet-100 text-violet-700"
+                                    : "bg-sky-100 text-sky-700",
+                                )}
+                              >
+                                {promotion.discountType === "PERCENT" ? (
+                                  <Percent className="mr-1 inline h-3 w-3" />
+                                ) : null}
+                                {formatDiscount(promotion.discountType, promotion.discountValue)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {promotion.targetingMode === "ALL_TIERS" ? (
+                                <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 text-slate-600">
+                                  All tiers
+                                </Badge>
                               ) : (
+                                <div className="flex flex-wrap gap-1">
+                                  {promotion.applicableTiers.map((tier) => (
+                                    <Badge
+                                      key={tier}
+                                      variant="outline"
+                                      className="rounded-full border-amber-200 bg-amber-50 text-xs text-amber-800"
+                                    >
+                                      {tier}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm text-slate-700">{formatDate(promotion.startDate)}</div>
+                              <div className="text-xs text-slate-400">→ {formatDate(promotion.endDate)}</div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "rounded-full border-0 px-2.5 py-0.5 font-semibold",
+                                  promotion.status === "ACTIVE"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-slate-100 text-slate-500",
+                                )}
+                              >
+                                {promotion.status === "ACTIVE" ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="pr-6">
+                              <div className="flex justify-end gap-1.5 opacity-90 transition-opacity group-hover:opacity-100">
                                 <Button
                                   type="button"
                                   size="sm"
-                                  variant="destructive"
-                                  onClick={() => setConfirmDeleteId(promotion.promotionId)}
+                                  variant="outline"
+                                  className="h-8 rounded-full border-slate-200 px-3"
+                                  onClick={() => handleEdit(promotion)}
                                 >
-                                  <Trash2 className="mr-2 h-3.5 w-3.5" />
-                                  Delete
+                                  <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                                  Edit
                                 </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-
-                  <div className="flex items-center justify-between border-t border-border/50 bg-slate-50/30 px-6 py-4">
-                    <p className="text-sm text-slate-500 font-medium">
-                      Page {promotionsQuery.data.pagination.page} / {Math.max(promotionsQuery.data.pagination.totalPages, 1)}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        className="rounded-full shadow-sm"
-                        disabled={!canGoPrev} 
-                        onClick={() => setPage((value) => value - 1)}
-                      >
-                        Previous
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full shadow-sm" 
-                        disabled={!canGoNext} 
-                        onClick={() => setPage((value) => value + 1)}
-                      >
-                        Next
-                      </Button>
-                    </div>
+                                {confirmDeleteId === promotion.promotionId ? (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="destructive"
+                                      className="h-8 rounded-full px-3"
+                                      onClick={() => handleDelete(promotion.promotionId)}
+                                      disabled={deleteMutation.isPending}
+                                    >
+                                      {deleteMutation.isPending ? (
+                                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                      )}
+                                      Confirm
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 rounded-full px-3"
+                                      onClick={() => setConfirmDeleteId(null)}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 rounded-full border-rose-200 px-3 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                    onClick={() => setConfirmDeleteId(promotion.promotionId)}
+                                  >
+                                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                                    Delete
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
+
+                  {totalDisplayPages > 1 ? (
+                    <div className="flex justify-center border-t border-slate-100 py-4">
+                      <div className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white p-1.5 shadow-sm">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 rounded-full px-5 text-sm font-medium"
+                          disabled={!canGoPrev}
+                          onClick={() => setDisplayPage((value) => Math.max(1, value - 1))}
+                        >
+                          Previous
+                        </Button>
+                        <span className="min-w-[80px] px-2 text-center text-sm font-semibold text-slate-600">
+                          Page {displayPage} / {totalDisplayPages}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 rounded-full px-5 text-sm font-medium"
+                          disabled={!canGoNext}
+                          onClick={() => setDisplayPage((value) => Math.min(totalDisplayPages, value + 1))}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </>
               )}
             </CardContent>
@@ -522,7 +750,9 @@ function validatePromotionForm(form: PromotionFormValues): PromotionFormErrors {
   const discountValue = Number(form.discountValue);
   const maxUsage = form.maxUsagePerCustomer ? Number(form.maxUsagePerCustomer) : null;
 
-  if (!form.name.trim()) errors.name = "Name is required.";
+  if (!form.name.trim()) {
+    errors.name = "Name is required.";
+  }
   if (!form.discountValue || Number.isNaN(discountValue) || discountValue < 1) {
     errors.discountValue = "Discount value must be at least 1.";
   } else if (form.discountType === "PERCENT" && discountValue > 100) {
@@ -594,8 +824,8 @@ function toRequestPayload(form: PromotionFormValues): PromotionRequest | null {
   }
 
   return {
-    name: form.name.trim(),
-    description: form.description.trim() || null,
+    name: sanitizePromotionNameInput(form.name.trim()),
+    description: null,
     discountType: form.discountType,
     discountValue,
     startDate: startDate.toISOString(),
@@ -609,8 +839,7 @@ function toRequestPayload(form: PromotionFormValues): PromotionRequest | null {
 
 function toFormValues(promotion: Promotion): PromotionFormValues {
   return {
-    name: promotion.name,
-    description: promotion.description ?? "",
+    name: sanitizePromotionNameInput(promotion.name),
     discountType: promotion.discountType,
     discountValue: String(promotion.discountValue),
     startDate: toLocalDateTimeInputValue(promotion.startDate),
@@ -630,7 +859,48 @@ function toLocalDateTimeInputValue(value: string) {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return date.toLocaleDateString("vi-VN", { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function formatFilterDate(value: string) {
+  try {
+    return new Date(value).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return value;
+  }
+}
+
+function filterPromotions(items: Promotion[], filters: PromotionFilters): Promotion[] {
+  const nameQuery = filters.name.trim().toLowerCase();
+
+  return items.filter((promotion) => {
+    if (nameQuery && !promotion.name.toLowerCase().includes(nameQuery)) {
+      return false;
+    }
+
+    if (filters.status !== "ALL" && promotion.status !== filters.status) {
+      return false;
+    }
+
+    if (filters.date) {
+      const selected = new Date(filters.date);
+      selected.setHours(0, 0, 0, 0);
+      const start = new Date(promotion.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(promotion.endDate);
+      end.setHours(23, 59, 59, 999);
+
+      if (selected < start || selected > end) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 }
 
 function formatDiscount(type: PromotionDiscountType, value: number) {
