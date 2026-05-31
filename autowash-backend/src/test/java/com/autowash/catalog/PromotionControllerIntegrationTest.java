@@ -42,7 +42,7 @@ class PromotionControllerIntegrationTest {
 
     @Test
     void adminCanCreateReadUpdateAndDeletePromotion() throws Exception {
-        String promotionId = createPromotion("Admin Spring Sale", "SELECTED_TIERS", """
+        String promotionId = createPromotion("ADMIN_SPRING_SALE", "SELECTED_TIERS", """
                 ["SILVER","GOLD"]
                 """);
 
@@ -50,7 +50,7 @@ class PromotionControllerIntegrationTest {
                         .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.promotionId").value(promotionId))
-                .andExpect(jsonPath("$.data.name").value("Admin Spring Sale"))
+                .andExpect(jsonPath("$.data.name").value("ADMIN_SPRING_SALE"))
                 .andExpect(jsonPath("$.data.targetingMode").value("SELECTED_TIERS"))
                 .andExpect(jsonPath("$.data.applicableTiers", hasItem("SILVER")));
 
@@ -59,7 +59,7 @@ class PromotionControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "name": "Admin Spring Sale Updated",
+                                  "name": "ADMIN_SPRING_SALE_UPDATED",
                                   "description": "Updated campaign",
                                   "discountType": "FIXED",
                                   "discountValue": 50000,
@@ -71,14 +71,36 @@ class PromotionControllerIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.name").value("Admin Spring Sale Updated"))
+                .andExpect(jsonPath("$.data.name").value("ADMIN_SPRING_SALE_UPDATED"))
                 .andExpect(jsonPath("$.data.discountType").value("FIXED"))
                 .andExpect(jsonPath("$.data.targetingMode").value("ALL_TIERS"));
 
         mockMvc.perform(delete("/api/v1/admin/promotions/{promotionId}", promotionId)
                         .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("INACTIVE"));
+                .andExpect(jsonPath("$.data.promotionId").value(promotionId));
+
+        mockMvc.perform(get("/api/v1/admin/promotions/{promotionId}", promotionId)
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createRejectsInvalidPromotionName() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/promotions")
+                        .with(user("admin").roles("ADMIN"))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "name": "summer sale",
+                                  "discountType": "PERCENT",
+                                  "discountValue": 10,
+                                  "startDate": "2026-01-01T00:00:00Z",
+                                  "endDate": "2026-12-31T23:59:59Z",
+                                  "targetingMode": "ALL_TIERS"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -88,7 +110,7 @@ class PromotionControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "name": "Bad Date",
+                                  "name": "BAD_DATE",
                                   "discountType": "PERCENT",
                                   "discountValue": 10,
                                   "startDate": "2026-12-31T23:59:59Z",
@@ -104,7 +126,7 @@ class PromotionControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "name": "Missing Tiers",
+                                  "name": "MISSING_TIERS",
                                   "discountType": "PERCENT",
                                   "discountValue": 10,
                                   "startDate": "2026-01-01T00:00:00Z",
@@ -143,7 +165,7 @@ class PromotionControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "name": "Forbidden",
+                                  "name": "FORBIDDEN",
                                   "discountType": "PERCENT",
                                   "discountValue": 10,
                                   "startDate": "2026-01-01T00:00:00Z",

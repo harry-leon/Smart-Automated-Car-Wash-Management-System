@@ -29,4 +29,12 @@ public record CreateBookingRequest(
     public boolean hasPackageOrCombo() {
         return (packageId != null && !packageId.isBlank()) || (comboId != null && !comboId.isBlank());
     }
+
+    @AssertTrue(message = "Voucher code must be uppercase and must not contain spaces")
+    public boolean isValidVoucherCode() {
+        if (voucherCode == null || voucherCode.isBlank()) {
+            return true;
+        }
+        return voucherCode.matches("^[A-Z0-9_-]+$");
+    }
 }
