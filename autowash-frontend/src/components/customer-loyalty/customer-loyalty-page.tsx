@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Gift, RefreshCcw, ShieldCheck, Sparkles } from "lucide-react";
+import { Gift, RefreshCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import {
+  formatLoyaltyPoints,
   buildLoyaltySummary,
   formatLoyaltyTransactionType,
   formatTierLabel,
@@ -66,8 +67,11 @@ export function CustomerLoyaltyPageContent() {
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 Refresh
               </Button>
+              <Button asChild variant="outline">
+                <Link href="/customer/loyalty/redeem">Redeem points</Link>
+              </Button>
               <Button asChild>
-                <Link href="/customer/promotions">View promotions</Link>
+                <Link href="/customer/loyalty/history">View transactions</Link>
               </Button>
             </div>
           </div>
@@ -135,7 +139,11 @@ export function CustomerLoyaltyPageContent() {
                   <div key={item.transactionId} className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-sm font-bold text-slate-900">{formatLoyaltyTransactionType(item.type)}</div>
-                      <div className="text-sm font-black text-emerald-700">+{item.points} pts</div>
+                      <div
+                        className={item.points >= 0 ? "text-sm font-black text-emerald-700" : "text-sm font-black text-rose-700"}
+                      >
+                        {formatLoyaltyPoints(item.points)}
+                      </div>
                     </div>
                     <div className="mt-1 text-sm text-slate-600">{item.description}</div>
                     <div className="mt-2 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString("vi-VN")}</div>

@@ -94,6 +94,41 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     }
 
     @Test
+    void redeemUpdatesAccountBalanceAndTransactionHistory() throws Exception {
+        String phone = "0901777105";
+        CustomerBooking booking = createConfirmedBooking("LOYALTY_BK_003", phone, 600000);
+        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        createCompletedSession(booking.getId());
+
+        mockMvc.perform(post("/api/v1/loyalty/redeem")
+                        .with(authenticatedCustomer(customer))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "pointsToRedeem": 50,
+                                  "referenceId": "LOYALTY_BK_003"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
+                .andExpect(jsonPath("$.data.newBalance").value(10));
+
+        mockMvc.perform(get("/api/v1/loyalty/account")
+                        .with(authenticatedCustomer(customer)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentPoints").value(10));
+
+        mockMvc.perform(get("/api/v1/loyalty/transactions")
+                        .with(authenticatedCustomer(customer)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].type").value("REDEEM"))
+                .andExpect(jsonPath("$.data[0].points").value(-50))
+                .andExpect(jsonPath("$.data[1].type").value("EARN"))
+                .andExpect(jsonPath("$.data[1].points").value(60));
+    }
+
+    @Test
     void activePromotionsFilterByCustomerTierAndNewCustomerAudience() throws Exception {
         AuthUser member = createActiveCustomer("0901777103");
         mockMvc.perform(get("/api/v1/promotions/active")
