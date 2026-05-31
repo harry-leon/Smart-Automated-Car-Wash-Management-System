@@ -401,7 +401,7 @@ Ngoài ra, trong các Epic bắt buộc ở trên cũng cần chia nhỏ:
 | Task 2.1 Get profile | App init + `/customer/profile` | `GET /users/profile` | Cache bằng React Query, dùng cho sidebar |
 | Task 2.2 Update profile | `/customer/profile` | `PUT /users/profile` | Hiện toast success/error |
 | Task 2.3 Preferences | `/customer/settings` | `GET/PUT /users/preferences` | Apply theme/language ngay lập tức |
-| Task 2.4 Update status | `/admin/customers/:id` | `PUT /admin/customers/:id/status` | Admin only, có confirm dialog |
+| Task 2.4 Update status | `/admin/customers/:customerId` | `PUT /admin/customers/:customerId/status` | Admin only, có confirm dialog |
 
 ---
 
@@ -524,7 +524,7 @@ Staff hoàn thành    POST /operations/wash-sessions/:id/complete
 |---|---|---|---|
 | Task 7.1 Earn points | — (auto sau complete) | Internal trigger | Frontend nhận qua WS `loyalty:points:updated` |
 | Task 7.3 Redeem → voucher | `/customer/loyalty/redeem` | `POST /loyalty/redeem-points` | Slider 50–200 điểm, hiện VND value realtime |
-| Task 7.4 Redeem → checkout | `/customer/bookings/new` bước 5 | `POST /bookings/:id/apply-points` | Slider, cập nhật finalAmount realtime |
+| Task 7.4 Redeem → checkout | `/customer/bookings/new` bước 5 | `POST /bookings/:bookingId/apply-points` | Slider, cập nhật finalAmount realtime |
 | Task 7.7 Account details | `/customer/loyalty` | `GET /loyalty/account` | Hiện tier, balance, nextThreshold, warning |
 | Task 7.8 Transaction history | `/customer/loyalty/history` | `GET /loyalty/transactions` | Color: EARN=green, REDEEM=red, EXPIRE=gray |
 
@@ -558,7 +558,7 @@ Staff hoàn thành    POST /operations/wash-sessions/:id/complete
 | Task 9.3 Booking detail + assign | `/admin/bookings/:id` | `GET/PUT /admin/bookings/:id` | Assign staff chỉ khi session IN_PROGRESS |
 | Task 9.4 Accounts directory | `/admin/customers` (label `Accounts`) | `GET /admin/accounts` | Merge customer/staff/admin, filter role/tier/status |
 | Task 9.5 Customer detail | `/admin/customers/:id` | 6 endpoints tương ứng 6 tab | Staff/admin account mở summary panel nhẹ hơn |
-| Task 9.6 Customer status | `/admin/customers/:id` | `PUT /admin/customers/:id/status` | ACTIVE/BLOCKED/SUSPENDED |
+| Task 9.6 Customer status | `/admin/customers/:customerId` | `PUT /admin/customers/:customerId/status` | ACTIVE/BLOCKED/SUSPENDED |
 | Task 9.7 Reports | `/admin/reports` | `GET /admin/reports/:reportType` | Thêm daily staff wash counts, date filter, pagination |
 
 **6 tab customer detail:**
@@ -583,9 +583,9 @@ Các tab `Booking`, `Lịch sử rửa`, `Giao dịch điểm` là **ưu tiên b
 | Task 10.2 Booking confirmation | Toast khi booking confirmed + badge chuông | Nhận qua WS `notification:received` |
 | Task 10.3 Booking reminder | `useReminderPoller` — poll 30 giây | Deduplicate bằng `reminderSent_{bookingId}_{type}` trong localStorage |
 | Task 10.5 Points expiry warning | Banner cảnh báo trong `/customer/loyalty` | Data từ `expiringPointsWarnings[]` |
-| Task 10.7 Notification center | `/customer/notifications` | `GET /notifications` · `PUT /notifications/:id/read` |
+| Task 10.7 Notification center | `/customer/notifications` | `GET /customers/notifications` · `PUT /customers/notifications/:notificationId/read` |
 | Task 10.8 Support chat | Floating chat mọi role + staff/admin inbox | Customer có thread riêng; staff/admin dùng chung inbox |
-| Task 10.9 Live wash tracker | `/customer/home` | Tính progress từ wash session status, start time, package/add-on duration |
+| Task 10.9 Live wash tracker | `/customer/home` | `GET /customers/wash-tracking/active` · `GET /customers/wash-tracking/:washSessionId` |
 
 **Reminder timing:** 24 giờ trước · 1 giờ trước · 15 phút trước
 

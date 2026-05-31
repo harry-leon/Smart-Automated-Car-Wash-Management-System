@@ -5,11 +5,12 @@ import axios, {
   AxiosRequestConfig,
   InternalAxiosRequestConfig
 } from "axios";
+import { getApiErrorCode } from "@/lib/api-errors";
 import { clearAuthSession, getAccessToken, getRefreshToken, setAccessToken } from "@/store/auth.store";
 import { ApiErrorResponse, ApiSuccessResponse } from "@/types/api.types";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://api.autowash.local/api/v1";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
 
 type RetriableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean;
@@ -42,7 +43,7 @@ apiClient.interceptors.response.use(
 
     const isExpiredToken =
       error.response?.status === 401 &&
-      error.response.data?.errorCode === "TOKEN_EXPIRED";
+      getApiErrorCode(error.response.data) === "TOKEN_EXPIRED";
 
     if (!isExpiredToken || request._retry) {
       if (error.response?.status === 401) {

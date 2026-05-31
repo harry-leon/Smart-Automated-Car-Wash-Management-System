@@ -33,4 +33,10 @@ export type ApiErrorResponse = {
   message: string;
   errorCode: string;
   errors?: ApiFieldError[];
+  error?: {
+    code?: string;
+    message?: string;
+    action?: string;
+    suggestion?: string;
+  };
 };

@@ -354,7 +354,7 @@ com.autowash
   - Reason (optional)
   - Admin user ID
 - **Output:**
-  - PUT `/api/v1/admin/users/{userId}/status` endpoint
+  - PUT `/api/v1/admin/customers/{customerId}/status` endpoint
   - Update `users.status` field
   - Create audit record in `audit_logs` table
   - Response: updated user record with status

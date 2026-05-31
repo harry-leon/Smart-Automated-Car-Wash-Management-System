@@ -1,3 +1,5 @@
-export default function VerifyPage() {
-  return <main>Verify OTP</main>;
+import { redirect } from "next/navigation";
+
+export default function VerifyAliasPage() {
+  redirect("/verify-otp");
 }

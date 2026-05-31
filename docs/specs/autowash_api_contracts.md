@@ -113,8 +113,8 @@ Authorization: Bearer {accessToken}
 
 | Role | Accessible Endpoints | Workspace |
 |------|---------------------|-----------|
-| `CUSTOMER` | `/customer/*`, public endpoints | Customer portal |
-| `STAFF` | `/operations/*`, public endpoints | Staff operations |
+| `CUSTOMER` | UI `/customer/*`; API `/customers/*`, user, booking, loyalty, notification endpoints | Customer portal |
+| `STAFF` | UI `/staff/*`; API `/operations/*`, public endpoints | Staff operations |
 | `ADMIN` | `/admin/*`, all endpoints | Admin dashboard |
 | `GUEST` | Public endpoints only | Homepage |
 
@@ -1367,7 +1367,7 @@ Or with response:
     {
       "bookingId": "BK_20260523_001",
       "vehiclePlate": "30H-123456",
-      "packageName": "Basic Wash",
+      "servicePackageName": "Basic Wash",
       "bookingDate": "2026-06-10",
       "bookingTime": "14:00",
       "finalAmount": 270000,
@@ -1509,6 +1509,9 @@ Or with response:
   }
 }
 ```
+
+**Cancellation Rules:**
+- `200` - Booking can be cancelled while `PENDING` or `CONFIRMED`
 
 **Error Responses:**
 - `422` - Cannot cancel (IN_PROGRESS or COMPLETED) - RESOURCE_LOCKED
@@ -2037,7 +2040,8 @@ Or with response:
 
 **Query Parameters:**
 - `page=1&limit=20`
-- `tier=SILVER,GOLD` (optional)
+
+Customer tier is resolved from the authenticated customer token; clients do not pass another customer's tier.
 
 **Response (200 OK):**
 ```json
@@ -2054,10 +2058,12 @@ Or with response:
       "discountValue": 20,
       "startDate": "2026-06-01T00:00:00Z",
       "endDate": "2026-08-31T23:59:59Z",
-      "targetingMode": "ALL_MEMBERS",
-      "applicableTiers": null,
+      "targetingMode": "ALL_TIERS",
+      "applicableTiers": ["MEMBER", "SILVER", "GOLD", "PLATINUM"],
+      "maxUsagePerCustomer": 1,
       "status": "ACTIVE",
-      "banner": "https://..."
+      "createdAt": "2026-05-23T10:30:00Z",
+      "updatedAt": "2026-05-23T10:30:00Z"
     }
   ],
   "pagination": {
@@ -2268,17 +2274,20 @@ Or with response:
     {
       "bookingId": "BK_20260523_001",
       "confirmationNumber": "BK_20260523_001",
+      "customerId": "user_123",
       "customerName": "Nguyễn Văn A",
       "customerPhone": "0901234567",
       "vehiclePlate": "30H-123456",
+      "servicePackageId": "pkg_001",
       "packageName": "Basic Wash",
       "bookingDate": "2026-06-10",
       "bookingTime": "14:00",
       "finalAmount": 270000,
       "paymentMethod": "E_WALLET",
+      "paymentStatus": "CONFIRMED",
       "status": "CONFIRMED",
+      "sessionId": null,
       "washStatus": null,
-      "staffName": null,
       "createdAt": "2026-05-23T10:30:00Z"
     }
   ],
@@ -2453,20 +2462,22 @@ Or with response:
       "phone": "0901234567",
       "email": "nguyenvana@example.com",
       "status": "ACTIVE",
+      "tier": "SILVER",
       "registeredAt": "2026-01-15T10:30:00Z"
     },
     "loyalty": {
-      "currentTier": "SILVER",
-      "totalPoints": 2500,
-      "availableBalance": 1250,
-      "nextTierThreshold": 5000
+      "currentPoints": 1250,
+      "tier": "SILVER",
+      "updatedAt": "2026-05-20T11:15:00Z"
     },
-    "stats": {
+    "summary": {
       "totalBookings": 5,
       "completedBookings": 4,
       "cancelledBookings": 1,
+      "totalWashSessions": 4,
       "totalSpent": 1350000,
-      "averageOrderValue": 270000,
+      "totalPointsEarned": 135,
+      "totalPointsSpent": 50,
       "lastBookingDate": "2026-05-20T11:15:00Z",
       "lastBookingAmount": 350000
     }
@@ -2502,7 +2513,92 @@ Or with response:
 
 ---
 
-### 12.8 PUT /admin/customers/{customerId}/status
+### 12.8 GET /admin/customers/{customerId}/wash-sessions
+
+**Get customer's completed wash sessions**
+
+**Query Parameters:**
+- `page=1&limit=20`
+- `dateFrom=2026-01-01T00:00:00Z` (optional)
+- `dateTo=2026-12-31T23:59:59Z` (optional)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Customer wash sessions retrieved",
+  "data": [
+    {
+      "sessionId": "81e6f022-c58f-42fe-8ae2-d1eb512bd8ad",
+      "bookingId": "BK_20260523_001",
+      "vehiclePlate": "30H-123456",
+      "servicePackage": { "id": "pkg_001", "name": "Basic Wash" },
+      "status": "COMPLETED",
+      "bookingDate": "2026-06-10",
+      "bookingTime": "14:00",
+      "startedAt": "2026-06-10T07:15:00Z",
+      "completedAt": "2026-06-10T07:45:00Z",
+      "fee": { "amount": 270000, "currency": "VND" },
+      "pointsAwarded": 27
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 4,
+    "totalPages": 1,
+    "hasMore": false
+  }
+}
+```
+
+Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/wash-history`.
+
+---
+
+### 12.9 GET /admin/customers/{customerId}/point-transactions
+
+**Get customer's loyalty point transactions**
+
+**Query Parameters:**
+- `page=1&limit=20`
+- `type=EARN` (optional; valid values: `EARN`, `REDEEM`, `TIER_UPGRADE`, `ADJUST`, `EXPIRE`)
+- `dateFrom=2026-01-01T00:00:00Z` (optional)
+- `dateTo=2026-12-31T23:59:59Z` (optional)
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Customer point transactions retrieved",
+  "data": [
+    {
+      "transactionId": "7b4be8cf-bab0-4073-8922-166ff2cf64b1",
+      "type": "EARN",
+      "points": 27,
+      "balanceAfter": 27,
+      "reason": "Wash completed",
+      "referenceId": "81e6f022-c58f-42fe-8ae2-d1eb512bd8ad",
+      "createdAt": "2026-06-10T07:45:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "totalPages": 1,
+    "hasMore": false
+  }
+}
+```
+
+Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/point-history`.
+
+---
+
+### 12.10 PUT /admin/customers/{customerId}/status
 
 **Update customer status (block/suspend)**
 
@@ -2611,7 +2707,10 @@ Or with response:
   "discountValue": 20,
   "startDate": "2026-06-01T00:00:00Z",
   "endDate": "2026-08-31T23:59:59Z",
-  "targetingMode": "ALL_MEMBERS"
+  "targetingMode": "ALL_TIERS",
+  "applicableTiers": null,
+  "maxUsagePerCustomer": 1,
+  "status": "ACTIVE"
 }
 ```
 
@@ -2624,11 +2723,31 @@ Or with response:
   "data": {
     "promotionId": "promo_001",
     "name": "Summer Sale",
+    "description": "20% off all services",
+    "discountType": "PERCENT",
+    "discountValue": 20,
+    "startDate": "2026-06-01T00:00:00Z",
+    "endDate": "2026-08-31T23:59:59Z",
+    "targetingMode": "ALL_TIERS",
+    "applicableTiers": ["MEMBER", "SILVER", "GOLD", "PLATINUM"],
+    "maxUsagePerCustomer": 1,
     "status": "ACTIVE",
-    "createdAt": "2026-05-23T10:30:00Z"
+    "createdAt": "2026-05-23T10:30:00Z",
+    "updatedAt": "2026-05-23T10:30:00Z"
   }
 }
 ```
+
+**Admin promotion endpoints:**
+- `GET /api/v1/admin/promotions?page=1&limit=20` - List all promotions for admin.
+- `GET /api/v1/admin/promotions/{promotionId}` - Get promotion by id.
+- `PUT /api/v1/admin/promotions/{promotionId}` - Update promotion with the same request shape as create.
+- `DELETE /api/v1/admin/promotions/{promotionId}` - Deactivate promotion by setting `status=INACTIVE`.
+
+**Validation:**
+- `startDate <= endDate`
+- `discountType=PERCENT` requires `discountValue` between 1 and 100
+- `targetingMode=SELECTED_TIERS` requires at least one `applicableTiers` value from `MEMBER`, `SILVER`, `GOLD`, `PLATINUM`
 
 ---
 
@@ -2679,7 +2798,7 @@ Or with response:
 
 ## 13. EPIC 9: Notification APIs
 
-### 13.1 GET /notifications
+### 13.1 GET /customers/notifications
 
 **Get customer's notifications**
 
@@ -2725,7 +2844,7 @@ Or with response:
 
 ---
 
-### 13.2 PUT /notifications/{notificationId}/read
+### 13.2 PUT /customers/notifications/{notificationId}/read
 
 **Mark notification as read**
 
@@ -2741,6 +2860,50 @@ Or with response:
   }
 }
 ```
+
+---
+
+### 13.3 GET /customers/wash-tracking/active
+
+**Get the customer's active wash tracking session**
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "Active wash tracking retrieved",
+  "data": {
+    "bookingId": "BK_20260523_001",
+    "washSessionId": "WS_20260610_001",
+    "status": "IN_PROGRESS",
+    "startedAt": "2026-06-10T14:00:00Z",
+    "estimatedFinishAt": "2026-06-10T15:00:00Z",
+    "elapsedSeconds": 900,
+    "estimatedDurationSeconds": 3600,
+    "progressPercent": 25,
+    "stage": "Foam wash"
+  }
+}
+```
+
+**Empty State (200 OK):**
+```json
+{
+  "success": true,
+  "statusCode": 200,
+  "message": "No active wash tracking",
+  "data": null
+}
+```
+
+---
+
+### 13.4 GET /customers/wash-tracking/{washSessionId}
+
+**Get a progress snapshot for one wash session**
+
+**Response:** Same payload shape as `GET /customers/wash-tracking/active`.
 
 ---
 

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { Toaster } from "@/components/ui/sonner";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AutoWash Pro",
-  description: "Customer authentication data layer foundation"
+  description: "Next.js frontend skeleton for AutoWash workspaces"
 };
 
 export default function RootLayout({
@@ -13,8 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body>
-        <QueryProvider>{children}</QueryProvider>
+      <body className="min-h-screen bg-white text-slate-900 antialiased">
+        <QueryProvider>
+          {children}
+          <Toaster />
+        </QueryProvider>
       </body>
     </html>
   );

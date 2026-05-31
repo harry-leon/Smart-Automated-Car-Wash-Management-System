@@ -27,11 +27,15 @@ export class AuthApiError extends Error {
   }
 }
 
+export function getApiErrorCode(error: ApiErrorResponse) {
+  return error.error?.code ?? error.errorCode;
+}
+
 export function toAuthApiError(error: ApiErrorResponse): AuthApiError {
   return new AuthApiError({
-    message: error.message,
+    message: error.error?.message ?? error.message,
     statusCode: error.statusCode,
-    errorCode: error.errorCode,
+    errorCode: getApiErrorCode(error),
     fieldErrors: error.errors
   });
 }
@@ -46,4 +50,11 @@ export function getDisplayErrorMessage(error: unknown): string {
   }
 
   return "Unexpected error";
+}
+
+export function getFieldErrorMessage(
+  fieldErrors: ApiFieldError[] | undefined,
+  fieldName: string
+) {
+  return fieldErrors?.find((item) => item.field === fieldName)?.message ?? null;
 }

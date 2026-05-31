@@ -1,3 +1,5 @@
+import type { ApiPaginatedResponse } from "@/types/api.types";
+
 export type BookingStatus =
   | "PENDING"
   | "CONFIRMED"
@@ -6,3 +8,205 @@ export type BookingStatus =
   | "COMPLETED"
   | "CANCELLED"
   | "NO_SHOW";
+
+export type BookingListFilterStatus =
+  | "CONFIRMED"
+  | "CHECKED_IN"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type PaymentMethod = "BANK_TRANSFER" | "E_WALLET" | "CASH_AT_COUNTER";
+
+export type BookingMode = "PACKAGE" | "COMBO";
+
+export type BookingPackage = {
+  packageId: string;
+  name: string;
+  description: string;
+  basePrice: number;
+  duration: number;
+  category: string;
+  features: string[];
+  image: string | null;
+  status: string;
+  popularity: string | null;
+};
+
+export type BookingAddon = {
+  addonId: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  category: string;
+  image: string | null;
+  applicableToPackages: string[];
+  status: string;
+};
+
+export type BookingCombo = {
+  comboId: string;
+  name: string;
+  description: string;
+  basePrice: number;
+  durationDays: number;
+  maxServices: number;
+  benefits: string[];
+  image: string | null;
+  isActive: boolean;
+  canUpgrade: boolean;
+  upgradePriceFrom: number;
+};
+
+export type VoucherValidationRequest = {
+  voucherCode: string;
+  packageId?: string;
+  amount: number;
+};
+
+export type VoucherValidationResult = {
+  voucherCode: string;
+  isValid: boolean;
+  discountType: string;
+  discountValue: number;
+  discountAmount: number;
+  finalAmount: number;
+  expiresAt: string;
+};
+
+export type CreateBookingRequest = {
+  vehicleId: string;
+  packageId?: string;
+  comboId?: string;
+  addons: string[];
+  bookingDate: string;
+  bookingTime: string;
+  voucherCode?: string;
+  paymentMethod: PaymentMethod;
+};
+
+export type BookingAddonSelection = {
+  addonId: string;
+  addonName: string;
+  addonPrice: number;
+};
+
+export type CreateBookingResponse = {
+  bookingId: string;
+  customerId: string;
+  vehicleId: string;
+  vehiclePlate: string;
+  packageId: string | null;
+  packageName: string;
+  addons: BookingAddonSelection[];
+  basePrice: number;
+  addonsTotal: number;
+  voucherDiscount: number;
+  finalAmount: number;
+  bookingDate: string;
+  bookingTime: string;
+  estimatedDuration: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: string;
+  status: BookingStatus;
+  createdAt: string;
+  confirmationNumber: string;
+};
+
+export type BookingListItem = {
+  bookingId: string;
+  vehiclePlate: string;
+  packageName: string | null;
+  bookingDate: string;
+  bookingTime: string;
+  finalAmount: number;
+  status: BookingStatus;
+  washStatus: string | null;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+export type BookingDetail = {
+  bookingId: string;
+  confirmationNumber: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  vehicleId: string;
+  vehiclePlate: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  packageId: string | null;
+  packageName: string | null;
+  addons: BookingAddonSelection[];
+  pricing: {
+    basePrice: number;
+    addonsTotal: number;
+    subtotal: number;
+    voucherCode: string | null;
+    voucherDiscount: number;
+    finalAmount: number;
+    currency: string;
+  };
+  scheduling: {
+    bookingDate: string;
+    bookingTime: string;
+    estimatedDuration: number;
+    estimatedEndTime: string;
+  };
+  payment: {
+    method: string;
+    status: string;
+    transactionId: string;
+    paidAt: string | null;
+  };
+  status: BookingStatus;
+  washSessionId: string | null;
+  staffName: string | null;
+  washStatus: string | null;
+  notes: string | null;
+  createdAt: string;
+};
+
+export type BookingListPage = {
+  items: BookingListItem[];
+  pagination: ApiPaginatedResponse<never>["pagination"];
+};
+
+export type BookingListFilters = {
+  status?: BookingListFilterStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type BookingDraft = {
+  mode: BookingMode;
+  vehicleId: string;
+  packageId: string;
+  comboId: string;
+  addonIds: string[];
+  bookingDate: string;
+  bookingTime: string;
+  voucherCode: string;
+  paymentMethod: PaymentMethod | null;
+};
+
+export type BookingDraftErrors = Partial<Record<keyof BookingDraft, string>>;
+
+export type BookingSummary = {
+  itemType: BookingMode;
+  itemId: string;
+  itemName: string;
+  baseAmount: number;
+  addonsTotal: number;
+  subtotal: number;
+  discountAmount: number;
+  finalAmount: number;
+  estimatedDurationLabel: string;
+  selectedAddons: BookingAddon[];
+  selectedVoucherCode: string | null;
+  paymentMethod: PaymentMethod | null;
+};
