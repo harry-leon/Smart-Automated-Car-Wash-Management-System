@@ -14,6 +14,8 @@ public interface PromotionRepository extends JpaRepository<Promotion, String> {
 
     Page<Promotion> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
+    long countByStatus(PromotionStatus status);
+
     @Query("""
             select p from Promotion p
             where p.status = :status

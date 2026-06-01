@@ -49,8 +49,8 @@ public class AdminPromotionController {
     @GetMapping
     @Operation(summary = "List promotions for admin")
     public ApiResponse<List<PromotionResponse>> list(
-            @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+            @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
+            @RequestParam(name = "limit", defaultValue = "20") @Min(1) @Max(100) int limit
     ) {
         PromotionService.PromotionPage promotionPage = promotionService.listAdmin(page, limit);
         return ApiResponse.ok("Promotions retrieved", promotionPage.items(), promotionPage.pagination());
