@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createAdminPromotion,
   deleteAdminPromotion,
+  getAdminPromotionById,
   listAdminPromotions,
   updateAdminPromotion,
 } from "@/lib/admin-promotions-service";
@@ -28,6 +29,16 @@ export function useAdminPromotions(page = 1, limit = 20) {
     queryKey: adminPromotionsQueryKey(userId, page, limit),
     queryFn: () => listAdminPromotions(page, limit),
     enabled,
+  });
+}
+
+export function useAdminPromotion(promotionId: string | null) {
+  const { userId, enabled } = useAdminPromotionQueryContext();
+
+  return useQuery<Promotion, ApiErrorResponse>({
+    queryKey: [...adminPromotionsQueryScope(userId), "detail", promotionId],
+    queryFn: () => getAdminPromotionById(promotionId!),
+    enabled: enabled && Boolean(promotionId),
   });
 }
 
@@ -65,8 +76,29 @@ export function useDeleteAdminPromotion() {
 
   return useMutation<Promotion, ApiErrorResponse, string>({
     mutationFn: deleteAdminPromotion,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminPromotionsQueryScope(userId) });
+    onSuccess: (_data, deletedPromotionId) => {
+      queryClient.setQueriesData<PromotionListPage>(
+        { queryKey: adminPromotionsQueryScope(userId) },
+        (current) => {
+          if (!current) {
+            return current;
+          }
+
+          const items = current.items.filter((item) => item.promotionId !== deletedPromotionId);
+          if (items.length === current.items.length) {
+            return current;
+          }
+
+          return {
+            ...current,
+            items,
+            pagination: {
+              ...current.pagination,
+              total: Math.max(0, current.pagination.total - 1),
+            },
+          };
+        },
+      );
     },
   });
 }

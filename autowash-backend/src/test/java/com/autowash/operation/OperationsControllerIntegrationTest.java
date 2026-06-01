@@ -108,6 +108,38 @@ class OperationsControllerIntegrationTest {
     }
 
     @Test
+    void startWithoutCheckInReturnsConflict() throws Exception {
+        CustomerBooking booking = createConfirmedBooking("OPS_BK_003", "0901777003", 180000);
+        String sessionId = createSession(booking.getId());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Invalid transition: PENDING \u2192 IN_PROGRESS"))
+                .andExpect(jsonPath("$.errorCode").value("INVALID_STATE_TRANSITION"));
+    }
+
+    @Test
+    void completeWithoutStartReturnsConflict() throws Exception {
+        CustomerBooking booking = createConfirmedBooking("OPS_BK_004", "0901777004", 190000);
+        String sessionId = createSession(booking.getId());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/complete", sessionId)
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Invalid transition: CHECKED_IN \u2192 COMPLETED"))
+                .andExpect(jsonPath("$.errorCode").value("INVALID_STATE_TRANSITION"));
+    }
+
+    @Test
     void openApiDocumentsOperationsSchemas() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())

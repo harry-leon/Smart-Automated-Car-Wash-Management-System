@@ -35,7 +35,16 @@ export function formatLoyaltyTransactionType(type: LoyaltyTransactionType) {
       return "Manual adjustment";
     case "EXPIRE":
       return "Expired points";
+    case "TIER_UPGRADE":
+      return "Tier upgraded";
+    case "ADJUST":
+      return "Manual adjust";
   }
+}
+
+export function formatLoyaltyPoints(points: number) {
+  const prefix = points > 0 ? "+" : "";
+  return `${prefix}${points.toLocaleString("vi-VN")} pts`;
 }
 
 export function formatPromotionType(type: PromotionType) {

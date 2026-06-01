@@ -3,6 +3,8 @@ import type { ApiPaginatedResponse } from "@/types/api.types";
 import type {
   CustomerPromotion,
   LoyaltyAccount,
+  RedeemPointsRequest,
+  RedeemPointsResponse,
   LoyaltyTransaction,
   WashHistoryItem,
 } from "@/types/loyalty.types";
@@ -24,6 +26,14 @@ export async function listCustomerLoyaltyTransactions(page = 1, limit = 20) {
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export function redeemCustomerLoyaltyPoints(payload: RedeemPointsRequest) {
+  return apiRequest<RedeemPointsResponse, RedeemPointsRequest>({
+    method: "POST",
+    url: "/loyalty/redeem",
+    data: payload,
+  });
 }
 
 export async function listCustomerWashHistory(page = 1, limit = 20) {

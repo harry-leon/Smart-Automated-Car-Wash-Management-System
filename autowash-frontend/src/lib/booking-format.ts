@@ -11,6 +11,7 @@ import type {
   PaymentMethod,
   VoucherValidationResult,
 } from "@/types/booking.types";
+import { getVoucherCodeFormatError, sanitizeVoucherCodeInput } from "./validators.ts";
 
 export const BOOKING_TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"] as const;
 
@@ -29,7 +30,7 @@ export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingReq
     payload.comboId = draft.comboId;
   }
 
-  const voucherCode = normalizeOptionalText(draft.voucherCode)?.toUpperCase();
+  const voucherCode = normalizeOptionalText(sanitizeVoucherCodeInput(draft.voucherCode));
   if (voucherCode) {
     payload.voucherCode = voucherCode;
   }
@@ -124,8 +125,13 @@ export function validateBookingDraft(
   if (!draft.paymentMethod) {
     errors.paymentMethod = "Please select a payment method.";
   }
-  if (draft.voucherCode.trim().length > 0 && !summary?.selectedVoucherCode) {
-    errors.voucherCode = "Please validate the voucher before checkout.";
+  if (draft.voucherCode.trim().length > 0) {
+    const formatError = getVoucherCodeFormatError(draft.voucherCode);
+    if (formatError) {
+      errors.voucherCode = formatError;
+    } else if (!summary?.selectedVoucherCode) {
+      errors.voucherCode = "Please validate the voucher before checkout.";
+    }
   }
 
   return errors;

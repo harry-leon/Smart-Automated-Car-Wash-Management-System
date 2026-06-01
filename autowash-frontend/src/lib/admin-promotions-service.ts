@@ -13,6 +13,11 @@ export async function listAdminPromotions(page = 1, limit = 20): Promise<Promoti
   };
 }
 
+export async function getAdminPromotionById(promotionId: string): Promise<Promotion> {
+  const response = await apiClient.get<{ data: Promotion; success: boolean }>(`/admin/promotions/${promotionId}`);
+  return response.data.data;
+}
+
 export function createAdminPromotion(payload: PromotionRequest) {
   return apiRequest<Promotion, PromotionRequest>({
     method: "POST",
@@ -35,4 +40,5 @@ export function deleteAdminPromotion(promotionId: string) {
     url: `/admin/promotions/${promotionId}`,
   });
 }
+
 

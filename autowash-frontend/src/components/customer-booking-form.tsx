@@ -15,6 +15,7 @@ import {
   getPaymentMethodLabel,
   validateBookingDraft,
 } from "@/lib/booking-format";
+import { getVoucherCodeFormatError, sanitizeVoucherCodeInput, voucherCodeFormatMessage } from "@/lib/validators";
 import {
   useBookingAddons,
   useBookingCombos,
@@ -51,6 +52,7 @@ export function CustomerBookingForm() {
   const createBookingMutation = useCreateCustomerBooking();
   const [validatedVoucher, setValidatedVoucher] = useState<VoucherValidationResult | null>(null);
   const [showValidation, setShowValidation] = useState(false);
+  const [voucherInputError, setVoucherInputError] = useState<string | null>(null);
 
   const isLoadingCatalog =
     vehiclesQuery.isPending ||
@@ -120,18 +122,30 @@ export function CustomerBookingForm() {
       : [];
 
   const validateVoucher = async () => {
-    if (!draft.voucherCode.trim() || !summary) {
+    const normalizedCode = sanitizeVoucherCodeInput(draft.voucherCode);
+    const formatError = getVoucherCodeFormatError(normalizedCode);
+
+    if (!normalizedCode || !summary) {
       setValidatedVoucher(null);
+      setVoucherInputError(null);
+      return;
+    }
+
+    if (formatError) {
+      setValidatedVoucher(null);
+      setVoucherInputError(formatError);
+      toast.error(formatError);
       return;
     }
 
     try {
       const result = await voucherMutation.mutateAsync({
-        voucherCode: draft.voucherCode.trim().toUpperCase(),
+        voucherCode: normalizedCode,
         packageId: draft.mode === "PACKAGE" ? draft.packageId : undefined,
         amount: summary.subtotal,
       });
       setValidatedVoucher(result);
+      setVoucherInputError(null);
       updateDraft({ voucherCode: result.voucherCode });
       toast.success(`Voucher ${result.voucherCode} applied.`);
     } catch (error) {
@@ -142,6 +156,7 @@ export function CustomerBookingForm() {
 
   const clearVoucher = () => {
     setValidatedVoucher(null);
+    setVoucherInputError(null);
     updateDraft({ voucherCode: "" });
     voucherMutation.reset();
   };
@@ -491,17 +506,27 @@ export function CustomerBookingForm() {
                 type="text"
                 value={draft.voucherCode}
                 onChange={(event) => {
+                  const nextValue = sanitizeVoucherCodeInput(event.target.value);
                   setValidatedVoucher(null);
-                  updateDraft({ voucherCode: event.target.value });
+                  setVoucherInputError(getVoucherCodeFormatError(nextValue));
+                  updateDraft({ voucherCode: nextValue });
                 }}
-                placeholder="Enter voucher code"
-                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm uppercase"
+                placeholder="Nhập mã giảm giá (VD: WELCOME20)"
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium tracking-wide"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
               />
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => void validateVoucher()}
-                disabled={!draft.voucherCode.trim() || voucherMutation.isPending || !summary}
+                disabled={
+                  !draft.voucherCode.trim() ||
+                  Boolean(voucherInputError) ||
+                  voucherMutation.isPending ||
+                  !summary
+                }
               >
                 {voucherMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Validate
@@ -515,6 +540,7 @@ export function CustomerBookingForm() {
                 Clear
               </Button>
             </div>
+            <p className="text-xs text-slate-500">{voucherCodeFormatMessage}</p>
             <p className="text-sm text-slate-500">
               Voucher validation uses the real contract with the current subtotal.
             </p>
@@ -526,9 +552,10 @@ export function CustomerBookingForm() {
             ) : null}
             <FieldError
               message={
-                showValidation
+                voucherInputError ??
+                (showValidation
                   ? errors.voucherCode
-                  : getFieldErrorMessage(voucherMutation.error?.errors, "voucherCode")
+                  : getFieldErrorMessage(voucherMutation.error?.errors, "voucherCode"))
               }
             />
           </CheckoutSection>

@@ -3,19 +3,15 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { 
-  BarChart3, CalendarDays, Droplets, RefreshCcw, TrendingUp, Users,
-  Briefcase, Package, Ticket, BadgePercent 
+  AlertCircle, BarChart3, CalendarDays, Droplets, Loader2,
+  TrendingUp, Users, Briefcase, Package, Ticket, BadgePercent, DollarSign
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { WorkspacePage } from "@/components/workspace/workspace-page";
-import { getDisplayErrorMessage } from "@/lib/api-errors";
 import { getOperationsQueue } from "@/lib/operations-service";
-import { useAdminPromotions } from "@/hooks/use-admin-promotions";
-import { useAdminBookings } from "@/hooks/use-admin-bookings";
+import { useAdminDashboardMetrics } from "@/hooks/use-admin-dashboard-metrics";
 import { cn } from "@/lib/utils";
-import type { ApiErrorResponse } from "@/types/api.types";
 
 const QUICK_LINKS = [
   { href: "/admin/operations", label: "Operations", icon: Droplets, color: "text-blue-600 bg-blue-50" },
@@ -28,14 +24,23 @@ const QUICK_LINKS = [
   { href: "/admin/reports", label: "Reports", icon: BarChart3, color: "text-teal-600 bg-teal-50" },
 ];
 
+function formatRevenue(amount: number): string {
+  if (amount >= 1_000_000) {
+    return `${(amount / 1_000_000).toFixed(1)}M`;
+  }
+  if (amount >= 1_000) {
+    return `${(amount / 1_000).toFixed(0)}K`;
+  }
+  return amount.toLocaleString("vi-VN");
+}
+
 export function AdminDashboardView() {
   const queueQuery = useQuery({
     queryKey: ["admin-dashboard", "queue"],
     queryFn: getOperationsQueue,
     refetchInterval: 30_000,
   });
-  const promotionsQuery = useAdminPromotions(1, 100);
-  const activeBookingsQuery = useAdminBookings(1, 1, { status: "PENDING,CONFIRMED" });
+  const metricsQuery = useAdminDashboardMetrics();
 
   const summary = queueQuery.data?.summary ?? {
     total: 0,
@@ -45,49 +50,93 @@ export function AdminDashboardView() {
     completed: 0,
   };
 
-  const activeWashSessions = summary.pending + summary.checkedIn + summary.inProgress;
-  const totalActiveBookings = activeBookingsQuery.data?.pagination.total ?? 0;
-  const totalPromotions = promotionsQuery.data?.pagination.total ?? 0;
+  const metrics = metricsQuery.data;
 
   const kpiCards = [
     {
-      label: "Queue total",
-      value: `${activeWashSessions}`,
-      delta: "Live operations queue",
-      icon: Droplets,
-      tone: "text-orange-700 bg-orange-50",
-    },
-    {
-      label: "Active bookings",
-      value: `${totalActiveBookings}`,
-      delta: "From all customer bookings",
+      label: "Tổng bookings",
+      value: `${metrics?.totalBookings ?? 0}`,
+      delta: "Toàn bộ lượt đặt xe",
       icon: CalendarDays,
       tone: "text-sky-700 bg-sky-50",
     },
     {
-      label: "Promotions",
-      value: `${totalPromotions}`,
-      delta: "Admin promotion records",
+      label: "Doanh thu (VND)",
+      value: `${formatRevenue(metrics?.totalRevenue ?? 0)}`,
+      delta: "Bookings đã thanh toán",
+      icon: DollarSign,
+      tone: "text-emerald-700 bg-emerald-50",
+    },
+    {
+      label: "Khách hàng",
+      value: `${metrics?.totalCustomers ?? 0}`,
+      delta: "Tổng tài khoản khách hàng",
       icon: Users,
       tone: "text-violet-700 bg-violet-50",
     },
     {
-      label: "Completed sessions",
+      label: "Promotion active",
+      value: `${metrics?.activePromotions ?? 0}`,
+      delta: "Khuyến mãi đang chạy",
+      icon: BadgePercent,
+      tone: "text-orange-700 bg-orange-50",
+    },
+  ];
+
+  const liveCards = [
+    {
+      label: "Queue hiện tại",
+      value: `${summary.pending + summary.checkedIn + summary.inProgress}`,
+      delta: "Đang xử lý live",
+      icon: Droplets,
+      tone: "text-blue-700 bg-blue-50",
+    },
+    {
+      label: "Hoàn thành hôm nay",
       value: `${summary.completed}`,
       delta: "Live wash sessions",
       icon: TrendingUp,
-      tone: "text-emerald-700 bg-emerald-50",
+      tone: "text-teal-700 bg-teal-50",
     },
   ];
 
   return (
     <WorkspacePage className="space-y-8">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpiCards.map((kpi) => (
-          <KpiCard key={kpi.label} {...kpi} />
-        ))}
+      {/* Metrics từ API */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Chỉ số tổng quan
+          </h2>
+          {metricsQuery.isError && (
+            <span className="flex items-center gap-1 text-xs text-rose-600">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Không tải được metrics
+            </span>
+          )}
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {kpiCards.map((kpi) => (
+            <KpiCard key={kpi.label} {...kpi} isLoading={metricsQuery.isLoading} />
+          ))}
+        </div>
       </section>
 
+      {/* Live operations */}
+      <section>
+        <div className="mb-3">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Vận hành live
+          </h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {liveCards.map((kpi) => (
+            <KpiCard key={kpi.label} {...kpi} isLoading={queueQuery.isLoading} />
+          ))}
+        </div>
+      </section>
+
+      {/* Quick links */}
       <section>
         <Card className="border-border/70 bg-card/95 p-8 shadow-sm">
           <div className="text-center sm:text-left">
@@ -125,19 +174,27 @@ function KpiCard({
   delta,
   icon: Icon,
   tone,
+  isLoading,
 }: {
   label: string;
   value: string;
   delta: string;
   icon: ComponentType<{ className?: string }>;
   tone: string;
+  isLoading?: boolean;
 }) {
   return (
     <Card className="border-border/70 bg-card/95 p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
-          <p className="mt-2 text-3xl font-black tracking-tight">{value}</p>
+          {isLoading ? (
+            <div className="mt-2 flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <p className="mt-2 text-3xl font-black tracking-tight">{value}</p>
+          )}
           <p className="mt-1 text-xs font-semibold text-muted-foreground">{delta}</p>
         </div>
         <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl", tone)}>

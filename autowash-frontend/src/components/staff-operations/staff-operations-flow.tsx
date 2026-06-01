@@ -40,6 +40,8 @@ type TimeBucket = "ALL" | "morning" | "afternoon" | "evening";
 type LifecycleActionResponse = {
   sessionId: string;
   status: WashSessionStatus;
+  projectedLoyaltyPoints?: number;
+  awardedLoyaltyPoints?: number;
 };
 
 type Filters = {
@@ -111,8 +113,8 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
       setActionError(null);
       setBlockedActionMessage(null);
     },
-    onSuccess: (response) => {
-      setNotice(`Session ${response.sessionId} moved to ${statusMeta[response.status]?.label ?? response.status}.`);
+    onSuccess: (response, variables) => {
+      setNotice(formatActionNotice(variables.action, response));
       void queryClient.invalidateQueries({ queryKey: QUEUE_QUERY_KEY });
     },
     onError: (error: ApiErrorResponse) => {
@@ -784,6 +786,24 @@ function getBlockedReason(action: ActionType, status: WashSessionStatus) {
 async function runAction(action: ActionType, session: OperationsQueueSession): Promise<LifecycleActionResponse> {
   if (action === "queue") return queueWashSession(session.sessionId);
   return checkInWashSession(session.sessionId);
+}
+
+function formatActionNotice(action: ActionType, response: LifecycleActionResponse) {
+  if (action === "check-in") {
+    const projectedPoints = response.projectedLoyaltyPoints != null
+      ? ` Projected points: ${response.projectedLoyaltyPoints}.`
+      : "";
+    return `Session ${response.sessionId} checked in.${projectedPoints}`;
+  }
+
+  if (action === "start") {
+    return `Session ${response.sessionId} started.`;
+  }
+
+  const awardedPoints = response.awardedLoyaltyPoints != null
+    ? ` Awarded points: ${response.awardedLoyaltyPoints}.`
+    : "";
+  return `Session ${response.sessionId} completed.${awardedPoints}`;
 }
 
 function readError(error: unknown) {
