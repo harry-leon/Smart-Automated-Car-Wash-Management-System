@@ -1,22 +1,18 @@
-import Link from "next/link";
-import { RegisterForm } from "@/components/auth/register-form";
-import { PublicAuthShell } from "@/components/auth/public-auth-shell";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/?auth=register");
+  }, [router]);
+
   return (
-    <PublicAuthShell
-      title="Create an account"
-      description="Join AutoWash Pro to manage your vehicles, bookings, and loyalty rewards."
-      footer={
-        <div>
-          <span className="text-slate-100/80">Already have an account? </span>
-          <Link href="/login" className="font-semibold text-white transition hover:opacity-80">
-            Sign in instead
-          </Link>
-        </div>
-      }
-    >
-      <RegisterForm />
-    </PublicAuthShell>
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
+      <p>Redirecting to register...</p>
+    </div>
   );
 }
