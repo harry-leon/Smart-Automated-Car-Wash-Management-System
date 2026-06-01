@@ -1,42 +1,59 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  CalendarClock,
+  Check,
   CheckCircle2,
-  ClipboardList,
+  ClipboardCheck,
   Filter,
   Loader2,
   RotateCw,
   Search,
+  ShieldCheck,
   Wrench,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   checkInWashSession,
-  createWashSession,
+  completeWashSession,
+  getEligibleSessionBookings,
   getOperationsQueue,
   queueWashSession,
+  startWashSession,
 } from "@/lib/operations-service";
 import { cn } from "@/lib/utils";
 import type { ApiErrorResponse } from "@/types/api.types";
-import type { OperationsQueue, OperationsQueueSession, WashSessionStatus } from "@/types/operation.types";
+import type {
+  EligibleSessionBooking,
+  OperationsQueue,
+  OperationsQueueSession,
+  WashSessionStatus,
+} from "@/types/operation.types";
 
 type StaffOperationsFlowProps = {
   mode: "board" | "check-in" | "session";
   sessionId?: string;
 };
 
-type ActionType = "queue" | "check-in";
+type ActionType = "queue" | "check-in" | "approve-check-in" | "start" | "complete";
 type BoardStatus = "PENDING" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED";
 type TimeBucket = "ALL" | "morning" | "afternoon" | "evening";
+
 type LifecycleActionResponse = {
   sessionId: string;
   status: WashSessionStatus;
@@ -56,14 +73,15 @@ type Filters = {
 const QUEUE_QUERY_KEY = ["staff-operations", "queue"] as const;
 const STAFF_ALL_VALUE = "__all_staff__";
 const UNASSIGNED_STAFF_VALUE = "__unassigned__";
-// TODO: WebSocket not implemented — polling only. Ticket: https://github.com/harry-leon/Smart-Automated-Car-Wash-Management-System/issues/new
 
 const BOARD_COLUMNS: Array<{ status: BoardStatus; label: string }> = [
-  { status: "PENDING", label: "Pending" },
-  { status: "CHECKED_IN", label: "Checked-In" },
-  { status: "IN_PROGRESS", label: "In Progress" },
-  { status: "COMPLETED", label: "Completed" },
+  { status: "PENDING", label: "Chờ duyệt" },
+  { status: "CHECKED_IN", label: "Đã check-in" },
+  { status: "IN_PROGRESS", label: "Đang rửa" },
+  { status: "COMPLETED", label: "Đã hoàn thành" },
 ];
+
+const OPERATION_COLUMNS = BOARD_COLUMNS.filter((column) => column.status !== "PENDING");
 
 const DEFAULT_FILTERS: Filters = {
   statuses: BOARD_COLUMNS.map((column) => column.status),
@@ -74,24 +92,116 @@ const DEFAULT_FILTERS: Filters = {
   search: "",
 };
 
-const statusMeta: Record<WashSessionStatus, { label: string; className: string }> = {
-  PENDING: { label: "Pending", className: "border-yellow-200 bg-yellow-50 text-yellow-800" },
-  QUEUED: { label: "Queued", className: "border-blue-200 bg-blue-50 text-blue-800" },
-  CHECKED_IN: { label: "Checked-In", className: "border-purple-200 bg-purple-50 text-purple-800" },
-  IN_PROGRESS: { label: "In Progress", className: "border-orange-200 bg-orange-50 text-orange-800" },
-  COMPLETED: { label: "Completed", className: "border-green-200 bg-green-50 text-green-800" },
-  CANCELLED: { label: "Cancelled", className: "border-slate-200 bg-slate-50 text-slate-700" },
+const statusMeta: Record<WashSessionStatus, { label: string; className: string; glow: string }> = {
+  PENDING: {
+    label: "Chờ duyệt",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
+    glow: "shadow-amber-200/70",
+  },
+  QUEUED: {
+    label: "Chờ check-in",
+    className: "border-blue-200 bg-blue-50 text-blue-700",
+    glow: "shadow-blue-200/70",
+  },
+  CHECKED_IN: {
+    label: "Đã check-in",
+    className: "border-violet-200 bg-violet-50 text-violet-700",
+    glow: "shadow-violet-200/70",
+  },
+  IN_PROGRESS: {
+    label: "Đang rửa",
+    className: "border-orange-200 bg-orange-50 text-orange-700",
+    glow: "shadow-orange-200/70",
+  },
+  COMPLETED: {
+    label: "Đã hoàn thành",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    glow: "shadow-emerald-200/70",
+  },
+  CANCELLED: {
+    label: "Đã hủy",
+    className: "border-slate-200 bg-slate-50 text-slate-700",
+    glow: "shadow-slate-200/70",
+  },
+};
+
+const columnTone: Record<BoardStatus, { panel: string; header: string; accent: string }> = {
+  PENDING: {
+    panel: "border-amber-200/80 bg-gradient-to-b from-amber-50/90 via-white to-white shadow-[0_18px_42px_rgba(245,158,11,0.10)]",
+    header: "border-amber-100 bg-gradient-to-r from-amber-50 via-white to-white",
+    accent: "bg-amber-500 shadow-amber-300",
+  },
+  CHECKED_IN: {
+    panel: "border-violet-200/80 bg-gradient-to-b from-violet-50/90 via-white to-white shadow-[0_18px_42px_rgba(124,58,237,0.10)]",
+    header: "border-violet-100 bg-gradient-to-r from-violet-50 via-white to-white",
+    accent: "bg-violet-500 shadow-violet-300",
+  },
+  IN_PROGRESS: {
+    panel: "border-orange-200/80 bg-gradient-to-b from-orange-50/90 via-white to-white shadow-[0_18px_42px_rgba(249,115,22,0.12)]",
+    header: "border-orange-100 bg-gradient-to-r from-orange-50 via-white to-white",
+    accent: "bg-orange-500 shadow-orange-300",
+  },
+  COMPLETED: {
+    panel: "border-emerald-200/80 bg-gradient-to-b from-emerald-50/90 via-white to-white shadow-[0_18px_42px_rgba(16,185,129,0.10)]",
+    header: "border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-white",
+    accent: "bg-emerald-500 shadow-emerald-300",
+  },
+};
+
+const sessionTone: Record<WashSessionStatus, { card: string; border: string; selected: string; action: string; actionGlow: string }> = {
+  PENDING: {
+    card: "from-amber-50/95 via-white to-white",
+    border: "border-amber-200/80",
+    selected: "ring-2 ring-amber-200 border-amber-400",
+    action: "from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600",
+    actionGlow: "shadow-[0_0_26px_rgba(245,158,11,0.38)]",
+  },
+  QUEUED: {
+    card: "from-sky-50/95 via-white to-white",
+    border: "border-sky-200/80",
+    selected: "ring-2 ring-sky-200 border-sky-400",
+    action: "from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700",
+    actionGlow: "shadow-[0_0_26px_rgba(14,165,233,0.34)]",
+  },
+  CHECKED_IN: {
+    card: "from-violet-50/95 via-white to-white",
+    border: "border-violet-200/80",
+    selected: "ring-2 ring-violet-200 border-violet-400",
+    action: "from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600",
+    actionGlow: "shadow-[0_0_26px_rgba(37,99,235,0.36)]",
+  },
+  IN_PROGRESS: {
+    card: "from-orange-50/95 via-white to-white",
+    border: "border-orange-200/80",
+    selected: "ring-2 ring-orange-200 border-orange-400",
+    action: "from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600",
+    actionGlow: "shadow-[0_0_26px_rgba(16,185,129,0.38)]",
+  },
+  COMPLETED: {
+    card: "from-emerald-50/95 via-white to-white",
+    border: "border-emerald-200/80",
+    selected: "ring-2 ring-emerald-200 border-emerald-400",
+    action: "from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600",
+    actionGlow: "shadow-[0_0_26px_rgba(16,185,129,0.30)]",
+  },
+  CANCELLED: {
+    card: "from-slate-50 via-white to-white",
+    border: "border-slate-200",
+    selected: "ring-2 ring-slate-200 border-slate-400",
+    action: "from-slate-600 to-slate-500 hover:from-slate-700 hover:to-slate-600",
+    actionGlow: "shadow-[0_0_20px_rgba(100,116,139,0.20)]",
+  },
 };
 
 export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProps) {
   const queryClient = useQueryClient();
   const [selectedSessionId, setSelectedSessionId] = useState(sessionId ?? "");
+  const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [blockedActionMessage, setBlockedActionMessage] = useState<string | null>(null);
-  const [newBookingId, setNewBookingId] = useState("");
-  const [newNotes, setNewNotes] = useState("");
+  const [plateConfirmed, setPlateConfirmed] = useState(false);
 
   const queueQuery = useQuery({
     queryKey: QUEUE_QUERY_KEY,
@@ -99,15 +209,34 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
     refetchInterval: 30_000,
   });
 
+  const eligibleBookingsQuery = useQuery({
+    queryKey: ["staff-operations", "eligible-bookings"],
+    queryFn: getEligibleSessionBookings,
+    refetchInterval: 30_000,
+  });
+
   const sessions = useMemo(() => flattenSessions(queueQuery.data), [queueQuery.data]);
   const filteredSessions = useMemo(() => applyFilters(sessions, filters), [sessions, filters]);
-  const columns = useMemo(() => buildColumns(filteredSessions), [filteredSessions]);
+  const checkInSessions = useMemo(
+    () => sessions.filter((session) => session.status === "PENDING" || session.status === "QUEUED"),
+    [sessions],
+  );
+  const operationSessions = useMemo(
+    () =>
+      filteredSessions.filter((session) =>
+        ["CHECKED_IN", "IN_PROGRESS", "COMPLETED"].includes(toBoardStatus(session.status) ?? ""),
+      ),
+    [filteredSessions],
+  );
+  const operationColumns = useMemo(() => buildColumns(operationSessions), [operationSessions]);
   const staffOptions = useMemo(() => buildStaffOptions(sessions), [sessions]);
   const activeSessionId = mode === "session" ? sessionId : selectedSessionId;
   const activeSession = sessions.find((session) => session.sessionId === activeSessionId);
+  const detailSession = sessions.find((session) => session.sessionId === detailSessionId);
 
   const actionMutation = useMutation({
-    mutationFn: ({ action, session }: { action: ActionType; session: OperationsQueueSession }) => runAction(action, session),
+    mutationFn: ({ action, session }: { action: ActionType; session: OperationsQueueSession }) =>
+      runAction(action, session),
     onMutate: () => {
       setNotice(null);
       setActionError(null);
@@ -115,34 +244,15 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
     },
     onSuccess: (response, variables) => {
       setNotice(formatActionNotice(variables.action, response));
+      setPlateConfirmed(false);
       void queryClient.invalidateQueries({ queryKey: QUEUE_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: ["staff-operations", "eligible-bookings"] });
     },
     onError: (error: ApiErrorResponse) => {
-      setActionError(error.message || error.error?.message || "Unable to update wash session.");
+      setActionError(error.message || error.error?.message || "Không thể cập nhật phiên rửa.");
     },
   });
 
-  const createSessionMutation = useMutation({
-    mutationFn: ({ bookingId, notes }: { bookingId: string; notes?: string }) => createWashSession(bookingId, notes),
-    onMutate: () => {
-      setNotice(null);
-      setActionError(null);
-      setBlockedActionMessage(null);
-    },
-    onSuccess: (response) => {
-      setNotice(`Wash session ${response.sessionId} created for booking ${response.bookingId}.`);
-      setNewBookingId("");
-      setNewNotes("");
-      setSelectedSessionId(response.sessionId);
-      void queryClient.invalidateQueries({ queryKey: QUEUE_QUERY_KEY });
-    },
-    onError: (error: ApiErrorResponse) => {
-      setActionError(error.message || error.error?.message || "Unable to create wash session.");
-    },
-  });
-
-  const canAct = !actionMutation.isPending;
-  const canCreate = !createSessionMutation.isPending;
   const handleAction = (action: ActionType, session: OperationsQueueSession) => {
     const blockedReason = getBlockedReason(action, session.status);
     if (blockedReason) {
@@ -151,76 +261,109 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
     }
     actionMutation.mutate({ action, session });
   };
-  const handleCreateSession = () => {
-    const bookingId = newBookingId.trim();
-    if (!bookingId) {
-      setBlockedActionMessage("Booking ID is required to create a wash session.");
+
+  const handleApproveCheckIn = (session: OperationsQueueSession) => {
+    if (!plateConfirmed) {
+      setBlockedActionMessage("Vui lòng tick xác nhận đã kiểm tra đúng biển số của khách trước khi duyệt.");
       return;
     }
-    createSessionMutation.mutate({ bookingId, notes: newNotes.trim() || undefined });
+    handleAction(session.status === "PENDING" ? "approve-check-in" : "check-in", session);
   };
 
+  const canAct = !actionMutation.isPending;
+
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-500">Staff Operations</p>
-          <h1 className="text-2xl font-semibold text-slate-950">
-            {mode === "board" ? "Operations queue" : mode === "check-in" ? "Check-in" : "Wash session"}
-          </h1>
-        </div>
+    <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.10),transparent_34%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.12),transparent_32%),linear-gradient(180deg,rgba(248,250,252,0.96),rgba(239,246,255,0.62))] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="flex justify-end">
         <Button variant="outline" onClick={() => queueQuery.refetch()} disabled={queueQuery.isFetching}>
           {queueQuery.isFetching ? <Loader2 className="animate-spin" /> : <RotateCw />}
-          Refresh
+          Làm mới
         </Button>
-      </header>
+      </div>
 
       {queueQuery.isLoading ? <LoadingState /> : null}
       {queueQuery.isError ? <ErrorState message={readError(queueQuery.error)} /> : null}
+      {eligibleBookingsQuery.isError && mode === "check-in" ? (
+        <ErrorState message={readError(eligibleBookingsQuery.error)} />
+      ) : null}
       {notice ? <StateMessage tone="success" message={notice} /> : null}
       {actionError ? <StateMessage tone="error" message={actionError} /> : null}
       {blockedActionMessage ? <StateMessage tone="error" message={blockedActionMessage} /> : null}
 
-      {queueQuery.data && mode !== "session" ? (
+      {queueQuery.data && mode === "board" ? (
         <>
           <QueueSummary queue={queueQuery.data} />
-          <QueueFilters filters={filters} setFilters={setFilters} staffOptions={staffOptions} />
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-              {BOARD_COLUMNS.map((column) => (
-                <QueueColumn
-                  key={column.status}
-                  label={column.label}
-                  sessions={columns[column.status]}
-                  selectedSessionId={selectedSessionId}
-                  onSelect={setSelectedSessionId}
-                  onAction={handleAction}
-                  canAct={canAct}
-                />
-              ))}
-            </div>
-            <div className="space-y-5">
-              <CreateSessionPanel
-                bookingId={newBookingId}
-                notes={newNotes}
-                onBookingIdChange={setNewBookingId}
-                onNotesChange={setNewNotes}
-                onCreate={handleCreateSession}
-                canCreate={canCreate}
-              />
-              <DetailPanel
-                session={activeSession}
+          <QueueFilters
+            filters={filters}
+            setFilters={setFilters}
+            staffOptions={staffOptions}
+            statusOptions={OPERATION_COLUMNS}
+          />
+          <div className="grid min-w-0 gap-5 xl:grid-cols-3">
+            {OPERATION_COLUMNS.map((column) => (
+              <QueueColumn
+                key={column.status}
+                label={column.label}
+                sessions={operationColumns[column.status]}
+                selectedSessionId={selectedSessionId}
+                onSelect={setSelectedSessionId}
+                onOpenDetails={setDetailSessionId}
                 onAction={handleAction}
                 canAct={canAct}
-                emptyMessage="Select a board card to view details and run intake actions."
+                compact
+                status={column.status}
               />
-            </div>
+            ))}
           </div>
+          <SessionDetailDialog
+            session={detailSession}
+            open={Boolean(detailSessionId)}
+            onOpenChange={(open) => !open && setDetailSessionId(null)}
+            onAction={handleAction}
+            canAct={canAct}
+          />
         </>
       ) : null}
 
+      {queueQuery.data && mode === "check-in" ? (
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <EligibleBookingsPanel bookings={eligibleBookingsQuery.data ?? []} isLoading={eligibleBookingsQuery.isLoading} />
+            <QueueColumn
+              label="Phiên chờ duyệt"
+              sessions={checkInSessions}
+              selectedSessionId={selectedSessionId}
+              onSelect={(id) => {
+                setSelectedSessionId(id);
+                setPlateConfirmed(false);
+              }}
+              onOpenDetails={setDetailSessionId}
+              onAction={handleAction}
+              canAct={canAct}
+              compact
+              showDirectAction={false}
+              status="PENDING"
+            />
+          </div>
+          <CheckInApprovalPanel
+            session={activeSession}
+            plateConfirmed={plateConfirmed}
+            setPlateConfirmed={setPlateConfirmed}
+            onApprove={handleApproveCheckIn}
+            canAct={canAct}
+          />
+          <SessionDetailDialog
+            session={detailSession}
+            open={Boolean(detailSessionId)}
+            onOpenChange={(open) => !open && setDetailSessionId(null)}
+            onAction={handleAction}
+            canAct={canAct}
+          />
+        </div>
+      ) : null}
+
       {queueQuery.data && mode === "session" ? (
-        <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <SessionLifecyclePanel
             session={activeSession}
             requestedSessionId={sessionId ?? ""}
@@ -231,7 +374,7 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
             session={activeSession}
             onAction={handleAction}
             canAct={canAct}
-            emptyMessage={`Session ${sessionId ?? ""} was not found in the current queue.`}
+            emptyMessage={`Không tìm thấy phiên ${sessionId ?? ""} trong hàng đợi hiện tại.`}
           />
         </div>
       ) : null}
@@ -240,76 +383,31 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
 }
 
 function QueueSummary({ queue }: { queue: OperationsQueue }) {
+  const metrics = [
+    { label: "Tổng số", value: queue.summary.total, className: "from-slate-50 to-white text-slate-950" },
+    { label: "Chờ duyệt", value: queue.summary.pending, className: "from-amber-50 to-white text-amber-700" },
+    { label: "Đã check-in", value: queue.summary.checkedIn, className: "from-violet-50 to-white text-violet-700" },
+    { label: "Đang rửa", value: queue.summary.inProgress, className: "from-orange-50 to-white text-orange-700" },
+    { label: "Đã hoàn thành", value: queue.summary.completed, className: "from-emerald-50 to-white text-emerald-700" },
+  ];
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      <Metric label="Total" value={queue.summary.total} />
-      <Metric label="Pending" value={queue.summary.pending} />
-      <Metric label="Checked-In" value={queue.summary.checkedIn} />
-      <Metric label="In Progress" value={queue.summary.inProgress} />
-      <Metric label="Completed" value={queue.summary.completed} />
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {metrics.map((metric) => (
+        <Card
+          key={metric.label}
+          className={cn(
+            "overflow-hidden rounded-2xl border-slate-200/70 bg-gradient-to-br shadow-[0_16px_35px_rgba(15,23,42,0.06)]",
+            metric.className,
+          )}
+        >
+          <CardContent className="p-5">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-500">{metric.label}</p>
+            <p className="mt-2 text-3xl font-black">{metric.value}</p>
+          </CardContent>
+        </Card>
+      ))}
     </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <Card className="rounded-lg shadow-sm">
-      <CardContent className="p-4">
-        <p className="text-xs font-medium uppercase text-slate-500">{label}</p>
-        <p className="mt-1 text-2xl font-semibold text-slate-950">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CreateSessionPanel({
-  bookingId,
-  notes,
-  onBookingIdChange,
-  onNotesChange,
-  onCreate,
-  canCreate,
-}: {
-  bookingId: string;
-  notes: string;
-  onBookingIdChange: (value: string) => void;
-  onNotesChange: (value: string) => void;
-  onCreate: () => void;
-  canCreate: boolean;
-}) {
-  return (
-    <Card className="rounded-lg shadow-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ClipboardList className="h-4 w-4" />
-          Create session
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <Label htmlFor="bookingId">Booking ID</Label>
-          <Input
-            id="bookingId"
-            value={bookingId}
-            onChange={(event) => onBookingIdChange(event.target.value)}
-            placeholder="BK_20260530_001"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="sessionNotes">Notes</Label>
-          <Input
-            id="sessionNotes"
-            value={notes}
-            onChange={(event) => onNotesChange(event.target.value)}
-            placeholder="Optional intake note"
-          />
-        </div>
-        <Button className="w-full" onClick={onCreate} disabled={!canCreate}>
-          {canCreate ? <ClipboardList /> : <Loader2 className="animate-spin" />}
-          Create wash session
-        </Button>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -317,10 +415,12 @@ function QueueFilters({
   filters,
   setFilters,
   staffOptions,
+  statusOptions,
 }: {
   filters: Filters;
   setFilters: (filters: Filters) => void;
   staffOptions: Array<{ value: string; label: string }>;
+  statusOptions: Array<{ status: BoardStatus; label: string }>;
 }) {
   const toggleStatus = (status: BoardStatus, checked: boolean) => {
     const nextStatuses = checked
@@ -330,19 +430,34 @@ function QueueFilters({
   };
 
   return (
-    <Card className="rounded-lg shadow-sm">
-      <CardHeader className="p-4">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Filter className="h-4 w-4" />
-          Filters
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-4 p-4 pt-0 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.2fr]">
-        <div className="space-y-2">
-          <Label>Status</Label>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {BOARD_COLUMNS.map((column) => (
-              <label key={column.status} className="flex items-center gap-2 rounded-md border px-3 py-2">
+    <Card className="overflow-hidden rounded-[1.75rem] border-blue-100/80 bg-gradient-to-br from-white via-blue-50/45 to-violet-50/35 shadow-[0_18px_42px_rgba(37,99,235,0.08)] backdrop-blur">
+      <CardContent className="space-y-4 p-4 lg:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-black text-slate-950">Bộ lọc vận hành</p>
+            <p className="text-xs text-slate-500">Chọn trạng thái, ca làm và tìm nhanh phiên cần xử lý.</p>
+          </div>
+          <Button
+            variant="ghost"
+            className="h-8 rounded-xl px-3 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            onClick={() => setFilters(DEFAULT_FILTERS)}
+          >
+            Xóa bộ lọc
+          </Button>
+        </div>
+
+        <div className="grid items-end gap-3 xl:grid-cols-[minmax(360px,0.95fr)_minmax(300px,0.8fr)_minmax(220px,0.55fr)]">
+          <div className="flex flex-wrap gap-2 rounded-3xl border border-white/80 bg-white/65 p-2 shadow-inner">
+            {statusOptions.map((column) => (
+              <label
+                key={column.status}
+                className={cn(
+                  "flex h-10 items-center gap-2 rounded-2xl border px-3.5 text-sm font-black transition hover:-translate-y-0.5",
+                  filters.statuses.includes(column.status)
+                    ? "border-blue-200 bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_10px_22px_rgba(37,99,235,0.20)]"
+                    : "border-white/80 bg-white text-slate-500 shadow-sm hover:text-slate-900",
+                )}
+              >
                 <Checkbox
                   checked={filters.statuses.includes(column.status)}
                   onCheckedChange={(checked) => toggleStatus(column.status, checked === true)}
@@ -351,70 +466,94 @@ function QueueFilters({
               </label>
             ))}
           </div>
+
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+            <Input
+              className="h-11 rounded-2xl border-white/80 bg-white/85 pl-10 text-sm font-semibold shadow-sm focus:border-blue-200 focus:bg-white"
+              value={filters.search}
+              onChange={(event) => setFilters({ ...filters, search: event.target.value })}
+              placeholder="Tìm mã đặt lịch, tên khách, biển số..."
+            />
+          </div>
+          <FilterSelect
+            label="Nhân viên"
+            value={filters.staff}
+            onChange={(value) => setFilters({ ...filters, staff: value })}
+            options={[[STAFF_ALL_VALUE, "Tất cả"], ...staffOptions.map((staff) => [staff.value, staff.label] as const)]}
+          />
         </div>
 
-        <div className="space-y-2">
-          <Label>Time bucket</Label>
-          <select
-            className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+        <div className="grid items-end gap-3 rounded-3xl border border-white/80 bg-white/60 p-3 shadow-inner lg:grid-cols-[minmax(170px,0.6fr)_112px_112px_minmax(0,1fr)]">
+          <FilterSelect
+            label="Ca làm"
             value={filters.timeBucket}
-            onChange={(event) => setFilters({ ...filters, timeBucket: event.target.value as TimeBucket })}
-          >
-            <option value="ALL">All day</option>
-            <option value="morning">Morning</option>
-            <option value="afternoon">Afternoon</option>
-            <option value="evening">Evening</option>
-          </select>
-        </div>
+            onChange={(value) => setFilters({ ...filters, timeBucket: value as TimeBucket })}
+            options={[
+              ["ALL", "Cả ngày"],
+              ["morning", "Buổi sáng"],
+              ["afternoon", "Buổi chiều"],
+              ["evening", "Buổi tối"],
+            ]}
+          />
 
-        <div className="space-y-2">
-          <Label>Hour range</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Khung giờ</Label>
             <Input
               type="time"
               value={filters.startHour}
               onChange={(event) => setFilters({ ...filters, startHour: event.target.value })}
-              aria-label="Start hour"
+              aria-label="Giờ bắt đầu"
+              className="h-10 min-w-0 rounded-2xl border-white/80 bg-white text-sm shadow-sm"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Đến</Label>
             <Input
               type="time"
               value={filters.endHour}
               onChange={(event) => setFilters({ ...filters, endHour: event.target.value })}
-              aria-label="End hour"
+              aria-label="Giờ kết thúc"
+              className="h-10 min-w-0 rounded-2xl border-white/80 bg-white text-sm shadow-sm"
             />
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label>Assigned staff</Label>
-          <select
-            className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
-            value={filters.staff}
-            onChange={(event) => setFilters({ ...filters, staff: event.target.value })}
-          >
-            <option value={STAFF_ALL_VALUE}>All staff</option>
-            {staffOptions.map((staff) => (
-              <option key={staff.value} value={staff.value}>
-                {staff.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Search</Label>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input
-              className="pl-9"
-              value={filters.search}
-              onChange={(event) => setFilters({ ...filters, search: event.target.value })}
-              placeholder="Booking, customer, plate"
-            />
-          </div>
+          <p className="hidden text-xs font-semibold leading-5 text-slate-500 lg:block">
+            Bộ lọc chỉ đổi danh sách hiển thị, không thay đổi trạng thái phiên.
+          </p>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: ReadonlyArray<readonly [string, string]>;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">{label}</Label>
+      <select
+        className="h-10 w-full rounded-2xl border border-white/80 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-blue-200 focus:ring-2 focus:ring-blue-100"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
@@ -423,40 +562,166 @@ function QueueColumn({
   sessions,
   selectedSessionId,
   onSelect,
+  onOpenDetails,
   onAction,
   canAct,
+  compact,
+  showDirectAction = true,
+  status,
 }: {
   label: string;
   sessions: OperationsQueueSession[];
   selectedSessionId: string;
   onSelect: (sessionId: string) => void;
+  onOpenDetails: (sessionId: string) => void;
   onAction: (action: ActionType, session: OperationsQueueSession) => void;
   canAct: boolean;
+  compact?: boolean;
+  showDirectAction?: boolean;
+  status?: BoardStatus;
 }) {
+  const visibleSessions = label === "Đã hoàn thành" ? sessions.slice(0, 3) : sessions;
+  const tone = columnTone[status ?? toBoardStatus(visibleSessions[0]?.status) ?? "PENDING"];
+
   return (
-    <Card className="min-h-[420px] rounded-lg shadow-sm">
-      <CardHeader className="p-4">
-        <CardTitle className="flex items-center justify-between text-sm">
-          <span>{label}</span>
-          <Badge variant="outline">{sessions.length}</Badge>
+    <Card className={cn("min-h-[430px] overflow-hidden rounded-3xl border backdrop-blur-sm transition duration-300 hover:-translate-y-0.5", tone.panel)}>
+      <CardHeader className={cn("border-b p-4", tone.header)}>
+        <CardTitle className="flex items-center justify-between gap-3 text-base">
+          <span className="flex min-w-0 items-center gap-2 truncate font-black text-slate-950">
+            <span className={cn("h-2.5 w-2.5 rounded-full shadow-lg ring-4 ring-white/80", tone.accent)} />
+            <span className="truncate">{label}</span>
+          </span>
+          <Badge variant="outline" className="rounded-full bg-white px-3">
+            {label === "Đã hoàn thành" ? visibleSessions.length : sessions.length}
+          </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3 p-4 pt-0">
-        {sessions.length === 0 ? (
-          <p className="rounded-md border border-dashed border-slate-200 p-4 text-sm text-slate-500">No sessions.</p>
+      <CardContent className="flex max-h-[680px] flex-col gap-3 overflow-y-auto p-4">
+        {visibleSessions.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-white/80 bg-white/55 p-5 text-sm font-medium text-slate-500 shadow-inner">
+            Chưa có phiên rửa.
+          </p>
         ) : (
-          sessions.map((session) => (
+          visibleSessions.map((session) => (
             <SessionCard
               key={session.sessionId}
               session={session}
               selected={selectedSessionId === session.sessionId}
               onSelect={onSelect}
+              onOpenDetails={onOpenDetails}
               onAction={onAction}
               canAct={canAct}
-              compact
+              compact={compact}
+              showDirectAction={showDirectAction}
             />
           ))
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function EligibleBookingsPanel({ bookings, isLoading }: { bookings: EligibleSessionBooking[]; isLoading: boolean }) {
+  return (
+    <Card className="min-h-[430px] overflow-hidden rounded-3xl border-slate-200/80 bg-white/95 shadow-sm">
+      <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-amber-50 to-white p-4">
+        <CardTitle className="flex items-center justify-between text-base">
+          <span className="font-black text-slate-950">Booking khách vừa tạo</span>
+          <Badge variant="outline" className="rounded-full bg-white px-3">
+            {bookings.length}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex max-h-[680px] flex-col gap-3 overflow-y-auto p-4">
+        {isLoading ? (
+          <div className="h-28 animate-pulse rounded-2xl bg-slate-100" />
+        ) : bookings.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-sm text-slate-500">
+            Chưa có booking mới cần kiểm tra.
+          </p>
+        ) : (
+          bookings.map((booking) => (
+            <div key={booking.bookingId} className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-slate-950">{booking.bookingId}</p>
+                  <p className="mt-1 truncate text-xs font-semibold text-slate-600">
+                    {booking.customerName} · {booking.vehiclePlate}
+                  </p>
+                </div>
+                <Badge className="rounded-full bg-amber-100 text-amber-700 hover:bg-amber-100">Cần duyệt</Badge>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <MiniInfo label="Gói rửa" value={booking.packageId ?? booking.comboId ?? "Chưa có"} />
+                <MiniInfo label="Giờ hẹn" value={`${booking.bookingDate} ${booking.bookingTime}`} />
+                <MiniInfo label="Thời lượng" value={`${booking.estimatedDurationMinutes} phút`} />
+                <MiniInfo label="Chi phí" value={formatMoney(booking.finalAmount, "VND")} />
+              </div>
+              <p className="mt-3 text-xs font-semibold text-amber-800">
+                Booking này cần có phiên chờ duyệt từ hệ thống trước khi staff check-in.
+              </p>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CheckInApprovalPanel({
+  session,
+  plateConfirmed,
+  setPlateConfirmed,
+  onApprove,
+  canAct,
+}: {
+  session?: OperationsQueueSession;
+  plateConfirmed: boolean;
+  setPlateConfirmed: (value: boolean) => void;
+  onApprove: (session: OperationsQueueSession) => void;
+  canAct: boolean;
+}) {
+  if (!session || (session.status !== "PENDING" && session.status !== "QUEUED")) {
+    return (
+      <Card className="rounded-3xl border-dashed border-slate-200 bg-white/90 p-6 text-sm text-slate-500">
+        Chọn một phiên chờ duyệt để kiểm biển số và duyệt check-in.
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="rounded-3xl border-amber-200/80 bg-white/95 shadow-[0_18px_40px_rgba(245,158,11,0.10)]">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base font-black">
+          <ShieldCheck className="h-5 w-5 text-amber-600" />
+          Duyệt check-in
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded-2xl bg-slate-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Biển số cần kiểm tra</p>
+          <p className="mt-1 text-2xl font-black text-slate-950">{session.vehiclePlate}</p>
+          <p className="mt-2 text-sm text-slate-600">
+            {session.customerName} · {session.bookingId}
+          </p>
+        </div>
+
+        <label className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold text-amber-900">
+          <Checkbox checked={plateConfirmed} onCheckedChange={(checked) => setPlateConfirmed(checked === true)} />
+          <span>
+            Tôi đã kiểm tra biển số đúng với xe của khách. Vui lòng check biển số đúng với biển số của
+            khách rồi mới được duyệt session.
+          </span>
+        </label>
+
+        <Button
+          className="h-12 w-full rounded-2xl bg-emerald-600 font-black shadow-[0_0_24px_rgba(16,185,129,0.35)] hover:bg-emerald-700"
+          disabled={!canAct || !plateConfirmed}
+          onClick={() => onApprove(session)}
+        >
+          {canAct ? <Check className="h-4 w-4" /> : <Loader2 className="h-4 w-4 animate-spin" />}
+          Duyệt và check-in
+        </Button>
       </CardContent>
     </Card>
   );
@@ -473,25 +738,62 @@ function DetailPanel({
   canAct: boolean;
   emptyMessage: string;
 }) {
-  if (!session) {
-    return <EmptyState message={emptyMessage} />;
-  }
+  if (!session) return <EmptyState message={emptyMessage} />;
 
   return (
-    <Card className="rounded-lg shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-base">Session detail</CardTitle>
+    <Card className="rounded-3xl border-slate-200/80 bg-white/95 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-black">Chi tiết phiên rửa</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <SessionCard session={session} onAction={onAction} canAct={canAct} />
-        <div className="space-y-3 text-sm text-slate-700">
-          <TimelineRow label="Queued" value={formatDateTime(session.queuedAt)} />
-          <TimelineRow label="Checked in" value={formatDateTime(session.checkedInAt)} />
-          <TimelineRow label="Started" value={formatDateTime(session.startedAt)} />
-          <TimelineRow label="Completed" value={formatDateTime(session.completedAt)} />
-        </div>
+        <SessionCard session={session} onAction={onAction} canAct={canAct} showDirectAction />
+        <Timeline session={session} />
       </CardContent>
     </Card>
+  );
+}
+
+function SessionDetailDialog({
+  session,
+  open,
+  onOpenChange,
+  onAction,
+  canAct,
+}: {
+  session?: OperationsQueueSession;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAction: (action: ActionType, session: OperationsQueueSession) => void;
+  canAct: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="rounded-3xl border-slate-200 bg-white p-0 shadow-2xl sm:max-w-2xl">
+        {session ? (
+          <div className="p-6">
+            <DialogHeader className="border-b border-slate-100 pb-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <DialogTitle className="flex items-center gap-3 text-2xl font-black">
+                    <Wrench className="h-6 w-6 text-blue-600" />
+                    Chi tiết phiên rửa
+                  </DialogTitle>
+                  <DialogDescription>
+                    {session.bookingId} · {session.customerName} · {session.vehiclePlate}
+                  </DialogDescription>
+                </div>
+                <StatusBadge status={session.status} />
+              </div>
+            </DialogHeader>
+            <div className="mt-5 space-y-4">
+              <DialogInfoGrid session={session} />
+              <DialogTimeline session={session} />
+              <DialogActions session={session} onAction={onAction} canAct={canAct} />
+            </div>
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -506,45 +808,46 @@ function SessionLifecyclePanel({
   onAction: (action: ActionType, session: OperationsQueueSession) => void;
   canAct: boolean;
 }) {
-  if (!session) {
-    return <EmptyState message={`Session ${requestedSessionId} was not found in the current queue.`} />;
-  }
-
+  if (!session) return <EmptyState message={`Không tìm thấy phiên ${requestedSessionId} trong hàng đợi hiện tại.`} />;
   return <SessionCard session={session} onAction={onAction} canAct={canAct} />;
 }
 
 function SessionCard({
   session,
   onSelect,
+  onOpenDetails,
   onAction,
   canAct,
   compact = false,
   selected = false,
+  showDirectAction = true,
 }: {
   session: OperationsQueueSession;
   onSelect?: (sessionId: string) => void;
+  onOpenDetails?: (sessionId: string) => void;
   onAction?: (action: ActionType, session: OperationsQueueSession) => void;
   canAct: boolean;
   compact?: boolean;
   selected?: boolean;
+  showDirectAction?: boolean;
 }) {
   const primaryAction = nextAction(session.status);
-  const queueReason = getBlockedReason("queue", session.status);
-  const checkInReason = getBlockedReason("check-in", session.status);
+  const tone = sessionTone[session.status] ?? sessionTone.PENDING;
 
   return (
     <article
       className={cn(
-        "rounded-lg border bg-white p-4 shadow-sm",
-        compact ? "space-y-3" : "space-y-4",
-        selected ? "border-slate-950 ring-2 ring-slate-200" : "border-slate-200",
+        "rounded-3xl border bg-gradient-to-br shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl",
+        tone.card,
+        selected ? tone.selected : tone.border,
+        compact ? "space-y-3 p-4" : "space-y-4 p-4",
       )}
     >
       <button type="button" className="block w-full text-left" onClick={() => onSelect?.(session.sessionId)}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="font-semibold text-slate-950">{session.bookingId}</p>
-            <p className="text-sm text-slate-500">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-black text-slate-950">{session.bookingId}</p>
+            <p className="mt-1 truncate text-xs font-semibold text-slate-500">
               {session.customerName} · {session.vehiclePlate}
             </p>
           </div>
@@ -552,102 +855,205 @@ function SessionCard({
         </div>
       </button>
 
-      <div className="grid gap-2 text-sm text-slate-700">
-        <Info label="Booking code" value={session.bookingId} />
-        <Info label="Customer" value={session.customerName} />
-        <Info label="Plate" value={session.vehiclePlate} />
-        <Info label="Service package" value={getServicePackage(session)} />
-        <Info label="Assigned staff" value={getAssignedStaff(session)} />
-        <Info label="Scheduled time" value={formatSchedule(session)} />
-        <Info label="Check-in time" value={formatDateTime(session.checkedInAt)} />
-        <Info label="Estimated finish" value={formatEstimatedFinish(session)} />
-        {!compact ? (
-          <>
-            <Info label="Fee" value={session.feeAmount != null ? formatMoney(session.feeAmount, session.feeCurrency) : "Shown after check-in"} />
-            <Info label="Projected points" value={session.projectedLoyaltyPoints != null ? `${session.projectedLoyaltyPoints}` : "Shown after check-in"} />
-            {session.awardedLoyaltyPoints != null ? <Info label="Awarded points" value={`${session.awardedLoyaltyPoints}`} /> : null}
-          </>
-        ) : null}
-      </div>
+      {compact ? (
+        <div className="grid grid-cols-2 gap-2">
+          <MiniInfo label="Biển số" value={session.vehiclePlate} />
+          <MiniInfo label="Gói rửa" value={getServicePackage(session)} />
+          <MiniInfo label="Giờ hẹn" value={formatSchedule(session)} />
+          <MiniInfo label="Nhân viên" value={getAssignedStaff(session)} />
+        </div>
+      ) : (
+        <InfoGrid session={session} />
+      )}
 
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/staff/sessions/${session.sessionId}`}>Open</Link>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 flex-1 rounded-xl border-white/80 bg-white/75 font-bold shadow-sm transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+          onClick={() => onOpenDetails?.(session.sessionId)}
+        >
+          Chi tiết
         </Button>
-        {primaryAction && onAction ? (
+        {primaryAction && onAction && showDirectAction ? (
           <Button
             size="sm"
             disabled={!canAct || Boolean(getBlockedReason(primaryAction.type, session.status))}
             title={getBlockedReason(primaryAction.type, session.status) ?? primaryAction.label}
             onClick={() => onAction(primaryAction.type, session)}
+            className={cn(
+              "h-9 flex-1 rounded-xl bg-gradient-to-r font-black text-white transition hover:-translate-y-0.5",
+              tone.action,
+              tone.actionGlow,
+            )}
           >
-            {primaryAction.type === "queue" ? <ClipboardList /> : <Wrench />}
+            <Check className="h-4 w-4" />
             {primaryAction.label}
           </Button>
         ) : null}
-        {!primaryAction ? (
-          <Button size="sm" disabled title="No next action available">
-            No action
-          </Button>
-        ) : null}
-        {onAction ? (
-          <>
-            {primaryAction?.type !== "queue" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!canAct || Boolean(queueReason)}
-                title={queueReason ?? "Queue"}
-                onClick={() => onAction("queue", session)}
-              >
-                <ClipboardList />
-                Queue
-              </Button>
-            ) : null}
-            {primaryAction?.type !== "check-in" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!canAct || Boolean(checkInReason)}
-                title={checkInReason ?? "Check In"}
-                onClick={() => onAction("check-in", session)}
-              >
-                <Wrench />
-                Check In
-              </Button>
-            ) : null}
-          </>
-        ) : null}
       </div>
-      {queueReason ? <p className="text-xs text-amber-700">Queue disabled: {queueReason}</p> : null}
-      {checkInReason ? <p className="text-xs text-amber-700">Check In disabled: {checkInReason}</p> : null}
     </article>
+  );
+}
+
+function InfoGrid({ session }: { session: OperationsQueueSession }) {
+  return (
+    <div className="grid gap-2 text-sm text-slate-700">
+      <Info label="Mã đặt lịch" value={session.bookingId} />
+      <Info label="Khách hàng" value={session.customerName} />
+      <Info label="Số điện thoại" value={session.customerPhone || "Chưa có"} />
+      <Info label="Biển số" value={session.vehiclePlate} />
+      <Info label="Gói rửa" value={getServicePackage(session)} />
+      <Info label="Nhân viên" value={getAssignedStaff(session)} />
+      <Info label="Giờ hẹn" value={formatSchedule(session)} />
+      <Info label="Dự kiến xong" value={formatEstimatedFinish(session)} />
+      <Info
+        label="Phí dịch vụ"
+        value={session.feeAmount != null ? formatMoney(session.feeAmount, session.feeCurrency) : "Hiển thị sau check-in"}
+      />
+      <Info
+        label="Điểm dự kiến"
+        value={session.projectedLoyaltyPoints != null ? `${session.projectedLoyaltyPoints}` : "Hiển thị sau check-in"}
+      />
+      {session.awardedLoyaltyPoints != null ? <Info label="Điểm đã cộng" value={`${session.awardedLoyaltyPoints}`} /> : null}
+      {session.notes ? <Info label="Ghi chú" value={session.notes} /> : null}
+    </div>
+  );
+}
+
+function DialogInfoGrid({ session }: { session: OperationsQueueSession }) {
+  const items = [
+    ["Mã đặt lịch", session.bookingId],
+    ["Khách hàng", session.customerName],
+    ["Số điện thoại", session.customerPhone || "Chưa có"],
+    ["Biển số", session.vehiclePlate],
+    ["Gói rửa", getServicePackage(session)],
+    ["Nhân viên", getAssignedStaff(session)],
+    ["Giờ hẹn", formatSchedule(session)],
+    ["Dự kiến xong", formatEstimatedFinish(session)],
+    ["Phí dịch vụ", session.feeAmount != null ? formatMoney(session.feeAmount, session.feeCurrency) : "Hiển thị sau check-in"],
+    ["Điểm dự kiến", session.projectedLoyaltyPoints != null ? `${session.projectedLoyaltyPoints}` : "Hiển thị sau check-in"],
+  ];
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {items.map(([label, value]) => (
+        <div key={label} className="min-w-0 rounded-2xl bg-slate-50/90 px-3 py-2.5 shadow-inner ring-1 ring-slate-100">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
+          <p className="mt-0.5 truncate text-sm font-black text-slate-950" title={value}>
+            {value}
+          </p>
+        </div>
+      ))}
+      {session.notes ? (
+        <div className="min-w-0 rounded-2xl bg-blue-50/80 px-3 py-2.5 shadow-inner ring-1 ring-blue-100 sm:col-span-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-400">Ghi chú</p>
+          <p className="mt-0.5 text-sm font-semibold text-blue-950">{session.notes}</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DialogTimeline({ session }: { session: OperationsQueueSession }) {
+  const steps = [
+    ["Hàng đợi", formatDateTime(session.queuedAt)],
+    ["Check-in", formatDateTime(session.checkedInAt)],
+    ["Bắt đầu", formatDateTime(session.startedAt)],
+    ["Hoàn thành", formatDateTime(session.completedAt)],
+  ];
+
+  return (
+    <div className="grid gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-3 sm:grid-cols-4">
+      {steps.map(([label, value]) => (
+        <div key={label} className="min-w-0 rounded-xl bg-white/80 px-3 py-2 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">{label}</p>
+          <p className="mt-0.5 truncate text-xs font-bold text-slate-800" title={value}>
+            {value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DialogActions({
+  session,
+  onAction,
+  canAct,
+}: {
+  session: OperationsQueueSession;
+  onAction: (action: ActionType, session: OperationsQueueSession) => void;
+  canAct: boolean;
+}) {
+  const primaryAction = nextAction(session.status);
+  if (!primaryAction) return null;
+  const tone = sessionTone[session.status] ?? sessionTone.PENDING;
+
+  return (
+    <div className="flex justify-end border-t border-slate-100 pt-4">
+      <Button
+        disabled={!canAct || Boolean(getBlockedReason(primaryAction.type, session.status))}
+        title={getBlockedReason(primaryAction.type, session.status) ?? primaryAction.label}
+        onClick={() => onAction(primaryAction.type, session)}
+        className={cn("h-10 rounded-2xl bg-gradient-to-r px-5 font-black text-white", tone.action, tone.actionGlow)}
+      >
+        <Check className="h-4 w-4" />
+        {primaryAction.label}
+      </Button>
+    </div>
+  );
+}
+
+function Timeline({ session }: { session: OperationsQueueSession }) {
+  return (
+    <div className="space-y-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 text-sm text-slate-700">
+      <TimelineRow label="Đưa vào hàng đợi" value={formatDateTime(session.queuedAt)} />
+      <TimelineRow label="Check-in" value={formatDateTime(session.checkedInAt)} />
+      <TimelineRow label="Bắt đầu rửa" value={formatDateTime(session.startedAt)} />
+      <TimelineRow label="Hoàn thành" value={formatDateTime(session.completedAt)} />
+    </div>
   );
 }
 
 function StatusBadge({ status }: { status: WashSessionStatus }) {
   const meta = statusMeta[status] ?? statusMeta.PENDING;
   return (
-    <Badge variant="outline" className={cn("border", meta.className)}>
+    <Badge
+      variant="outline"
+      className={cn("shrink-0 rounded-full border text-[10px] font-bold shadow-lg", meta.className, meta.glow)}
+    >
       {meta.label}
     </Badge>
   );
 }
 
+function MiniInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-2xl bg-white/70 px-3 py-2 shadow-inner ring-1 ring-white/80">
+      <p className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="truncate text-xs font-black text-slate-900" title={value}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-3">
-      <span className="text-slate-500">{label}</span>
-      <span className="text-right font-medium text-slate-900">{value}</span>
+    <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3 rounded-2xl bg-white/70 px-3 py-2 shadow-inner ring-1 ring-white/80">
+      <span className="min-w-0 text-slate-500">{label}</span>
+      <span className="min-w-0 break-words text-right font-semibold text-slate-900">{value}</span>
     </div>
   );
 }
 
 function TimelineRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-3 border-b pb-2 last:border-b-0 last:pb-0">
+    <div className="flex justify-between gap-3 border-b border-slate-200/70 pb-2 last:border-b-0 last:pb-0">
       <span>{label}</span>
-      <span className="font-medium text-slate-950">{value}</span>
+      <span className="text-right font-semibold text-slate-950">{value}</span>
     </div>
   );
 }
@@ -656,7 +1062,7 @@ function StateMessage({ tone, message }: { tone: "success" | "error"; message: s
   return (
     <div
       className={cn(
-        "flex items-start gap-2 rounded-md border p-3 text-sm",
+        "flex items-start gap-2 rounded-2xl border p-3 text-sm",
         tone === "success" ? "border-green-200 bg-green-50 text-green-800" : "border-red-200 bg-red-50 text-red-800",
       )}
     >
@@ -668,9 +1074,9 @@ function StateMessage({ tone, message }: { tone: "success" | "error"; message: s
 
 function LoadingState() {
   return (
-    <div className="flex items-center gap-2 rounded-md border bg-white p-4 text-sm text-slate-600">
+    <div className="flex items-center gap-2 rounded-2xl border bg-white p-4 text-sm text-slate-600">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Loading operations queue...
+      Đang tải hàng đợi vận hành...
     </div>
   );
 }
@@ -680,11 +1086,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-dashed bg-white p-8 text-center text-sm text-slate-500">
-      {message}
-    </div>
-  );
+  return <div className="rounded-3xl border border-dashed bg-white p-8 text-center text-sm text-slate-500">{message}</div>;
 }
 
 function flattenSessions(queue?: OperationsQueue) {
@@ -715,9 +1117,7 @@ function applyFilters(sessions: OperationsQueueSession[], filters: Filters) {
 }
 
 function toBoardStatus(status: WashSessionStatus): BoardStatus | null {
-  if (status === "PENDING") return "PENDING";
-  // QUEUED → Pending (pre-assignment state, treated as not yet actionable)
-  if (status === "QUEUED") return "PENDING";
+  if (status === "PENDING" || status === "QUEUED") return "PENDING";
   if (status === "CHECKED_IN") return "CHECKED_IN";
   if (status === "IN_PROGRESS") return "IN_PROGRESS";
   if (status === "COMPLETED") return "COMPLETED";
@@ -737,7 +1137,8 @@ function matchesHourRange(time: string, startHour: string, endHour: string) {
   const minutes = readMinutes(time);
   const start = startHour ? readMinutes(startHour) : 0;
   const end = endHour ? readMinutes(endHour) : 24 * 60 - 1;
-  return minutes >= start && minutes <= end;
+  if (start <= end) return minutes >= start && minutes <= end;
+  return minutes >= start || minutes <= end;
 }
 
 function matchesStaff(session: OperationsQueueSession, staff: string) {
@@ -757,68 +1158,71 @@ function buildStaffOptions(sessions: OperationsQueueSession[]) {
   const values = new Map<string, string>();
   for (const session of sessions) {
     const value = session.assignedStaffId ?? session.assignedStaffName;
-    if (value) {
-      values.set(value, session.assignedStaffName ?? value);
-    }
+    if (value) values.set(value, session.assignedStaffName ?? value);
   }
-  // TODO: assignedStaff — no backend contract yet, ticket: https://github.com/harry-leon/Smart-Automated-Car-Wash-Management-System/issues/new
-  if (values.size === 0) {
-    values.set(UNASSIGNED_STAFF_VALUE, "Unassigned");
-  }
+  if (values.size === 0) values.set(UNASSIGNED_STAFF_VALUE, "Chưa phân công");
   return Array.from(values, ([value, label]) => ({ value, label }));
 }
 
 function nextAction(status: WashSessionStatus): { type: ActionType; label: string } | null {
-  if (status === "PENDING") return { type: "queue", label: "Queue" };
-  if (status === "QUEUED") return { type: "check-in", label: "Check In" };
+  if (status === "PENDING" || status === "QUEUED") return { type: "check-in", label: "Check-in" };
+  if (status === "CHECKED_IN") return { type: "start", label: "Bắt đầu" };
+  if (status === "IN_PROGRESS") return { type: "complete", label: "Hoàn thành" };
   return null;
 }
 
 function getBlockedReason(action: ActionType, status: WashSessionStatus) {
-  if (action === "queue" && status !== "PENDING") return "Only pending sessions can be queued";
-  if (action === "check-in" && status === "PENDING") return "Must queue first";
+  if (action === "queue" && status !== "PENDING") return "Chỉ phiên chờ duyệt mới được duyệt";
+  if (action === "check-in" && status === "PENDING") return "Cần duyệt phiên trước";
   if (action === "check-in" && (status === "CHECKED_IN" || status === "IN_PROGRESS" || status === "COMPLETED")) {
-    return "Already checked in";
+    return "Phiên này đã check-in";
   }
+  if (action === "approve-check-in" && status !== "PENDING") return "Chỉ phiên chờ duyệt mới cần duyệt nhanh";
+  if (action === "start" && status !== "CHECKED_IN") return "Chỉ phiên đã check-in mới được bắt đầu";
+  if (action === "complete" && status !== "IN_PROGRESS") return "Chỉ phiên đang rửa mới được hoàn thành";
   return null;
 }
 
 async function runAction(action: ActionType, session: OperationsQueueSession): Promise<LifecycleActionResponse> {
   if (action === "queue") return queueWashSession(session.sessionId);
-  return checkInWashSession(session.sessionId);
+  if (action === "approve-check-in") {
+    await queueWashSession(session.sessionId);
+    return checkInWashSession(session.sessionId);
+  }
+  if (action === "check-in") return checkInWashSession(session.sessionId);
+  if (action === "start") return startWashSession(session.sessionId);
+  return completeWashSession(session.sessionId);
 }
 
 function formatActionNotice(action: ActionType, response: LifecycleActionResponse) {
   if (action === "check-in") {
     const projectedPoints = response.projectedLoyaltyPoints != null
-      ? ` Projected points: ${response.projectedLoyaltyPoints}.`
+      ? ` Điểm tích lũy dự kiến: ${response.projectedLoyaltyPoints}.`
       : "";
-    return `Session ${response.sessionId} checked in.${projectedPoints}`;
+    return `Phiên ${response.sessionId} đã check-in thành công.${projectedPoints}`;
   }
 
   if (action === "start") {
-    return `Session ${response.sessionId} started.`;
+    return `Phiên ${response.sessionId} đã bắt đầu rửa xe.`;
   }
 
   const awardedPoints = response.awardedLoyaltyPoints != null
-    ? ` Awarded points: ${response.awardedLoyaltyPoints}.`
+    ? ` Điểm thưởng nhận được: ${response.awardedLoyaltyPoints}.`
     : "";
-  return `Session ${response.sessionId} completed.${awardedPoints}`;
+  return `Phiên ${response.sessionId} đã hoàn thành.${awardedPoints}`;
 }
 
 function readError(error: unknown) {
   const apiError = error as Partial<ApiErrorResponse>;
-  return apiError.message || apiError.error?.message || "Unable to load operations queue.";
+  return apiError.message || apiError.error?.message || "Không thể tải hàng đợi vận hành.";
 }
 
 function getServicePackage(session: OperationsQueueSession) {
-  // TODO: servicePackage — no backend contract yet, ticket: https://github.com/harry-leon/Smart-Automated-Car-Wash-Management-System/issues/new
-  return session.servicePackage ?? session.packageId ?? "Package pending";
+  return session.servicePackage ?? session.packageId ?? "Chưa có gói rửa";
 }
 
 function getAssignedStaff(session: OperationsQueueSession) {
-  // TODO: assignedStaff — no backend contract yet, ticket: https://github.com/harry-leon/Smart-Automated-Car-Wash-Management-System/issues/new
-  return session.assignedStaffName ?? "Unassigned";
+  return session.assignedStaffName ?? "Chưa phân công";
 }
 
 function formatSchedule(session: OperationsQueueSession) {
@@ -828,9 +1232,9 @@ function formatSchedule(session: OperationsQueueSession) {
 function formatEstimatedFinish(session: OperationsQueueSession) {
   const duration = session.estimatedDurationMinutes ?? 0;
   const base = session.startedAt ? new Date(session.startedAt) : new Date(`${session.bookingDate}T${session.bookingTime}`);
-  if (Number.isNaN(base.getTime()) || duration <= 0) return "Not available";
+  if (Number.isNaN(base.getTime()) || duration <= 0) return "Chưa có";
   base.setMinutes(base.getMinutes() + duration);
-  return base.toLocaleString();
+  return base.toLocaleString("vi-VN");
 }
 
 function formatMoney(amount: number, currency?: string | null) {
@@ -840,8 +1244,8 @@ function formatMoney(amount: number, currency?: string | null) {
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return "Not yet";
-  return new Date(value).toLocaleString();
+  if (!value) return "Chưa có";
+  return new Date(value).toLocaleString("vi-VN");
 }
 
 function readHour(time: string) {

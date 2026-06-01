@@ -27,6 +27,7 @@ import {
   WORKSPACE_THEMES,
   type WorkspaceNavItem,
 } from "@/components/workspace/workspace-nav";
+import { StaffNotificationListener } from "@/components/staff-operations/staff-notification-listener";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -77,15 +78,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   }
 
   if (!isMounted) {
-    return <WorkspaceGate message="Loading workspace..." />;
+    return <WorkspaceGate message="Đang tải khu vực làm việc..." />;
   }
 
   if (!accessToken || !user) {
-    return <WorkspaceGate message="Redirecting to sign in..." />;
+    return <WorkspaceGate message="Đang chuyển đến trang đăng nhập..." />;
   }
 
   if (user.role !== requiredRole) {
-    return <WorkspaceGate message="Redirecting to your workspace..." />;
+    return <WorkspaceGate message="Đang chuyển đến khu vực phù hợp..." />;
   }
 
   const handleLogout = () => {
@@ -139,9 +140,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <Phone className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold">Support</div>
+                  <div className="text-xs font-bold">Hỗ trợ</div>
                   <div className="mt-0.5 text-sm font-extrabold tracking-tight">1900 1234</div>
-                  <div className="mt-1 text-[10px] text-muted-foreground">8:00 - 20:00 daily</div>
+                  <div className="mt-1 text-[10px] text-muted-foreground">8:00 - 20:00 hằng ngày</div>
                 </div>
               </div>
             </div>
@@ -154,7 +155,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           >
             <LogOut className="h-4 w-4" />
             {!sidebarCollapsed ? (
-              <span>{logoutMutation.isPending ? "Signing out..." : "Sign out"}</span>
+              <span>{logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}</span>
             ) : null}
           </button>
         </div>
@@ -168,7 +169,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-card lg:hidden"
                 onClick={() => setMobileMenuOpen(true)}
-                aria-label="Open navigation menu"
+                aria-label="Mở menu điều hướng"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -213,7 +214,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 disabled={logoutMutation.isPending}
                 onClick={handleLogout}
                 className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/70 px-3 text-sm font-semibold transition hover:bg-accent lg:hidden"
-                aria-label="Sign out"
+                aria-label="Đăng xuất"
               >
                 <ArrowRightFromLine className="h-4 w-4" />
               </button>
@@ -222,6 +223,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         </header>
 
         <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
+        {requiredRole === "STAFF" ? <StaffNotificationListener /> : null}
 
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 px-2 py-2 backdrop-blur-xl lg:hidden">
           <ul className="grid grid-cols-4 gap-1">
@@ -252,7 +254,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           <button
             type="button"
             className="absolute inset-0 bg-black/40"
-            aria-label="Close navigation menu"
+            aria-label="Đóng menu điều hướng"
             onClick={() => setMobileMenuOpen(false)}
           />
           <aside className="absolute left-0 top-0 flex h-full w-[min(100%,20rem)] flex-col bg-card shadow-2xl">
@@ -260,7 +262,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               collapsed={false}
               theme={theme}
               onToggle={() => setMobileMenuOpen(false)}
-              closeLabel="Close"
+              closeLabel="Đóng"
             />
             <nav className="flex-1 overflow-y-auto px-3 py-4">
               <ul className="space-y-1">
@@ -324,7 +326,7 @@ function SidebarBrand({
           type="button"
           onClick={onToggle}
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition hover:bg-accent"
-          aria-label={closeLabel ?? (collapsed ? "Expand sidebar" : "Collapse sidebar")}
+          aria-label={closeLabel ?? (collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên")}
         >
           {closeLabel ? (
             <X className="h-4 w-4" />

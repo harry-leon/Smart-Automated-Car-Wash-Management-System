@@ -14,10 +14,7 @@ import {
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import { buildUpdateUserProfileRequest } from "@/lib/profile-update-payload";
 import { emailPattern, phonePattern } from "@/lib/validators";
-import {
-  useCustomerProfile,
-  useUpdateCustomerProfile,
-} from "@/hooks/use-customer-profile";
+import { useStaffProfile, useUpdateStaffProfile } from "@/hooks/use-staff-profile";
 
 type ProfileFormState = {
   fullName: string;
@@ -31,9 +28,9 @@ const EMPTY_FORM: ProfileFormState = {
   phone: "",
 };
 
-export default function CustomerProfilePage() {
-  const profileQuery = useCustomerProfile();
-  const updateProfileMutation = useUpdateCustomerProfile();
+export default function StaffProfilePage() {
+  const profileQuery = useStaffProfile();
+  const updateProfileMutation = useUpdateStaffProfile();
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
   const [showValidation, setShowValidation] = useState(false);
 
@@ -84,11 +81,10 @@ export default function CustomerProfilePage() {
 
     try {
       await updateProfileMutation.mutateAsync(buildUpdateUserProfileRequest(form));
-
-      toast.success("Profile updated successfully.");
+      toast.success("Đã cập nhật hồ sơ.");
       setShowValidation(false);
     } catch {
-      toast.error("Unable to update profile.");
+      toast.error("Không thể cập nhật hồ sơ.");
     }
   };
 
@@ -117,27 +113,26 @@ export default function CustomerProfilePage() {
     : null;
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(147,51,234,0.08),transparent_25%),linear-gradient(180deg,#fbf9ff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-blue-100/60 blur-3xl" />
+        <div className="absolute -right-24 top-10 h-72 w-72 rounded-full bg-purple-100/40 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-violet-50/60 blur-3xl" />
       </div>
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6">
         <section className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-purple-700">
                 <ShieldCheck className="h-3.5 w-3.5" />
-                Customer profile
+                Hồ sơ nhân viên
               </div>
               <div className="space-y-2">
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                  Manage your account profile.
+                  Quản lý hồ sơ tài khoản
                 </h1>
                 <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                  This page reads and updates your current profile through the real user-profile
-                  contract. Header data stays in sync after save.
+                  Trang này hiển thị và cập nhật hồ sơ nhân viên hiện tại. Thông tin trên thanh đầu trang sẽ đồng bộ sau khi lưu.
                 </p>
               </div>
             </div>
@@ -149,7 +144,7 @@ export default function CustomerProfilePage() {
               <div>
                 <div className="text-sm font-semibold text-slate-900">{profile.fullName}</div>
                 <div className="text-xs text-slate-500">
-                  {profile.tier ?? "MEMBER"} • {profile.phone}
+                  {profile.role} • {profile.phone}
                 </div>
               </div>
             </div>
@@ -159,34 +154,32 @@ export default function CustomerProfilePage() {
         <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <Card className="border-slate-200/80 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
             <CardHeader className="border-b border-slate-200/70 bg-slate-50/80">
-              <CardTitle className="text-base text-slate-900">Current profile state</CardTitle>
+              <CardTitle className="text-base text-slate-900">Thông tin hồ sơ hiện tại</CardTitle>
               <CardDescription>
-                Data below comes from `GET /users/profile`.
+                Thông tin tài khoản đã đăng ký trong hệ thống.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 p-6">
-              <InfoRow label="Full name" value={profile.fullName} />
-              <InfoRow label="Phone" value={profile.phone} />
-              <InfoRow label="Email" value={profile.email ?? "Not provided"} />
-              <InfoRow label="Role" value={profile.role} />
-              <InfoRow label="Status" value={profile.status} />
-              <InfoRow label="Tier" value={profile.tier ?? "MEMBER"} />
-              <InfoRow label="Loyalty balance" value={`${profile.loyaltyBalance} points`} />
-              <InfoRow label="Registered" value={formatDateTime(profile.registeredAt)} />
+              <InfoRow label="Họ và tên" value={profile.fullName} />
+              <InfoRow label="Số điện thoại" value={profile.phone} />
+              <InfoRow label="Email" value={profile.email ?? "Chưa cung cấp"} />
+              <InfoRow label="Vai trò" value={profile.role} />
+              <InfoRow label="Trạng thái" value={profile.status} />
+              <InfoRow label="Ngày đăng ký" value={formatDateTime(profile.registeredAt)} />
             </CardContent>
           </Card>
 
           <Card className="border-slate-200/80 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
             <CardHeader className="border-b border-slate-200/70 bg-slate-50/80">
-              <CardTitle className="text-base text-slate-900">Update profile</CardTitle>
+              <CardTitle className="text-base text-slate-900">Cập nhật hồ sơ</CardTitle>
               <CardDescription>
-                Editable scope stays limited to full name, email, and phone.
+                Cập nhật họ tên, email hoặc số điện thoại.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <form onSubmit={handleSubmit} className="space-y-5">
                 <ProfileField
-                  label="Full name"
+                  label="Họ và tên"
                   value={form.fullName}
                   onChange={handleFieldChange("fullName")}
                   placeholder="Nguyen Van A"
@@ -201,7 +194,7 @@ export default function CustomerProfilePage() {
                   label="Email"
                   value={form.email}
                   onChange={handleFieldChange("email")}
-                  placeholder="customer@example.com"
+                  placeholder="staff@example.com"
                   inputMode="email"
                   error={resolveFieldError(
                     "email",
@@ -211,7 +204,7 @@ export default function CustomerProfilePage() {
                   )}
                 />
                 <ProfileField
-                  label="Phone"
+                  label="Số điện thoại"
                   value={form.phone}
                   onChange={handleFieldChange("phone")}
                   placeholder="0901234567"
@@ -233,8 +226,8 @@ export default function CustomerProfilePage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-sm text-slate-500">
                     {hasChanges
-                      ? "Unsaved changes are ready to submit."
-                      : "Profile is in sync with the latest fetched data."}
+                      ? "Có thay đổi chưa lưu."
+                      : "Hồ sơ đang đồng bộ với hệ thống."}
                   </div>
                   <Button
                     type="submit"
@@ -244,7 +237,7 @@ export default function CustomerProfilePage() {
                     {updateProfileMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
+                        Đang lưu...
                       </>
                     ) : (
                       <>
@@ -288,7 +281,7 @@ function ProfileErrorState({
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <Card className="mx-auto max-w-3xl border-rose-200 bg-white">
         <CardHeader>
-          <CardTitle className="text-slate-900">Unable to load profile</CardTitle>
+          <CardTitle className="text-slate-900">Không thể tải hồ sơ</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -307,10 +300,9 @@ function ProfileEmptyState() {
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <Card className="mx-auto max-w-3xl border-slate-200 bg-white">
         <CardHeader>
-          <CardTitle className="text-slate-900">Profile data is empty</CardTitle>
+          <CardTitle className="text-slate-900">Không có dữ liệu hồ sơ</CardTitle>
           <CardDescription>
-            The contract returned no profile payload. This state is kept explicit instead of
-            falling back to mock data.
+            Hệ thống không trả về dữ liệu hồ sơ.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -341,7 +333,7 @@ function ProfileField({
         onChange={onChange}
         placeholder={placeholder}
         inputMode={inputMode}
-        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
       />
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
     </div>
@@ -359,13 +351,13 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 function validateProfileForm(form: ProfileFormState) {
   return {
-    fullName: form.fullName.trim().length === 0 ? "Full name is required." : null,
+    fullName: form.fullName.trim().length === 0 ? "Vui lòng nhập họ và tên." : null,
     email:
       form.email.trim().length > 0 && !emailPattern.test(form.email.trim())
-        ? "Email must be valid."
+        ? "Email không hợp lệ."
         : null,
     phone: !phonePattern.test(form.phone.trim())
-      ? "Phone must use Vietnamese format 0XXXXXXXXX."
+      ? "Số điện thoại phải đúng định dạng Việt Nam 0XXXXXXXXX."
       : null,
   };
 }

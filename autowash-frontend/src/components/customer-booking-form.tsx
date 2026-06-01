@@ -338,8 +338,8 @@ export function CustomerBookingForm() {
                   <div className="text-base font-bold">{getModeLabel(mode)}</div>
                   <div className="mt-1 text-sm text-slate-500">
                     {mode === "PACKAGE"
-                      ? "Select one package and optional add-ons."
-                      : "Book directly against the available combo catalog."}
+                      ? "Chọn một gói rửa và dịch vụ thêm nếu cần."
+                      : "Đặt trực tiếp từ danh sách combo hiện có."}
                   </div>
                 </button>
               ))}
@@ -753,7 +753,7 @@ function BookingPageErrorState({
           {onRetry ? (
             <Button type="button" variant="outline" onClick={onRetry}>
               <RefreshCcw className="mr-2 h-4 w-4" />
-              Retry
+              Thử lại
             </Button>
           ) : null}
           {actionHref && actionLabel ? (

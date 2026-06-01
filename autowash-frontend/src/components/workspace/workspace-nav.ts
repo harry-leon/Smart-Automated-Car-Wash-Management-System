@@ -36,24 +36,24 @@ export type WorkspaceTheme = {
 
 export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
   CUSTOMER: {
-    label: "Customer Portal",
-    description: "Self-service wash journey",
+    label: "Khu vực khách hàng",
+    description: "Đặt lịch và theo dõi dịch vụ",
     accent: "bg-sky-600 text-white shadow-sky-600/20",
     accentSoft: "border-sky-200 bg-sky-50 text-sky-700",
     activeNav: "bg-sky-600 text-white shadow-sm shadow-sky-600/20",
     mobileActive: "bg-sky-50 text-sky-700",
   },
   STAFF: {
-    label: "Staff Operations",
-    description: "Check-in and wash flow",
+    label: "Vận hành nhân viên",
+    description: "Tiếp nhận và xử lý phiên rửa",
     accent: "bg-violet-600 text-white shadow-violet-600/20",
     accentSoft: "border-violet-200 bg-violet-50 text-violet-700",
     activeNav: "bg-violet-600 text-white shadow-sm shadow-violet-600/20",
     mobileActive: "bg-violet-50 text-violet-700",
   },
   ADMIN: {
-    label: "Admin Dashboard",
-    description: "System control center",
+    label: "Bảng điều khiển quản trị",
+    description: "Trung tâm quản lý hệ thống",
     accent: "bg-orange-600 text-white shadow-orange-600/20",
     accentSoft: "border-orange-200 bg-orange-50 text-orange-700",
     activeNav: "bg-orange-600 text-white shadow-sm shadow-orange-600/20",
@@ -62,63 +62,54 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
 };
 
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
-  { href: "/customer/home", label: "Home", icon: LayoutDashboard, exact: true },
-  { href: "/customer/bookings", label: "Bookings", icon: ClipboardList },
-  { href: "/customer/vehicles", label: "Vehicles", icon: CarFront },
-  { href: "/customer/history", label: "History", icon: History },
-  { href: "/customer/loyalty", label: "Loyalty", icon: Gift },
-  { href: "/customer/promotions", label: "Promotions", icon: Tag },
-  { href: "/customer/notifications", label: "Notifications", icon: Bell },
-  { href: "/customer/settings", label: "Settings", icon: Settings2 },
+  { href: "/customer/home", label: "Trang chủ", icon: LayoutDashboard, exact: true },
+  { href: "/customer/bookings", label: "Đặt lịch", icon: ClipboardList },
+  { href: "/customer/vehicles", label: "Xe của tôi", icon: CarFront },
+  { href: "/customer/history", label: "Lịch sử", icon: History },
+  { href: "/customer/loyalty", label: "Tích điểm", icon: Gift },
+  { href: "/customer/promotions", label: "Khuyến mãi", icon: Tag },
+  { href: "/customer/notifications", label: "Thông báo", icon: Bell },
+  { href: "/customer/settings", label: "Cài đặt", icon: Settings2 },
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [
-  { href: "/staff/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/staff/operations", label: "Operations", icon: ClipboardList },
+  { href: "/staff/dashboard", label: "Tổng quan", icon: LayoutDashboard, exact: true },
+  { href: "/staff/operations", label: "Vận hành", icon: ClipboardList },
   { href: "/staff/check-in", label: "Check-in", icon: Wrench },
+  { href: "/staff/sessions/history", label: "Lịch sử", icon: History },
 ];
 
 const ADMIN_NAV: WorkspaceNavItem[] = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/staff", label: "Staff", icon: Users },
-  { href: "/admin/packages", label: "Packages", icon: Droplets },
-  { href: "/admin/add-ons", label: "Add-ons", icon: Package },
-  { href: "/admin/combos", label: "Combos", icon: Sparkles },
-  { href: "/admin/promotions", label: "Promotions", icon: Tag },
-  { href: "/admin/vouchers", label: "Vouchers", icon: Ticket },
-  { href: "/admin/operations", label: "Operations", icon: Wrench },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
-  { href: "/admin/settings", label: "Settings", icon: Settings2 },
+  { href: "/admin/dashboard", label: "Tổng quan", icon: LayoutDashboard, exact: true },
+  { href: "/admin/bookings", label: "Đặt lịch", icon: ClipboardList },
+  { href: "/admin/customers", label: "Khách hàng", icon: Users },
+  { href: "/admin/staff", label: "Nhân viên", icon: Users },
+  { href: "/admin/packages", label: "Gói rửa", icon: Droplets },
+  { href: "/admin/add-ons", label: "Dịch vụ thêm", icon: Package },
+  { href: "/admin/combos", label: "Combo", icon: Sparkles },
+  { href: "/admin/promotions", label: "Khuyến mãi", icon: Tag },
+  { href: "/admin/vouchers", label: "Mã ưu đãi", icon: Ticket },
+  { href: "/admin/operations", label: "Vận hành", icon: Wrench },
+  { href: "/admin/reports", label: "Báo cáo", icon: BarChart3 },
+  { href: "/admin/settings", label: "Cài đặt", icon: Settings2 },
 ];
 
 export const SHELL_EXCLUDED_PATHS = ["/admin/login"];
 
 export function navForRole(role: UserRole): WorkspaceNavItem[] {
-  if (role === "STAFF") {
-    return STAFF_NAV;
-  }
-  if (role === "ADMIN") {
-    return ADMIN_NAV;
-  }
+  if (role === "STAFF") return STAFF_NAV;
+  if (role === "ADMIN") return ADMIN_NAV;
   return CUSTOMER_NAV;
 }
 
 export function mobileNavForRole(role: UserRole): WorkspaceNavItem[] {
-  if (role === "STAFF") {
-    return STAFF_NAV;
-  }
+  if (role === "STAFF") return STAFF_NAV;
   if (role === "ADMIN") {
     return ADMIN_NAV.filter((item) =>
-      ["/admin/dashboard", "/admin/bookings", "/admin/customers", "/admin/operations"].includes(
-        item.href,
-      ),
+      ["/admin/dashboard", "/admin/bookings", "/admin/customers", "/admin/operations"].includes(item.href),
     );
   }
   return CUSTOMER_NAV.filter((item) =>
-    ["/customer/home", "/customer/bookings", "/customer/vehicles", "/customer/loyalty"].includes(
-      item.href,
-    ),
+    ["/customer/home", "/customer/bookings", "/customer/vehicles", "/customer/loyalty"].includes(item.href),
   );
 }

@@ -96,7 +96,7 @@ export default function CustomerHomePage() {
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
                 <Sparkles className="h-3.5 w-3.5" />
-                Customer workspace
+                Khu vực khách hàng
               </div>
               <div className="space-y-2">
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">

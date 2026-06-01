@@ -3,6 +3,7 @@ import type {
   CheckInWashSessionResponse,
   CompleteWashSessionResponse,
   CreateWashSessionResponse,
+  EligibleSessionBooking,
   OperationsQueue,
   QueueWashSessionResponse,
   StartWashSessionResponse,
@@ -22,6 +23,14 @@ export function getOperationsQueue() {
   return apiRequest<OperationsQueue>({
     method: "GET",
     url: "/operations/queue",
+  });
+}
+
+export function getEligibleSessionBookings() {
+  return apiRequest<EligibleSessionBooking[]>({
+    method: "GET",
+    url: "/operations/bookings/eligible-sessions",
+    params: { limit: 20 },
   });
 }
 

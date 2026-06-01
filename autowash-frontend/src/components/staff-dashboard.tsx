@@ -250,9 +250,9 @@ export function StaffDashboard() {
                     <UserPlus className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold tracking-tight">New Walk-in Customer</h3>
+                    <h3 className="text-xl font-bold tracking-tight">Khách vãng lai mới</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      Register a vehicle without a prior booking.
+                      Đăng ký xe chưa có lịch đặt trước.
                     </p>
                   </div>
                 </div>

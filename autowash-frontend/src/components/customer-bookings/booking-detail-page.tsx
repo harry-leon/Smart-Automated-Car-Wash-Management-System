@@ -36,7 +36,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           <CardContent className="flex gap-3">
             <Button type="button" variant="outline" onClick={() => bookingQuery.refetch()}>
               <RefreshCcw className="mr-2 h-4 w-4" />
-              Retry
+              Thử lại
             </Button>
             <Button asChild>
               <Link href="/customer/bookings">Back to bookings</Link>
