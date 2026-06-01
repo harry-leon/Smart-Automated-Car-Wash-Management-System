@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
-import { formatLoyaltyTransactionType } from "@/lib/customer-loyalty";
+import { formatLoyaltyPoints, formatLoyaltyTransactionType } from "@/lib/customer-loyalty";
 import { useCustomerLoyaltyTransactions } from "@/hooks/use-customer-loyalty";
 
 export function CustomerLoyaltyHistoryPageContent() {
@@ -21,10 +22,15 @@ export function CustomerLoyaltyHistoryPageContent() {
                 This list refreshes after wash completion and shows earned points from live data.
               </CardDescription>
             </div>
-            <Button type="button" variant="outline" onClick={() => transactionsQuery.refetch()}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => transactionsQuery.refetch()}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+              <Button asChild>
+                <Link href="/customer/loyalty/redeem">Redeem points</Link>
+              </Button>
+            </div>
           </CardHeader>
         </Card>
 
@@ -58,8 +64,8 @@ export function CustomerLoyaltyHistoryPageContent() {
                       {item.bookingId} • {new Date(item.createdAt).toLocaleString("vi-VN")}
                     </div>
                   </div>
-                  <div className="text-right text-lg font-black text-emerald-700">
-                    +{item.points.toLocaleString("vi-VN")} pts
+                  <div className={item.points >= 0 ? "text-right text-lg font-black text-emerald-700" : "text-right text-lg font-black text-rose-700"}>
+                    {formatLoyaltyPoints(item.points)}
                   </div>
                 </CardContent>
               </Card>
