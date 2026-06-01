@@ -148,7 +148,7 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void eligibleSessionBookingsOnlyReturnsConfirmedBookingsWithoutActiveSession() throws Exception {
-        CustomerBooking booking = createConfirmedBooking("OPS_BK_ELIGIBLE", "0901777003", 220000);
+        CustomerBooking booking = createConfirmedBooking("OPS_BK_ELIGIBLE", "0901777005", 220000);
 
         MvcResult beforeCreate = mockMvc.perform(get("/api/v1/operations/bookings/eligible-sessions")
                         .with(user("staff").roles("STAFF")))
