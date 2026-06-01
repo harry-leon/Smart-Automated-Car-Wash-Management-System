@@ -2,6 +2,7 @@ package com.autowash.operation.service;
 
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.entity.CustomerBooking;
+import com.autowash.booking.repository.CustomerBookingRepository;
 import com.autowash.booking.service.BookingService;
 import com.autowash.loyalty.dto.EarnPointsResponse;
 import com.autowash.loyalty.service.LoyaltyService;
@@ -9,6 +10,7 @@ import com.autowash.operation.dto.CheckInWashSessionResponse;
 import com.autowash.operation.dto.CompleteWashSessionResponse;
 import com.autowash.operation.dto.CreateWashSessionRequest;
 import com.autowash.operation.dto.CreateWashSessionResponse;
+import com.autowash.operation.dto.EligibleSessionBookingResponse;
 import com.autowash.operation.dto.OperationsQueueResponse;
 import com.autowash.operation.dto.QueueWashSessionResponse;
 import com.autowash.operation.dto.StartWashSessionResponse;
@@ -17,6 +19,7 @@ import com.autowash.operation.entity.WashSessionStatus;
 import com.autowash.operation.repository.WashSessionRepository;
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.user.service.CurrentUserService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -26,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,19 +45,25 @@ public class OperationsService {
     );
 
     private final BookingService bookingService;
+    private final CustomerBookingRepository customerBookingRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyService loyaltyService;
+    private final CurrentUserService currentUserService;
     private final String currency;
 
     public OperationsService(
             BookingService bookingService,
+            CustomerBookingRepository customerBookingRepository,
             WashSessionRepository washSessionRepository,
             LoyaltyService loyaltyService,
+            CurrentUserService currentUserService,
             @Value("${autowash.currency}") String currency
     ) {
         this.bookingService = bookingService;
+        this.customerBookingRepository = customerBookingRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyService = loyaltyService;
+        this.currentUserService = currentUserService;
         this.currency = currency;
     }
 
@@ -75,7 +85,8 @@ public class OperationsService {
             );
         }
 
-        WashSession session = washSessionRepository.save(new WashSession(booking, request.notes()));
+        AuthUser approvingStaff = currentUserService.getCurrentUser();
+        WashSession session = washSessionRepository.save(new WashSession(booking, request.notes(), approvingStaff));
         return new CreateWashSessionResponse(
                 session.getId(),
                 session.getStatus().name(),
@@ -114,6 +125,19 @@ public class OperationsService {
                 columns,
                 Instant.now()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        return customerBookingRepository.findEligibleForOperationsSession(
+                        BookingStatus.CONFIRMED,
+                        ACTIVE_SESSION_STATUSES,
+                        PageRequest.of(0, safeLimit)
+                )
+                .stream()
+                .map(this::toEligibleBooking)
+                .toList();
     }
 
     @Transactional
@@ -207,6 +231,7 @@ public class OperationsService {
 
     private OperationsQueueResponse.WashSessionCard toQueueCard(WashSession session) {
         CustomerBooking booking = session.getBooking();
+        AuthUser assignedStaff = session.getAssignedStaff();
         return new OperationsQueueResponse.WashSessionCard(
                 session.getId(),
                 booking.getId(),
@@ -214,6 +239,8 @@ public class OperationsService {
                 booking.getCustomer().getPhone(),
                 booking.getVehicle().getPlate(),
                 booking.getPackageId(),
+                assignedStaff == null ? null : assignedStaff.getId(),
+                assignedStaff == null ? null : assignedStaff.getFullName(),
                 session.getStatus().name(),
                 booking.getBookingDate(),
                 booking.getBookingTime(),
@@ -225,7 +252,23 @@ public class OperationsService {
                 session.getQueuedAt(),
                 session.getCheckedInAt(),
                 session.getStartedAt(),
-                session.getCompletedAt()
+                session.getCompletedAt(),
+                session.getNotes()
+        );
+    }
+
+    private EligibleSessionBookingResponse toEligibleBooking(CustomerBooking booking) {
+        return new EligibleSessionBookingResponse(
+                booking.getId(),
+                booking.getCustomer().getFullName(),
+                booking.getCustomer().getPhone(),
+                booking.getVehicle().getPlate(),
+                booking.getPackageId(),
+                booking.getComboId(),
+                booking.getBookingDate(),
+                booking.getBookingTime(),
+                booking.getFinalAmount(),
+                booking.getEstimatedDurationMinutes()
         );
     }
 

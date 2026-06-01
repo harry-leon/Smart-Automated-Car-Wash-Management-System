@@ -295,7 +295,9 @@ public class BookingService {
                 ),
                 booking.getStatus().name(),
                 washSession == null ? null : washSession.getId().toString(),
-                null,
+                washSession == null || washSession.getAssignedStaff() == null
+                        ? null
+                        : washSession.getAssignedStaff().getFullName(),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt()

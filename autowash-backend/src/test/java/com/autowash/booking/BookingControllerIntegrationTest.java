@@ -1,22 +1,30 @@
 package com.autowash.booking;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.autowash.auth.entity.AuthUser;
+import com.autowash.auth.entity.UserRole;
+import com.autowash.auth.repository.AuthUserRepository;
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.repository.CustomerBookingRepository;
+import com.autowash.shared.security.AuthUserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -31,6 +39,9 @@ class BookingControllerIntegrationTest {
 
     @Autowired
     private CustomerBookingRepository customerBookingRepository;
+
+    @Autowired
+    private AuthUserRepository authUserRepository;
 
     @Test
     void getPackagesReturnsPaginatedActivePackages() throws Exception {
@@ -205,6 +216,7 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.bookingId").value(bookingId))
                 .andExpect(jsonPath("$.data.washSessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.staffName").value("Booking Staff"))
                 .andExpect(jsonPath("$.data.washStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.notes").value("Customer arrived at bay 2"));
     }
@@ -329,7 +341,7 @@ class BookingControllerIntegrationTest {
 
     private String createWashSession(String bookingId, String notes) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(user("staff").roles("STAFF"))
+                        .with(authenticatedStaff())
                         .contentType("application/json")
                         .content("""
                                 {
@@ -340,6 +352,25 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn();
         return readJson(result).path("data").path("sessionId").asText();
+    }
+
+    private RequestPostProcessor authenticatedStaff() {
+        AuthUser staff = new AuthUser("Booking Staff", uniquePhone("0916"), "booking-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        staff.activate();
+        ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
+        authUserRepository.saveAndFlush(staff);
+        AuthUserPrincipal principal = new AuthUserPrincipal(staff);
+        UsernamePasswordAuthenticationToken token =
+                new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
+        return authentication(token);
+    }
+
+    private String uniquePhone(String prefix) {
+        String digits = java.util.UUID.randomUUID().toString().replaceAll("\\D", "");
+        while (digits.length() < 6) {
+            digits += "0";
+        }
+        return prefix + digits.substring(0, 6);
     }
 
     private String createVehicle(String accessToken, String plate) throws Exception {

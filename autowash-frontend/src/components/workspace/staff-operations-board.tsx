@@ -25,30 +25,30 @@ type OperationColumn = {
 const COLUMNS: OperationColumn[] = [
   {
     id: "pending",
-    title: "Pending",
+    title: "Chờ duyệt",
     tone: "border-amber-200 bg-amber-50/50",
-    cards: [{ id: "WS-01", plate: "51H-77889", service: "Deluxe Wash", meta: "09:15 slot", priority: "soon" }],
+    cards: [{ id: "WS-01", plate: "51H-77889", service: "Rửa nâng cao", meta: "Khung 09:15", priority: "soon" }],
   },
   {
     id: "checked-in",
-    title: "Checked in",
+    title: "Đã check-in",
     tone: "border-violet-200 bg-violet-50/50",
     cards: [
-      { id: "WS-02", plate: "30A-11223", service: "Premium Wash", meta: "Bay 2", priority: "normal" },
-      { id: "WS-03", plate: "43C-55667", service: "Combo Gold", meta: "Bay 4", priority: "late" },
+      { id: "WS-02", plate: "30A-11223", service: "Rửa cao cấp", meta: "Khoang 2", priority: "normal" },
+      { id: "WS-03", plate: "43C-55667", service: "Combo vàng", meta: "Khoang 4", priority: "late" },
     ],
   },
   {
     id: "in-progress",
-    title: "In progress",
+    title: "Đang rửa",
     tone: "border-sky-200 bg-sky-50/50",
-    cards: [{ id: "WS-04", plate: "59F-99001", service: "Interior + Wax", meta: "Timer 18:42", priority: "normal" }],
+    cards: [{ id: "WS-04", plate: "59F-99001", service: "Nội thất và phủ sáp", meta: "Còn 18:42", priority: "normal" }],
   },
   {
     id: "completed",
-    title: "Completed",
+    title: "Đã hoàn thành",
     tone: "border-emerald-200 bg-emerald-50/50",
-    cards: [{ id: "WS-05", plate: "72E-33445", service: "Quick Rinse", meta: "Awaiting pickup", priority: "normal" }],
+    cards: [{ id: "WS-05", plate: "72E-33445", service: "Rửa nhanh", meta: "Chờ nhận xe", priority: "normal" }],
   },
 ];
 
@@ -62,9 +62,9 @@ export function StaffOperationsBoard() {
   return (
     <WorkspacePage className="space-y-6">
       <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard icon={Truck} label="Assigned bays" value="4 / 6" />
-        <MetricCard icon={LoaderCircle} label="In progress" value="3" />
-        <MetricCard icon={TimerReset} label="Avg cycle" value="28m" />
+        <MetricCard icon={Truck} label="Khoang đã phân công" value="4 / 6" />
+        <MetricCard icon={LoaderCircle} label="Đang rửa" value="3" />
+        <MetricCard icon={TimerReset} label="Thời lượng trung bình" value="28 phút" />
       </section>
 
       <section className="overflow-x-auto pb-2">
@@ -73,11 +73,11 @@ export function StaffOperationsBoard() {
             <div key={column.id} className={cn("w-72 shrink-0 rounded-2xl border p-3", column.tone)}>
               <header className="mb-3 px-1">
                 <h2 className="text-sm font-bold">{column.title}</h2>
-                <p className="text-xs text-muted-foreground">{column.cards.length} sessions</p>
+                <p className="text-xs text-muted-foreground">{column.cards.length} phiên</p>
               </header>
               <div className="space-y-3">
                 {column.cards.length === 0 ? (
-                  <WorkspaceEmptyState title="No sessions" description="This column is empty." />
+                  <WorkspaceEmptyState title="Chưa có phiên" description="Cột này hiện đang trống." />
                 ) : (
                   column.cards.map((card) => (
                     <Card key={card.id} className="border-border/70 bg-card p-4 shadow-sm">
@@ -96,7 +96,7 @@ export function StaffOperationsBoard() {
                         {card.meta}
                       </div>
                       <Button className="mt-4 w-full" size="sm" variant="outline" asChild>
-                        <Link href={`/staff/sessions/${card.id}`}>Open session</Link>
+                        <Link href={`/staff/sessions/${card.id}`}>Mở phiên</Link>
                       </Button>
                     </Card>
                   ))
@@ -108,7 +108,7 @@ export function StaffOperationsBoard() {
       </section>
 
       <p className="text-xs text-muted-foreground">
-        Queue refresh remains scoped to GET /operations/queue. Red means late, amber means arriving soon, green means on track.
+        Hàng đợi tự làm mới từ API vận hành. Màu đỏ là trễ, vàng là sắp đến, xanh là đúng tiến độ.
       </p>
     </WorkspacePage>
   );

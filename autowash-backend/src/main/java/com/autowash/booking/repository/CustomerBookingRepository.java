@@ -3,8 +3,10 @@ package com.autowash.booking.repository;
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.entity.CustomerBooking;
+import com.autowash.operation.entity.WashSessionStatus;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -70,4 +72,21 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
 
     @Query("select coalesce(sum(b.finalAmount), 0) from CustomerBooking b where b.status = :status")
     long sumFinalAmountByStatus(@Param("status") BookingStatus status);
+
+    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @Query("""
+            select booking from CustomerBooking booking
+            where booking.status = :status
+              and not exists (
+                    select session.id from WashSession session
+                    where session.booking = booking
+                      and session.status in :activeStatuses
+              )
+            order by booking.bookingDate asc, booking.bookingTime asc, booking.createdAt desc
+            """)
+    List<CustomerBooking> findEligibleForOperationsSession(
+            @Param("status") BookingStatus status,
+            @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            Pageable pageable
+    );
 }

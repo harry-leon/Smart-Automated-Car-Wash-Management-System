@@ -2,6 +2,8 @@ import { apiRequest } from "@/lib/api";
 import type {
   CheckInWashSessionResponse,
   CompleteWashSessionResponse,
+  CreateWashSessionResponse,
+  EligibleSessionBooking,
   OperationsQueue,
   QueueWashSessionResponse,
   StartWashSessionResponse,
@@ -9,10 +11,26 @@ import type {
 
 const SESSION_BASE_URL = "/operations/sessions";
 
+export function createWashSession(bookingId: string, notes?: string) {
+  return apiRequest<CreateWashSessionResponse, { bookingId: string; notes?: string }>({
+    method: "POST",
+    url: SESSION_BASE_URL,
+    data: { bookingId, notes },
+  });
+}
+
 export function getOperationsQueue() {
   return apiRequest<OperationsQueue>({
     method: "GET",
     url: "/operations/queue",
+  });
+}
+
+export function getEligibleSessionBookings() {
+  return apiRequest<EligibleSessionBooking[]>({
+    method: "GET",
+    url: "/operations/bookings/eligible-sessions",
+    params: { limit: 20 },
   });
 }
 
