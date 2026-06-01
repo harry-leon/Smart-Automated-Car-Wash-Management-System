@@ -16,8 +16,8 @@ export default function VerifyOtpPage({
       description="Confirm the 6-digit OTP to activate your account."
       footer={
         <div>
-          <span className="text-slate-100/80">Need to restart? </span>
-          <Link href="/register" className="font-semibold text-white transition hover:opacity-80">
+          <span className="text-slate-500">Need to restart? </span>
+          <Link href="/register" className="font-semibold text-sky-600 transition hover:text-sky-700 hover:underline">
             Back to registration
           </Link>
         </div>
