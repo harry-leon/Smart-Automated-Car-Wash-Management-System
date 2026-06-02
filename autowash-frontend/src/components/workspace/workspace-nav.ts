@@ -9,6 +9,7 @@ import {
   History,
   LayoutDashboard,
   Package,
+  Radar,
   Settings2,
   Sparkles,
   Tag,
@@ -64,6 +65,7 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
   { href: "/customer/home", label: "Trang chủ", icon: LayoutDashboard, exact: true },
   { href: "/customer/bookings", label: "Đặt lịch", icon: ClipboardList },
+  { href: "/customer/wash-tracking", label: "Theo dõi rửa xe", icon: Radar },
   { href: "/customer/vehicles", label: "Xe của tôi", icon: CarFront },
   { href: "/customer/history", label: "Lịch sử", icon: History },
   { href: "/customer/loyalty", label: "Tích điểm", icon: Gift },
@@ -110,6 +112,6 @@ export function mobileNavForRole(role: UserRole): WorkspaceNavItem[] {
     );
   }
   return CUSTOMER_NAV.filter((item) =>
-    ["/customer/home", "/customer/bookings", "/customer/vehicles", "/customer/loyalty"].includes(item.href),
+    ["/customer/home", "/customer/bookings", "/customer/wash-tracking", "/customer/loyalty"].includes(item.href),
   );
 }

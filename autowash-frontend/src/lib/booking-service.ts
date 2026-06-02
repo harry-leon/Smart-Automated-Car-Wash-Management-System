@@ -9,9 +9,12 @@ import type {
   BookingListItem,
   BookingListPage,
   BookingPackage,
+  ApplyBookingPointsRequest,
+  ApplyBookingPointsResponse,
   CreateBookingResponse,
   VoucherValidationRequest,
   VoucherValidationResult,
+  WashTrackingSession,
 } from "@/types/booking.types";
 import { buildCreateBookingPayload } from "@/lib/booking-format";
 
@@ -70,5 +73,27 @@ export function getCustomerBookingDetail(bookingId: string) {
   return apiRequest<BookingDetail>({
     method: "GET",
     url: `/customers/bookings/${bookingId}`,
+  });
+}
+
+export function applyBookingPoints(bookingId: string, payload: ApplyBookingPointsRequest) {
+  return apiRequest<ApplyBookingPointsResponse, ApplyBookingPointsRequest>({
+    method: "POST",
+    url: `/bookings/${bookingId}/apply-points`,
+    data: payload,
+  });
+}
+
+export function getActiveWashTracking() {
+  return apiRequest<WashTrackingSession | null>({
+    method: "GET",
+    url: "/customers/wash-tracking/active",
+  });
+}
+
+export function getWashTrackingDetail(washSessionId: string) {
+  return apiRequest<WashTrackingSession>({
+    method: "GET",
+    url: `/customers/wash-tracking/${washSessionId}`,
   });
 }
