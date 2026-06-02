@@ -38,6 +38,16 @@ export type RedeemPointsResponse = {
   newBalance: number;
 };
 
+export type TierVoucherOffer = {
+  id: string;
+  title: string;
+  minTier: LoyaltyTier;
+  pointsCost: number;
+  voucherValue: number;
+  accent: "sky" | "violet" | "amber" | "rose";
+  badge: string;
+};
+
 export type WashHistoryItem = {
   sessionId: string;
   bookingId: string;

@@ -2,6 +2,7 @@ import type {
   LoyaltyAccount,
   LoyaltyTier,
   LoyaltyTransactionType,
+  TierVoucherOffer,
   PromotionType,
 } from "@/types/loyalty.types";
 
@@ -19,8 +20,58 @@ const NEXT_TIER: Record<LoyaltyTier, LoyaltyTier | null> = {
   PLATINUM: null,
 };
 
+const TIER_RANK: Record<LoyaltyTier, number> = {
+  MEMBER: 0,
+  SILVER: 1,
+  GOLD: 2,
+  PLATINUM: 3,
+};
+
+export const TIER_VOUCHER_OFFERS: TierVoucherOffer[] = [
+  {
+    id: "member-50",
+    title: "Quick Clean Voucher",
+    minTier: "MEMBER",
+    pointsCost: 50,
+    voucherValue: 50000,
+    accent: "sky",
+    badge: "Member",
+  },
+  {
+    id: "silver-100",
+    title: "Interior Care Voucher",
+    minTier: "SILVER",
+    pointsCost: 100,
+    voucherValue: 120000,
+    accent: "violet",
+    badge: "Silver",
+  },
+  {
+    id: "gold-150",
+    title: "Premium Wash Voucher",
+    minTier: "GOLD",
+    pointsCost: 150,
+    voucherValue: 210000,
+    accent: "amber",
+    badge: "Gold",
+  },
+  {
+    id: "platinum-200",
+    title: "Full Detail Voucher",
+    minTier: "PLATINUM",
+    pointsCost: 200,
+    voucherValue: 320000,
+    accent: "rose",
+    badge: "Platinum",
+  },
+];
+
 export function formatTierLabel(tier: LoyaltyTier) {
   return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
+
+export function canRedeemTierOffer(currentTier: LoyaltyTier, offer: TierVoucherOffer) {
+  return TIER_RANK[currentTier] >= TIER_RANK[offer.minTier];
 }
 
 export function formatLoyaltyTransactionType(type: LoyaltyTransactionType) {
@@ -92,5 +143,10 @@ export function buildLoyaltySummary(account: LoyaltyAccount) {
     ...account,
     tierLabel: formatTierLabel(account.tier),
     progress: getTierProgress(account.tier, account.currentPoints),
+    voucherOffers: TIER_VOUCHER_OFFERS.map((offer) => ({
+      ...offer,
+      eligible: canRedeemTierOffer(account.tier, offer),
+      affordable: account.currentPoints >= offer.pointsCost,
+    })),
   };
 }

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  canRedeemTierOffer,
   formatLoyaltyPoints,
   formatLoyaltyTransactionType,
   formatPromotionType,
   formatTierLabel,
   getTierProgress,
+  TIER_VOUCHER_OFFERS,
 } from "./customer-loyalty.ts";
 
 test("computes loyalty tier progress against the next threshold", () => {
@@ -37,4 +39,11 @@ test("formats tier, transaction, and promotion labels for customer pages", () =>
   assert.equal(formatPromotionType("SELECTED_TIERS"), "Selected tiers");
   assert.equal(formatLoyaltyPoints(27), "+27 pts");
   assert.equal(formatLoyaltyPoints(-50), "-50 pts");
+});
+
+test("limits voucher offers by current loyalty tier", () => {
+  const platinumOffer = TIER_VOUCHER_OFFERS.find((offer) => offer.minTier === "PLATINUM");
+  assert.ok(platinumOffer);
+  assert.equal(canRedeemTierOffer("GOLD", platinumOffer), false);
+  assert.equal(canRedeemTierOffer("PLATINUM", platinumOffer), true);
 });
