@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -118,8 +118,8 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           onToggle={() => setSidebarCollapsed((value) => !value)}
         />
 
-        <nav className={cn("flex-1 overflow-y-auto py-4", sidebarCollapsed ? "px-2" : "px-3")}>
-          <ul className="space-y-1">
+        <nav className={cn("flex-1 overflow-y-auto", sidebarCollapsed ? "px-2 py-4" : "px-3 py-4")}>
+          <ul className={cn(sidebarCollapsed ? "space-y-3" : "space-y-1")}>
             {navItems.map((item) => (
               <SidebarNavLink
                 key={item.href}
@@ -306,6 +306,23 @@ function SidebarBrand({
   onToggle: () => void;
   closeLabel?: string;
 }) {
+  if (collapsed) {
+    return (
+      <div className="border-b border-border/70 px-2.5 py-4">
+        <div className="mx-auto flex h-11 w-full items-center justify-center">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/15 bg-white text-primary shadow-[0_12px_30px_rgba(124,58,237,0.16)] transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_16px_36px_rgba(124,58,237,0.22)]"
+            aria-label="Mở rộng thanh bên"
+          >
+            <PanelLeftOpen className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="border-b border-border/70 px-4 py-5">
       <div className="flex items-center justify-between gap-2">
@@ -365,7 +382,7 @@ function SidebarNavLink({
         title={collapsed ? item.label : undefined}
         className={cn(
           "group flex items-center rounded-xl text-sm font-medium transition-all",
-          collapsed ? "mx-auto h-11 w-11 justify-center" : "gap-3 px-3 py-2.5",
+          collapsed ? "mx-auto h-12 w-12 justify-center rounded-2xl" : "gap-3 px-3 py-2.5",
           active ? activeClassName : "text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
       >
@@ -382,3 +399,4 @@ function isNavActive(pathname: string, item: WorkspaceNavItem) {
   }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
+
