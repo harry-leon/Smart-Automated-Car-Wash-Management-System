@@ -142,6 +142,8 @@ public class AdminReportingService {
                         booking.getBasePrice() + booking.getAddonsTotal(),
                         booking.getVoucherCode(),
                         booking.getVoucherDiscount(),
+                        booking.getPointsRedeemed(),
+                        booking.getPointsDiscount(),
                         booking.getFinalAmount(),
                         "VND"
                 ),
