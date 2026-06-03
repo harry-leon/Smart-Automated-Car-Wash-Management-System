@@ -81,8 +81,7 @@ const STAFF_NAV: WorkspaceNavItem[] = [
 const ADMIN_NAV: WorkspaceNavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/staff", label: "Staff", icon: Users },
+  { href: "/admin/accounts", label: "Accounts", icon: Users },
   { href: "/admin/packages", label: "Packages", icon: Droplets },
   { href: "/admin/add-ons", label: "Add-ons", icon: Package },
   { href: "/admin/combos", label: "Combos", icon: Sparkles },
@@ -111,7 +110,7 @@ export function mobileNavForRole(role: UserRole): WorkspaceNavItem[] {
   }
   if (role === "ADMIN") {
     return ADMIN_NAV.filter((item) =>
-      ["/admin/dashboard", "/admin/bookings", "/admin/customers", "/admin/operations"].includes(
+      ["/admin/dashboard", "/admin/bookings", "/admin/accounts", "/admin/operations"].includes(
         item.href,
       ),
     );

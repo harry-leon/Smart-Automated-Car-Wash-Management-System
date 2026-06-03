@@ -18,6 +18,14 @@ describe("getWorkspaceHeaderMeta", () => {
     assert.equal(meta.workspace, "STAFF");
   });
 
+  it("describes admin account management as a unified account directory", () => {
+    const meta = getWorkspaceHeaderMeta("/admin/accounts");
+
+    assert.equal(meta.title, "Accounts");
+    assert.equal(meta.subtitle, "Customer, staff, and admin account directory");
+    assert.equal(meta.workspace, "ADMIN");
+  });
+
   it("falls back to a stable overview label for unknown admin sub-pages", () => {
     const meta = getWorkspaceHeaderMeta("/admin/not-yet-modeled");
 

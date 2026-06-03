@@ -116,7 +116,7 @@ const ADMIN_NAV: NavGroup[] = [
         exact: true,
       },
       { to: "/admin/bookings", label: "Bookings", labelVi: "Lịch đặt", icon: ClipboardList },
-      { to: "/admin/customers", label: "Accounts", labelVi: "Tài khoản", icon: Users },
+      { to: "/admin/accounts", label: "Accounts", labelVi: "Tài khoản", icon: Users },
       { to: "/admin/packages", label: "Wash Packages", labelVi: "Gói rửa xe", icon: Droplets },
       { to: "/admin/loyalty", label: "Loyalty", labelVi: "Tích điểm", icon: Gift },
       { to: "/admin/promotions", label: "Promotions", labelVi: "Khuyến mãi", icon: Sparkles },
