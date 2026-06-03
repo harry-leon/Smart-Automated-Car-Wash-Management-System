@@ -7,9 +7,9 @@ export type WorkspaceHeaderMeta = {
 };
 
 const DEFAULT_SUBTITLE: Record<WorkspaceRole, string> = {
-  CUSTOMER: "Quản lý đặt lịch, xe, điểm thưởng và hoạt động tài khoản",
-  STAFF: "Quản lý check-in, phiên rửa và vận hành trong ngày",
-  ADMIN: "Theo dõi hệ thống, khách hàng, dịch vụ và vận hành",
+  CUSTOMER: "Manage bookings, vehicles, rewards, and account activity",
+  STAFF: "Manage check-ins, wash sessions, and daily operations",
+  ADMIN: "Monitor system health, customers, services, and operations",
 };
 
 const ROUTE_META: Array<{
@@ -19,56 +19,56 @@ const ROUTE_META: Array<{
   {
     match: (pathname) => pathname === "/customer/home" || pathname === "/customer",
     meta: {
-      title: "Trang chủ khách hàng",
-      subtitle: "Điểm thưởng, đặt lịch, xe và thao tác nhanh",
+      title: "Customer Home",
+      subtitle: "Points, bookings, vehicles, and quick actions",
       workspace: "CUSTOMER",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/customer/profile"),
     meta: {
-      title: "Hồ sơ cá nhân",
-      subtitle: "Thông tin tài khoản và tùy chọn hồ sơ",
+      title: "Personal Profile",
+      subtitle: "Account information and profile preferences",
       workspace: "CUSTOMER",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/customer/vehicles"),
     meta: {
-      title: "Xe của tôi",
-      subtitle: "Quản lý xe đã đăng ký và xe chính",
+      title: "Vehicles",
+      subtitle: "Manage registered vehicles and primary vehicle status",
       workspace: "CUSTOMER",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/customer/bookings") || pathname === "/customer/booking",
     meta: {
-      title: "Đặt lịch",
-      subtitle: "Tạo và theo dõi lịch rửa xe",
+      title: "Bookings",
+      subtitle: "Create and track wash appointments",
       workspace: "CUSTOMER",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/customer/history"),
     meta: {
-      title: "Lịch sử rửa xe",
-      subtitle: "Xem lại phiên rửa và tiến độ dịch vụ",
+      title: "Wash History",
+      subtitle: "Review past sessions and wash progress",
       workspace: "CUSTOMER",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/customer/loyalty"),
     meta: {
-      title: "Tích điểm và ưu đãi",
-      subtitle: "Theo dõi điểm, hạng thành viên và đổi điểm",
+      title: "Loyalty & Rewards",
+      subtitle: "Track points, tier progress, and redemption options",
       workspace: "CUSTOMER",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/customer/promotions"),
     meta: {
-      title: "Khuyến mãi",
-      subtitle: "Xem các chương trình và ưu đãi đang hoạt động",
+      title: "Promotions",
+      subtitle: "Browse active campaigns and reward offers",
       workspace: "CUSTOMER",
     },
   },
@@ -79,88 +79,91 @@ const ROUTE_META: Array<{
       pathname.startsWith("/customer/combos") ||
       pathname.startsWith("/customer/vouchers"),
     meta: {
-      title: "Khu vực khách hàng",
-      subtitle: "Xem công cụ, thông báo và tùy chọn khách hàng",
+      title: "Customer Workspace",
+      subtitle: "Review customer tools, notifications, and preferences",
       workspace: "CUSTOMER",
     },
   },
   {
     match: (pathname) => pathname === "/staff/dashboard" || pathname === "/staff",
     meta: {
-      title: "Tổng quan nhân viên",
-      subtitle: "Lịch đến, trạng thái hàng đợi và việc được giao",
+      title: "Staff Dashboard",
+      subtitle: "Arrivals, queue health, and assigned actions",
       workspace: "STAFF",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/staff/operations"),
     meta: {
-      title: "Bảng vận hành",
-      subtitle: "Chuyển phiên rửa qua từng bước xử lý",
+      title: "Operations Board",
+      subtitle: "Move wash sessions through the service lifecycle",
       workspace: "STAFF",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/staff/check-in"),
     meta: {
-      title: "Check-in xe",
-      subtitle: "Xác nhận đặt lịch và đưa xe vào quy trình rửa",
+      title: "Vehicle Check-in",
+      subtitle: "Confirm bookings and start the wash flow",
       workspace: "STAFF",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/staff/sessions/history"),
     meta: {
-      title: "Lịch sử phiên rửa",
-      subtitle: "Tra cứu các phiên đã hoàn thành theo ngày, tháng hoặc năm",
+      title: "Wash Session History",
+      subtitle: "Review completed sessions by day, month, or year",
       workspace: "STAFF",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/staff/sessions"),
     meta: {
-      title: "Phiên rửa",
-      subtitle: "Kiểm tra chi tiết, thời gian và thao tác tiếp theo",
+      title: "Wash Session",
+      subtitle: "Inspect session detail, timing, and next action",
       workspace: "STAFF",
     },
   },
   {
     match: (pathname) => pathname === "/admin/dashboard" || pathname === "/admin",
     meta: {
-      title: "Bảng điều khiển quản trị",
-      subtitle: "Chỉ số, đặt lịch, hoạt động khách hàng và vận hành",
+      title: "Admin Control Panel",
+      subtitle: "KPIs, bookings, customer activity, and operational health",
       workspace: "ADMIN",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/admin/bookings"),
     meta: {
-      title: "Quản lý đặt lịch",
-      subtitle: "Theo dõi số lượng, trạng thái và phân công",
+      title: "Booking Management",
+      subtitle: "Review booking volume, status, and assignment flow",
       workspace: "ADMIN",
     },
   },
   {
-    match: (pathname) => pathname.startsWith("/admin/customers"),
+    match: (pathname) =>
+      pathname.startsWith("/admin/accounts") ||
+      pathname.startsWith("/admin/customers") ||
+      pathname.startsWith("/admin/staff"),
     meta: {
-      title: "Tài khoản khách hàng",
-      subtitle: "Hồ sơ, xe, đặt lịch và lịch sử tích điểm",
+      title: "Accounts",
+      subtitle: "Customer, staff, and admin account directory",
       workspace: "ADMIN",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/admin/operations"),
     meta: {
-      title: "Tình trạng vận hành",
-      subtitle: "Theo dõi phiên đang xử lý và năng lực dịch vụ",
+      title: "Operations Health",
+      subtitle: "Monitor active sessions and service capacity",
       workspace: "ADMIN",
     },
   },
   {
     match: (pathname) => pathname.startsWith("/admin/reports"),
     meta: {
-      title: "Báo cáo và phân tích",
-      subtitle: "Doanh thu, hiệu suất dịch vụ và xu hướng khách hàng",
+      title: "Reports & Analytics",
+      subtitle: "Revenue, service performance, and customer trends",
       workspace: "ADMIN",
     },
   },
@@ -171,11 +174,10 @@ const ROUTE_META: Array<{
       pathname.startsWith("/admin/combos") ||
       pathname.startsWith("/admin/promotions") ||
       pathname.startsWith("/admin/vouchers") ||
-      pathname.startsWith("/admin/staff") ||
       pathname.startsWith("/admin/settings"),
     meta: {
-      title: "Khu vực quản trị",
-      subtitle: "Cấu hình dịch vụ, khuyến mãi, nhân viên và cài đặt",
+      title: "Admin Workspace",
+      subtitle: "Configure services, promotions, staff, and workspace settings",
       workspace: "ADMIN",
     },
   },
@@ -187,7 +189,7 @@ export function getWorkspaceHeaderMeta(pathname: string): WorkspaceHeaderMeta {
 
   const workspace = resolveWorkspaceFromPath(pathname);
   return {
-    title: "Tổng quan",
+    title: "Overview",
     subtitle: DEFAULT_SUBTITLE[workspace],
     workspace,
   };

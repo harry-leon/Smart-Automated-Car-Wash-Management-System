@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { redirect } from "next/navigation";
 
 export default function AdminCustomersPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Admin"
-      title="Accounts"
-      description="Accounts directory shell for customer, staff, and admin filtering."
-      endpoints={["GET /admin/accounts"]}
-    />
-  );
+  redirect("/admin/accounts");
 }
