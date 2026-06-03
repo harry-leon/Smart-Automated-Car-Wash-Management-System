@@ -88,6 +88,41 @@ class AdminReportingControllerIntegrationTest {
     }
 
     @Test
+    void adminAccountListSupportsRoleStatusSearchAndPagination() throws Exception {
+        AuthUser staff = createActiveUser(UserRole.STAFF, uniquePhone("0918"), "Account Staff");
+        createActiveUser(UserRole.ADMIN, uniquePhone("0988"), "Account Admin");
+        createActiveUser(UserRole.CUSTOMER, uniquePhone("0908"), "Account Customer");
+
+        mockMvc.perform(get("/api/v1/admin/accounts")
+                        .with(user("admin").roles("ADMIN"))
+                        .param("role", "STAFF")
+                        .param("status", "ACTIVE")
+                        .param("searchQuery", staff.getPhone())
+                        .param("page", "1")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].accountId").value(staff.getId().toString()))
+                .andExpect(jsonPath("$.data[0].fullName").value("Account Staff"))
+                .andExpect(jsonPath("$.data[0].role").value("STAFF"))
+                .andExpect(jsonPath("$.data[0].status").value("ACTIVE"))
+                .andExpect(jsonPath("$.pagination.total").value(1));
+    }
+
+    @Test
+    void adminAccountListRejectsInvalidRoleAndNonAdminAccess() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/accounts")
+                        .with(user("admin").roles("ADMIN"))
+                        .param("role", "OWNER"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+
+        mockMvc.perform(get("/api/v1/admin/accounts")
+                        .with(user("customer").roles("CUSTOMER")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void customerDetailWashHistoryAndPointHistoryUseRealBookingOperationsAndLoyaltyData() throws Exception {
         CustomerBooking booking = createConfirmedBooking("ADMIN_BK_003", "0901777403", "30H-774403", LocalDate.of(2026, 6, 12), 270000);
         String sessionId = completeSession(booking.getId());
@@ -142,10 +177,12 @@ class AdminReportingControllerIntegrationTest {
     void openApiDocumentsAdminReportingSchemas() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/admin/accounts']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/bookings']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/customers/{customerId}']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/customers/{customerId}/wash-sessions']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/customers/{customerId}/point-transactions']").exists())
+                .andExpect(jsonPath("$.components.schemas.AdminAccountResponse.properties.accountId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminBookingResponse.properties.bookingId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminCustomerDetailResponse.properties.customerId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminWashHistoryResponse.properties.sessionId.type").value("string"));
@@ -235,6 +272,13 @@ class AdminReportingControllerIntegrationTest {
     private AuthUser createActiveCustomer(String phone) {
         AuthUser user = new AuthUser("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
+        return authUserRepository.saveAndFlush(user);
+    }
+
+    private AuthUser createActiveUser(UserRole role, String phone, String fullName) {
+        AuthUser user = new AuthUser(fullName, phone, phone + "@example.com", "hash");
+        user.activate();
+        ReflectionTestUtils.setField(user, "role", role);
         return authUserRepository.saveAndFlush(user);
     }
 

@@ -1,10 +1,12 @@
 package com.autowash.admin.service;
 
 import com.autowash.admin.dto.AdminBookingResponse;
+import com.autowash.admin.dto.AdminAccountResponse;
 import com.autowash.admin.dto.AdminCustomerDetailResponse;
 import com.autowash.admin.dto.AdminWashHistoryResponse;
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.auth.entity.UserRole;
+import com.autowash.auth.entity.UserStatus;
 import com.autowash.auth.repository.AuthUserRepository;
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.entity.CustomerBooking;
@@ -66,6 +68,26 @@ public class AdminReportingService {
         this.serviceComboRepository = serviceComboRepository;
         this.loyaltyService = loyaltyService;
         this.pointTransactionRepository = pointTransactionRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public AccountPage listAccounts(String role, String status, String searchQuery, int page, int limit) {
+        UserRole parsedRole = parseRole(role);
+        UserStatus parsedStatus = parseUserStatus(status);
+        String normalizedSearch = normalizeSearch(searchQuery);
+        String searchLike = normalizedSearch == null ? null : "%" + normalizedSearch.toLowerCase() + "%";
+
+        Page<AuthUser> accounts = authUserRepository.searchAccounts(
+                parsedRole,
+                parsedStatus,
+                searchLike,
+                PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
+        );
+
+        List<AdminAccountResponse> items = accounts.getContent().stream()
+                .map(this::toAccountResponse)
+                .toList();
+        return new AccountPage(items, pagination(accounts));
     }
 
     @Transactional(readOnly = true)
@@ -259,11 +281,41 @@ public class AdminReportingService {
 
     private BookingStatus parseStatus(String value) {
         try {
-            return BookingStatus.valueOf(value);
+            return BookingStatus.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException exception) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "Invalid status. Valid values: " + Arrays.toString(BookingStatus.values()),
+                    "VALIDATION_ERROR"
+            );
+        }
+    }
+
+    private UserRole parseRole(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UserRole.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid role. Valid values: " + Arrays.toString(UserRole.values()),
+                    "VALIDATION_ERROR"
+            );
+        }
+    }
+
+    private UserStatus parseUserStatus(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UserStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid status. Valid values: " + Arrays.toString(UserStatus.values()),
                     "VALIDATION_ERROR"
             );
         }
@@ -336,6 +388,20 @@ public class AdminReportingService {
         );
     }
 
+    private AdminAccountResponse toAccountResponse(AuthUser user) {
+        return new AdminAccountResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getPhone(),
+                user.getEmail(),
+                user.getRole().name(),
+                user.getStatus().name(),
+                user.getTier().name(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
+        );
+    }
+
     private AdminWashHistoryResponse toWashHistoryResponse(WashSession session, Map<String, String> serviceNames) {
         CustomerBooking booking = session.getBooking();
         String serviceId = serviceId(booking);
@@ -367,6 +433,9 @@ public class AdminReportingService {
     }
 
     public record BookingPage(List<AdminBookingResponse> items, PaginationMeta pagination) {
+    }
+
+    public record AccountPage(List<AdminAccountResponse> items, PaginationMeta pagination) {
     }
 
     public record WashHistoryPage(List<AdminWashHistoryResponse> items, PaginationMeta pagination) {

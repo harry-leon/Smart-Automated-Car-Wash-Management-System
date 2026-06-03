@@ -34,6 +34,33 @@ export type PaginationMeta = {
   hasMore: boolean;
 };
 
+export type AdminAccountRole = "CUSTOMER" | "STAFF" | "ADMIN" | "GUEST";
+
+export type AdminAccountStatus = "PENDING" | "ACTIVE" | "BLOCKED" | "SUSPENDED" | "DELETED";
+
+export type AdminAccount = {
+  accountId: string;
+  fullName: string;
+  phone: string;
+  email: string | null;
+  role: AdminAccountRole;
+  status: AdminAccountStatus;
+  tier: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminAccountsFilters = {
+  role?: AdminAccountRole;
+  status?: AdminAccountStatus;
+  searchQuery?: string;
+};
+
+export type AdminAccountsPage = {
+  items: AdminAccount[];
+  pagination: PaginationMeta;
+};
+
 export type AdminBookingsPage = {
   items: AdminBooking[];
   pagination: PaginationMeta;
