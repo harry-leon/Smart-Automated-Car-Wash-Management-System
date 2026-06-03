@@ -19,8 +19,17 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
 
     boolean existsByBookingIdAndStatusIn(String bookingId, Collection<WashSessionStatus> statuses);
 
-    @EntityGraph(attributePaths = {"booking", "booking.customer"})
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "assignedStaff"})
     Optional<WashSession> findWithBookingById(UUID id);
+
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
+    Optional<WashSession> findByIdAndBookingCustomer(UUID id, AuthUser customer);
+
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
+    Optional<WashSession> findFirstByBookingCustomerAndStatusInOrderByCreatedAtDesc(
+            AuthUser customer,
+            Collection<WashSessionStatus> statuses
+    );
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle"})
     Page<WashSession> findByBookingCustomerAndStatusOrderByCompletedAtDesc(
@@ -35,10 +44,10 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
             WashSessionStatus status
     );
 
-    @EntityGraph(attributePaths = {"booking"})
+    @EntityGraph(attributePaths = {"booking", "assignedStaff"})
     Optional<WashSession> findFirstByBookingIdOrderByCompletedAtDesc(String bookingId);
 
-    @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle"})
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     java.util.List<WashSession> findAllByOrderByCreatedAtDesc();
 
     @EntityGraph(attributePaths = {"booking"})

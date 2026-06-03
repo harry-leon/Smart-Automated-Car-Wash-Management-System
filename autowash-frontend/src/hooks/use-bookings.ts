@@ -2,8 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  applyBookingPoints,
   createCustomerBooking,
+  getActiveWashTracking,
   getCustomerBookingDetail,
+  getWashTrackingDetail,
   listBookingAddons,
   listBookingCombos,
   listBookingPackages,
@@ -14,6 +17,8 @@ import {
   bookingDetailQueryKey,
   bookingQueryScope,
   bookingsListQueryKey,
+  washTrackingActiveQueryKey,
+  washTrackingDetailQueryKey,
 } from "@/hooks/booking-query";
 import { useAuthStore } from "@/store/auth.store";
 import { resetBookingDraft, setLastCreatedBooking } from "@/store/booking.store";
@@ -24,7 +29,10 @@ import type {
   BookingListFilters,
   BookingListPage,
   BookingPackage,
+  ApplyBookingPointsRequest,
+  ApplyBookingPointsResponse,
   CreateBookingResponse,
+  WashTrackingSession,
   VoucherValidationRequest,
   VoucherValidationResult,
   BookingAddon,
@@ -107,5 +115,40 @@ export function useCustomerBookingDetail(bookingId: string) {
     queryKey: bookingDetailQueryKey(userId, bookingId),
     queryFn: () => getCustomerBookingDetail(bookingId),
     enabled: enabled && bookingId.length > 0,
+  });
+}
+
+export function useApplyBookingPoints(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<ApplyBookingPointsResponse, ApiErrorResponse, ApplyBookingPointsRequest>({
+    mutationFn: (payload) => applyBookingPoints(bookingId, payload),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, bookingId) }),
+        queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) }),
+      ]);
+    },
+  });
+}
+
+export function useActiveWashTracking() {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<WashTrackingSession | null, ApiErrorResponse>({
+    queryKey: washTrackingActiveQueryKey(userId),
+    queryFn: getActiveWashTracking,
+    enabled,
+  });
+}
+
+export function useWashTrackingDetail(washSessionId: string) {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<WashTrackingSession, ApiErrorResponse>({
+    queryKey: washTrackingDetailQueryKey(userId, washSessionId),
+    queryFn: () => getWashTrackingDetail(washSessionId),
+    enabled: enabled && washSessionId.length > 0,
   });
 }

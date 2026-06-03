@@ -41,7 +41,7 @@ export function CustomerWorkspaceShell({
   }, [accessToken, isMounted, router, user]);
 
   if (!isMounted) {
-    return <main style={{ padding: 24 }}>Loading workspace...</main>;
+    return <main style={{ padding: 24 }}>Đang tải khu vực làm việc...</main>;
   }
 
   if (!accessToken || !user) {
@@ -61,7 +61,7 @@ export function CustomerWorkspaceShell({
               <Home className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-slate-900">Customer workspace</div>
+              <div className="text-sm font-semibold text-slate-900">Khu vực khách hàng</div>
               <div className="text-xs text-slate-500">
                 {user.fullName} • {user.tier ?? "MEMBER"}
               </div>
@@ -70,12 +70,12 @@ export function CustomerWorkspaceShell({
 
           <nav className="flex flex-wrap items-center gap-2">
             <NavLink href="/customer/home" icon={Home} label="Home" />
-            <NavLink href="/customer/bookings/new" icon={PackageSearch} label="Booking" />
+            <NavLink href="/customer/bookings/new" icon={PackageSearch} label="Đặt lịch" />
             <NavLink href="/customer/history" icon={History} label="History" />
             <NavLink href="/customer/vehicles" icon={CarFront} label="Vehicles" />
             <NavLink href="/customer/loyalty" icon={Gift} label="Loyalty" />
             <NavLink href="/customer/promotions" icon={Sparkles} label="Promotions" />
-            <NavLink href="/customer/notifications" icon={Bell} label="Notifications" />
+            <NavLink href="/customer/notifications" icon={Bell} label="Thông báo" />
             <button
               disabled={logoutMutation.isPending}
               onClick={() => logoutMutation.mutate()}

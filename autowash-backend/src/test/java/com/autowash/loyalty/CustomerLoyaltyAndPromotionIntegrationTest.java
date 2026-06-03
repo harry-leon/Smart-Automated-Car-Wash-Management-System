@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.auth.entity.LoyaltyTier;
+import com.autowash.auth.entity.UserRole;
 import com.autowash.auth.repository.AuthUserRepository;
 import com.autowash.booking.entity.CustomerBooking;
 import com.autowash.booking.entity.PaymentMethod;
@@ -27,7 +28,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -166,7 +169,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
 
     private String createCompletedSession(String bookingId) throws Exception {
         String sessionId = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(user("staff").roles("STAFF"))
+                        .with(authenticatedStaff())
                         .contentType("application/json")
                         .content("""
                                 {
@@ -193,6 +196,25 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                         .with(user("staff").roles("STAFF")))
                 .andExpect(status().isOk());
         return sessionId;
+    }
+
+    private RequestPostProcessor authenticatedStaff() {
+        AuthUser staff = new AuthUser("Loyalty Staff", uniquePhone("0915"), "loyalty-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        staff.activate();
+        ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
+        authUserRepository.saveAndFlush(staff);
+        AuthUserPrincipal principal = new AuthUserPrincipal(staff);
+        UsernamePasswordAuthenticationToken token =
+                new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
+        return authentication(token);
+    }
+
+    private String uniquePhone(String prefix) {
+        String digits = java.util.UUID.randomUUID().toString().replaceAll("\\D", "");
+        while (digits.length() < 6) {
+            digits += "0";
+        }
+        return prefix + digits.substring(0, 6);
     }
 
     private CustomerBooking createConfirmedBooking(String bookingId, String phone, long finalAmount) {

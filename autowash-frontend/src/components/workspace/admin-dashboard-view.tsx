@@ -53,30 +53,30 @@ export function AdminDashboardView() {
 
   const kpiCards = [
     {
-      label: "Tổng bookings",
+      label: "Total bookings",
       value: `${metrics?.totalBookings ?? 0}`,
-      delta: "Toàn bộ lượt đặt xe",
+      delta: "All booking requests",
       icon: CalendarDays,
       tone: "text-sky-700 bg-sky-50",
     },
     {
-      label: "Doanh thu (VND)",
+      label: "Revenue (VND)",
       value: `${formatRevenue(metrics?.totalRevenue ?? 0)}`,
-      delta: "Bookings đã thanh toán",
+      delta: "Paid bookings",
       icon: DollarSign,
       tone: "text-emerald-700 bg-emerald-50",
     },
     {
-      label: "Khách hàng",
+      label: "Customers",
       value: `${metrics?.totalCustomers ?? 0}`,
-      delta: "Tổng tài khoản khách hàng",
+      delta: "Total customer accounts",
       icon: Users,
       tone: "text-violet-700 bg-violet-50",
     },
     {
-      label: "Promotion active",
+      label: "Active promotions",
       value: `${metrics?.activePromotions ?? 0}`,
-      delta: "Khuyến mãi đang chạy",
+      delta: "Currently running campaigns",
       icon: BadgePercent,
       tone: "text-orange-700 bg-orange-50",
     },
@@ -84,14 +84,14 @@ export function AdminDashboardView() {
 
   const liveCards = [
     {
-      label: "Queue hiện tại",
+      label: "Current queue",
       value: `${summary.pending + summary.checkedIn + summary.inProgress}`,
-      delta: "Đang xử lý live",
+      delta: "Live sessions in progress",
       icon: Droplets,
       tone: "text-blue-700 bg-blue-50",
     },
     {
-      label: "Hoàn thành hôm nay",
+      label: "Completed today",
       value: `${summary.completed}`,
       delta: "Live wash sessions",
       icon: TrendingUp,
@@ -101,16 +101,16 @@ export function AdminDashboardView() {
 
   return (
     <WorkspacePage className="space-y-8">
-      {/* Metrics từ API */}
+      {/* API metrics */}
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Chỉ số tổng quan
+            Overview metrics
           </h2>
           {metricsQuery.isError && (
             <span className="flex items-center gap-1 text-xs text-rose-600">
               <AlertCircle className="h-3.5 w-3.5" />
-              Không tải được metrics
+              Failed to load metrics
             </span>
           )}
         </div>
@@ -125,7 +125,7 @@ export function AdminDashboardView() {
       <section>
         <div className="mb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Vận hành live
+            Live operations
           </h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">

@@ -4,8 +4,8 @@ export default function ForgotPasswordPage() {
   return (
     <WorkspacePlaceholder
       workspace="Auth"
-      title="Forgot password"
-      description="Password recovery shell wired to the auth reset contract."
+      title="Quên mật khẩu"
+      description="Khôi phục mật khẩu theo luồng xác thực của hệ thống."
       endpoints={["POST /auth/forgot-password/request", "POST /auth/forgot-password/reset"]}
       links={[{ href: "/login", label: "Back to login" }]}
     />

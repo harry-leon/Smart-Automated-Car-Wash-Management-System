@@ -36,6 +36,7 @@ export type OperationsQueueSession = {
   checkedInAt?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
+  notes?: string | null;
 };
 
 export type OperationsQueueColumn = {
@@ -48,6 +49,26 @@ export type OperationsQueue = {
   summary: OperationsQueueSummary;
   columns: OperationsQueueColumn[];
   generatedAt: string;
+};
+
+export type EligibleSessionBooking = {
+  bookingId: string;
+  customerName: string;
+  customerPhone: string;
+  vehiclePlate: string;
+  packageId: string | null;
+  comboId: string | null;
+  bookingDate: string;
+  bookingTime: string;
+  finalAmount: number;
+  estimatedDurationMinutes: number;
+};
+
+export type CreateWashSessionResponse = {
+  sessionId: string;
+  status: WashSessionStatus;
+  bookingId: string;
+  createdAt: string;
 };
 
 export type QueueWashSessionResponse = {

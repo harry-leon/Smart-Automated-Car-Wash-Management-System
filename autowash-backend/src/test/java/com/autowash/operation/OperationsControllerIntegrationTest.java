@@ -1,5 +1,7 @@
 package com.autowash.operation;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -7,10 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.autowash.auth.entity.AuthUser;
+import com.autowash.auth.entity.UserRole;
 import com.autowash.auth.repository.AuthUserRepository;
 import com.autowash.booking.entity.CustomerBooking;
 import com.autowash.booking.entity.PaymentMethod;
 import com.autowash.booking.repository.CustomerBookingRepository;
+import com.autowash.shared.security.AuthUserPrincipal;
 import com.autowash.vehicle.entity.CustomerVehicle;
 import com.autowash.vehicle.entity.VehicleType;
 import com.autowash.vehicle.repository.CustomerVehicleRepository;
@@ -22,9 +26,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -53,13 +60,14 @@ class OperationsControllerIntegrationTest {
         String sessionId = createSession(booking.getId());
         assertBookingStatus(booking.getId(), "CONFIRMED");
 
-        mockMvc.perform(get("/api/v1/operations/queue")
+        MvcResult queueResult = mockMvc.perform(get("/api/v1/operations/queue")
                         .with(user("staff").roles("STAFF")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.summary.total").exists())
                 .andExpect(jsonPath("$.data.columns[0].status").value("PENDING"))
-                .andExpect(jsonPath("$.data.columns[0].sessions[0].sessionId").value(sessionId))
-                .andExpect(jsonPath("$.data.columns[0].sessions[0].bookingId").value(booking.getId()));
+                .andExpect(jsonPath("$.data.columns[0].sessions[0].assignedStaffName").value("Staff Operator"))
+                .andReturn();
+        assertQueueContains(queueResult, sessionId, booking.getId());
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
                         .with(user("staff").roles("STAFF")))
@@ -107,18 +115,72 @@ class OperationsControllerIntegrationTest {
     }
 
     @Test
+    void startWithoutCheckInReturnsConflict() throws Exception {
+        CustomerBooking booking = createConfirmedBooking("OPS_BK_003", "0901777003", 180000);
+        String sessionId = createSession(booking.getId());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Invalid transition: PENDING \u2192 IN_PROGRESS"))
+                .andExpect(jsonPath("$.errorCode").value("INVALID_STATE_TRANSITION"));
+    }
+
+    @Test
+    void completeWithoutStartReturnsConflict() throws Exception {
+        CustomerBooking booking = createConfirmedBooking("OPS_BK_004", "0901777004", 190000);
+        String sessionId = createSession(booking.getId());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/complete", sessionId)
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Invalid transition: CHECKED_IN \u2192 COMPLETED"))
+                .andExpect(jsonPath("$.errorCode").value("INVALID_STATE_TRANSITION"));
+    }
+
+    @Test
+    void eligibleSessionBookingsOnlyReturnsConfirmedBookingsWithoutActiveSession() throws Exception {
+        CustomerBooking booking = createConfirmedBooking("OPS_BK_ELIGIBLE", "0901777005", 220000);
+
+        MvcResult beforeCreate = mockMvc.perform(get("/api/v1/operations/bookings/eligible-sessions")
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andReturn();
+        assertEligibleBookingContains(beforeCreate, booking.getId());
+
+        createSession(booking.getId());
+
+        MvcResult afterCreate = mockMvc.perform(get("/api/v1/operations/bookings/eligible-sessions")
+                        .with(user("staff").roles("STAFF")))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertEligibleBookingMissing(afterCreate, booking.getId());
+    }
+
+    @Test
     void openApiDocumentsOperationsSchemas() throws Exception {
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/operations/bookings/eligible-sessions']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/operations/sessions']").exists())
                 .andExpect(jsonPath("$.components.schemas.CreateWashSessionRequest.properties.bookingId.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.EligibleSessionBookingResponse.properties.bookingId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.CheckInWashSessionResponse.properties.projectedLoyaltyPoints.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.CompleteWashSessionResponse.properties.awardedLoyaltyPoints.type").value("integer"));
     }
 
     private String createSession(String bookingId) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(user("staff").roles("STAFF"))
+                        .with(authenticatedStaff())
                         .contentType("application/json")
                         .content("""
                                 {
@@ -131,6 +193,25 @@ class OperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.bookingId").value(bookingId))
                 .andReturn();
         return readJson(result).path("data").path("sessionId").asText();
+    }
+
+    private RequestPostProcessor authenticatedStaff() {
+        AuthUser staff = new AuthUser("Staff Operator", uniquePhone("0918"), "staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        staff.activate();
+        ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
+        authUserRepository.saveAndFlush(staff);
+        AuthUserPrincipal principal = new AuthUserPrincipal(staff);
+        UsernamePasswordAuthenticationToken token =
+                new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
+        return authentication(token);
+    }
+
+    private String uniquePhone(String prefix) {
+        String digits = java.util.UUID.randomUUID().toString().replaceAll("\\D", "");
+        while (digits.length() < 6) {
+            digits += "0";
+        }
+        return prefix + digits.substring(0, 6);
     }
 
     private CustomerBooking createConfirmedBooking(String bookingId, String phone, long finalAmount) {
@@ -170,7 +251,38 @@ class OperationsControllerIntegrationTest {
     private void assertBookingStatus(String bookingId, String status) {
         customerBookingRepository.flush();
         CustomerBooking booking = customerBookingRepository.findById(bookingId).orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(booking.getStatus().name()).isEqualTo(status);
+        assertThat(booking.getStatus().name()).isEqualTo(status);
+    }
+
+    private void assertQueueContains(MvcResult result, String sessionId, String bookingId) throws Exception {
+        JsonNode sessions = readJson(result).path("data").path("columns").path(0).path("sessions");
+        boolean found = false;
+        for (JsonNode session : sessions) {
+            if (sessionId.equals(session.path("sessionId").asText())
+                    && bookingId.equals(session.path("bookingId").asText())) {
+                found = true;
+                break;
+            }
+        }
+        assertThat(found).isTrue();
+    }
+
+    private void assertEligibleBookingContains(MvcResult result, String bookingId) throws Exception {
+        assertThat(eligibleBookingExists(result, bookingId)).isTrue();
+    }
+
+    private void assertEligibleBookingMissing(MvcResult result, String bookingId) throws Exception {
+        assertThat(eligibleBookingExists(result, bookingId)).isFalse();
+    }
+
+    private boolean eligibleBookingExists(MvcResult result, String bookingId) throws Exception {
+        JsonNode bookings = readJson(result).path("data");
+        for (JsonNode booking : bookings) {
+            if (bookingId.equals(booking.path("bookingId").asText())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private JsonNode readJson(MvcResult result) throws Exception {

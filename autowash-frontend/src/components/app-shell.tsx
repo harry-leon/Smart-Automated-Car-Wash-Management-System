@@ -201,7 +201,7 @@ export function AppShell({ role }: { role: Role }) {
     headerSubtitle = "Add, edit, or remove your registered vehicles";
     headerSubtitleVi = "Thêm, sửa hoặc xóa xe đã đăng ký";
   } else if (pathname.includes("/cb/booking") || pathname === "/customer/bookings") {
-    headerTitle = "Book a Wash";
+    headerTitle = "Đặt lịch rửa xe";
     headerTitleVi = "Đặt lịch rửa xe";
     headerSubtitle = "Choose a wash, voucher, payment method, or active combo";
     headerSubtitleVi = "Chọn gói rửa, voucher, thanh toán hoặc combo";
