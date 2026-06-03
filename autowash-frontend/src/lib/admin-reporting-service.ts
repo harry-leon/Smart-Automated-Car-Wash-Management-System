@@ -1,6 +1,9 @@
 import { apiClient, apiRequest } from "@/lib/api";
 import type { ApiPaginatedResponse, ApiSuccessResponse } from "@/types/api.types";
 import type {
+  AdminAccount,
+  AdminAccountsFilters,
+  AdminAccountsPage,
   AdminBooking,
   AdminBookingsFilters,
   AdminBookingsPage,
@@ -17,6 +20,25 @@ import type {
   UpdateAdminCustomerStatusResult,
 } from "@/types/admin-reporting.types";
 import type { BookingDetail } from "@/types/booking.types";
+
+export async function listAdminAccounts(
+  filters: AdminAccountsFilters,
+  page = 1,
+  limit = 20,
+): Promise<AdminAccountsPage> {
+  const response = await apiClient.get<ApiPaginatedResponse<AdminAccount>>("/admin/accounts", {
+    params: {
+      ...filters,
+      page,
+      limit,
+    },
+  });
+
+  return {
+    items: response.data.data,
+    pagination: response.data.pagination,
+  };
+}
 
 export async function listAdminBookings(
   filters: AdminBookingsFilters,

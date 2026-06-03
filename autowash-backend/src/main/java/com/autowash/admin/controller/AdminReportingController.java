@@ -1,6 +1,7 @@
 package com.autowash.admin.controller;
 
 import com.autowash.admin.dto.AdminBookingResponse;
+import com.autowash.admin.dto.AdminAccountResponse;
 import com.autowash.admin.dto.AdminCustomerDetailResponse;
 import com.autowash.admin.dto.AdminWashHistoryResponse;
 import com.autowash.admin.service.AdminReportingService;
@@ -37,6 +38,20 @@ public class AdminReportingController {
 
     public AdminReportingController(AdminReportingService adminReportingService) {
         this.adminReportingService = adminReportingService;
+    }
+
+    @GetMapping("/accounts")
+    @Operation(summary = "List user accounts for admin with filters")
+    public ApiResponse<List<AdminAccountResponse>> listAccounts(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String searchQuery,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        AdminReportingService.AccountPage accountPage =
+                adminReportingService.listAccounts(role, status, searchQuery, page, limit);
+        return ApiResponse.ok("Accounts retrieved", accountPage.items(), accountPage.pagination());
     }
 
     @GetMapping("/bookings")

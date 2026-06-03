@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
+  adminAccountsQueryKey,
   adminBookingsQueryKey,
   adminCustomerDetailQueryKey,
   adminCustomerPointTransactionsQueryKey,
@@ -11,6 +12,7 @@ import {
 } from "@/hooks/admin-reporting-query";
 import {
   getAdminCustomerDetail,
+  listAdminAccounts,
   listAdminBookings,
   listAdminCustomerPointTransactions,
   listAdminCustomerTierHistory,
@@ -21,6 +23,8 @@ import {
 import { useAuthStore } from "@/store/auth.store";
 import type { ApiErrorResponse } from "@/types/api.types";
 import type {
+  AdminAccountsFilters,
+  AdminAccountsPage,
   AdminBookingsFilters,
   AdminBookingsPage,
   AdminCustomerDetail,
@@ -52,6 +56,21 @@ export function useAdminBookings(
   return useQuery<AdminBookingsPage, ApiErrorResponse>({
     queryKey: adminBookingsQueryKey(userId, filters, page, limit),
     queryFn: () => listAdminBookings(filters, page, limit),
+    enabled: enabled && (options?.enabled ?? true),
+  });
+}
+
+export function useAdminAccounts(
+  filters: AdminAccountsFilters,
+  page = 1,
+  limit = 20,
+  options?: { enabled?: boolean },
+) {
+  const { userId, enabled } = useAdminReportingContext();
+
+  return useQuery<AdminAccountsPage, ApiErrorResponse>({
+    queryKey: adminAccountsQueryKey(userId, filters, page, limit),
+    queryFn: () => listAdminAccounts(filters, page, limit),
     enabled: enabled && (options?.enabled ?? true),
   });
 }
