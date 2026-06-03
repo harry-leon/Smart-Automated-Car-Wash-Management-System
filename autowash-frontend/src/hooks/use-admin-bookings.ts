@@ -5,9 +5,9 @@ import type { ApiErrorResponse } from "@/types/api.types";
 import type { AdminBookingsFilters, AdminBookingsPage } from "@/types/admin-reporting.types";
 
 export function useAdminBookings(
-  filters: AdminBookingsFilters = {},
   page = 1,
   limit = 20,
+  filters: AdminBookingsFilters = {},
 ) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
