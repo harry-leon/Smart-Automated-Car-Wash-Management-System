@@ -5,6 +5,8 @@ export type LoyaltyAccount = {
   tier: LoyaltyTier;
   currentPoints: number;
   totalEarnedPoints: number;
+  availablePoints: number;
+  lifetimePoints: number;
   completedWashCount: number;
 };
 
@@ -36,6 +38,10 @@ export type RedeemPointsResponse = {
   transactionId: string;
   pointsRedeemed: number;
   newBalance: number;
+  voucherCode: string;
+  voucherValue: number;
+  expiresAt: string;
+  status: "SUCCESS";
 };
 
 export type TierVoucherOffer = {

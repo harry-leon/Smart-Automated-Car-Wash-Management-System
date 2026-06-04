@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { ComponentType } from "react";
+import type { ComponentType, FormEvent } from "react";
 import {
-  ArrowRight,
   CheckCircle2,
   Crown,
   Gift,
   Loader2,
-  RefreshCcw,
   ShieldCheck,
   Sparkles,
   TicketPercent,
@@ -26,6 +24,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import {
   buildLoyaltySummary,
@@ -39,7 +39,7 @@ import {
   useCustomerRedeemPoints,
 } from "@/hooks/use-customer-loyalty";
 import { cn } from "@/lib/utils";
-import type { TierVoucherOffer } from "@/types/loyalty.types";
+import type { RedeemPointsResponse, TierVoucherOffer } from "@/types/loyalty.types";
 
 type VoucherOfferState = TierVoucherOffer & {
   eligible: boolean;
@@ -50,17 +50,22 @@ const TIER_ORDER = ["MEMBER", "SILVER", "GOLD", "PLATINUM"] as const;
 
 const REDEEM_RULES = [
   { tier: "MEMBER", value: "50 pts → 50,000 VND" },
-  { tier: "SILVER", value: "100 pts → 120,000 VND" },
-  { tier: "GOLD", value: "150 pts → 210,000 VND" },
-  { tier: "PLATINUM", value: "200 pts → 320,000 VND" },
+  { tier: "SILVER", value: "100 pts → 100,000 VND" },
+  { tier: "GOLD", value: "150 pts → 150,000 VND" },
+  { tier: "PLATINUM", value: "200 pts → 200,000 VND" },
 ] as const;
+
+const MIN_REDEEM_POINTS = 50;
+const MAX_REDEEM_POINTS = 200;
+const VND_PER_POINT = 1_000;
 
 export function CustomerLoyaltyPageContent() {
   const accountQuery = useCustomerLoyaltyAccount();
   const transactionsQuery = useCustomerLoyaltyTransactions(1, 5);
   const redeemMutation = useCustomerRedeemPoints();
   const [selectedOffer, setSelectedOffer] = useState<VoucherOfferState | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successVoucher, setSuccessVoucher] = useState<RedeemPointsResponse | null>(null);
+  const [redeemPointsInput, setRedeemPointsInput] = useState("50");
   const [showAllTransactions, setShowAllTransactions] = useState(false);
 
   const summary = useMemo(
@@ -68,12 +73,27 @@ export function CustomerLoyaltyPageContent() {
     [accountQuery.data],
   );
 
+  const redeemPoints = useMemo(() => Number.parseInt(redeemPointsInput, 10), [redeemPointsInput]);
+  const redemptionValidation = getRedemptionValidationMessage(
+    redeemPointsInput,
+    redeemPoints,
+    summary?.availablePoints ?? null,
+  );
+  const previewVoucherValue = Number.isFinite(redeemPoints) ? Math.max(redeemPoints, 0) * VND_PER_POINT : 0;
+  const previewRemainingBalance =
+    summary && Number.isFinite(redeemPoints) ? Math.max(summary.availablePoints - Math.max(redeemPoints, 0), 0) : 0;
+  const previewExpiresAt = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30);
+    return date;
+  }, []);
+
   const handleRedeem = () => {
     if (!selectedOffer || !summary) {
       return;
     }
 
-    setSuccessMessage(null);
+    setSuccessVoucher(null);
     redeemMutation.mutate(
       {
         pointsToRedeem: selectedOffer.pointsCost,
@@ -81,11 +101,27 @@ export function CustomerLoyaltyPageContent() {
       },
       {
         onSuccess: (response) => {
-          setSuccessMessage(
-            `${selectedOffer.title} has been redeemed. New balance: ${response.newBalance.toLocaleString("en-US")} pts.`,
-          );
+          setSuccessVoucher(response);
           setSelectedOffer(null);
         },
+      },
+    );
+  };
+
+  const handleCustomRedeem = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSuccessVoucher(null);
+    if (!summary || redemptionValidation) {
+      return;
+    }
+
+    redeemMutation.mutate(
+      {
+        pointsToRedeem: redeemPoints,
+        referenceId: `loyalty-voucher:${redeemPoints}`,
+      },
+      {
+        onSuccess: setSuccessVoucher,
       },
     );
   };
@@ -117,8 +153,8 @@ export function CustomerLoyaltyPageContent() {
 
   const currentTierIndex = TIER_ORDER.indexOf(summary.tier);
   const selectedRemainingPoints = selectedOffer
-    ? Math.max(summary.currentPoints - selectedOffer.pointsCost, 0)
-    : summary.currentPoints;
+    ? Math.max(summary.availablePoints - selectedOffer.pointsCost, 0)
+    : summary.availablePoints;
 
   return (
     <div className="min-h-[calc(100vh-72px)] bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
@@ -137,7 +173,7 @@ export function CustomerLoyaltyPageContent() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                    {summary.currentPoints.toLocaleString("en-US")} pts
+                    Loyalty wallet
                   </h1>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                     Redeem points for tier-based vouchers. Higher tiers unlock better rewards.
@@ -150,19 +186,19 @@ export function CustomerLoyaltyPageContent() {
             </div>
 
             <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              <MetricTile icon={Wallet} label="Current balance" value={`${summary.currentPoints.toLocaleString("en-US")} pts`} />
-              <MetricTile icon={Sparkles} label="Total earned" value={`${summary.totalEarnedPoints.toLocaleString("en-US")} pts`} />
+              <MetricTile icon={Wallet} label="Available points" value={`${summary.availablePoints.toLocaleString("en-US")} pts`} />
+              <MetricTile icon={Sparkles} label="Lifetime points" value={`${summary.lifetimePoints.toLocaleString("en-US")} pts`} />
               <MetricTile icon={ShieldCheck} label="Completed washes" value={String(summary.completedWashCount)} />
             </div>
 
             <div className="mt-7 rounded-3xl border border-slate-100 bg-slate-50 p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Tier progress</div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Lifetime tier progress</div>
                   <div className="mt-2 text-lg font-black text-slate-950">{summary.progress.progressPercent}% complete</div>
                   {summary.progress.nextTier ? (
                     <div className="mt-1 text-sm text-slate-600">
-                      {`${summary.currentPoints.toLocaleString("en-US")} / ${(summary.currentPoints + summary.progress.pointsToNextTier).toLocaleString("en-US")} pts`}
+                      {`${summary.lifetimePoints.toLocaleString("en-US")} / ${(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString("en-US")} lifetime pts`}
                     </div>
                   ) : (
                     <div className="mt-1 text-sm text-slate-600">At the highest tier</div>
@@ -179,9 +215,9 @@ export function CustomerLoyaltyPageContent() {
                   style={{ width: `${summary.progress.progressPercent}%` }}
                 />
                 <div className="relative flex h-full items-center justify-center text-sm font-semibold text-slate-950">
-                  {summary.progress.nextTier ? (
+                      {summary.progress.nextTier ? (
                     <span>
-                      {summary.currentPoints.toLocaleString("en-US")} / {(summary.currentPoints + summary.progress.pointsToNextTier).toLocaleString("en-US")} pts
+                      {summary.lifetimePoints.toLocaleString("en-US")} / {(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString("en-US")} lifetime pts
                     </span>
                   ) : (
                     <span>At the highest tier</span>
@@ -192,10 +228,28 @@ export function CustomerLoyaltyPageContent() {
           </div>
         </section>
 
-        {successMessage ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-            <CheckCircle2 className="mr-2 inline h-4 w-4" />
-            {successMessage}
+        {successVoucher ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-emerald-900 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-emerald-700">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Redemption successful
+                </div>
+                <div className="mt-2 text-2xl font-black tracking-tight">{successVoucher.voucherCode}</div>
+                <p className="mt-1 text-sm text-emerald-800">
+                  Your voucher is ready to use on a future booking.
+                </p>
+              </div>
+              <Badge className="w-fit border-emerald-200 bg-white text-emerald-700" variant="outline">
+                {successVoucher.status}
+              </Badge>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <SuccessVoucherMetric label="Points redeemed" value={`${successVoucher.pointsRedeemed.toLocaleString("en-US")} pts`} />
+              <SuccessVoucherMetric label="Voucher value" value={`${successVoucher.voucherValue.toLocaleString("en-US")} VND`} />
+              <SuccessVoucherMetric label="Expires" value={new Date(successVoucher.expiresAt).toLocaleDateString("en-US")} />
+            </div>
           </div>
         ) : null}
 
@@ -204,6 +258,73 @@ export function CustomerLoyaltyPageContent() {
             {getDisplayErrorMessage(redeemMutation.error)}
           </div>
         ) : null}
+
+        <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+          <form onSubmit={handleCustomRedeem} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-xl font-black tracking-tight text-slate-950">Redeem points</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Choose available points to convert into a fixed-value voucher.
+                </p>
+              </div>
+              <Badge variant="outline" className="w-fit border-slate-200 bg-slate-50 text-slate-700">
+                {summary.availablePoints.toLocaleString("en-US")} pts available
+              </Badge>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="loyalty-redeem-points">Points to redeem</Label>
+                <Input
+                  id="loyalty-redeem-points"
+                  type="number"
+                  min={MIN_REDEEM_POINTS}
+                  max={MAX_REDEEM_POINTS}
+                  step={1}
+                  value={redeemPointsInput}
+                  onChange={(event) => setRedeemPointsInput(event.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {[50, 100, 150, 200].map((value) => (
+                  <Button key={value} type="button" variant="outline" onClick={() => setRedeemPointsInput(String(value))}>
+                    {value}
+                  </Button>
+                ))}
+              </div>
+
+              {redemptionValidation ? (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                  {redemptionValidation}
+                </div>
+              ) : null}
+
+              <Button type="submit" disabled={redeemMutation.isPending || Boolean(redemptionValidation)}>
+                {redeemMutation.isPending ? <Loader2 className="animate-spin" /> : <Gift />}
+                Confirm redemption
+              </Button>
+            </div>
+          </form>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-black text-slate-950">Voucher preview</h3>
+                <p className="mt-1 text-sm text-slate-600">Preview updates before confirmation.</p>
+              </div>
+              <TicketPercent className="h-5 w-5 text-slate-500" />
+            </div>
+
+            <div className="mt-5 space-y-3 text-sm">
+              <RuleRow label="Points selected" value={`${Number.isFinite(redeemPoints) ? Math.max(redeemPoints, 0).toLocaleString("en-US") : 0} pts`} />
+              <RuleRow label="Voucher value" value={`${previewVoucherValue.toLocaleString("en-US")} VND`} />
+              <RuleRow label="Balance after redemption" value={`${previewRemainingBalance.toLocaleString("en-US")} pts`} />
+              <RuleRow label="Estimated expiry" value={previewExpiresAt.toLocaleDateString("en-US")} />
+            </div>
+          </div>
+        </section>
 
         <section className="space-y-5">
           <div className="space-y-4">
@@ -265,7 +386,7 @@ export function CustomerLoyaltyPageContent() {
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700">i</span>
                 <span>Redeem rules</span>
               </div>
-              <p className="mt-2 text-sm text-slate-600">Voucher value scales with membership tier.</p>
+              <p className="mt-2 text-sm text-slate-600">Voucher value uses a fixed conversion of 1 point to 1,000 VND.</p>
 
               <div className="mt-5 space-y-3 text-sm text-slate-700">
                 {REDEEM_RULES.map((rule) => (
@@ -285,7 +406,7 @@ export function CustomerLoyaltyPageContent() {
               </div>
 
               <div className="mt-4 rounded-2xl bg-white p-4 text-sm italic text-slate-600">
-                Points can be redeemed at your current tier or any higher tier reward.
+                Available points can be redeemed for rewards unlocked by your current tier.
               </div>
             </div>
           </div>
@@ -379,7 +500,7 @@ export function CustomerLoyaltyPageContent() {
 
           {selectedOffer ? (
             <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-              <RuleRow label="Current balance" value={`${summary.currentPoints.toLocaleString("en-US")} pts`} />
+              <RuleRow label="Available points" value={`${summary.availablePoints.toLocaleString("en-US")} pts`} />
               <RuleRow label="Points used" value={`${selectedOffer.pointsCost.toLocaleString("en-US")} pts`} />
               <RuleRow label="Balance after redemption" value={`${selectedRemainingPoints.toLocaleString("en-US")} pts`} />
             </div>
@@ -424,6 +545,15 @@ function MetricTile({
   );
 }
 
+function SuccessVoucherMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-emerald-200 bg-white px-3 py-2">
+      <div className="text-xs font-semibold uppercase text-emerald-700">{label}</div>
+      <div className="mt-1 text-sm font-black text-slate-950">{value}</div>
+    </div>
+  );
+}
+
 function RuleRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-md border border-slate-200 bg-white px-3 py-2">
@@ -431,6 +561,28 @@ function RuleRow({ label, value }: { label: string; value: string }) {
       <span className="font-semibold text-slate-950">{value}</span>
     </div>
   );
+}
+
+function getRedemptionValidationMessage(pointsInput: string, points: number, availablePoints: number | null) {
+  if (!pointsInput.trim()) {
+    return "Please enter points to redeem.";
+  }
+  if (!Number.isFinite(points)) {
+    return "Points must be a valid number.";
+  }
+  if (!Number.isInteger(points)) {
+    return "Only whole points can be redeemed.";
+  }
+  if (points < MIN_REDEEM_POINTS) {
+    return `Minimum redemption is ${MIN_REDEEM_POINTS} points.`;
+  }
+  if (points > MAX_REDEEM_POINTS) {
+    return `Maximum redemption is ${MAX_REDEEM_POINTS} points.`;
+  }
+  if (availablePoints != null && points > availablePoints) {
+    return "Insufficient available points for this redemption.";
+  }
+  return null;
 }
 
 function tierBadgeClass(tier: string) {
@@ -452,13 +604,6 @@ function tierProgressClass(tier: string) {
   if (tier === "GOLD") return "bg-amber-500";
   if (tier === "SILVER") return "bg-violet-500";
   return "bg-sky-500";
-}
-
-function tierStepClass(tier: string) {
-  if (tier === "PLATINUM") return "border-rose-200 bg-rose-50 text-rose-700";
-  if (tier === "GOLD") return "border-amber-200 bg-amber-50 text-amber-700";
-  if (tier === "SILVER") return "border-violet-200 bg-violet-50 text-violet-700";
-  return "border-sky-200 bg-sky-50 text-sky-700";
 }
 
 function offerBorderClass(accent: TierVoucherOffer["accent"]) {

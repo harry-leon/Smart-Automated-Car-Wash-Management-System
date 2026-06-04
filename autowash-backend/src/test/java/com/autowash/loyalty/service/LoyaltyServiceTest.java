@@ -9,9 +9,11 @@ import com.autowash.auth.repository.AuthUserRepository;
 import com.autowash.booking.entity.CustomerBooking;
 import com.autowash.booking.entity.PaymentMethod;
 import com.autowash.booking.repository.CustomerBookingRepository;
+import com.autowash.catalog.repository.VoucherRepository;
 import com.autowash.loyalty.dto.EarnPointsResponse;
 import com.autowash.loyalty.dto.RedeemPointsResponse;
 import com.autowash.loyalty.entity.LoyaltyAccount;
+import com.autowash.loyalty.entity.PointTransaction;
 import com.autowash.loyalty.entity.PointTransactionType;
 import com.autowash.loyalty.repository.LoyaltyAccountRepository;
 import com.autowash.loyalty.repository.PointTransactionRepository;
@@ -54,6 +56,9 @@ class LoyaltyServiceTest {
     @Autowired
     private PointTransactionRepository pointTransactionRepository;
 
+    @Autowired
+    private VoucherRepository voucherRepository;
+
     @Test
     void calculateEarnPointsUsesFinalAmountAndTierMultiplier() {
         TestData data = createCompletedSession("0901888001", "LOY_SVC_001", 150000);
@@ -91,13 +96,22 @@ class LoyaltyServiceTest {
 
         assertThat(response.pointsRedeemed()).isEqualTo(50);
         assertThat(response.newBalance()).isEqualTo(10);
-        assertThat(pointTransactionRepository.search(
+        assertThat(response.voucherCode()).startsWith("LOY-");
+        assertThat(response.voucherValue()).isEqualTo(50_000);
+        assertThat(response.status()).isEqualTo("SUCCESS");
+        assertThat(response.expiresAt()).isAfter(Instant.now());
+        assertThat(voucherRepository.findByCode(response.voucherCode())).isPresent();
+        PointTransaction redemption = pointTransactionRepository.search(
                 data.customer(),
                 PointTransactionType.REDEEM,
                 null,
                 null,
                 org.springframework.data.domain.PageRequest.of(0, 20)
-        ).getContent().getFirst().getPoints()).isEqualTo(-50);
+        ).getContent().getFirst();
+        assertThat(redemption.getPoints()).isEqualTo(-50);
+        assertThat(redemption.getReason()).isEqualTo("Voucher redemption: " + response.voucherCode());
+        assertThat(redemption.getReferenceId()).isEqualTo(response.voucherCode());
+        assertThat(loyaltyService.getAccount(data.customer().getId()).totalEarnedPoints()).isEqualTo(60);
     }
 
     @Test

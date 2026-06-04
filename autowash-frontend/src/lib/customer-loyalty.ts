@@ -42,7 +42,7 @@ export const TIER_VOUCHER_OFFERS: TierVoucherOffer[] = [
     title: "Interior Care Voucher",
     minTier: "SILVER",
     pointsCost: 100,
-    voucherValue: 120000,
+    voucherValue: 100000,
     accent: "violet",
     badge: "Silver",
   },
@@ -51,7 +51,7 @@ export const TIER_VOUCHER_OFFERS: TierVoucherOffer[] = [
     title: "Premium Wash Voucher",
     minTier: "GOLD",
     pointsCost: 150,
-    voucherValue: 210000,
+    voucherValue: 150000,
     accent: "amber",
     badge: "Gold",
   },
@@ -60,7 +60,7 @@ export const TIER_VOUCHER_OFFERS: TierVoucherOffer[] = [
     title: "Full Detail Voucher",
     minTier: "PLATINUM",
     pointsCost: 200,
-    voucherValue: 320000,
+    voucherValue: 200000,
     accent: "rose",
     badge: "Platinum",
   },
@@ -139,14 +139,19 @@ export function getTierProgress(tier: LoyaltyTier, currentPoints: number) {
 }
 
 export function buildLoyaltySummary(account: LoyaltyAccount) {
+  const availablePoints = account.availablePoints ?? account.currentPoints;
+  const lifetimePoints = account.lifetimePoints ?? account.totalEarnedPoints;
+
   return {
     ...account,
+    availablePoints,
+    lifetimePoints,
     tierLabel: formatTierLabel(account.tier),
-    progress: getTierProgress(account.tier, account.currentPoints),
+    progress: getTierProgress(account.tier, lifetimePoints),
     voucherOffers: TIER_VOUCHER_OFFERS.map((offer) => ({
       ...offer,
       eligible: canRedeemTierOffer(account.tier, offer),
-      affordable: account.currentPoints >= offer.pointsCost,
+      affordable: availablePoints >= offer.pointsCost,
     })),
   };
 }
