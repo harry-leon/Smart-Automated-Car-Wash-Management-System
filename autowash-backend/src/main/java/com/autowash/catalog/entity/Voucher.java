@@ -40,6 +40,26 @@ public class Voucher {
     protected Voucher() {
     }
 
+    public Voucher(
+            String code,
+            DiscountType discountType,
+            int discountValue,
+            long minAmount,
+            Instant expiresAt,
+            boolean active,
+            boolean newCustomerOnly,
+            String targetTiersCsv
+    ) {
+        this.code = code;
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.minAmount = minAmount;
+        this.expiresAt = expiresAt;
+        this.active = active;
+        this.newCustomerOnly = newCustomerOnly;
+        this.targetTiersCsv = targetTiersCsv;
+    }
+
     public String getCode() { return code; }
     public DiscountType getDiscountType() { return discountType; }
     public int getDiscountValue() { return discountValue; }

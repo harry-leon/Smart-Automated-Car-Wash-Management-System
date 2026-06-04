@@ -3,16 +3,24 @@ import type { ApiPaginatedResponse } from "@/types/api.types";
 import type {
   CustomerPromotion,
   LoyaltyAccount,
+  RedeemPointsRequest,
+  RedeemPointsResponse,
   LoyaltyTransaction,
   WashHistoryItem,
 } from "@/types/loyalty.types";
 import type { Promotion } from "@/types/promotion.types";
 
-export function getCustomerLoyaltyAccount() {
-  return apiRequest<LoyaltyAccount>({
+export async function getCustomerLoyaltyAccount() {
+  const account = await apiRequest<Omit<LoyaltyAccount, "availablePoints" | "lifetimePoints">>({
     method: "GET",
     url: "/loyalty/account",
   });
+
+  return {
+    ...account,
+    availablePoints: account.currentPoints,
+    lifetimePoints: account.totalEarnedPoints,
+  };
 }
 
 export async function listCustomerLoyaltyTransactions(page = 1, limit = 20) {
@@ -24,6 +32,14 @@ export async function listCustomerLoyaltyTransactions(page = 1, limit = 20) {
     items: response.data.data,
     pagination: response.data.pagination,
   };
+}
+
+export function redeemCustomerLoyaltyPoints(payload: RedeemPointsRequest) {
+  return apiRequest<RedeemPointsResponse, RedeemPointsRequest>({
+    method: "POST",
+    url: "/loyalty/redeem",
+    data: payload,
+  });
 }
 
 export async function listCustomerWashHistory(page = 1, limit = 20) {

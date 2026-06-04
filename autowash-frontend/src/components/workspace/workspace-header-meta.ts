@@ -109,6 +109,14 @@ const ROUTE_META: Array<{
     },
   },
   {
+    match: (pathname) => pathname.startsWith("/staff/sessions/history"),
+    meta: {
+      title: "Wash Session History",
+      subtitle: "Review completed sessions by day, month, or year",
+      workspace: "STAFF",
+    },
+  },
+  {
     match: (pathname) => pathname.startsWith("/staff/sessions"),
     meta: {
       title: "Wash Session",
@@ -133,10 +141,13 @@ const ROUTE_META: Array<{
     },
   },
   {
-    match: (pathname) => pathname.startsWith("/admin/customers"),
+    match: (pathname) =>
+      pathname.startsWith("/admin/accounts") ||
+      pathname.startsWith("/admin/customers") ||
+      pathname.startsWith("/admin/staff"),
     meta: {
-      title: "Customer Accounts",
-      subtitle: "Profiles, vehicles, bookings, and loyalty history",
+      title: "Accounts",
+      subtitle: "Customer, staff, and admin account directory",
       workspace: "ADMIN",
     },
   },
@@ -163,7 +174,6 @@ const ROUTE_META: Array<{
       pathname.startsWith("/admin/combos") ||
       pathname.startsWith("/admin/promotions") ||
       pathname.startsWith("/admin/vouchers") ||
-      pathname.startsWith("/admin/staff") ||
       pathname.startsWith("/admin/settings"),
     meta: {
       title: "Admin Workspace",
@@ -175,9 +185,7 @@ const ROUTE_META: Array<{
 
 export function getWorkspaceHeaderMeta(pathname: string): WorkspaceHeaderMeta {
   const routeMeta = ROUTE_META.find((entry) => entry.match(pathname));
-  if (routeMeta) {
-    return routeMeta.meta;
-  }
+  if (routeMeta) return routeMeta.meta;
 
   const workspace = resolveWorkspaceFromPath(pathname);
   return {
@@ -188,11 +196,7 @@ export function getWorkspaceHeaderMeta(pathname: string): WorkspaceHeaderMeta {
 }
 
 function resolveWorkspaceFromPath(pathname: string): WorkspaceRole {
-  if (pathname.startsWith("/staff")) {
-    return "STAFF";
-  }
-  if (pathname.startsWith("/admin")) {
-    return "ADMIN";
-  }
+  if (pathname.startsWith("/staff")) return "STAFF";
+  if (pathname.startsWith("/admin")) return "ADMIN";
   return "CUSTOMER";
 }

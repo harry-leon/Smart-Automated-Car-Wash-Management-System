@@ -51,6 +51,12 @@ export default function CustomerProfilePage() {
     updateProfileMutation.reset();
   }, [profileQuery.data?.userId]);
 
+  useEffect(() => {
+    if (profileQuery.data?.isNewCustomer) {
+      toast.info("Complete your profile to finish first-time setup.");
+    }
+  }, [profileQuery.data?.isNewCustomer]);
+
   const fieldErrors = useMemo(() => validateProfileForm(form), [form]);
   const hasClientErrors = Object.values(fieldErrors).some(Boolean);
   const hasChanges = profileQuery.data
@@ -249,7 +255,7 @@ export default function CustomerProfilePage() {
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        Save profile
+                        Lưu hồ sơ
                       </>
                     )}
                   </Button>
@@ -294,7 +300,7 @@ function ProfileErrorState({
         <CardContent>
           <Button type="button" onClick={onRetry} variant="outline" className="rounded-xl">
             <RefreshCcw className="mr-2 h-4 w-4" />
-            Retry
+            Thử lại
           </Button>
         </CardContent>
       </Card>

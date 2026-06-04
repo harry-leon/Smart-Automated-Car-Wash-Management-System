@@ -5,6 +5,8 @@ export type LoyaltyAccount = {
   tier: LoyaltyTier;
   currentPoints: number;
   totalEarnedPoints: number;
+  availablePoints: number;
+  lifetimePoints: number;
   completedWashCount: number;
 };
 
@@ -13,16 +15,43 @@ export type LoyaltyTransactionType =
   | "REDEEM"
   | "BONUS"
   | "ADJUSTMENT"
-  | "EXPIRE";
+  | "EXPIRE"
+  | "TIER_UPGRADE"
+  | "ADJUST";
 
 export type LoyaltyTransaction = {
   transactionId: string;
-  sessionId: string;
-  bookingId: string;
+  sessionId: string | null;
+  bookingId: string | null;
   type: LoyaltyTransactionType;
   points: number;
   description: string;
   createdAt: string;
+};
+
+export type RedeemPointsRequest = {
+  pointsToRedeem: number;
+  referenceId?: string;
+};
+
+export type RedeemPointsResponse = {
+  transactionId: string;
+  pointsRedeemed: number;
+  newBalance: number;
+  voucherCode: string;
+  voucherValue: number;
+  expiresAt: string;
+  status: "SUCCESS";
+};
+
+export type TierVoucherOffer = {
+  id: string;
+  title: string;
+  minTier: LoyaltyTier;
+  pointsCost: number;
+  voucherValue: number;
+  accent: "sky" | "violet" | "amber" | "rose";
+  badge: string;
 };
 
 export type WashHistoryItem = {

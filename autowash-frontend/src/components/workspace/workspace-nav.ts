@@ -9,6 +9,7 @@ import {
   History,
   LayoutDashboard,
   Package,
+  Radar,
   Settings2,
   Sparkles,
   Tag,
@@ -37,7 +38,7 @@ export type WorkspaceTheme = {
 export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
   CUSTOMER: {
     label: "Customer Portal",
-    description: "Self-service wash journey",
+    description: "Bookings and wash tracking",
     accent: "bg-sky-600 text-white shadow-sky-600/20",
     accentSoft: "border-sky-200 bg-sky-50 text-sky-700",
     activeNav: "bg-sky-600 text-white shadow-sm shadow-sky-600/20",
@@ -64,6 +65,7 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
   { href: "/customer/home", label: "Home", icon: LayoutDashboard, exact: true },
   { href: "/customer/bookings", label: "Bookings", icon: ClipboardList },
+  { href: "/customer/wash-tracking", label: "Wash Tracking", icon: Radar },
   { href: "/customer/vehicles", label: "Vehicles", icon: CarFront },
   { href: "/customer/history", label: "History", icon: History },
   { href: "/customer/loyalty", label: "Loyalty", icon: Gift },
@@ -76,13 +78,13 @@ const STAFF_NAV: WorkspaceNavItem[] = [
   { href: "/staff/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/staff/operations", label: "Operations", icon: ClipboardList },
   { href: "/staff/check-in", label: "Check-in", icon: Wrench },
+  { href: "/staff/sessions/history", label: "History", icon: History },
 ];
 
 const ADMIN_NAV: WorkspaceNavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/staff", label: "Staff", icon: Users },
+  { href: "/admin/accounts", label: "Accounts", icon: Users },
   { href: "/admin/packages", label: "Packages", icon: Droplets },
   { href: "/admin/add-ons", label: "Add-ons", icon: Package },
   { href: "/admin/combos", label: "Combos", icon: Sparkles },
@@ -96,29 +98,21 @@ const ADMIN_NAV: WorkspaceNavItem[] = [
 export const SHELL_EXCLUDED_PATHS = ["/admin/login"];
 
 export function navForRole(role: UserRole): WorkspaceNavItem[] {
-  if (role === "STAFF") {
-    return STAFF_NAV;
-  }
-  if (role === "ADMIN") {
-    return ADMIN_NAV;
-  }
+  if (role === "STAFF") return STAFF_NAV;
+  if (role === "ADMIN") return ADMIN_NAV;
   return CUSTOMER_NAV;
 }
 
 export function mobileNavForRole(role: UserRole): WorkspaceNavItem[] {
-  if (role === "STAFF") {
-    return STAFF_NAV;
-  }
+  if (role === "STAFF") return STAFF_NAV;
   if (role === "ADMIN") {
     return ADMIN_NAV.filter((item) =>
-      ["/admin/dashboard", "/admin/bookings", "/admin/customers", "/admin/operations"].includes(
+      ["/admin/dashboard", "/admin/bookings", "/admin/accounts", "/admin/operations"].includes(
         item.href,
       ),
     );
   }
   return CUSTOMER_NAV.filter((item) =>
-    ["/customer/home", "/customer/bookings", "/customer/vehicles", "/customer/loyalty"].includes(
-      item.href,
-    ),
+    ["/customer/home", "/customer/bookings", "/customer/wash-tracking", "/customer/loyalty"].includes(item.href),
   );
 }

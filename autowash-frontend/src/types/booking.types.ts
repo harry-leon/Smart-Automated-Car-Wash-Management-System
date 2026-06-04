@@ -146,6 +146,8 @@ export type BookingDetail = {
     subtotal: number;
     voucherCode: string | null;
     voucherDiscount: number;
+    pointsRedeemed: number;
+    pointsDiscount: number;
     finalAmount: number;
     currency: string;
   };
@@ -180,6 +182,45 @@ export type BookingListFilters = {
   dateTo?: string;
   page?: number;
   limit?: number;
+};
+
+export type ApplyBookingPointsRequest = {
+  pointsToApply: number;
+};
+
+export type ApplyBookingPointsResponse = {
+  bookingId: string;
+  pointsApplied: number;
+  discountAmount: number;
+  finalAmount: number;
+  loyaltyBalance: number;
+  currency: string;
+};
+
+export type WashTrackingSession = {
+  washSessionId: string;
+  bookingId: string;
+  status: "PENDING" | "QUEUED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED";
+  customerName: string;
+  customerPhone: string;
+  vehiclePlate: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  packageId: string | null;
+  serviceName: string | null;
+  bookingDate: string;
+  bookingTime: string;
+  assignedStaffName: string | null;
+  feeAmount: number | null;
+  feeCurrency: string | null;
+  projectedLoyaltyPoints: number | null;
+  awardedLoyaltyPoints: number | null;
+  notes: string | null;
+  createdAt: string;
+  queuedAt: string | null;
+  checkedInAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
 };
 
 export type BookingDraft = {

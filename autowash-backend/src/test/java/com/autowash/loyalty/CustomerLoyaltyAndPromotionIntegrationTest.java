@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.auth.entity.LoyaltyTier;
+import com.autowash.auth.entity.UserRole;
 import com.autowash.auth.repository.AuthUserRepository;
 import com.autowash.booking.entity.CustomerBooking;
 import com.autowash.booking.entity.PaymentMethod;
@@ -27,7 +28,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -94,6 +97,47 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     }
 
     @Test
+    void redeemUpdatesAccountBalanceAndTransactionHistory() throws Exception {
+        String phone = "0901777105";
+        CustomerBooking booking = createConfirmedBooking("LOYALTY_BK_003", phone, 600000);
+        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        createCompletedSession(booking.getId());
+
+        mockMvc.perform(post("/api/v1/loyalty/redeem")
+                        .with(authenticatedCustomer(customer))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "pointsToRedeem": 50,
+                                  "referenceId": "LOYALTY_BK_003"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
+                .andExpect(jsonPath("$.data.newBalance").value(10))
+                .andExpect(jsonPath("$.data.voucherCode").isString())
+                .andExpect(jsonPath("$.data.voucherValue").value(50000))
+                .andExpect(jsonPath("$.data.expiresAt").exists())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+
+        mockMvc.perform(get("/api/v1/loyalty/account")
+                        .with(authenticatedCustomer(customer)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentPoints").value(10))
+                .andExpect(jsonPath("$.data.totalEarnedPoints").value(60));
+
+        mockMvc.perform(get("/api/v1/loyalty/transactions")
+                        .with(authenticatedCustomer(customer)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].type").value("REDEEM"))
+                .andExpect(jsonPath("$.data[0].points").value(-50))
+                .andExpect(jsonPath("$.data[0].description").value(org.hamcrest.Matchers.startsWith("Voucher redemption:")))
+                .andExpect(jsonPath("$.data[1].type").value("EARN"))
+                .andExpect(jsonPath("$.data[1].points").value(60));
+    }
+
+    @Test
     void activePromotionsFilterByCustomerTierAndNewCustomerAudience() throws Exception {
         AuthUser member = createActiveCustomer("0901777103");
         mockMvc.perform(get("/api/v1/promotions/active")
@@ -124,6 +168,8 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/v1/customers/wash-history']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/promotions/active']").exists())
                 .andExpect(jsonPath("$.components.schemas.LoyaltyAccountResponse.properties.currentPoints.type").value("integer"))
+                .andExpect(jsonPath("$.components.schemas.LoyaltyAccountResponse.properties.totalEarnedPoints.type").value("integer"))
+                .andExpect(jsonPath("$.components.schemas.RedeemPointsResponse.properties.voucherCode.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.LoyaltyTransactionResponse.properties.points.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.WashHistoryItemResponse.properties.awardedPoints.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.CustomerPromotionResponse.properties.promotionCode.type").value("string"));
@@ -131,7 +177,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
 
     private String createCompletedSession(String bookingId) throws Exception {
         String sessionId = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(user("staff").roles("STAFF"))
+                        .with(authenticatedStaff())
                         .contentType("application/json")
                         .content("""
                                 {
@@ -158,6 +204,25 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                         .with(user("staff").roles("STAFF")))
                 .andExpect(status().isOk());
         return sessionId;
+    }
+
+    private RequestPostProcessor authenticatedStaff() {
+        AuthUser staff = new AuthUser("Loyalty Staff", uniquePhone("0915"), "loyalty-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        staff.activate();
+        ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
+        authUserRepository.saveAndFlush(staff);
+        AuthUserPrincipal principal = new AuthUserPrincipal(staff);
+        UsernamePasswordAuthenticationToken token =
+                new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
+        return authentication(token);
+    }
+
+    private String uniquePhone(String prefix) {
+        String digits = java.util.UUID.randomUUID().toString().replaceAll("\\D", "");
+        while (digits.length() < 6) {
+            digits += "0";
+        }
+        return prefix + digits.substring(0, 6);
     }
 
     private CustomerBooking createConfirmedBooking(String bookingId, String phone, long finalAmount) {

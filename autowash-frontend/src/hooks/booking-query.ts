@@ -20,6 +20,14 @@ export function bookingDetailQueryKey(userId?: string | null, bookingId?: string
   return [...bookingQueryScope(userId), "detail", bookingId ?? "unknown"] as const;
 }
 
+export function washTrackingActiveQueryKey(userId?: string | null) {
+  return [...bookingQueryScope(userId), "wash-tracking", "active"] as const;
+}
+
+export function washTrackingDetailQueryKey(userId?: string | null, washSessionId?: string | null) {
+  return [...bookingQueryScope(userId), "wash-tracking", "detail", washSessionId ?? "unknown"] as const;
+}
+
 export function bookingVoucherQueryKey(
   userId?: string | null,
   voucherCode?: string | null,

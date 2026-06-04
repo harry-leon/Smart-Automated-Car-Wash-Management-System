@@ -13,6 +13,7 @@ import {
   humanizeCode,
 } from "@/lib/booking-format";
 import { useCustomerBookingDetail } from "@/hooks/use-bookings";
+import { ApplyPointsPanel } from "@/components/customer-bookings/apply-points-panel";
 
 export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) {
   const bookingQuery = useCustomerBookingDetail(bookingId);
@@ -36,7 +37,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           <CardContent className="flex gap-3">
             <Button type="button" variant="outline" onClick={() => bookingQuery.refetch()}>
               <RefreshCcw className="mr-2 h-4 w-4" />
-              Retry
+              Thử lại
             </Button>
             <Button asChild>
               <Link href="/customer/bookings">Back to bookings</Link>
@@ -108,6 +109,8 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               ["Subtotal", formatBookingCurrency(booking.pricing.subtotal)],
               ["Voucher", booking.pricing.voucherCode ?? "--"],
               ["Voucher discount", formatBookingCurrency(booking.pricing.voucherDiscount)],
+              ["Points applied", `${booking.pricing.pointsRedeemed} points`],
+              ["Points discount", formatBookingCurrency(booking.pricing.pointsDiscount)],
               ["Final amount", formatBookingCurrency(booking.pricing.finalAmount)],
             ]}
           />
@@ -149,6 +152,14 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
             </CardContent>
           </Card>
         </div>
+
+        <ApplyPointsPanel
+          bookingId={booking.bookingId}
+          finalAmount={booking.pricing.finalAmount}
+          pointsRedeemed={booking.pricing.pointsRedeemed}
+          pointsDiscount={booking.pricing.pointsDiscount}
+          disabled={booking.status !== "CONFIRMED"}
+        />
 
         <div className="flex flex-wrap gap-3">
           <Button asChild variant="outline">

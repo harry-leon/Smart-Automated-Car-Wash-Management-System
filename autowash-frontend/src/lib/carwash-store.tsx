@@ -1985,7 +1985,7 @@ export function CarwashStoreProvider({ children }: { children: React.ReactNode }
         throw new Error("Phone number must follow Vietnamese format.");
       }
       if (input.password.length < 6) {
-        throw new Error("Password must be at least 6 characters.");
+        throw new Error("Mật khẩu phải có ít nhất 6 ký tự.");
       }
       if (input.vehicle && !input.vehicle.brandModel.trim()) {
         throw new Error("Please enter your vehicle brand & model.");

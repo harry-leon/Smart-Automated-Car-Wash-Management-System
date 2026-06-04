@@ -1,0 +1,31 @@
+# Run AutoWash backend locally on :8080.
+$ErrorActionPreference = "Stop"
+$here = Split-Path -Parent $MyInvocation.MyCommand.Path
+$envFile = Join-Path $here ".env"
+
+if (Test-Path $envFile) {
+  Get-Content $envFile | ForEach-Object {
+    $line = $_.Trim()
+    if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith("#")) {
+      return
+    }
+    $separatorIndex = $line.IndexOf("=")
+    if ($separatorIndex -lt 1) {
+      return
+    }
+    $name = $line.Substring(0, $separatorIndex).Trim()
+    $value = $line.Substring($separatorIndex + 1).Trim()
+    [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
+  }
+}
+
+Set-Location $here
+
+Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue |
+  Select-Object -ExpandProperty OwningProcess -Unique |
+  ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+
+Start-Sleep -Seconds 2
+
+Write-Host "Starting backend on http://localhost:8080 ..."
+cmd /c "mvn -Dspring-boot.run.profiles=local spring-boot:run"

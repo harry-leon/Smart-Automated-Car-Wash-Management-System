@@ -6,7 +6,7 @@ import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
-import { buildLoyaltySummary, formatLoyaltyTransactionType } from "@/lib/customer-loyalty";
+import { buildLoyaltySummary, formatLoyaltyPoints, formatLoyaltyTransactionType } from "@/lib/customer-loyalty";
 import { formatBookingCurrency, getBookingStatusLabel, humanizeCode } from "@/lib/booking-format";
 import { useCustomerBookings } from "@/hooks/use-bookings";
 import {
@@ -64,7 +64,8 @@ export function CustomerHistoryPageContent() {
 
         {summary ? (
           <section className="grid gap-4 md:grid-cols-3">
-            <StatCard label="Current points" value={summary.currentPoints.toLocaleString("vi-VN")} />
+            <StatCard label="Available points" value={summary.availablePoints.toLocaleString("vi-VN")} />
+            <StatCard label="Lifetime points" value={summary.lifetimePoints.toLocaleString("vi-VN")} />
             <StatCard
               label="Tier progress"
               value={
@@ -73,7 +74,6 @@ export function CustomerHistoryPageContent() {
                   : "Top tier reached"
               }
             />
-            <StatCard label="Completed washes" value={String(summary.completedWashCount)} />
           </section>
         ) : null}
 
@@ -191,8 +191,8 @@ export function CustomerHistoryPageContent() {
                           {item.bookingId} • {new Date(item.createdAt).toLocaleString("vi-VN")}
                         </div>
                       </div>
-                      <div className="text-right text-lg font-black text-emerald-700">
-                        +{item.points.toLocaleString("vi-VN")} pts
+                      <div className={item.points >= 0 ? "text-right text-lg font-black text-emerald-700" : "text-right text-lg font-black text-rose-700"}>
+                        {formatLoyaltyPoints(item.points)}
                       </div>
                     </CardContent>
                   </Card>

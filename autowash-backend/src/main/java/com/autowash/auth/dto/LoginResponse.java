@@ -9,6 +9,7 @@ public record LoginResponse(
         String status,
         String tier,
         int loyaltyBalance,
+        boolean isNewCustomer,
         String accessToken,
         String refreshToken,
         long expiresIn
