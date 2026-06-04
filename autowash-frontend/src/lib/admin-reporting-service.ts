@@ -118,22 +118,15 @@ export async function listAdminCustomerWashHistory(
     dateTo?: string;
   } = {},
 ): Promise<AdminWashHistoryPage> {
-  const response = await apiClient.get<ApiPaginatedResponse<AdminWashHistoryItem>>(
-    `/admin/customers/${customerId}/wash-sessions`,
-    {
-      params: {
-        page: params.page ?? 1,
-        limit: params.limit ?? 20,
-        dateFrom: normalizeDateTimeParam(params.dateFrom),
-        dateTo: normalizeDateTimeParam(params.dateTo),
-      },
-    },
-  );
+  try {
+    return await requestAdminCustomerWashHistory(customerId, "wash-sessions", params);
+  } catch (error) {
+    if (isEndpointUnavailable(error)) {
+      return requestAdminCustomerWashHistory(customerId, "wash-history", params);
+    }
 
-  return {
-    items: response.data.data,
-    pagination: response.data.pagination,
-  };
+    throw error;
+  }
 }
 
 export async function listAdminCustomerPointTransactions(
@@ -187,4 +180,41 @@ function normalizeDateTimeParam(value?: string) {
   }
 
   return parsed.toISOString();
+}
+
+async function requestAdminCustomerWashHistory(
+  customerId: string,
+  path: "wash-sessions" | "wash-history",
+  params: {
+    page?: number;
+    limit?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  },
+): Promise<AdminWashHistoryPage> {
+  const response = await apiClient.get<ApiPaginatedResponse<AdminWashHistoryItem>>(
+    `/admin/customers/${customerId}/${path}`,
+    {
+      params: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 20,
+        dateFrom: normalizeDateTimeParam(params.dateFrom),
+        dateTo: normalizeDateTimeParam(params.dateTo),
+      },
+    },
+  );
+
+  return {
+    items: response.data.data,
+    pagination: response.data.pagination,
+  };
+}
+
+function isEndpointUnavailable(error: unknown) {
+  if (!error || typeof error !== "object" || !("statusCode" in error)) {
+    return false;
+  }
+
+  const statusCode = (error as { statusCode?: unknown }).statusCode;
+  return statusCode === 404 || statusCode === 405;
 }

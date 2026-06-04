@@ -3,10 +3,22 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Loader2, RefreshCcw } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  CircleCheck,
+  Clock3,
+  Mail,
+  Medal,
+  Phone,
+  RefreshCcw,
+  TimerReset,
+  UserCircle2,
+  Loader2,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
@@ -111,6 +123,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
     { enabled: activeTab === "tier-history" },
   );
   const updateStatusMutation = useUpdateAdminCustomerStatus(customerId);
+  const profile = detailQuery.data?.profile;
 
   useEffect(() => {
     if (!detailQuery.data?.profile.status) {
@@ -127,43 +140,33 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <Card className="border-slate-200 bg-white">
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle>Customer Detail</CardTitle>
-              <CardDescription>
-                Tabs follow admin customer detail scope: overview, vehicles, bookings, wash history, point transactions, tier history.
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button asChild variant="outline">
-                <Link href="/admin/bookings">Back to bookings</Link>
-              </Button>
-              <Button type="button" variant="outline" onClick={() => void refreshActiveTab(activeTab)}>
-                <RefreshCcw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {CUSTOMER_TABS.map((tab) => (
-                <Button
-                  key={tab.id}
-                  type="button"
-                  variant={activeTab === tab.id ? "default" : "outline"}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mx-auto flex max-w-6xl flex-col gap-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Admin / Accounts / Customer
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+              {profile?.fullName ?? "Customer detail"}
+            </h1>
+            <p className="text-sm text-slate-500">Track profile, bookings, wash sessions, and loyalty activity.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" className="h-9 gap-2">
+              <Link href="/admin/accounts">
+                <ArrowLeft className="h-4 w-4" />
+                Back to list
+              </Link>
+            </Button>
+            <Button type="button" variant="outline" className="h-9 gap-2" onClick={() => void refreshActiveTab(activeTab)}>
+              <RefreshCcw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
+        </div>
 
-        {activeTab === "overview" ? (
-          <OverviewTab
+        <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <CustomerProfilePanel
             query={detailQuery}
             statusDraft={statusDraft}
             statusReasonDraft={statusReasonDraft}
@@ -185,53 +188,86 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
             isUpdatingStatus={updateStatusMutation.isPending}
             statusFeedback={statusFeedback}
           />
-        ) : null}
 
-        {activeTab === "vehicles" ? (
-          <VehiclesTab query={vehiclesQuery} page={vehiclesPage} onPageChange={setVehiclesPage} />
-        ) : null}
+          <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-0">
+              <div className="border-b border-slate-200 px-5 pt-4">
+                <div className="flex flex-wrap gap-1">
+                  {CUSTOMER_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`border-b-2 px-3 py-2 text-sm font-medium transition ${
+                        activeTab === tab.id
+                          ? "border-sky-600 text-sky-700"
+                          : "border-transparent text-slate-500 hover:text-slate-900"
+                      }`}
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        {activeTab === "bookings" ? (
-          <BookingsTab query={bookingsQuery} page={bookingsPage} onPageChange={setBookingsPage} />
-        ) : null}
+              <div className="p-5">
+                {activeTab === "overview" ? <OverviewTab query={detailQuery} /> : null}
 
-        {activeTab === "wash-history" ? (
-          <WashHistoryTab
-            query={washHistoryQuery}
-            page={washPage}
-            onPageChange={setWashPage}
-            draft={washDateDraft}
-            onDraftChange={setWashDateDraft}
-            onApply={() => {
-              setWashDateRange(washDateDraft);
-              setWashPage(1);
-            }}
-          />
-        ) : null}
+                {activeTab === "vehicles" ? (
+                  <VehiclesTab query={vehiclesQuery} page={vehiclesPage} onPageChange={setVehiclesPage} />
+                ) : null}
 
-        {activeTab === "point-transactions" ? (
-          <PointTransactionsTab
-            query={pointTransactionsQuery}
-            page={pointPage}
-            onPageChange={setPointPage}
-            typeDraft={pointTypeDraft}
-            dateDraft={pointDateDraft}
-            onTypeDraftChange={setPointTypeDraft}
-            onDateDraftChange={setPointDateDraft}
-            onApply={() => {
-              setPointFilters({
-                type: pointTypeDraft,
-                dateFrom: pointDateDraft.dateFrom,
-                dateTo: pointDateDraft.dateTo,
-              });
-              setPointPage(1);
-            }}
-          />
-        ) : null}
+                {activeTab === "bookings" ? (
+                  <BookingsTab query={bookingsQuery} page={bookingsPage} onPageChange={setBookingsPage} />
+                ) : null}
 
-        {activeTab === "tier-history" ? (
-          <TierHistoryTab query={tierHistoryQuery} page={tierPage} onPageChange={setTierPage} />
-        ) : null}
+                {activeTab === "wash-history" ? (
+                  <WashHistoryTab
+                    query={washHistoryQuery}
+                    page={washPage}
+                    onPageChange={setWashPage}
+                    draft={washDateDraft}
+                    onDraftChange={setWashDateDraft}
+                    onApply={() => {
+                      setWashDateRange(washDateDraft);
+                      setWashPage(1);
+                    }}
+                    onClear={() => {
+                      const emptyRange = { dateFrom: "", dateTo: "" };
+                      setWashDateDraft(emptyRange);
+                      setWashDateRange(emptyRange);
+                      setWashPage(1);
+                    }}
+                  />
+                ) : null}
+
+                {activeTab === "point-transactions" ? (
+                  <PointTransactionsTab
+                    query={pointTransactionsQuery}
+                    page={pointPage}
+                    onPageChange={setPointPage}
+                    typeDraft={pointTypeDraft}
+                    dateDraft={pointDateDraft}
+                    onTypeDraftChange={setPointTypeDraft}
+                    onDateDraftChange={setPointDateDraft}
+                    onApply={() => {
+                      setPointFilters({
+                        type: pointTypeDraft,
+                        dateFrom: pointDateDraft.dateFrom,
+                        dateTo: pointDateDraft.dateTo,
+                      });
+                      setPointPage(1);
+                    }}
+                  />
+                ) : null}
+
+                {activeTab === "tier-history" ? (
+                  <TierHistoryTab query={tierHistoryQuery} page={tierPage} onPageChange={setTierPage} />
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
@@ -261,7 +297,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   }
 }
 
-function OverviewTab({
+function CustomerProfilePanel({
   query,
   statusDraft,
   statusReasonDraft,
@@ -281,91 +317,174 @@ function OverviewTab({
   statusFeedback: string | null;
 }) {
   if (query.isPending) {
-    return <LoadingCard message="Loading customer detail..." />;
+    return (
+      <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+        <CardContent className="p-5">
+          <LoadingInline message="Loading customer profile..." />
+        </CardContent>
+      </Card>
+    );
   }
+
   if (query.isError) {
-    return <ErrorCard message={getDisplayErrorMessage(query.error)} />;
+    return (
+      <Card className="rounded-md border-rose-200 bg-white shadow-sm">
+        <CardContent className="p-5">
+          <ErrorInline message={getDisplayErrorMessage(query.error)} />
+        </CardContent>
+      </Card>
+    );
   }
+
   if (!query.data) {
-    return <EmptyCard message="Customer not found." />;
+    return (
+      <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+        <CardContent className="p-5">
+          <EmptyInline message="Customer not found." />
+        </CardContent>
+      </Card>
+    );
   }
 
   const { profile, loyalty, summary } = query.data;
+
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <Card className="border-slate-200 bg-white">
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <InfoRow label="Name" value={profile.fullName} />
-          <InfoRow label="Phone" value={profile.phone} />
-          <InfoRow label="Email" value={profile.email ?? "N/A"} />
-          <InfoRow label="Status" value={<StatusBadge value={profile.status} />} />
-          <InfoRow label="Tier" value={<StatusBadge value={profile.tier} />} />
-          <InfoRow label="Registered" value={formatDateTime(profile.registeredAt)} />
-        </CardContent>
-      </Card>
+    <Card className="rounded-md border-slate-200 bg-white shadow-sm">
+      <CardContent className="space-y-5 p-5">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+            <UserCircle2 className="h-9 w-9" />
+          </div>
+          <h2 className="mt-3 text-lg font-semibold text-slate-950">{profile.fullName}</h2>
+          <p className="text-sm text-slate-500">{profile.phone}</p>
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            <StatusBadge value={profile.status} />
+            <StatusBadge value={profile.tier} />
+          </div>
+        </div>
 
-      <Card className="border-slate-200 bg-white">
-        <CardHeader>
-          <CardTitle>Loyalty</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <InfoRow label="Current points" value={String(loyalty.currentPoints)} />
-          <InfoRow label="Tier" value={<StatusBadge value={loyalty.tier} />} />
-          <InfoRow label="Updated" value={formatDateTime(loyalty.updatedAt)} />
-        </CardContent>
-      </Card>
+        <div className="space-y-3 border-t border-slate-200 pt-4 text-sm">
+          <IconInfo icon={<Mail className="h-4 w-4" />} label="Email" value={profile.email ?? "No email"} />
+          <IconInfo icon={<Phone className="h-4 w-4" />} label="Phone" value={profile.phone} />
+          <IconInfo icon={<Medal className="h-4 w-4" />} label="Loyalty points" value={String(loyalty.currentPoints)} />
+          <IconInfo icon={<CalendarClock className="h-4 w-4" />} label="Registered" value={formatDate(profile.registeredAt)} />
+        </div>
 
-      <Card className="border-slate-200 bg-white">
-        <CardHeader>
-          <CardTitle>Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <InfoRow label="Total bookings" value={String(summary.totalBookings)} />
-          <InfoRow label="Completed bookings" value={String(summary.completedBookings)} />
-          <InfoRow label="Cancelled bookings" value={String(summary.cancelledBookings)} />
-          <InfoRow label="Total wash sessions" value={String(summary.totalWashSessions)} />
-          <InfoRow label="Total spent" value={formatVnd(summary.totalSpent)} />
-          <InfoRow label="Points earned" value={String(summary.totalPointsEarned)} />
-          <InfoRow label="Points spent" value={String(summary.totalPointsSpent)} />
-        </CardContent>
-      </Card>
+        <div className="grid grid-cols-2 gap-3 border-t border-slate-200 pt-4">
+          <MiniStat label="Bookings" value={String(summary.totalBookings)} />
+          <MiniStat label="Sessions" value={String(summary.totalWashSessions)} />
+          <MiniStat label="Spent" value={formatVnd(summary.totalSpent)} />
+          <MiniStat label="Earned" value={String(summary.totalPointsEarned)} />
+        </div>
 
-      <Card className="border-slate-200 bg-white lg:col-span-3">
-        <CardHeader>
-          <CardTitle>Customer status</CardTitle>
-          <CardDescription>Update customer account state when backend endpoint supports it.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-4">
-          <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
-            value={statusDraft}
-            onChange={(event) => onStatusDraftChange(event.target.value as AdminCustomerStatus)}
-          >
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="BLOCKED">BLOCKED</option>
-            <option value="SUSPENDED">SUSPENDED</option>
-          </select>
+        <div className="space-y-3 border-t border-slate-200 pt-4">
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-slate-500">Account status</span>
+            <select
+              className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+              value={statusDraft}
+              onChange={(event) => onStatusDraftChange(event.target.value as AdminCustomerStatus)}
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="BLOCKED">Blocked</option>
+              <option value="SUSPENDED">Suspended</option>
+            </select>
+          </label>
           <Input
             placeholder="Reason (optional)"
             value={statusReasonDraft}
             onChange={(event) => onStatusReasonDraftChange(event.target.value)}
           />
-          <Button type="button" onClick={() => void onSubmitStatus()} disabled={isUpdatingStatus}>
+          <Button type="button" className="w-full" onClick={() => void onSubmitStatus()} disabled={isUpdatingStatus}>
             {isUpdatingStatus ? "Updating..." : "Update status"}
           </Button>
-          <div className="text-xs text-slate-500">
-            Endpoint: <code>PUT /api/v1/admin/customers/:customerId/status</code>
-          </div>
-        </CardContent>
-        {statusFeedback ? (
-          <CardContent className="pt-0">
-            <p className="text-sm text-slate-700">{statusFeedback}</p>
-          </CardContent>
-        ) : null}
-      </Card>
+          {statusFeedback ? <p className="text-xs text-slate-600">{statusFeedback}</p> : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function IconInfo({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 text-slate-400">{icon}</div>
+      <div className="min-w-0">
+        <div className="text-xs text-slate-500">{label}</div>
+        <div className="truncate font-medium text-slate-900">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-sm font-semibold text-slate-950">{value}</div>
+    </div>
+  );
+}
+
+function OverviewTab({
+  query,
+}: {
+  query: ReturnType<typeof useAdminCustomerDetail>;
+}) {
+  if (query.isPending) {
+    return <LoadingInline message="Loading customer detail..." />;
+  }
+  if (query.isError) {
+    return <ErrorInline message={getDisplayErrorMessage(query.error)} />;
+  }
+  if (!query.data) {
+    return <EmptyInline message="Customer not found." />;
+  }
+
+  const { profile, loyalty, summary } = query.data;
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-base font-semibold text-slate-950">Profile information</h2>
+        <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+          <DetailField label="Full name" value={profile.fullName} />
+          <DetailField label="Phone number" value={profile.phone} />
+          <DetailField label="Email address" value={profile.email ?? "No email"} />
+          <DetailField label="Registered date" value={formatDateTime(profile.registeredAt)} />
+          <DetailField label="Status" value={<StatusBadge value={profile.status} />} />
+          <DetailField label="Loyalty tier" value={<StatusBadge value={profile.tier} />} />
+        </div>
+      </div>
+
+      <div className="border-t border-slate-200 pt-5">
+        <h2 className="text-base font-semibold text-slate-950">Activity summary</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <MetricBox label="Bookings" value={String(summary.totalBookings)} />
+          <MetricBox label="Completed" value={String(summary.completedBookings)} />
+          <MetricBox label="Cancelled" value={String(summary.cancelledBookings)} />
+          <MetricBox label="Wash sessions" value={String(summary.totalWashSessions)} />
+          <MetricBox label="Total spent" value={formatVnd(summary.totalSpent)} />
+          <MetricBox label="Points balance" value={String(loyalty.currentPoints)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailField({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-sm font-medium text-slate-950">{value}</div>
+    </div>
+  );
+}
+
+function MetricBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-sm font-semibold text-slate-950">{value}</div>
     </div>
   );
 }
@@ -380,29 +499,26 @@ function VehiclesTab({
   onPageChange: (page: number) => void;
 }) {
   if (query.isPending) {
-    return <LoadingCard message="Loading customer vehicles..." />;
+    return <LoadingInline message="Loading customer vehicles..." />;
   }
   if (query.isError) {
     return (
       <ApiGapAwareError
         error={query.error}
         fallbackMessage="Failed to load customer vehicles."
-        endpoint="/api/v1/admin/customers/:customerId/vehicles"
       />
     );
   }
   if (!query.data || query.data.items.length === 0) {
-    return <EmptyCard message="No vehicles for this customer." />;
+    return <EmptyInline message="No vehicles for this customer." />;
   }
 
   return (
-    <Card className="border-slate-200 bg-white">
-      <CardHeader>
-        <CardTitle>Vehicles</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-slate-950">Vehicles</h2>
+      <div className="overflow-hidden rounded-md border border-slate-200">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead>Plate</TableHead>
               <TableHead>Type</TableHead>
@@ -427,14 +543,14 @@ function VehiclesTab({
             ))}
           </TableBody>
         </Table>
-        <Pagination
-          page={page}
-          hasMore={query.data.pagination.hasMore}
-          onPrevious={() => onPageChange(Math.max(1, page - 1))}
-          onNext={() => onPageChange(page + 1)}
-        />
-      </CardContent>
-    </Card>
+      </div>
+      <Pagination
+        page={page}
+        hasMore={query.data.pagination.hasMore}
+        onPrevious={() => onPageChange(Math.max(1, page - 1))}
+        onNext={() => onPageChange(page + 1)}
+      />
+    </div>
   );
 }
 
@@ -448,23 +564,21 @@ function BookingsTab({
   onPageChange: (page: number) => void;
 }) {
   if (query.isPending) {
-    return <LoadingCard message="Loading customer bookings..." />;
+    return <LoadingInline message="Loading customer bookings..." />;
   }
   if (query.isError) {
-    return <ErrorCard message={getDisplayErrorMessage(query.error)} />;
+    return <ErrorInline message={getDisplayErrorMessage(query.error)} />;
   }
   if (!query.data || query.data.items.length === 0) {
-    return <EmptyCard message="No bookings for this customer." />;
+    return <EmptyInline message="No bookings for this customer." />;
   }
 
   return (
-    <Card className="border-slate-200 bg-white">
-      <CardHeader>
-        <CardTitle>Customer bookings</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-slate-950">Customer bookings</h2>
+      <div className="overflow-hidden rounded-md border border-slate-200">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead>Booking</TableHead>
               <TableHead>Service</TableHead>
@@ -493,14 +607,14 @@ function BookingsTab({
             ))}
           </TableBody>
         </Table>
-        <Pagination
-          page={page}
-          hasMore={query.data.pagination.hasMore}
-          onPrevious={() => onPageChange(Math.max(1, page - 1))}
-          onNext={() => onPageChange(page + 1)}
-        />
-      </CardContent>
-    </Card>
+      </div>
+      <Pagination
+        page={page}
+        hasMore={query.data.pagination.hasMore}
+        onPrevious={() => onPageChange(Math.max(1, page - 1))}
+        onNext={() => onPageChange(page + 1)}
+      />
+    </div>
   );
 }
 
@@ -511,6 +625,7 @@ function WashHistoryTab({
   draft,
   onDraftChange,
   onApply,
+  onClear,
 }: {
   query: ReturnType<typeof useAdminCustomerWashHistory>;
   page: number;
@@ -518,26 +633,48 @@ function WashHistoryTab({
   draft: DateRangeDraft;
   onDraftChange: (next: DateRangeDraft) => void;
   onApply: () => void;
+  onClear: () => void;
 }) {
+  const items = query.data?.items ?? [];
+  const activeSessions = items.filter((item) => item.status !== "COMPLETED" && item.status !== "CANCELLED").length;
+  const completedSessions = items.filter((item) => item.status === "COMPLETED").length;
+  const totalPoints = items.reduce((sum, item) => sum + (item.pointsAwarded ?? 0), 0);
+  const totalFees = items.reduce((sum, item) => sum + (item.fee.amount ?? 0), 0);
+
   return (
-    <Card className="border-slate-200 bg-white">
-      <CardHeader>
-        <CardTitle>Wash history</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Input
-            type="datetime-local"
-            value={draft.dateFrom}
-            onChange={(event) => onDraftChange({ ...draft, dateFrom: event.target.value })}
-          />
-          <Input
-            type="datetime-local"
-            value={draft.dateTo}
-            onChange={(event) => onDraftChange({ ...draft, dateTo: event.target.value })}
-          />
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-base font-semibold text-slate-950">Wash tracking history</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Follow each wash session by booking, vehicle, status, and service timing.
+        </p>
+      </div>
+        <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] md:items-end">
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-slate-500">Started from</span>
+            <Input
+              type="datetime-local"
+              value={draft.dateFrom}
+              onChange={(event) => onDraftChange({ ...draft, dateFrom: event.target.value })}
+            />
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-slate-500">Started to</span>
+            <Input
+              type="datetime-local"
+              value={draft.dateTo}
+              onChange={(event) => onDraftChange({ ...draft, dateTo: event.target.value })}
+            />
+          </label>
           <Button type="button" onClick={onApply}>
             Apply
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClear}
+          >
+            Clear
           </Button>
         </div>
 
@@ -545,42 +682,67 @@ function WashHistoryTab({
           <LoadingInline message="Loading wash history..." />
         ) : query.isError ? (
           <ErrorInline message={getDisplayErrorMessage(query.error)} />
-        ) : !query.data || query.data.items.length === 0 ? (
+        ) : !query.data || items.length === 0 ? (
           <EmptyInline message="No wash sessions for this customer." />
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Booking</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Started</TableHead>
-                  <TableHead>Completed</TableHead>
-                  <TableHead className="text-right">Fee</TableHead>
-                  <TableHead className="text-right">Points</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {query.data.items.map((item) => (
-                  <TableRow key={item.sessionId}>
-                    <TableCell>{item.sessionId}</TableCell>
-                    <TableCell>{item.bookingId}</TableCell>
-                    <TableCell>{item.servicePackage.name ?? item.servicePackage.id ?? "N/A"}</TableCell>
-                    <TableCell>
-                      <StatusBadge value={item.status} />
-                    </TableCell>
-                    <TableCell>{item.startedAt ? formatDateTime(item.startedAt) : "N/A"}</TableCell>
-                    <TableCell>{item.completedAt ? formatDateTime(item.completedAt) : "N/A"}</TableCell>
-                    <TableCell className="text-right">
-                      {item.fee.amount != null ? formatMoney(item.fee.amount, item.fee.currency) : "N/A"}
-                    </TableCell>
-                    <TableCell className="text-right">{item.pointsAwarded ?? 0}</TableCell>
+            <div className="grid gap-3 md:grid-cols-4">
+              <TrackingMetric icon={<Clock3 className="h-4 w-4" />} label="Sessions on page" value={String(items.length)} />
+              <TrackingMetric icon={<TimerReset className="h-4 w-4" />} label="Active sessions" value={String(activeSessions)} />
+              <TrackingMetric icon={<CircleCheck className="h-4 w-4" />} label="Completed" value={String(completedSessions)} />
+              <TrackingMetric icon={<CalendarClock className="h-4 w-4" />} label="Fees / points" value={`${formatVnd(totalFees)} / ${totalPoints}`} />
+            </div>
+
+            <div className="overflow-hidden rounded-md border border-slate-200">
+              <Table>
+                <TableHeader className="bg-slate-50">
+                  <TableRow>
+                    <TableHead>Tracking</TableHead>
+                    <TableHead>Booking</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Schedule</TableHead>
+                    <TableHead>Started</TableHead>
+                    <TableHead>Completed</TableHead>
+                    <TableHead className="text-right">Fee</TableHead>
+                    <TableHead className="text-right">Points</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.sessionId} className="align-top hover:bg-slate-50/70">
+                      <TableCell className="min-w-[190px]">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <StatusBadge value={item.status} />
+                            <span className="text-xs text-slate-500">{shortId(item.sessionId)}</span>
+                          </div>
+                          <WashProgress status={item.status} startedAt={item.startedAt} completedAt={item.completedAt} />
+                          <div className="text-xs text-slate-500">{durationLabel(item.startedAt, item.completedAt)}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button asChild variant="link" className="h-auto p-0 text-sky-700">
+                          <Link href={`/admin/bookings/${item.bookingId}`}>{shortId(item.bookingId)}</Link>
+                        </Button>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{item.vehiclePlate}</TableCell>
+                      <TableCell>{item.servicePackage.name ?? item.servicePackage.id ?? "N/A"}</TableCell>
+                      <TableCell>
+                        <div>{formatDate(item.bookingDate)}</div>
+                        <div className="text-xs text-slate-500">{item.bookingTime}</div>
+                      </TableCell>
+                      <TableCell>{item.startedAt ? formatDateTime(item.startedAt) : "Not started"}</TableCell>
+                      <TableCell>{item.completedAt ? formatDateTime(item.completedAt) : "In progress"}</TableCell>
+                      <TableCell className="text-right">
+                        {item.fee.amount != null ? formatMoney(item.fee.amount, item.fee.currency) : "N/A"}
+                      </TableCell>
+                      <TableCell className="text-right">{item.pointsAwarded ?? 0}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
             <Pagination
               page={page}
               hasMore={query.data.pagination.hasMore}
@@ -589,8 +751,48 @@ function WashHistoryTab({
             />
           </>
         )}
-      </CardContent>
-    </Card>
+    </div>
+  );
+}
+
+function TrackingMetric({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-white p-3">
+      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+        {icon}
+      </div>
+      <div>
+        <div className="text-xs text-slate-500">{label}</div>
+        <div className="text-base font-semibold text-slate-950">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function WashProgress({
+  status,
+  startedAt,
+  completedAt,
+}: {
+  status: string;
+  startedAt: string | null;
+  completedAt: string | null;
+}) {
+  const steps = [
+    { key: "queued", label: "Queued", active: Boolean(startedAt || completedAt || status !== "PENDING") },
+    { key: "started", label: "Started", active: Boolean(startedAt || completedAt) },
+    { key: "done", label: "Done", active: Boolean(completedAt || status === "COMPLETED") },
+  ];
+
+  return (
+    <div className="grid grid-cols-3 gap-1">
+      {steps.map((step) => (
+        <div key={step.key} className="space-y-1">
+          <div className={`h-1.5 rounded-full ${step.active ? "bg-emerald-500" : "bg-slate-200"}`} />
+          <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">{step.label}</div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -614,49 +816,47 @@ function PointTransactionsTab({
   onApply: () => void;
 }) {
   return (
-    <Card className="border-slate-200 bg-white">
-      <CardHeader>
-        <CardTitle>Point transaction history</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-4">
-          <select
-            className="h-9 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
-            value={typeDraft}
-            onChange={(event) => onTypeDraftChange(event.target.value)}
-          >
-            <option value="">All types</option>
-            <option value="EARN">EARN</option>
-            <option value="REDEEM">REDEEM</option>
-            <option value="TIER_UPGRADE">TIER_UPGRADE</option>
-            <option value="ADJUST">ADJUST</option>
-            <option value="EXPIRE">EXPIRE</option>
-          </select>
-          <Input
-            type="datetime-local"
-            value={dateDraft.dateFrom}
-            onChange={(event) => onDateDraftChange({ ...dateDraft, dateFrom: event.target.value })}
-          />
-          <Input
-            type="datetime-local"
-            value={dateDraft.dateTo}
-            onChange={(event) => onDateDraftChange({ ...dateDraft, dateTo: event.target.value })}
-          />
-          <Button type="button" onClick={onApply}>
-            Apply
-          </Button>
-        </div>
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-slate-950">Point transaction history</h2>
+      <div className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 sm:grid-cols-4">
+        <select
+          className="h-9 rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+          value={typeDraft}
+          onChange={(event) => onTypeDraftChange(event.target.value)}
+        >
+          <option value="">All types</option>
+          <option value="EARN">EARN</option>
+          <option value="REDEEM">REDEEM</option>
+          <option value="TIER_UPGRADE">TIER_UPGRADE</option>
+          <option value="ADJUST">ADJUST</option>
+          <option value="EXPIRE">EXPIRE</option>
+        </select>
+        <Input
+          type="datetime-local"
+          value={dateDraft.dateFrom}
+          onChange={(event) => onDateDraftChange({ ...dateDraft, dateFrom: event.target.value })}
+        />
+        <Input
+          type="datetime-local"
+          value={dateDraft.dateTo}
+          onChange={(event) => onDateDraftChange({ ...dateDraft, dateTo: event.target.value })}
+        />
+        <Button type="button" onClick={onApply}>
+          Apply
+        </Button>
+      </div>
 
-        {query.isPending ? (
-          <LoadingInline message="Loading point transactions..." />
-        ) : query.isError ? (
-          <ErrorInline message={getDisplayErrorMessage(query.error)} />
-        ) : !query.data || query.data.items.length === 0 ? (
-          <EmptyInline message="No point transactions for this customer." />
-        ) : (
-          <>
+      {query.isPending ? (
+        <LoadingInline message="Loading point transactions..." />
+      ) : query.isError ? (
+        <ErrorInline message={getDisplayErrorMessage(query.error)} />
+      ) : !query.data || query.data.items.length === 0 ? (
+        <EmptyInline message="No point transactions for this customer." />
+      ) : (
+        <>
+          <div className="overflow-hidden rounded-md border border-slate-200">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-slate-50">
                 <TableRow>
                   <TableHead>Type</TableHead>
                   <TableHead>Points</TableHead>
@@ -681,16 +881,16 @@ function PointTransactionsTab({
                 ))}
               </TableBody>
             </Table>
-            <Pagination
-              page={page}
-              hasMore={query.data.pagination.hasMore}
-              onPrevious={() => onPageChange(Math.max(1, page - 1))}
-              onNext={() => onPageChange(page + 1)}
-            />
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+          <Pagination
+            page={page}
+            hasMore={query.data.pagination.hasMore}
+            onPrevious={() => onPageChange(Math.max(1, page - 1))}
+            onNext={() => onPageChange(page + 1)}
+          />
+        </>
+      )}
+    </div>
   );
 }
 
@@ -704,29 +904,26 @@ function TierHistoryTab({
   onPageChange: (page: number) => void;
 }) {
   if (query.isPending) {
-    return <LoadingCard message="Loading tier history..." />;
+    return <LoadingInline message="Loading tier history..." />;
   }
   if (query.isError) {
     return (
       <ApiGapAwareError
         error={query.error}
         fallbackMessage="Failed to load tier history."
-        endpoint="/api/v1/admin/customers/:customerId/tier-history"
       />
     );
   }
   if (!query.data || query.data.items.length === 0) {
-    return <EmptyCard message="No tier history for this customer." />;
+    return <EmptyInline message="No tier history for this customer." />;
   }
 
   return (
-    <Card className="border-slate-200 bg-white">
-      <CardHeader>
-        <CardTitle>Tier history</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-slate-950">Tier history</h2>
+      <div className="overflow-hidden rounded-md border border-slate-200">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead>From tier</TableHead>
               <TableHead>To tier</TableHead>
@@ -749,41 +946,35 @@ function TierHistoryTab({
             ))}
           </TableBody>
         </Table>
-        <Pagination
-          page={page}
-          hasMore={query.data.pagination.hasMore}
-          onPrevious={() => onPageChange(Math.max(1, page - 1))}
-          onNext={() => onPageChange(page + 1)}
-        />
-      </CardContent>
-    </Card>
+      </div>
+      <Pagination
+        page={page}
+        hasMore={query.data.pagination.hasMore}
+        onPrevious={() => onPageChange(Math.max(1, page - 1))}
+        onNext={() => onPageChange(page + 1)}
+      />
+    </div>
   );
 }
 
 function ApiGapAwareError({
   error,
   fallbackMessage,
-  endpoint,
 }: {
   error: ApiErrorResponse;
   fallbackMessage: string;
-  endpoint: string;
 }) {
   if (error.statusCode === 404 || error.statusCode === 405) {
     return (
-      <Card className="border-amber-300 bg-amber-50">
-        <CardHeader>
-          <CardTitle>API Contract Gap</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-amber-900">
-          <p>Endpoint chưa sẵn sàng từ backend: <code>{endpoint}</code>.</p>
-          <p>Tab này đã được giữ lại để đúng scope customer detail tabs của issue #78.</p>
-        </CardContent>
-      </Card>
+      <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="font-semibold">Data source unavailable</div>
+        <p className="mt-1">{fallbackMessage}</p>
+        <p className="mt-1">The related admin data source is not available yet.</p>
+      </div>
     );
   }
 
-  return <ErrorCard message={fallbackMessage} />;
+  return <ErrorInline message={fallbackMessage} />;
 }
 
 function Pagination({
@@ -809,45 +1000,6 @@ function Pagination({
         </Button>
       </div>
     </div>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-3 border-b pb-1 last:border-b-0">
-      <span className="text-slate-500">{label}</span>
-      <span className="text-right font-medium text-slate-900">{value}</span>
-    </div>
-  );
-}
-
-function LoadingCard({ message }: { message: string }) {
-  return (
-    <Card className="border-slate-200 bg-white">
-      <CardContent className="p-4">
-        <LoadingInline message={message} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function ErrorCard({ message }: { message: string }) {
-  return (
-    <Card className="border-rose-200 bg-white">
-      <CardContent className="p-4">
-        <ErrorInline message={message} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function EmptyCard({ message }: { message: string }) {
-  return (
-    <Card className="border-slate-200 bg-white">
-      <CardContent className="p-4">
-        <EmptyInline message={message} />
-      </CardContent>
-    </Card>
   );
 }
 
@@ -878,19 +1030,60 @@ function StatusBadge({ value }: { value: string }) {
   );
 }
 
+function shortId(value: string) {
+  return value.length > 12 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}
+
 function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("vi-VN");
+  return new Date(value).toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatVnd(amount: number) {
-  return `${amount.toLocaleString("vi-VN")} VND`;
+  return `${amount.toLocaleString("en-US")} VND`;
 }
 
 function formatMoney(amount: number, currency: string | null) {
   if (!currency || currency === "VND") {
     return formatVnd(amount);
   }
-  return `${amount.toLocaleString("vi-VN")} ${currency}`;
+  return `${amount.toLocaleString("en-US")} ${currency}`;
+}
+
+function durationLabel(startedAt: string | null, completedAt: string | null) {
+  if (!startedAt) {
+    return "Waiting for start";
+  }
+
+  const start = new Date(startedAt).getTime();
+  const end = completedAt ? new Date(completedAt).getTime() : Date.now();
+
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
+    return "Duration unavailable";
+  }
+
+  const totalMinutes = Math.max(1, Math.round((end - start) / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours === 0) {
+    return `${minutes} min`;
+  }
+
+  return `${hours}h ${minutes}m`;
 }
 
 const STATUS_TONE: Record<string, string> = {

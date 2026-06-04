@@ -3,6 +3,8 @@ package com.autowash.admin.controller;
 import com.autowash.admin.dto.AdminBookingResponse;
 import com.autowash.admin.dto.AdminAccountResponse;
 import com.autowash.admin.dto.AdminCustomerDetailResponse;
+import com.autowash.admin.dto.AdminCustomerVehicleResponse;
+import com.autowash.admin.dto.AdminTierHistoryResponse;
 import com.autowash.admin.dto.AdminWashHistoryResponse;
 import com.autowash.admin.service.AdminReportingService;
 import com.autowash.loyalty.dto.PointTransactionResponse;
@@ -96,6 +98,18 @@ public class AdminReportingController {
         return ApiResponse.ok("Customer wash sessions retrieved", historyPage.items(), historyPage.pagination());
     }
 
+    @GetMapping("/customers/{customerId}/vehicles")
+    @Operation(summary = "List vehicles for a customer")
+    public ApiResponse<List<AdminCustomerVehicleResponse>> getCustomerVehicles(
+            @PathVariable UUID customerId,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        AdminReportingService.CustomerVehiclePage vehiclePage =
+                adminReportingService.getCustomerVehicles(customerId, page, limit);
+        return ApiResponse.ok("Customer vehicles retrieved", vehiclePage.items(), vehiclePage.pagination());
+    }
+
     @GetMapping("/customers/{customerId}/wash-history")
     @Operation(summary = "List completed wash sessions for a customer (alias)")
     public ApiResponse<List<AdminWashHistoryResponse>> getWashHistory(
@@ -121,6 +135,18 @@ public class AdminReportingController {
         LoyaltyService.TransactionPage transactionPage =
                 adminReportingService.getPointHistory(customerId, type, dateFrom, dateTo, page, limit);
         return ApiResponse.ok("Customer point transactions retrieved", transactionPage.items(), transactionPage.pagination());
+    }
+
+    @GetMapping("/customers/{customerId}/tier-history")
+    @Operation(summary = "List loyalty tier history for a customer")
+    public ApiResponse<List<AdminTierHistoryResponse>> getTierHistory(
+            @PathVariable UUID customerId,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        AdminReportingService.TierHistoryPage tierHistoryPage =
+                adminReportingService.getTierHistory(customerId, page, limit);
+        return ApiResponse.ok("Customer tier history retrieved", tierHistoryPage.items(), tierHistoryPage.pagination());
     }
 
     @GetMapping("/customers/{customerId}/point-history")

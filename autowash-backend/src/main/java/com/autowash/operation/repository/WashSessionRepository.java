@@ -3,6 +3,7 @@ package com.autowash.operation.repository;
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.operation.entity.WashSession;
 import com.autowash.operation.entity.WashSessionStatus;
+import com.autowash.vehicle.entity.CustomerVehicle;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -55,6 +56,18 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
 
     long countByBookingCustomerAndStatus(AuthUser customer, WashSessionStatus status);
 
+    long countByBookingVehicleAndStatus(CustomerVehicle vehicle, WashSessionStatus status);
+
+    @Query("""
+            select max(session.completedAt) from WashSession session
+            where session.booking.vehicle = :vehicle
+              and session.status = :status
+            """)
+    Instant findLastCompletedAtByVehicle(
+            @Param("vehicle") CustomerVehicle vehicle,
+            @Param("status") WashSessionStatus status
+    );
+
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle"})
     @Query("""
             select session from WashSession session
@@ -66,6 +79,20 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     Page<WashSession> searchCustomerCompletedSessions(
             @Param("customer") AuthUser customer,
             @Param("status") WashSessionStatus status,
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle"})
+    @Query("""
+            select session from WashSession session
+            where session.booking.customer = :customer
+              and (:dateFrom is null or session.createdAt >= :dateFrom)
+              and (:dateTo is null or session.createdAt <= :dateTo)
+            """)
+    Page<WashSession> searchCustomerSessions(
+            @Param("customer") AuthUser customer,
             @Param("dateFrom") Instant dateFrom,
             @Param("dateTo") Instant dateTo,
             Pageable pageable

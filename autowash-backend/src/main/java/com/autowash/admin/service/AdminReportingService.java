@@ -3,6 +3,8 @@ package com.autowash.admin.service;
 import com.autowash.admin.dto.AdminBookingResponse;
 import com.autowash.admin.dto.AdminAccountResponse;
 import com.autowash.admin.dto.AdminCustomerDetailResponse;
+import com.autowash.admin.dto.AdminCustomerVehicleResponse;
+import com.autowash.admin.dto.AdminTierHistoryResponse;
 import com.autowash.admin.dto.AdminWashHistoryResponse;
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.auth.entity.UserRole;
@@ -16,6 +18,7 @@ import com.autowash.catalog.repository.ServicePackageRepository;
 import com.autowash.loyalty.dto.LoyaltyAccountResponse;
 import com.autowash.loyalty.dto.PointTransactionResponse;
 import com.autowash.loyalty.entity.PointTransactionType;
+import com.autowash.loyalty.entity.PointTransaction;
 import com.autowash.loyalty.repository.PointTransactionRepository;
 import com.autowash.loyalty.service.LoyaltyService;
 import com.autowash.operation.entity.WashSession;
@@ -23,6 +26,9 @@ import com.autowash.operation.entity.WashSessionStatus;
 import com.autowash.operation.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.vehicle.entity.CustomerVehicle;
+import com.autowash.vehicle.entity.VehicleStatus;
+import com.autowash.vehicle.repository.CustomerVehicleRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -51,6 +57,7 @@ public class AdminReportingService {
     private final ServiceComboRepository serviceComboRepository;
     private final LoyaltyService loyaltyService;
     private final PointTransactionRepository pointTransactionRepository;
+    private final CustomerVehicleRepository customerVehicleRepository;
 
     public AdminReportingService(
             CustomerBookingRepository bookingRepository,
@@ -59,7 +66,8 @@ public class AdminReportingService {
             ServicePackageRepository servicePackageRepository,
             ServiceComboRepository serviceComboRepository,
             LoyaltyService loyaltyService,
-            PointTransactionRepository pointTransactionRepository
+            PointTransactionRepository pointTransactionRepository,
+            CustomerVehicleRepository customerVehicleRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -68,6 +76,7 @@ public class AdminReportingService {
         this.serviceComboRepository = serviceComboRepository;
         this.loyaltyService = loyaltyService;
         this.pointTransactionRepository = pointTransactionRepository;
+        this.customerVehicleRepository = customerVehicleRepository;
     }
 
     @Transactional(readOnly = true)
@@ -230,12 +239,11 @@ public class AdminReportingService {
     public WashHistoryPage getWashHistory(UUID customerId, Instant dateFrom, Instant dateTo, int page, int limit) {
         validateDateRange(dateFrom, dateTo);
         AuthUser customer = requireCustomer(customerId);
-        Page<WashSession> sessions = washSessionRepository.searchCustomerCompletedSessions(
+        Page<WashSession> sessions = washSessionRepository.searchCustomerSessions(
                 customer,
-                WashSessionStatus.COMPLETED,
                 dateFrom,
                 dateTo,
-                PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("completedAt").descending())
+                PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
         );
         Map<String, String> serviceNames = serviceNames(sessions.getContent().stream().map(WashSession::getBooking).toList());
         List<AdminWashHistoryResponse> items = sessions.getContent().stream()
@@ -256,6 +264,36 @@ public class AdminReportingService {
         validateDateRange(dateFrom, dateTo);
         requireCustomer(customerId);
         return loyaltyService.getTransactionHistory(customerId, type, dateFrom, dateTo, page, limit);
+    }
+
+    @Transactional(readOnly = true)
+    public CustomerVehiclePage getCustomerVehicles(UUID customerId, int page, int limit) {
+        AuthUser customer = requireCustomer(customerId);
+        Page<CustomerVehicle> vehicles = customerVehicleRepository.findByOwnerAndStatusOrderByCreatedAtAsc(
+                customer,
+                VehicleStatus.ACTIVE,
+                PageRequest.of(Math.max(page - 1, 0), limit)
+        );
+        List<AdminCustomerVehicleResponse> items = vehicles.getContent().stream()
+                .map(this::toCustomerVehicleResponse)
+                .toList();
+        return new CustomerVehiclePage(items, pagination(vehicles));
+    }
+
+    @Transactional(readOnly = true)
+    public TierHistoryPage getTierHistory(UUID customerId, int page, int limit) {
+        AuthUser customer = requireCustomer(customerId);
+        Page<PointTransaction> transactions = pointTransactionRepository.search(
+                customer,
+                PointTransactionType.TIER_UPGRADE,
+                null,
+                null,
+                PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
+        );
+        List<AdminTierHistoryResponse> items = transactions.getContent().stream()
+                .map(transaction -> toTierHistoryResponse(customer, transaction))
+                .toList();
+        return new TierHistoryPage(items, pagination(transactions));
     }
 
     private AuthUser requireCustomer(UUID customerId) {
@@ -420,6 +458,46 @@ public class AdminReportingService {
         );
     }
 
+    private AdminCustomerVehicleResponse toCustomerVehicleResponse(CustomerVehicle vehicle) {
+        return new AdminCustomerVehicleResponse(
+                vehicle.getId(),
+                vehicle.getPlate(),
+                vehicle.getType().name(),
+                vehicle.getBrand(),
+                vehicle.getModel(),
+                vehicle.getColor(),
+                vehicle.getStatus().name(),
+                vehicle.isPrimary(),
+                washSessionRepository.findLastCompletedAtByVehicle(vehicle, WashSessionStatus.COMPLETED),
+                washSessionRepository.countByBookingVehicleAndStatus(vehicle, WashSessionStatus.COMPLETED)
+        );
+    }
+
+    private AdminTierHistoryResponse toTierHistoryResponse(AuthUser customer, PointTransaction transaction) {
+        TierChange tierChange = parseTierChange(transaction.getReason(), customer.getTier().name());
+        return new AdminTierHistoryResponse(
+                transaction.getId(),
+                tierChange.fromTier(),
+                tierChange.toTier(),
+                transaction.getReason(),
+                transaction.getBalanceAfter(),
+                transaction.getCreatedAt()
+        );
+    }
+
+    private TierChange parseTierChange(String reason, String fallbackTier) {
+        String prefix = "Tier upgraded from ";
+        String separator = " to ";
+        if (reason != null && reason.startsWith(prefix) && reason.contains(separator)) {
+            String payload = reason.substring(prefix.length());
+            String[] parts = payload.split(separator, 2);
+            if (parts.length == 2) {
+                return new TierChange(parts[0], parts[1]);
+            }
+        }
+        return new TierChange(null, fallbackTier);
+    }
+
     private String serviceId(CustomerBooking booking) {
         return booking.getPackageId() == null ? booking.getComboId() : booking.getPackageId();
     }
@@ -439,5 +517,14 @@ public class AdminReportingService {
     }
 
     public record WashHistoryPage(List<AdminWashHistoryResponse> items, PaginationMeta pagination) {
+    }
+
+    public record CustomerVehiclePage(List<AdminCustomerVehicleResponse> items, PaginationMeta pagination) {
+    }
+
+    public record TierHistoryPage(List<AdminTierHistoryResponse> items, PaginationMeta pagination) {
+    }
+
+    private record TierChange(String fromTier, String toTier) {
     }
 }

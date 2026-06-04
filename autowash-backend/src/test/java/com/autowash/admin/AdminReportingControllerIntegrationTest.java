@@ -1,5 +1,6 @@
 package com.autowash.admin;
 
+import static org.hamcrest.Matchers.contains;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -126,6 +127,14 @@ class AdminReportingControllerIntegrationTest {
     void customerDetailWashHistoryAndPointHistoryUseRealBookingOperationsAndLoyaltyData() throws Exception {
         CustomerBooking booking = createConfirmedBooking("ADMIN_BK_003", "0901777403", "30H-774403", LocalDate.of(2026, 6, 12), 270000);
         String sessionId = completeSession(booking.getId());
+        CustomerBooking pendingBooking = createConfirmedBookingForVehicle(
+                booking.getCustomer(),
+                booking.getVehicle(),
+                "ADMIN_BK_004",
+                LocalDate.of(2026, 6, 13),
+                150000
+        );
+        String pendingSessionId = createSession(pendingBooking.getId());
         String customerId = booking.getCustomer().getId().toString();
 
         mockMvc.perform(get("/api/v1/admin/customers/{customerId}", customerId)
@@ -134,18 +143,25 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.customerId").value(customerId))
                 .andExpect(jsonPath("$.data.profile.phone").value("0901777403"))
                 .andExpect(jsonPath("$.data.loyalty.currentPoints").value(27))
-                .andExpect(jsonPath("$.data.summary.totalBookings").value(1))
+                .andExpect(jsonPath("$.data.summary.totalBookings").value(2))
                 .andExpect(jsonPath("$.data.summary.totalWashSessions").value(1))
                 .andExpect(jsonPath("$.data.summary.totalPointsEarned").value(27));
 
         mockMvc.perform(get("/api/v1/admin/customers/{customerId}/wash-sessions", customerId)
                         .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].bookingId".formatted(sessionId)).value(contains("ADMIN_BK_003")))
+                .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].servicePackage.name".formatted(sessionId)).value(contains("Basic Wash")))
+                .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].pointsAwarded".formatted(sessionId)).value(contains(27)))
+                .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].status".formatted(pendingSessionId)).value(contains("PENDING")));
+
+        mockMvc.perform(get("/api/v1/admin/customers/{customerId}/vehicles", customerId)
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].sessionId").value(sessionId))
-                .andExpect(jsonPath("$.data[0].bookingId").value("ADMIN_BK_003"))
-                .andExpect(jsonPath("$.data[0].servicePackage.name").value("Basic Wash"))
-                .andExpect(jsonPath("$.data[0].pointsAwarded").value(27));
+                .andExpect(jsonPath("$.data[0].plate").value("30H-774403"))
+                .andExpect(jsonPath("$.data[0].totalServices").value(1));
 
         mockMvc.perform(get("/api/v1/admin/customers/{customerId}/point-transactions", customerId)
                         .with(user("admin").roles("ADMIN"))
@@ -155,6 +171,11 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].type").value("EARN"))
                 .andExpect(jsonPath("$.data[0].points").value(27))
                 .andExpect(jsonPath("$.data[0].referenceId").value(sessionId));
+
+        mockMvc.perform(get("/api/v1/admin/customers/{customerId}/tier-history", customerId)
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
     }
 
     @Test
@@ -180,11 +201,15 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/v1/admin/accounts']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/bookings']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/customers/{customerId}']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/admin/customers/{customerId}/vehicles']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/customers/{customerId}/wash-sessions']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/admin/customers/{customerId}/point-transactions']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/admin/customers/{customerId}/tier-history']").exists())
                 .andExpect(jsonPath("$.components.schemas.AdminAccountResponse.properties.accountId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminBookingResponse.properties.bookingId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminCustomerDetailResponse.properties.customerId.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.AdminCustomerVehicleResponse.properties.vehicleId.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.AdminTierHistoryResponse.properties.id.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminWashHistoryResponse.properties.sessionId.type").value("string"));
     }
 
@@ -241,6 +266,10 @@ class AdminReportingControllerIntegrationTest {
 
     private CustomerBooking createConfirmedBooking(String bookingId, String phone, String plate, LocalDate bookingDate, long finalAmount) {
         AuthUser user = createActiveCustomer(phone);
+        return createConfirmedBookingForCustomer(user, bookingId, plate, bookingDate, finalAmount);
+    }
+
+    private CustomerBooking createConfirmedBookingForCustomer(AuthUser user, String bookingId, String plate, LocalDate bookingDate, long finalAmount) {
         CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
                 user,
                 plate,
@@ -251,6 +280,10 @@ class AdminReportingControllerIntegrationTest {
                 "Silver",
                 true
         ));
+        return createConfirmedBookingForVehicle(user, vehicle, bookingId, bookingDate, finalAmount);
+    }
+
+    private CustomerBooking createConfirmedBookingForVehicle(AuthUser user, CustomerVehicle vehicle, String bookingId, LocalDate bookingDate, long finalAmount) {
         return customerBookingRepository.saveAndFlush(new CustomerBooking(
                 bookingId,
                 user,
