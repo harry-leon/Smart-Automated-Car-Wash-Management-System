@@ -33,7 +33,7 @@ export function useCustomerLogin() {
     mutationFn: loginCustomer,
     onSuccess: (data) => {
       setAuthSession(buildAuthSession(data));
-      router.push(getAuthRedirectPath(data.role));
+      router.push(data.isNewCustomer ? "/customer/profile" : getAuthRedirectPath(data.role));
     },
     onError: (error) => {
       if (error.isInvalidSession()) {
@@ -62,7 +62,7 @@ export function useVerifyCustomerOtp() {
     mutationFn: verifyCustomerOtp,
     onSuccess: (data) => {
       setAuthSession(buildAuthSession(data));
-      router.push(getAuthRedirectPath(data.role));
+      router.push(data.isNewCustomer ? "/customer/profile" : getAuthRedirectPath(data.role));
     },
     onError: (error) => {
       if (error.isInvalidSession()) {

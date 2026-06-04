@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -55,68 +55,70 @@ const OTP_LENGTH = 6;
 
 const AUTH_COPY = {
   vi: {
-    badge: "Chuẩn chăm sóc Aura",
+    badge: "Chuáº©n chÄƒm sÃ³c Aura",
     heroEyebrow: "",
-    heroTitleA: "Hệ thống quản lý",
-    heroTitleB: "rửa xe thông minh",
+    heroTitleA: "Há»‡ thá»‘ng quáº£n lÃ½",
+    heroTitleB: "rá»­a xe thÃ´ng minh",
     heroTitleC: "",
-    heroDescription: "Nhanh chóng. Minh bạch. Hiện đại.",
-    featureA: "Đặt lịch thông minh",
-    featureB: "Theo dõi thời gian thực",
-    featureC: "Nhanh chóng & minh bạch",
-    close: "Đóng",
-    language: "Ngôn ngữ",
-    loginTitle: "Đăng nhập",
-    loginDescription: "Chào mừng bạn quay lại. Tiếp tục hành trình chăm sóc xe của bạn.",
-    identifierLabel: "Số điện thoại hoặc email",
-    identifierPlaceholder: "0901234567 hoặc you@gmail.com",
-    passwordLabel: "Mật khẩu",
-    passwordPlaceholder: "Nhập mật khẩu",
-    forgotPassword: "Quên mật khẩu?",
-    loginButton: "Đăng nhập ngay",
-    loggingIn: "Đang đăng nhập...",
-    quickDivider: "Tiếp tục nhanh với",
-    noAccount: "Chưa có tài khoản?",
-    registerLink: "Đăng ký thành viên",
-    loginPasswordError: "Mật khẩu tối thiểu 8 ký tự.",
-    registerTitle: "Đăng ký thành viên",
-    registerDescription: "Tạo tài khoản để đặt lịch nhanh, quản lý xe và nhận ưu đãi riêng.",
-    nameLabel: "Họ và tên",
-    namePlaceholder: "Nguyễn Văn A",
-    phoneLabel: "Số điện thoại",
+    heroDescription: "Nhanh chÃ³ng. Minh báº¡ch. Hiá»‡n Ä‘áº¡i.",
+    featureA: "Äáº·t lá»‹ch thÃ´ng minh",
+    featureB: "Theo dÃµi thá»i gian thá»±c",
+    featureC: "Nhanh chÃ³ng & minh báº¡ch",
+    close: "ÄÃ³ng",
+    language: "NgÃ´n ngá»¯",
+    loginTitle: "ÄÄƒng nháº­p",
+    loginDescription: "ChÃ o má»«ng báº¡n quay láº¡i. Tiáº¿p tá»¥c hÃ nh trÃ¬nh chÄƒm sÃ³c xe cá»§a báº¡n.",
+    identifierLabel: "Sá»‘ Ä‘iá»‡n thoáº¡i hoáº·c email",
+    identifierPlaceholder: "0901234567 hoáº·c you@gmail.com",
+    passwordLabel: "Máº­t kháº©u",
+    passwordPlaceholder: "Nháº­p máº­t kháº©u",
+    forgotPassword: "QuÃªn máº­t kháº©u?",
+    loginButton: "ÄÄƒng nháº­p ngay",
+    loggingIn: "Äang Ä‘Äƒng nháº­p...",
+    googleLoginButton: "ÄÄƒng nháº­p báº±ng Google",
+    googleRegisterButton: "Đăng ký bằng Google",
+    quickDivider: "Tiáº¿p tá»¥c nhanh vá»›i",
+    noAccount: "ChÆ°a cÃ³ tÃ i khoáº£n?",
+    registerLink: "ÄÄƒng kÃ½ thÃ nh viÃªn",
+    loginPasswordError: "Máº­t kháº©u tá»‘i thiá»ƒu 8 kÃ½ tá»±.",
+    registerTitle: "ÄÄƒng kÃ½ thÃ nh viÃªn",
+    registerDescription: "Táº¡o tÃ i khoáº£n Ä‘á»ƒ Ä‘áº·t lá»‹ch nhanh, quáº£n lÃ½ xe vÃ  nháº­n Æ°u Ä‘Ã£i riÃªng.",
+    nameLabel: "Há» vÃ  tÃªn",
+    namePlaceholder: "Nguyá»…n VÄƒn A",
+    phoneLabel: "Sá»‘ Ä‘iá»‡n thoáº¡i",
     phonePlaceholder: "0901234567",
     emailLabel: "Email",
-    optional: "không bắt buộc",
+    optional: "khÃ´ng báº¯t buá»™c",
     emailPlaceholder: "your@gmail.com",
-    confirmPasswordLabel: "Xác nhận",
-    registerButton: "Tạo tài khoản",
-    registering: "Đang đăng ký...",
-    hasAccount: "Đã có tài khoản?",
-    backToLogin: "Đăng nhập",
-    nameError: "Vui lòng nhập họ tên.",
-    phoneError: "Số điện thoại không hợp lệ.",
-    emailError: "Email không hợp lệ.",
-    passwordRule: "Cần chữ hoa, chữ thường, số, ký tự đặc biệt và tối thiểu 8 ký tự.",
-    confirmError: "Mật khẩu không khớp.",
-    otpTitle: "Xác nhận OTP",
-    otpDescription: "Nhập mã 6 chữ số đã gửi đến",
-    otpExpires: "Hết hạn sau",
-    otpCanResend: "Bạn có thể gửi lại mã.",
-    otpSending: "Đang gửi...",
-    otpSendAgain: "Gửi lại mã",
-    otpBack: "Quay lại",
-    otpVerify: "Xác thực",
-    otpVerifying: "Đang xác thực...",
-    eyebrowLogin: "Quyền truy cập AURA",
-    eyebrowRegister: "Thành viên AURA",
-    brandSubtitle: "Rửa xe và chăm sóc cao cấp",
-    brandTitleA: "Hệ thống",
-    brandTitleB: "chăm sóc",
-    brandTitleC: "xe hơi tối tân",
-    brandDesc: "Rửa không chạm, chẩn đoán gầm tự động, gloss-sealant đẳng cấp. Đặt lịch trong 30 giây.",
-    otpVerifyBtn: "Xác Thực & Hoàn Tất",
-    otpBackBtn: "Trở lại",
-    orContinueWith: "Hoặc tiếp tục với",
+    confirmPasswordLabel: "XÃ¡c nháº­n",
+    registerButton: "Táº¡o tÃ i khoáº£n",
+    registering: "Äang Ä‘Äƒng kÃ½...",
+    hasAccount: "ÄÃ£ cÃ³ tÃ i khoáº£n?",
+    backToLogin: "ÄÄƒng nháº­p",
+    nameError: "Vui lÃ²ng nháº­p há» tÃªn.",
+    phoneError: "Sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng há»£p lá»‡.",
+    emailError: "Email khÃ´ng há»£p lá»‡.",
+    passwordRule: "Cáº§n chá»¯ hoa, chá»¯ thÆ°á»ng, sá»‘, kÃ½ tá»± Ä‘áº·c biá»‡t vÃ  tá»‘i thiá»ƒu 8 kÃ½ tá»±.",
+    confirmError: "Máº­t kháº©u khÃ´ng khá»›p.",
+    otpTitle: "XÃ¡c nháº­n OTP",
+    otpDescription: "Nháº­p mÃ£ 6 chá»¯ sá»‘ Ä‘Ã£ gá»­i Ä‘áº¿n",
+    otpExpires: "Háº¿t háº¡n sau",
+    otpCanResend: "Báº¡n cÃ³ thá»ƒ gá»­i láº¡i mÃ£.",
+    otpSending: "Äang gá»­i...",
+    otpSendAgain: "Gá»­i láº¡i mÃ£",
+    otpBack: "Quay láº¡i",
+    otpVerify: "XÃ¡c thá»±c",
+    otpVerifying: "Äang xÃ¡c thá»±c...",
+    eyebrowLogin: "Quyá»n truy cáº­p AURA",
+    eyebrowRegister: "ThÃ nh viÃªn AURA",
+    brandSubtitle: "Rá»­a xe vÃ  chÄƒm sÃ³c cao cáº¥p",
+    brandTitleA: "Há»‡ thá»‘ng",
+    brandTitleB: "chÄƒm sÃ³c",
+    brandTitleC: "xe hÆ¡i tá»‘i tÃ¢n",
+    brandDesc: "Rá»­a khÃ´ng cháº¡m, cháº©n Ä‘oÃ¡n gáº§m tá»± Ä‘á»™ng, gloss-sealant Ä‘áº³ng cáº¥p. Äáº·t lá»‹ch trong 30 giÃ¢y.",
+    otpVerifyBtn: "XÃ¡c Thá»±c & HoÃ n Táº¥t",
+    otpBackBtn: "Trá»Ÿ láº¡i",
+    orContinueWith: "Hoáº·c tiáº¿p tá»¥c vá»›i",
   },
   en: {
     badge: "Aura Premium Detailing",
@@ -143,6 +145,8 @@ const AUTH_COPY = {
     noAccount: "Don't have an account?",
     registerLink: "Sign Up Now",
     loginPasswordError: "Password must be at least 8 characters.",
+    googleLoginButton: "Sign in with Google",
+    googleRegisterButton: "Sign up with Google",
     registerTitle: "Create Account",
     registerDescription: "Sign up to book faster, manage your cars, and receive exclusive offers.",
     nameLabel: "Full Name",
@@ -277,28 +281,39 @@ export function ModernAuthPopupModal({
     handleSendOtp().catch(() => undefined);
   }, [handleSendOtp, mode, otpPhone]);
 
-  const handleLoginSubmit = async (event: FormEvent) => {
+  const handleLoginSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!canLoginSubmit) return;
-    await loginMutation.mutateAsync({
+    loginMutation.mutate({
       identifier: loginIdNormalized,
       password: loginPass,
       rememberMe: true,
     });
   };
 
-  const handleRegisterSubmit = async (event: FormEvent) => {
+  const handleRegisterSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!canRegisterSubmit) return;
-    const response = await registerMutation.mutateAsync({
-      fullName: regName.trim(),
-      phone: regPhone,
-      email: regEmail || undefined,
-      password: regPass,
-      passwordConfirm: regConfirmPass,
-    });
-    setOtpPhone(response.phone);
-    setMode("otp");
+    registerMutation.mutate(
+      {
+        fullName: regName.trim(),
+        phone: regPhone,
+        email: regEmail || undefined,
+        password: regPass,
+        passwordConfirm: regConfirmPass,
+      },
+      {
+        onSuccess: (response) => {
+          setOtpPhone(response.phone);
+          setMode("otp");
+        },
+      },
+    );
+  };
+
+  const handleContinueWithGoogle = () => {
+    const returnUrl = `${window.location.origin}/auth/google/callback`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1"}/auth/google/start?returnUrl=${encodeURIComponent(returnUrl)}`;
   };
 
   const handleDigitChange = (index: number, value: string) => {
@@ -455,7 +470,14 @@ export function ModernAuthPopupModal({
                 {loginErrorMessage ? <ErrorBox message={loginErrorMessage} /> : null}
               </form>
 
-              <QuickAuthDivider label={copy.quickDivider} />
+              <button
+                type="button"
+                onClick={handleContinueWithGoogle}
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+              >
+                <GoogleIcon />
+                Đăng nhập bằng Google
+              </button>
 
               <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 pt-4">
                 <span className="text-sm text-slate-500">{copy.noAccount}</span>
@@ -469,7 +491,7 @@ export function ModernAuthPopupModal({
           {mode === "register" ? (
             <div key={`${language}-register`} className="mx-auto flex w-full max-w-[560px] flex-col gap-4 pt-8 animate-in fade-in slide-in-from-right-4 duration-500 ease-out">
               <AuthHeader eyebrow={copy.eyebrowRegister} icon={Star} title={copy.registerTitle} description={copy.registerDescription} />
-              <form onSubmit={handleRegisterSubmit} className="space-y-3">
+                <form onSubmit={handleRegisterSubmit} className="space-y-3">
                 <Field label={copy.nameLabel} error={regNameError}>
                   <input value={regName} onChange={(event) => setRegName(event.target.value)} placeholder={copy.namePlaceholder} className={inputCls} />
                   <UserRound className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -521,12 +543,31 @@ export function ModernAuthPopupModal({
                   )}
                 </button>
 
-                {registerErrorMessage ? <ErrorBox message={registerErrorMessage} /> : null}
-              </form>
+                  {registerErrorMessage ? <ErrorBox message={registerErrorMessage} /> : null}
+                </form>
 
-              <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 pt-3">
-                <span className="text-sm text-slate-500">{copy.hasAccount}</span>
-                <button type="button" onClick={() => setMode("login")} className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 to-transparent" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                      {copy.orContinueWith}
+                    </span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 to-transparent" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleContinueWithGoogle}
+                    className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+                  >
+                    <GoogleIcon />
+                    Đăng ký bằng Google
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 pt-3">
+                  <span className="text-sm text-slate-500">{copy.hasAccount}</span>
+                  <button type="button" onClick={() => setMode("login")} className="text-sm font-bold text-blue-600 transition-colors hover:text-blue-700 hover:underline">
                   {copy.backToLogin}
                 </button>
               </div>
@@ -760,32 +801,29 @@ function ErrorBox({ message }: { message: string }) {
   );
 }
 
-function QuickAuthDivider({ label }: { label: string }) {
-  const socialIcons = [
-    { label: "G", text: "G" },
-    { label: "f", text: "f" },
-    { label: "X", text: "X" },
-  ];
-
+function GoogleIcon() {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 to-transparent" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</span>
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 to-transparent" />
-      </div>
-      <div className="flex justify-center gap-3">
-        {socialIcons.map((item) => (
-          <button
-            key={item.label}
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-black text-slate-600 shadow-sm transition-all duration-200 hover:scale-110 hover:text-slate-950"
-            aria-label={item.label}
-          >
-            {item.text}
-          </button>
-        ))}
-      </div>
-    </div>
+    <span className="flex h-6 w-6 items-center justify-center">
+      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+        <path
+          fill="#4285F4"
+          d="M21.35 11.1H12v3.9h5.35c-.23 1.4-1 2.6-2.2 3.4v2.8h3.55c2.08-1.9 3.28-4.7 3.28-8.1 0-.7-.06-1.3-.18-2z"
+        />
+        <path
+          fill="#34A853"
+          d="M12 22c2.97 0 5.47-.98 7.29-2.66l-3.55-2.8c-.99.66-2.26 1.05-3.74 1.05-2.87 0-5.3-1.93-6.17-4.53H2.17v2.9A10 10 0 0 0 12 22z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M5.83 13.06A5.98 5.98 0 0 1 5.5 11c0-.72.12-1.42.33-2.06V6.04H2.17A10 10 0 0 0 2 11c0 1.61.39 3.12 1.08 4.46l2.75-2.4z"
+        />
+        <path
+          fill="#EA4335"
+          d="M12 5.92c1.62 0 3.06.56 4.2 1.65l3.15-3.15A9.97 9.97 0 0 0 12 2 10 10 0 0 0 2.17 6.04l3.66 2.9C6.7 7.84 9.03 5.92 12 5.92z"
+        />
+      </svg>
+    </span>
   );
 }
+
+

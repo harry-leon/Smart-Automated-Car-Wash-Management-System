@@ -47,18 +47,23 @@ export function LoginForm() {
   const canSubmit =
     identifierValidationMessage === null && password.length >= 8 && !loginMutation.isPending;
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (identifierValidationMessage !== null || password.length < 8) {
       return;
     }
 
-    await loginMutation.mutateAsync({
+    loginMutation.mutate({
       identifier: normalizedIdentifier,
       password,
       rememberMe,
     });
+  };
+
+  const handleContinueWithGoogle = () => {
+    const returnUrl = `${window.location.origin}/auth/google/callback`;
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1"}/auth/google/start?returnUrl=${encodeURIComponent(returnUrl)}`;
   };
 
   return (
@@ -124,6 +129,15 @@ export function LoginForm() {
         </div>
         <div>Sau khi đăng nhập, hệ thống tự chuyển đến khu vực khách hàng.</div>
       </div>
+
+      <button
+        type="button"
+        onClick={handleContinueWithGoogle}
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50"
+      >
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-black text-white">G</span>
+        Continue with Google
+      </button>
 
       <Button
         type="submit"

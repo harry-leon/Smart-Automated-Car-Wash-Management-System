@@ -6,6 +6,7 @@ import com.autowash.admin.dto.AdminCustomerDetailResponse;
 import com.autowash.admin.dto.AdminCustomerVehicleResponse;
 import com.autowash.admin.dto.AdminTierHistoryResponse;
 import com.autowash.admin.dto.AdminWashHistoryResponse;
+import com.autowash.admin.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.auth.entity.UserRole;
 import com.autowash.auth.entity.UserStatus;
@@ -97,6 +98,13 @@ public class AdminReportingService {
                 .map(this::toAccountResponse)
                 .toList();
         return new AccountPage(items, pagination(accounts));
+    }
+
+    @Transactional(readOnly = true)
+    public AdminAccountResponse getAccountDetail(UUID accountId) {
+        AuthUser account = authUserRepository.findById(accountId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+        return toAccountResponse(account);
     }
 
     @Transactional(readOnly = true)
@@ -212,6 +220,7 @@ public class AdminReportingService {
                 customer.getFullName(),
                 customer.getPhone(),
                 customer.getEmail(),
+                customer.getRole().name(),
                 customer.getStatus().name(),
                 customer.getTier().name(),
                 customer.getCreatedAt()
@@ -233,6 +242,19 @@ public class AdminReportingService {
                 lastBooking == null ? null : lastBooking.getFinalAmount()
         );
         return new AdminCustomerDetailResponse(customer.getId(), profile, loyaltySummary, summary);
+    }
+
+    @Transactional
+    public UpdateAdminCustomerRoleResponse updateCustomerRole(UUID customerId, String role) {
+        AuthUser customer = requireCustomer(customerId);
+        UserRole nextRole = parseRole(role);
+        customer.updateRole(nextRole);
+        AuthUser savedCustomer = authUserRepository.save(customer);
+        return new UpdateAdminCustomerRoleResponse(
+                savedCustomer.getId(),
+                savedCustomer.getRole().name(),
+                savedCustomer.getUpdatedAt()
+        );
     }
 
     @Transactional(readOnly = true)
