@@ -14,7 +14,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "spring.flyway.locations=classpath:db/migration,classpath:db/demo")
+@SpringBootTest(properties = {
+        "spring.flyway.locations=classpath:db/migration,classpath:db/demo",
+        "spring.datasource.url=jdbc:h2:mem:autowash_demo;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1"
+})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class AdminReportingDemoDataIntegrationTest {
