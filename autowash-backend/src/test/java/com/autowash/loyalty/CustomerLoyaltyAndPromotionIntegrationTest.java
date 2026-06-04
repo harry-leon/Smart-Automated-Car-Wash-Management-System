@@ -114,12 +114,17 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
-                .andExpect(jsonPath("$.data.newBalance").value(10));
+                .andExpect(jsonPath("$.data.newBalance").value(10))
+                .andExpect(jsonPath("$.data.voucherCode").isString())
+                .andExpect(jsonPath("$.data.voucherValue").value(50000))
+                .andExpect(jsonPath("$.data.expiresAt").exists())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .with(authenticatedCustomer(customer)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.currentPoints").value(10));
+                .andExpect(jsonPath("$.data.currentPoints").value(10))
+                .andExpect(jsonPath("$.data.totalEarnedPoints").value(60));
 
         mockMvc.perform(get("/api/v1/loyalty/transactions")
                         .with(authenticatedCustomer(customer)))
@@ -127,6 +132,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].type").value("REDEEM"))
                 .andExpect(jsonPath("$.data[0].points").value(-50))
+                .andExpect(jsonPath("$.data[0].description").value(org.hamcrest.Matchers.startsWith("Voucher redemption:")))
                 .andExpect(jsonPath("$.data[1].type").value("EARN"))
                 .andExpect(jsonPath("$.data[1].points").value(60));
     }
@@ -162,6 +168,8 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/v1/customers/wash-history']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/promotions/active']").exists())
                 .andExpect(jsonPath("$.components.schemas.LoyaltyAccountResponse.properties.currentPoints.type").value("integer"))
+                .andExpect(jsonPath("$.components.schemas.LoyaltyAccountResponse.properties.totalEarnedPoints.type").value("integer"))
+                .andExpect(jsonPath("$.components.schemas.RedeemPointsResponse.properties.voucherCode.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.LoyaltyTransactionResponse.properties.points.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.WashHistoryItemResponse.properties.awardedPoints.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.CustomerPromotionResponse.properties.promotionCode.type").value("string"));

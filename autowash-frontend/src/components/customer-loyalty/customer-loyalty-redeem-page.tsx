@@ -2,13 +2,14 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, RefreshCcw } from "lucide-react";
+import { ArrowRight, CheckCircle2, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import { useCustomerLoyaltyAccount, useCustomerRedeemPoints } from "@/hooks/use-customer-loyalty";
+import type { RedeemPointsResponse } from "@/types/loyalty.types";
 
 const MIN_REDEEM_POINTS = 50;
 const MAX_REDEEM_POINTS = 200;
@@ -19,20 +20,20 @@ export function CustomerLoyaltyRedeemPageContent() {
   const redeemMutation = useCustomerRedeemPoints();
   const [pointsInput, setPointsInput] = useState("50");
   const [referenceId, setReferenceId] = useState("");
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successVoucher, setSuccessVoucher] = useState<RedeemPointsResponse | null>(null);
 
   const points = useMemo(() => Number.parseInt(pointsInput, 10), [pointsInput]);
-  const validationMessage = getValidationMessage(pointsInput, points, accountQuery.data?.currentPoints ?? null);
+  const validationMessage = getValidationMessage(pointsInput, points, accountQuery.data?.availablePoints ?? null);
   const estimatedVnd = Number.isFinite(points) ? Math.max(points, 0) * VND_PER_POINT : 0;
   const remainingBalance =
-    accountQuery.data && Number.isFinite(points) ? accountQuery.data.currentPoints - Math.max(points, 0) : null;
+    accountQuery.data && Number.isFinite(points) ? accountQuery.data.availablePoints - Math.max(points, 0) : null;
 
   const submitDisabled =
     accountQuery.isPending || accountQuery.isError || redeemMutation.isPending || Boolean(validationMessage);
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSuccessMessage(null);
+    setSuccessVoucher(null);
     if (!accountQuery.data || validationMessage) {
       return;
     }
@@ -44,9 +45,7 @@ export function CustomerLoyaltyRedeemPageContent() {
       },
       {
         onSuccess: (response) => {
-          setSuccessMessage(
-            `Redeemed ${response.pointsRedeemed.toLocaleString("vi-VN")} points. New balance: ${response.newBalance.toLocaleString("vi-VN")} points.`,
-          );
+          setSuccessVoucher(response);
           setReferenceId("");
         },
       },
@@ -132,10 +131,21 @@ export function CustomerLoyaltyRedeemPageContent() {
                     {getDisplayErrorMessage(redeemMutation.error)}
                   </p>
                 ) : null}
-                {successMessage ? (
-                  <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                    {successMessage}
-                  </p>
+                {successVoucher ? (
+                  <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
+                    <div className="flex items-center gap-2 font-bold">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Redemption successful
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <SummaryRow label="Voucher code" value={successVoucher.voucherCode} />
+                      <SummaryRow label="Points redeemed" value={`${successVoucher.pointsRedeemed.toLocaleString("vi-VN")} points`} />
+                      <SummaryRow label="Voucher value" value={`${successVoucher.voucherValue.toLocaleString("vi-VN")} VND`} />
+                      <SummaryRow label="Expires" value={new Date(successVoucher.expiresAt).toLocaleDateString("vi-VN")} />
+                      <SummaryRow label="Status" value={successVoucher.status} />
+                      <SummaryRow label="New available balance" value={`${successVoucher.newBalance.toLocaleString("vi-VN")} points`} />
+                    </div>
+                  </div>
                 ) : null}
 
                 <Button type="submit" disabled={submitDisabled} className="w-full sm:w-auto">
@@ -150,7 +160,8 @@ export function CustomerLoyaltyRedeemPageContent() {
                 <CardDescription>Live calculation from current input.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <SummaryRow label="Current balance" value={`${accountQuery.data.currentPoints.toLocaleString("vi-VN")} points`} />
+                <SummaryRow label="Available points" value={`${accountQuery.data.availablePoints.toLocaleString("vi-VN")} points`} />
+                <SummaryRow label="Lifetime points" value={`${accountQuery.data.lifetimePoints.toLocaleString("vi-VN")} points`} />
                 <SummaryRow label="Redeem amount" value={`${Number.isFinite(points) ? Math.max(points, 0).toLocaleString("vi-VN") : 0} points`} />
                 <SummaryRow label="Voucher value" value={`${estimatedVnd.toLocaleString("vi-VN")} VND`} />
                 <SummaryRow
