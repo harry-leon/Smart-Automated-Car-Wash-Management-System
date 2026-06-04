@@ -51,6 +51,7 @@ export type AuthResponseData = {
   status: UserStatus;
   tier?: LoyaltyTier;
   loyaltyBalance?: number;
+  isNewCustomer?: boolean;
   accessToken: string;
   refreshToken?: string;
   expiresIn: number;
@@ -72,6 +73,7 @@ export type AuthUser = {
   status: UserStatus;
   tier: LoyaltyTier | null;
   loyaltyBalance: number | null;
+  isNewCustomer: boolean;
 };
 
 export type AuthSession = {
@@ -79,4 +81,18 @@ export type AuthSession = {
   refreshToken: string | null;
   expiresIn: number;
   user: AuthUser;
+};
+
+export type GoogleAuthTicketStatus = "PENDING" | "LINK_REQUIRED" | "READY" | "CONSUMED" | "EXPIRED";
+
+export type GoogleAuthTicketResponse = {
+  state: string;
+  status: GoogleAuthTicketStatus;
+  providerEmail: string | null;
+  providerFullName: string | null;
+  providerAvatarUrl: string | null;
+  returnUrl: string;
+  userId: string | null;
+  linkRequired: boolean;
+  expired: boolean;
 };

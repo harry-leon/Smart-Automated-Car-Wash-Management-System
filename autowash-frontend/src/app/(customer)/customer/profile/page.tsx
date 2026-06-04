@@ -51,6 +51,12 @@ export default function CustomerProfilePage() {
     updateProfileMutation.reset();
   }, [profileQuery.data?.userId]);
 
+  useEffect(() => {
+    if (profileQuery.data?.isNewCustomer) {
+      toast.info("Complete your profile to finish first-time setup.");
+    }
+  }, [profileQuery.data?.isNewCustomer]);
+
   const fieldErrors = useMemo(() => validateProfileForm(form), [form]);
   const hasClientErrors = Object.values(fieldErrors).some(Boolean);
   const hasChanges = profileQuery.data

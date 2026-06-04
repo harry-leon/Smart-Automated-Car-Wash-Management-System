@@ -1,7 +1,8 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  adminReportingScope,
   adminAccountsQueryKey,
   adminBookingsQueryKey,
   adminCustomerDetailQueryKey,
@@ -11,6 +12,7 @@ import {
   adminCustomerWashHistoryQueryKey,
 } from "@/hooks/admin-reporting-query";
 import {
+  getAdminAccountDetail,
   getAdminCustomerDetail,
   listAdminAccounts,
   listAdminBookings,
@@ -18,6 +20,7 @@ import {
   listAdminCustomerTierHistory,
   listAdminCustomerVehicles,
   listAdminCustomerWashHistory,
+  updateAdminCustomerRole,
   updateAdminCustomerStatus,
 } from "@/lib/admin-reporting-service";
 import { useAuthStore } from "@/store/auth.store";
@@ -25,6 +28,7 @@ import type { ApiErrorResponse } from "@/types/api.types";
 import type {
   AdminAccountsFilters,
   AdminAccountsPage,
+  AdminAccount,
   AdminBookingsFilters,
   AdminBookingsPage,
   AdminCustomerDetail,
@@ -32,6 +36,8 @@ import type {
   AdminPointTransactionsPage,
   AdminTierHistoryPage,
   AdminWashHistoryPage,
+  UpdateAdminCustomerRolePayload,
+  UpdateAdminCustomerRoleResult,
   UpdateAdminCustomerStatusPayload,
   UpdateAdminCustomerStatusResult,
 } from "@/types/admin-reporting.types";
@@ -144,5 +150,27 @@ export function useAdminCustomerPointTransactions(
 export function useUpdateAdminCustomerStatus(customerId: string) {
   return useMutation<UpdateAdminCustomerStatusResult, ApiErrorResponse, UpdateAdminCustomerStatusPayload>({
     mutationFn: (payload) => updateAdminCustomerStatus(customerId, payload),
+  });
+}
+
+export function useAdminAccountDetail(accountId: string, options?: { enabled?: boolean }) {
+  const { userId, enabled } = useAdminReportingContext();
+
+  return useQuery<AdminAccount, ApiErrorResponse>({
+    queryKey: [...adminReportingScope(userId), "account-detail", accountId] as const,
+    queryFn: () => getAdminAccountDetail(accountId),
+    enabled: enabled && accountId.length > 0 && (options?.enabled ?? true),
+  });
+}
+
+export function useUpdateAdminCustomerRole(customerId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminReportingContext();
+
+  return useMutation<UpdateAdminCustomerRoleResult, ApiErrorResponse, UpdateAdminCustomerRolePayload>({
+    mutationFn: (payload) => updateAdminCustomerRole(customerId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminReportingScope(userId) });
+    },
   });
 }

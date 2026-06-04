@@ -56,6 +56,7 @@ test("builds auth session from API auth payload", () => {
       status: "ACTIVE",
       tier: "MEMBER",
       loyaltyBalance: 10,
+      isNewCustomer: false,
     },
   });
 });
@@ -71,6 +72,7 @@ test("applies fresh profile fields onto the authenticated user for workspace syn
       status: "ACTIVE",
       tier: "MEMBER",
       loyaltyBalance: 10,
+      isNewCustomer: false,
     },
     {
       userId: "user_123",
@@ -103,6 +105,7 @@ test("applies fresh profile fields onto the authenticated user for workspace syn
     status: "ACTIVE",
     tier: "SILVER",
     loyaltyBalance: 25,
+    isNewCustomer: false,
   });
 });
 
@@ -118,6 +121,7 @@ test("detects when the auth user is already in sync with the profile payload", (
         status: "ACTIVE",
         tier: "MEMBER",
         loyaltyBalance: 10,
+        isNewCustomer: false,
       },
       {
         userId: "user_123",

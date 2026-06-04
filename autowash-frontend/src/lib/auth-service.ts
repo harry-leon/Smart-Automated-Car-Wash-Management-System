@@ -2,6 +2,7 @@ import { toAuthApiError } from "@/lib/api-errors";
 import { apiRequest } from "@/lib/api";
 import { ApiErrorResponse } from "@/types/api.types";
 import {
+  GoogleAuthTicketResponse,
   LoginRequest,
   LoginResponseData,
   LogoutRequest,
@@ -67,6 +68,41 @@ export async function logoutCustomer(payload: LogoutRequest) {
       method: "POST",
       url: "/auth/logout",
       data: payload
+    });
+  } catch (error) {
+    throw toAuthApiError(error as ApiErrorResponse);
+  }
+}
+
+export async function getGoogleAuthTicket(state: string) {
+  try {
+    return await apiRequest<GoogleAuthTicketResponse>({
+      method: "GET",
+      url: `/auth/google/tickets/${state}`,
+    });
+  } catch (error) {
+    throw toAuthApiError(error as ApiErrorResponse);
+  }
+}
+
+export async function exchangeGoogleAuthTicket(state: string) {
+  try {
+    return await apiRequest<LoginResponseData, { state: string }>({
+      method: "POST",
+      url: "/auth/google/tickets/exchange",
+      data: { state },
+    });
+  } catch (error) {
+    throw toAuthApiError(error as ApiErrorResponse);
+  }
+}
+
+export async function confirmGoogleAuthLink(state: string) {
+  try {
+    return await apiRequest<LoginResponseData, { state: string }>({
+      method: "POST",
+      url: "/auth/google/tickets/link",
+      data: { state },
     });
   } catch (error) {
     throw toAuthApiError(error as ApiErrorResponse);

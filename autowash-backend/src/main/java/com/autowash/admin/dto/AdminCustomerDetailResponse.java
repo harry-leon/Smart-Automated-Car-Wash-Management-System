@@ -14,6 +14,7 @@ public record AdminCustomerDetailResponse(
             String fullName,
             String phone,
             String email,
+            String role,
             String status,
             String tier,
             Instant registeredAt

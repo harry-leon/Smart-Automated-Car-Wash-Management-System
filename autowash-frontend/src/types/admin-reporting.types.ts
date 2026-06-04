@@ -35,6 +35,7 @@ export type PaginationMeta = {
 };
 
 export type AdminAccountRole = "CUSTOMER" | "STAFF" | "ADMIN" | "GUEST";
+export type AdminEditableAccountRole = "CUSTOMER" | "STAFF" | "ADMIN";
 
 export type AdminAccountStatus = "PENDING" | "ACTIVE" | "BLOCKED" | "SUSPENDED" | "DELETED";
 
@@ -72,6 +73,7 @@ export type AdminCustomerDetail = {
     fullName: string;
     phone: string;
     email: string | null;
+    role: AdminAccountRole;
     status: string;
     tier: string;
     registeredAt: string;
@@ -176,5 +178,15 @@ export type UpdateAdminCustomerStatusPayload = {
 export type UpdateAdminCustomerStatusResult = {
   customerId: string;
   status: string;
+  updatedAt: string;
+};
+
+export type UpdateAdminCustomerRolePayload = {
+  role: AdminEditableAccountRole;
+};
+
+export type UpdateAdminCustomerRoleResult = {
+  customerId: string;
+  role: AdminEditableAccountRole;
   updatedAt: string;
 };

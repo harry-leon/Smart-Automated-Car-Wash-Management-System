@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -23,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import type { ApiErrorResponse } from "@/types/api.types";
-import type { AdminCustomerStatus } from "@/types/admin-reporting.types";
+import type { AdminCustomerStatus, AdminEditableAccountRole } from "@/types/admin-reporting.types";
 import {
   useAdminBookings,
   useAdminCustomerDetail,
@@ -31,6 +32,7 @@ import {
   useAdminCustomerTierHistory,
   useAdminCustomerVehicles,
   useAdminCustomerWashHistory,
+  useUpdateAdminCustomerRole,
   useUpdateAdminCustomerStatus,
 } from "@/hooks/use-admin-reporting";
 
@@ -52,6 +54,7 @@ type DateRangeDraft = {
 };
 
 const PAGE_LIMIT = 20;
+const EDITABLE_ROLES: AdminEditableAccountRole[] = ["CUSTOMER", "STAFF", "ADMIN"];
 
 const CUSTOMER_TABS: Array<{ id: CustomerTab; label: string }> = [
   { id: "overview", label: "Overview" },
@@ -63,6 +66,7 @@ const CUSTOMER_TABS: Array<{ id: CustomerTab; label: string }> = [
 ];
 
 export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDetailPageContentProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<CustomerTab>("overview");
   const [vehiclesPage, setVehiclesPage] = useState(1);
   const [bookingsPage, setBookingsPage] = useState(1);
@@ -72,6 +76,8 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
   const [statusDraft, setStatusDraft] = useState<AdminCustomerStatus>("ACTIVE");
   const [statusReasonDraft, setStatusReasonDraft] = useState("");
   const [statusFeedback, setStatusFeedback] = useState<string | null>(null);
+  const [roleDraft, setRoleDraft] = useState<AdminEditableAccountRole>("CUSTOMER");
+  const [roleFeedback, setRoleFeedback] = useState<string | null>(null);
 
   const [washDateDraft, setWashDateDraft] = useState<DateRangeDraft>({ dateFrom: "", dateTo: "" });
   const [washDateRange, setWashDateRange] = useState<DateRangeDraft>({ dateFrom: "", dateTo: "" });
@@ -123,6 +129,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
     { enabled: activeTab === "tier-history" },
   );
   const updateStatusMutation = useUpdateAdminCustomerStatus(customerId);
+  const updateRoleMutation = useUpdateAdminCustomerRole(customerId);
   const profile = detailQuery.data?.profile;
 
   useEffect(() => {
@@ -137,6 +144,16 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
 
     setStatusDraft("ACTIVE");
   }, [detailQuery.data?.profile.status]);
+
+  useEffect(() => {
+    if (!detailQuery.data?.profile.role) {
+      return;
+    }
+
+    if (detailQuery.data.profile.role === "CUSTOMER" || detailQuery.data.profile.role === "STAFF" || detailQuery.data.profile.role === "ADMIN") {
+      setRoleDraft(detailQuery.data.profile.role);
+    }
+  }, [detailQuery.data?.profile.role]);
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -187,6 +204,24 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
             }}
             isUpdatingStatus={updateStatusMutation.isPending}
             statusFeedback={statusFeedback}
+            roleDraft={roleDraft}
+            onRoleDraftChange={setRoleDraft}
+            onSubmitRole={async () => {
+              setRoleFeedback(null);
+              try {
+                const result = await updateRoleMutation.mutateAsync({ role: roleDraft });
+                setRoleFeedback("Account role updated.");
+                if (result.role !== "CUSTOMER") {
+                  router.replace("/admin/accounts");
+                  return;
+                }
+                await detailQuery.refetch();
+              } catch (error) {
+                setRoleFeedback(getDisplayErrorMessage(error));
+              }
+            }}
+            isUpdatingRole={updateRoleMutation.isPending}
+            roleFeedback={roleFeedback}
           />
 
           <Card className="rounded-md border-slate-200 bg-white shadow-sm">
@@ -306,6 +341,11 @@ function CustomerProfilePanel({
   onSubmitStatus,
   isUpdatingStatus,
   statusFeedback,
+  roleDraft,
+  onRoleDraftChange,
+  onSubmitRole,
+  isUpdatingRole,
+  roleFeedback,
 }: {
   query: ReturnType<typeof useAdminCustomerDetail>;
   statusDraft: AdminCustomerStatus;
@@ -315,6 +355,11 @@ function CustomerProfilePanel({
   onSubmitStatus: () => Promise<void>;
   isUpdatingStatus: boolean;
   statusFeedback: string | null;
+  roleDraft: AdminEditableAccountRole;
+  onRoleDraftChange: (value: AdminEditableAccountRole) => void;
+  onSubmitRole: () => Promise<void>;
+  isUpdatingRole: boolean;
+  roleFeedback: string | null;
 }) {
   if (query.isPending) {
     return (
@@ -377,11 +422,11 @@ function CustomerProfilePanel({
           <MiniStat label="Earned" value={String(summary.totalPointsEarned)} />
         </div>
 
-        <div className="space-y-3 border-t border-slate-200 pt-4">
-          <label className="space-y-1.5">
-            <span className="text-xs font-medium text-slate-500">Account status</span>
-            <select
-              className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+          <div className="space-y-3 border-t border-slate-200 pt-4">
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-slate-500">Account status</span>
+              <select
+                className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
               value={statusDraft}
               onChange={(event) => onStatusDraftChange(event.target.value as AdminCustomerStatus)}
             >
@@ -389,21 +434,42 @@ function CustomerProfilePanel({
               <option value="BLOCKED">Blocked</option>
               <option value="SUSPENDED">Suspended</option>
             </select>
-          </label>
-          <Input
-            placeholder="Reason (optional)"
-            value={statusReasonDraft}
-            onChange={(event) => onStatusReasonDraftChange(event.target.value)}
-          />
-          <Button type="button" className="w-full" onClick={() => void onSubmitStatus()} disabled={isUpdatingStatus}>
-            {isUpdatingStatus ? "Updating..." : "Update status"}
-          </Button>
-          {statusFeedback ? <p className="text-xs text-slate-600">{statusFeedback}</p> : null}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+            </label>
+            <Input
+              placeholder="Reason (optional)"
+              value={statusReasonDraft}
+              onChange={(event) => onStatusReasonDraftChange(event.target.value)}
+            />
+            <Button type="button" className="w-full" onClick={() => void onSubmitStatus()} disabled={isUpdatingStatus}>
+              {isUpdatingStatus ? "Updating..." : "Update status"}
+            </Button>
+            {statusFeedback ? <p className="text-xs text-slate-600">{statusFeedback}</p> : null}
+          </div>
+
+          <div className="space-y-3 border-t border-slate-200 pt-4">
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-slate-500">Account role</span>
+              <select
+                className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+                value={roleDraft}
+                onChange={(event) => onRoleDraftChange(event.target.value as AdminEditableAccountRole)}
+              >
+                {EDITABLE_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {role === "CUSTOMER" ? "Customer" : role === "STAFF" ? "Staff" : "Admin"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="button" className="w-full" variant="outline" onClick={() => void onSubmitRole()} disabled={isUpdatingRole}>
+              {isUpdatingRole ? "Updating..." : "Update role"}
+            </Button>
+            {roleFeedback ? <p className="text-xs text-slate-600">{roleFeedback}</p> : null}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
 function IconInfo({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
   return (
