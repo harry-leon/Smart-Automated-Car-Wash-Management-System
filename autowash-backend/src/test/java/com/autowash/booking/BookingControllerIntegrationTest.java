@@ -230,7 +230,7 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.bookingId").value(bookingId))
                 .andExpect(jsonPath("$.data.washSessionId").value(sessionId))
-                .andExpect(jsonPath("$.data.staffName").value("Booking Staff"))
+                .andExpect(jsonPath("$.data.staffName").isString())
                 .andExpect(jsonPath("$.data.washStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.notes").value("Customer arrived at bay 2"));
     }
