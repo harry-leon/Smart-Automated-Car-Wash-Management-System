@@ -21,8 +21,11 @@ import com.autowash.loyalty.entity.PointTransactionType;
 import com.autowash.loyalty.entity.PointTransaction;
 import com.autowash.loyalty.repository.PointTransactionRepository;
 import com.autowash.loyalty.service.LoyaltyService;
+import com.autowash.operation.dto.BookingStaffTransferAuditResponse;
+import com.autowash.operation.entity.BookingStaffTransferAudit;
 import com.autowash.operation.entity.WashSession;
 import com.autowash.operation.entity.WashSessionStatus;
+import com.autowash.operation.repository.BookingStaffTransferAuditRepository;
 import com.autowash.operation.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
@@ -58,6 +61,7 @@ public class AdminReportingService {
     private final LoyaltyService loyaltyService;
     private final PointTransactionRepository pointTransactionRepository;
     private final CustomerVehicleRepository customerVehicleRepository;
+    private final BookingStaffTransferAuditRepository transferAuditRepository;
 
     public AdminReportingService(
             CustomerBookingRepository bookingRepository,
@@ -67,7 +71,8 @@ public class AdminReportingService {
             ServiceComboRepository serviceComboRepository,
             LoyaltyService loyaltyService,
             PointTransactionRepository pointTransactionRepository,
-            CustomerVehicleRepository customerVehicleRepository
+            CustomerVehicleRepository customerVehicleRepository,
+            BookingStaffTransferAuditRepository transferAuditRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -77,6 +82,7 @@ public class AdminReportingService {
         this.loyaltyService = loyaltyService;
         this.pointTransactionRepository = pointTransactionRepository;
         this.customerVehicleRepository = customerVehicleRepository;
+        this.transferAuditRepository = transferAuditRepository;
     }
 
     @Transactional(readOnly = true)
@@ -129,6 +135,17 @@ public class AdminReportingService {
                 .map(booking -> toBookingResponse(booking, sessionsByBookingId.get(booking.getId()), serviceNames))
                 .toList();
         return new BookingPage(items, pagination(bookings));
+    }
+
+    @Transactional(readOnly = true)
+    public TransferAuditPage listTransferAudits(int page, int limit) {
+        Page<BookingStaffTransferAudit> audits = transferAuditRepository.findAllByOrderByCreatedAtDesc(
+                PageRequest.of(Math.max(page - 1, 0), limit)
+        );
+        return new TransferAuditPage(
+                audits.getContent().stream().map(this::toTransferAuditResponse).toList(),
+                pagination(audits)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -426,6 +443,25 @@ public class AdminReportingService {
         );
     }
 
+    private BookingStaffTransferAuditResponse toTransferAuditResponse(BookingStaffTransferAudit audit) {
+        AuthUser fromStaff = audit.getFromStaff();
+        AuthUser toStaff = audit.getToStaff();
+        AuthUser actor = audit.getActor();
+        return new BookingStaffTransferAuditResponse(
+                audit.getId(),
+                audit.getBooking().getId(),
+                audit.getWashSession() == null ? null : audit.getWashSession().getId(),
+                fromStaff == null ? null : fromStaff.getId(),
+                fromStaff == null ? null : fromStaff.getFullName(),
+                toStaff.getId(),
+                toStaff.getFullName(),
+                actor.getId(),
+                actor.getFullName(),
+                audit.getReason(),
+                audit.getCreatedAt()
+        );
+    }
+
     private AdminAccountResponse toAccountResponse(AuthUser user) {
         return new AdminAccountResponse(
                 user.getId(),
@@ -511,6 +547,9 @@ public class AdminReportingService {
     }
 
     public record BookingPage(List<AdminBookingResponse> items, PaginationMeta pagination) {
+    }
+
+    public record TransferAuditPage(List<BookingStaffTransferAuditResponse> items, PaginationMeta pagination) {
     }
 
     public record AccountPage(List<AdminAccountResponse> items, PaginationMeta pagination) {

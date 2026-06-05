@@ -3,6 +3,7 @@ package com.autowash.auth.repository;
 import com.autowash.auth.entity.UserRole;
 import com.autowash.auth.entity.UserStatus;
 import com.autowash.auth.entity.AuthUser;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,8 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
     Optional<AuthUser> findByEmailIgnoreCase(String email);
 
     long countByRole(UserRole role);
+
+    List<AuthUser> findByRoleAndStatusOrderByFullNameAsc(UserRole role, UserStatus status);
 
     @Query("""
             SELECT account FROM AuthUser account

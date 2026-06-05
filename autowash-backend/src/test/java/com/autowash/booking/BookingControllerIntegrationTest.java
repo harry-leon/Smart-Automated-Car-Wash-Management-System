@@ -17,6 +17,7 @@ import com.autowash.loyalty.repository.LoyaltyAccountRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -47,6 +48,14 @@ class BookingControllerIntegrationTest {
 
     @Autowired
     private LoyaltyAccountRepository loyaltyAccountRepository;
+
+    @BeforeEach
+    void ensureActiveStaffExists() {
+        AuthUser staff = new AuthUser("Booking Assignment Staff", uniquePhone("0914"), "booking-assignment-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        staff.activate();
+        ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
+        authUserRepository.saveAndFlush(staff);
+    }
 
     @Test
     void getPackagesReturnsPaginatedActivePackages() throws Exception {
@@ -439,7 +448,7 @@ class BookingControllerIntegrationTest {
 
     private String createWashSession(String bookingId, String notes) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(authenticatedStaff())
+                        .with(authenticatedAdmin())
                         .contentType("application/json")
                         .content("""
                                 {
@@ -452,12 +461,12 @@ class BookingControllerIntegrationTest {
         return readJson(result).path("data").path("sessionId").asText();
     }
 
-    private RequestPostProcessor authenticatedStaff() {
-        AuthUser staff = new AuthUser("Booking Staff", uniquePhone("0916"), "booking-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
-        staff.activate();
-        ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        authUserRepository.saveAndFlush(staff);
-        AuthUserPrincipal principal = new AuthUserPrincipal(staff);
+    private RequestPostProcessor authenticatedAdmin() {
+        AuthUser admin = new AuthUser("Booking Admin", uniquePhone("0986"), "booking-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        admin.activate();
+        ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
+        authUserRepository.saveAndFlush(admin);
+        AuthUserPrincipal principal = new AuthUserPrincipal(admin);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);

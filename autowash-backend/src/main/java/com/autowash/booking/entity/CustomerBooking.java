@@ -35,6 +35,10 @@ public class CustomerBooking {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private CustomerVehicle vehicle;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_staff_id")
+    private AuthUser assignedStaff;
+
     @Column(name = "package_id", length = 50)
     private String packageId;
 
@@ -145,6 +149,7 @@ public class CustomerBooking {
     public String getId() { return id; }
     public AuthUser getCustomer() { return customer; }
     public CustomerVehicle getVehicle() { return vehicle; }
+    public AuthUser getAssignedStaff() { return assignedStaff; }
     public String getPackageId() { return packageId; }
     public String getComboId() { return comboId; }
     public String getVoucherCode() { return voucherCode; }
@@ -181,6 +186,10 @@ public class CustomerBooking {
 
     public void updateStatus(BookingStatus status) {
         this.status = status;
+    }
+
+    public void assignStaff(AuthUser assignedStaff) {
+        this.assignedStaff = assignedStaff;
     }
 
     public void applyPoints(int points, long discountAmount) {

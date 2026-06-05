@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { AlertTriangle, ArrowRight, CalendarClock, Car, CheckCircle2, Clock, RefreshCcw, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, Car, CheckCircle2, Clock, RefreshCcw, Target, Wrench } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { WorkspaceEmptyState, WorkspacePage } from "@/components/workspace/workspace-page";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
-import { getEligibleSessionBookings, getOperationsQueue } from "@/lib/operations-service";
+import { getEligibleSessionBookings, getOperationsQueue, getStaffDashboardSummary } from "@/lib/operations-service";
 import { cn } from "@/lib/utils";
 import type { ApiErrorResponse } from "@/types/api.types";
 import type { OperationsQueue, OperationsQueueSession, WashSessionStatus } from "@/types/operation.types";
@@ -63,6 +63,12 @@ export function StaffDashboardView() {
     refetchInterval: 30_000,
   });
 
+  const summaryQuery = useQuery({
+    queryKey: ["staff-dashboard", "summary"],
+    queryFn: getStaffDashboardSummary,
+    refetchInterval: 30_000,
+  });
+
   const eligibleQuery = useQuery({
     queryKey: ["staff-dashboard", "eligible-bookings"],
     queryFn: getEligibleSessionBookings,
@@ -88,13 +94,7 @@ export function StaffDashboardView() {
     [sessions],
   );
 
-  const summary = queueQuery.data?.summary ?? {
-    total: 0,
-    pending: 0,
-    checkedIn: 0,
-    inProgress: 0,
-    completed: 0,
-  };
+  const staffSummary = summaryQuery.data;
 
   return (
     <WorkspacePage className="space-y-8 rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.10),transparent_34%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.12),transparent_32%),linear-gradient(180deg,rgba(248,250,252,0.96),rgba(239,246,255,0.62))]">
@@ -108,23 +108,23 @@ export function StaffDashboardView() {
         />
         <DashboardMetric
           label="Cần duyệt"
-          value={pendingSessions.length + (eligibleQuery.data?.length ?? 0)}
-          detail="Booking mới và phiên chưa check-in"
+          value={staffSummary?.pendingBookings ?? pendingSessions.length + (eligibleQuery.data?.length ?? 0)}
+          detail="Booking được giao và phiên chưa check-in"
           icon={AlertTriangle}
           tone="bg-amber-50 text-amber-700"
         />
         <DashboardMetric
           label="Đang xử lý"
-          value={activeSessions.length}
+          value={staffSummary?.activeSessions ?? activeSessions.length}
           detail="Đã check-in hoặc đang rửa"
           icon={Wrench}
           tone="bg-violet-50 text-violet-700"
         />
         <DashboardMetric
-          label="Hoàn thành"
-          value={summary.completed}
-          detail="Tổng phiên đã hoàn tất"
-          icon={CheckCircle2}
+          label="Doanh số cá nhân"
+          value={formatMoney(staffSummary?.completedRevenue ?? 0)}
+          detail={`KPI ${staffSummary?.kpiProgressPercent ?? 0}% / ${formatMoney(staffSummary?.kpiTargetRevenue ?? 0)}`}
+          icon={Target}
           tone="bg-emerald-50 text-emerald-700"
         />
       </section>
@@ -134,7 +134,7 @@ export function StaffDashboardView() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-6 py-4">
             <div>
               <h2 className="text-base font-black">Việc cần xử lý</h2>
-              <p className="text-sm text-muted-foreground">Tập trung vào booking mới, phiên chờ check-in và xe đang rửa.</p>
+              <p className="text-sm text-muted-foreground">Tập trung vào booking được giao, phiên chờ check-in và xe đang rửa.</p>
             </div>
             <Button variant="outline" onClick={() => queueQuery.refetch()}>
               <RefreshCcw className={cn("h-4 w-4", queueQuery.isFetching && "animate-spin")} />
@@ -146,7 +146,7 @@ export function StaffDashboardView() {
             <FocusCard
               title="Booking chờ duyệt"
               value={eligibleQuery.data?.length ?? 0}
-              description="Khách vừa đặt lịch, cần nhân viên kiểm tra."
+              description="Booking đã được phân công, cần nhân viên kiểm tra."
               href="/staff/check-in"
               tone="amber"
             />
@@ -228,6 +228,11 @@ export function StaffDashboardView() {
                 Ưu tiên xử lý các phiên chờ duyệt trước. Khi check-in, hãy kiểm tra đúng biển số xe
                 của khách rồi mới chuyển vào vận hành.
               </p>
+              {summaryQuery.isError ? (
+                <p className="mt-3 text-xs font-semibold text-amber-800">
+                  Chưa tải được KPI cá nhân: {getDisplayErrorMessage(summaryQuery.error as unknown as ApiErrorResponse)}
+                </p>
+              ) : null}
             </div>
           </div>
         </Card>
@@ -244,7 +249,7 @@ function DashboardMetric({
   tone,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   detail: string;
   icon: typeof Car;
   tone: string;
@@ -303,10 +308,10 @@ function ArrivalRow({ session }: { session: OperationsQueueSession }) {
       <span className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", tone.rail)} />
       <div className="flex flex-wrap items-center justify-between gap-3 pl-2">
         <div className="min-w-0">
-        <div className="truncate text-sm font-black">{session.bookingId}</div>
-        <div className="mt-1 truncate text-xs text-muted-foreground">
-          {session.customerName} · {session.vehiclePlate} · {session.bookingDate} {session.bookingTime}
-        </div>
+          <div className="truncate text-sm font-black">{session.bookingId}</div>
+          <div className="mt-1 truncate text-xs text-muted-foreground">
+            {session.customerName} - {session.vehiclePlate} - {session.bookingDate} {session.bookingTime}
+          </div>
         </div>
         <Badge variant="outline" className={cn("rounded-full px-3 font-bold", tone.badge)}>
           {statusLabel[session.status]}
@@ -329,4 +334,8 @@ function toDateInputValue(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatMoney(amount: number) {
+  return `${new Intl.NumberFormat("vi-VN").format(amount)} đ`;
 }

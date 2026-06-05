@@ -27,6 +27,7 @@ import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.user.service.CurrentUserService;
 import com.autowash.operation.repository.WashSessionRepository;
+import com.autowash.operation.service.StaffAssignmentService;
 import com.autowash.vehicle.entity.CustomerVehicle;
 import com.autowash.vehicle.entity.VehicleStatus;
 import com.autowash.vehicle.repository.CustomerVehicleRepository;
@@ -63,6 +64,7 @@ public class BookingService {
     private final ServiceComboRepository serviceComboRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyService loyaltyService;
+    private final StaffAssignmentService staffAssignmentService;
 
     public BookingService(
             CurrentUserService currentUserService,
@@ -72,7 +74,8 @@ public class BookingService {
             ServicePackageRepository servicePackageRepository,
             ServiceComboRepository serviceComboRepository,
             WashSessionRepository washSessionRepository,
-            LoyaltyService loyaltyService
+            LoyaltyService loyaltyService,
+            StaffAssignmentService staffAssignmentService
     ) {
         this.currentUserService = currentUserService;
         this.customerVehicleRepository = customerVehicleRepository;
@@ -82,6 +85,7 @@ public class BookingService {
         this.serviceComboRepository = serviceComboRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyService = loyaltyService;
+        this.staffAssignmentService = staffAssignmentService;
     }
 
     @Transactional
@@ -144,6 +148,7 @@ public class BookingService {
                 subtotal - voucherDiscount,
                 baseDuration + addons.stream().mapToInt(ServiceAddon::getDurationMinutes).sum()
         );
+        booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
         addons.forEach(addon -> booking.addAddon(new BookingAddon(booking, addon.getId(), addon.getName(), addon.getPrice())));
         customerBookingRepository.save(booking);
 
@@ -342,13 +347,18 @@ public class BookingService {
                 ),
                 booking.getStatus().name(),
                 washSession == null ? null : washSession.getId().toString(),
-                washSession == null || washSession.getAssignedStaff() == null
-                        ? null
-                        : washSession.getAssignedStaff().getFullName(),
+                resolveAssignedStaffName(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt()
         );
+    }
+
+    private String resolveAssignedStaffName(CustomerBooking booking, com.autowash.operation.entity.WashSession washSession) {
+        if (washSession != null && washSession.getAssignedStaff() != null) {
+            return washSession.getAssignedStaff().getFullName();
+        }
+        return booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName();
     }
 
     private String resolvePackageName(CustomerBooking booking) {
