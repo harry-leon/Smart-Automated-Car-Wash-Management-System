@@ -43,8 +43,8 @@ type AuthLanguage = "vi" | "en";
 
 type ModernAuthPopupModalProps = {
   mode: AuthMode;
-  otpPhone: string;
-  setOtpPhone: (phone: string) => void;
+  otpEmail: string;
+  setOtpEmail: (email: string) => void;
   setMode: (mode: AuthMode | null) => void;
   onClose: () => void;
   language: AuthLanguage;
@@ -190,8 +190,8 @@ const AUTH_COPY = {
 
 export function ModernAuthPopupModal({
   mode,
-  otpPhone,
-  setOtpPhone,
+  otpEmail,
+  setOtpEmail,
   setMode,
   onClose,
   language,
@@ -239,7 +239,7 @@ export function ModernAuthPopupModal({
     () =>
       regName.trim().length > 0 &&
       phonePattern.test(regPhone) &&
-      (regEmail.length === 0 || emailPattern.test(regEmail)) &&
+      emailPattern.test(regEmail) &&
       passwordPattern.test(regPass) &&
       regConfirmPass === regPass &&
       !registerMutation.isPending,
@@ -256,7 +256,7 @@ export function ModernAuthPopupModal({
   const hasAutoSentRef = useRef(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const otpValue = digits.join("");
-  const readyVerify = otpPattern.test(otpValue) && phonePattern.test(otpPhone) && secondsLeft > 0;
+  const readyVerify = otpPattern.test(otpValue) && emailPattern.test(otpEmail) && secondsLeft > 0;
   const otpVerifyError = verifyOtpMutation.error ? getDisplayErrorMessage(verifyOtpMutation.error) : null;
 
   useEffect(() => {
@@ -268,18 +268,17 @@ export function ModernAuthPopupModal({
   }, [lastOtpExpiry]);
 
   const handleSendOtp = useCallback(async () => {
-    if (!phonePattern.test(otpPhone)) return;
-    const response = await sendOtpMutation.mutateAsync({ phone: otpPhone });
+    if (!emailPattern.test(otpEmail)) return;
+    const response = await sendOtpMutation.mutateAsync({ email: otpEmail });
     setLastOtpExpiry(Date.now() + response.otpExpiresIn * 1000);
     setDigits(Array(OTP_LENGTH).fill(""));
     otpInputRefs.current[0]?.focus();
-  }, [otpPhone, sendOtpMutation]);
+  }, [otpEmail, sendOtpMutation]);
 
   useEffect(() => {
-    if (mode !== "otp" || hasAutoSentRef.current || !phonePattern.test(otpPhone)) return;
+    if (mode !== "otp" || hasAutoSentRef.current || !emailPattern.test(otpEmail)) return;
     hasAutoSentRef.current = true;
-    handleSendOtp().catch(() => undefined);
-  }, [handleSendOtp, mode, otpPhone]);
+  }, [mode, otpEmail]);
 
   const handleLoginSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -298,13 +297,15 @@ export function ModernAuthPopupModal({
       {
         fullName: regName.trim(),
         phone: regPhone,
-        email: regEmail || undefined,
+        email: regEmail,
         password: regPass,
         passwordConfirm: regConfirmPass,
       },
       {
         onSuccess: (response) => {
-          setOtpPhone(response.phone);
+          setOtpEmail(response.email);
+          setLastOtpExpiry(Date.now() + response.otpExpiresIn * 1000);
+          setSecondsLeft(response.otpExpiresIn);
           setMode("otp");
         },
       },
@@ -338,7 +339,7 @@ export function ModernAuthPopupModal({
     if (!readyVerify) return;
     setVerifying(true);
     try {
-      await verifyOtpMutation.mutateAsync({ phone: otpPhone, otp: otpValue });
+      await verifyOtpMutation.mutateAsync({ email: otpEmail, otp: otpValue });
     } finally {
       setVerifying(false);
     }
@@ -502,7 +503,7 @@ export function ModernAuthPopupModal({
                   <Phone className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </Field>
 
-                <Field label={`${copy.emailLabel} (${copy.optional})`} error={regEmailError}>
+                <Field label={copy.emailLabel} error={regEmailError}>
                   <input value={regEmail} onChange={(event) => setRegEmail(event.target.value)} placeholder={copy.emailPlaceholder} className={inputCls} />
                   <Mail className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </Field>
@@ -585,7 +586,7 @@ export function ModernAuthPopupModal({
               <div className="space-y-2 text-center">
                 <h3 className="text-3xl font-black tracking-tight text-slate-950">{copy.otpTitle}</h3>
                 <p className="text-sm font-medium leading-6 text-slate-500">
-                  {copy.otpDescription} <span className="font-bold text-slate-800">{otpPhone}</span>
+                  {copy.otpDescription} <span className="font-bold text-slate-800">{otpEmail}</span>
                 </p>
               </div>
 
@@ -627,7 +628,7 @@ export function ModernAuthPopupModal({
                 <button
                   type="button"
                   onClick={() => void handleSendOtp()}
-                  disabled={sendOtpMutation.isPending || !phonePattern.test(otpPhone)}
+                  disabled={sendOtpMutation.isPending || !emailPattern.test(otpEmail)}
                   className="font-bold text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-40"
                 >
                   {sendOtpMutation.isPending ? copy.otpSending : copy.otpSendAgain}

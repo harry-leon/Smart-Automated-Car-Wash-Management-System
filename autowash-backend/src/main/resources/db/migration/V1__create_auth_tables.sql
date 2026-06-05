@@ -37,13 +37,37 @@ CREATE TABLE otp_records (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     purpose VARCHAR(50) NOT NULL,
-    code VARCHAR(6) NOT NULL,
+    code VARCHAR(255) NOT NULL,
+    delivery_address VARCHAR(255) NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
     attempts INTEGER NOT NULL,
     verified BOOLEAN NOT NULL,
+    invalidated_at TIMESTAMP WITH TIME ZONE,
+    locked_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     CONSTRAINT fk_otp_records_user FOREIGN KEY (user_id) REFERENCES auth_users (id)
 );
+
+CREATE TABLE otp_audit_logs (
+    id UUID PRIMARY KEY,
+    user_id UUID,
+    purpose VARCHAR(50) NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    delivery_address VARCHAR(255),
+    attempt_count INTEGER NOT NULL,
+    request_ip VARCHAR(64),
+    user_agent VARCHAR(500),
+    device_fingerprint VARCHAR(255),
+    message VARCHAR(500),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT fk_otp_audit_logs_user FOREIGN KEY (user_id) REFERENCES auth_users (id)
+);
+
+CREATE INDEX idx_otp_audit_logs_delivery_event_created
+    ON otp_audit_logs (purpose, event_type, delivery_address, created_at);
+
+CREATE INDEX idx_otp_audit_logs_ip_event_created
+    ON otp_audit_logs (purpose, event_type, request_ip, created_at);
 
 CREATE TABLE refresh_tokens (
     id UUID PRIMARY KEY,

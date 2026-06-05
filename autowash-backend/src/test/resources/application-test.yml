@@ -20,4 +20,5 @@ spring:
 autowash:
   auth:
     otp:
+      max-attempts: 5
       expose-for-dev: true

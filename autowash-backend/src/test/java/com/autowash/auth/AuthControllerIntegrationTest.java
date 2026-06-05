@@ -9,12 +9,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.autowash.auth.entity.AuthUser;
+import com.autowash.auth.entity.OtpPurpose;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.autowash.auth.dto.GoogleOAuthUserInfo;
 import com.autowash.auth.entity.GoogleAuthTicket;
+import com.autowash.auth.repository.AuthUserRepository;
 import com.autowash.auth.repository.GoogleAuthTicketRepository;
+import com.autowash.auth.repository.OtpRecordRepository;
 import java.time.Instant;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -24,7 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(properties = "autowash.auth.otp.max-attempts=5")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class AuthControllerIntegrationTest {
@@ -37,6 +42,12 @@ class AuthControllerIntegrationTest {
 
     @Autowired
     private GoogleAuthTicketRepository googleAuthTicketRepository;
+
+    @Autowired
+    private AuthUserRepository authUserRepository;
+
+    @Autowired
+    private OtpRecordRepository otpRecordRepository;
 
     @MockBean
     private com.autowash.auth.service.GoogleOAuthClient googleOAuthClient;
@@ -57,7 +68,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.phone").value("0901234568"))
-                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.status").value("PENDING_VERIFY"))
                 .andExpect(jsonPath("$.data.requiresOtpVerification").value(true));
     }
 
@@ -105,6 +116,75 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.phone").value("0901234569"))
                 .andExpect(jsonPath("$.data.otpExpiresIn").value(300))
                 .andExpect(jsonPath("$.data.devOtp").isString());
+    }
+
+    @Test
+    void registrationOtpIsSentToEmailAndStoredHashed() throws Exception {
+        registerCustomer("0901234590");
+        String email = "0901234590@example.com";
+        String otp = sendOtpByEmailAndExtractDevOtp(email);
+
+        AuthUser user = authUserRepository.findByEmailIgnoreCase(email).orElseThrow();
+        String storedCode = otpRecordRepository.findFirstByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNullOrderByCreatedAtDesc(
+                        user,
+                        OtpPurpose.EMAIL_REGISTRATION
+                )
+                .orElseThrow()
+                .getCode();
+
+        Assertions.assertNotEquals(otp, storedCode);
+        Assertions.assertTrue(storedCode.length() > 6);
+    }
+
+    @Test
+    void resendOtpIsLimitedToThreeTimesPerEmailWindow() throws Exception {
+        registerCustomer("0901234591");
+        String email = "0901234591@example.com";
+
+        sendOtpByEmailAndExtractDevOtp(email);
+        sendOtpByEmailAndExtractDevOtp(email);
+        sendOtpByEmailAndExtractDevOtp(email);
+
+        mockMvc.perform(post("/api/v1/auth/otp/send")
+                        .contentType("application/json")
+                        .content("""
+                                { "email": "%s" }
+                                """.formatted(email)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.errorCode").value("RATE_LIMIT_EXCEEDED"));
+    }
+
+    @Test
+    void failedOtpAttemptsLockCurrentOtpButAllowNewOtp() throws Exception {
+        registerCustomer("0901234592");
+        String email = "0901234592@example.com";
+        sendOtpByEmailAndExtractDevOtp(email);
+
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            mockMvc.perform(post("/api/v1/auth/otp/verify")
+                            .contentType("application/json")
+                            .content("""
+                                    {
+                                      "email": "%s",
+                                      "otp": "000000"
+                                    }
+                                    """.formatted(email)))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_OTP"));
+        }
+
+        mockMvc.perform(post("/api/v1/auth/otp/verify")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "otp": "000000"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("RATE_LIMIT_EXCEEDED"));
+
+        sendOtpByEmailAndExtractDevOtp(email);
     }
 
     @Test
@@ -370,6 +450,17 @@ class AuthControllerIntegrationTest {
                         .content("""
                                 { "phone": "%s" }
                                 """.formatted(phone)))
+                .andExpect(status().isOk())
+                .andReturn();
+        return readJson(result).path("data").path("devOtp").asText();
+    }
+
+    private String sendOtpByEmailAndExtractDevOtp(String email) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/otp/send")
+                        .contentType("application/json")
+                        .content("""
+                                { "email": "%s" }
+                                """.formatted(email)))
                 .andExpect(status().isOk())
                 .andReturn();
         return readJson(result).path("data").path("devOtp").asText();
