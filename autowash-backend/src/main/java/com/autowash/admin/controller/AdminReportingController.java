@@ -6,6 +6,8 @@ import com.autowash.admin.dto.AdminCustomerDetailResponse;
 import com.autowash.admin.dto.AdminCustomerVehicleResponse;
 import com.autowash.admin.dto.AdminTierHistoryResponse;
 import com.autowash.admin.dto.AdminWashHistoryResponse;
+import com.autowash.admin.dto.UpdateAdminCustomerRoleRequest;
+import com.autowash.admin.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.admin.service.AdminReportingService;
 import com.autowash.loyalty.dto.PointTransactionResponse;
 import com.autowash.loyalty.service.LoyaltyService;
@@ -14,6 +16,7 @@ import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.time.Instant;
@@ -25,7 +28,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -55,6 +60,12 @@ public class AdminReportingController {
         AdminReportingService.AccountPage accountPage =
                 adminReportingService.listAccounts(role, status, searchQuery, page, limit);
         return ApiResponse.ok("Accounts retrieved", accountPage.items(), accountPage.pagination());
+    }
+
+    @GetMapping("/accounts/{accountId}")
+    @Operation(summary = "Get account detail for admin")
+    public ApiResponse<AdminAccountResponse> getAccountDetail(@PathVariable UUID accountId) {
+        return ApiResponse.ok("Account retrieved", adminReportingService.getAccountDetail(accountId));
     }
 
     @GetMapping("/bookings")
@@ -93,6 +104,18 @@ public class AdminReportingController {
     @Operation(summary = "Get customer detail for admin")
     public ApiResponse<AdminCustomerDetailResponse> getCustomerDetail(@PathVariable UUID customerId) {
         return ApiResponse.ok("Customer retrieved", adminReportingService.getCustomerDetail(customerId));
+    }
+
+    @PutMapping("/customers/{customerId}/role")
+    @Operation(summary = "Update customer role for admin")
+    public ApiResponse<UpdateAdminCustomerRoleResponse> updateCustomerRole(
+            @PathVariable UUID customerId,
+            @Valid @RequestBody UpdateAdminCustomerRoleRequest request
+    ) {
+        return ApiResponse.ok(
+                "Customer role updated",
+                adminReportingService.updateCustomerRole(customerId, request.role())
+        );
     }
 
     @GetMapping("/customers/{customerId}/wash-sessions")

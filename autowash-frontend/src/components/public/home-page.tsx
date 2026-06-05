@@ -178,7 +178,7 @@ const navigationItems = [
 export function HomePageView() {
   const [authMode, setAuthMode] = useState<"login" | "register" | "otp" | null>(null);
   const [otpPhone, setOtpPhone] = useState("");
-  const [language, setLanguage] = useState<"vi" | "en">("vi");
+  const [language, setLanguage] = useState<"vi" | "en">("en");
   const copy = HOME_COPY[language];
 
   const handleOpenAuth = (mode: "login" | "register") => {

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2, RefreshCcw, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ const ROLE_OPTIONS: AdminAccountRole[] = ["CUSTOMER", "STAFF", "ADMIN", "GUEST"]
 const STATUS_OPTIONS: AdminAccountStatus[] = ["PENDING", "ACTIVE", "BLOCKED", "SUSPENDED", "DELETED"];
 
 export function AdminAccountsPageContent() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<AdminAccountsFilters>({});
   const [draftFilters, setDraftFilters] = useState({
@@ -171,12 +172,23 @@ export function AdminAccountsPageContent() {
                         <TableHead>Tier</TableHead>
                         <TableHead>Joined date</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {accounts.map((account) => (
-                        <TableRow key={account.accountId} className="hover:bg-slate-50/70">
+                        <TableRow
+                          key={account.accountId}
+                          className="cursor-pointer hover:bg-slate-50/70"
+                          role="link"
+                          tabIndex={0}
+                          onClick={() => router.push(`/admin/accounts/${account.accountId}`)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              router.push(`/admin/accounts/${account.accountId}`);
+                            }
+                          }}
+                        >
                           <TableCell>
                             <div className="font-medium text-slate-950">{account.fullName}</div>
                             <div className="text-xs text-slate-500">{shortId(account.accountId)}</div>
@@ -190,18 +202,6 @@ export function AdminAccountsPageContent() {
                           <TableCell>{formatDate(account.createdAt)}</TableCell>
                           <TableCell>
                             <StatusBadge status={account.status} />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {account.role === "CUSTOMER" ? (
-                              <Button asChild size="sm" variant="ghost" className="h-8 gap-1.5 px-2">
-                                <Link href={`/admin/customers/${account.accountId}`}>
-                                  Details
-                                  <ChevronRight className="h-4 w-4" />
-                                </Link>
-                              </Button>
-                            ) : (
-                              <span className="text-xs text-slate-400">Internal</span>
-                            )}
                           </TableCell>
                         </TableRow>
                       ))}

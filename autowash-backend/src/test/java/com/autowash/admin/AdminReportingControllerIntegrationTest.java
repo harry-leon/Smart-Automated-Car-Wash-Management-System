@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -124,6 +125,23 @@ class AdminReportingControllerIntegrationTest {
     }
 
     @Test
+    void adminAccountDetailReturnsAccountAndRejectsMissingAccount() throws Exception {
+        AuthUser account = createActiveUser(UserRole.STAFF, uniquePhone("0977"), "Account Detail Staff");
+
+        mockMvc.perform(get("/api/v1/admin/accounts/{accountId}", account.getId())
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accountId").value(account.getId().toString()))
+                .andExpect(jsonPath("$.data.role").value("STAFF"))
+                .andExpect(jsonPath("$.data.fullName").value("Account Detail Staff"));
+
+        mockMvc.perform(get("/api/v1/admin/accounts/00000000-0000-0000-0000-000000000000")
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
     void customerDetailWashHistoryAndPointHistoryUseRealBookingOperationsAndLoyaltyData() throws Exception {
         CustomerBooking booking = createConfirmedBooking("ADMIN_BK_003", "0901777403", "30H-774403", LocalDate.of(2026, 6, 12), 270000);
         String sessionId = completeSession(booking.getId());
@@ -142,6 +160,7 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.customerId").value(customerId))
                 .andExpect(jsonPath("$.data.profile.phone").value("0901777403"))
+                .andExpect(jsonPath("$.data.profile.role").value("CUSTOMER"))
                 .andExpect(jsonPath("$.data.loyalty.currentPoints").value(27))
                 .andExpect(jsonPath("$.data.summary.totalBookings").value(2))
                 .andExpect(jsonPath("$.data.summary.totalWashSessions").value(1))
@@ -192,6 +211,54 @@ class AdminReportingControllerIntegrationTest {
                         .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    void adminCanUpdateCustomerRoleAndCustomerDetailStopsResolvingAfterward() throws Exception {
+        AuthUser customer = createActiveCustomer("0901777405");
+
+        mockMvc.perform(put("/api/v1/admin/customers/{customerId}/role", customer.getId())
+                        .with(user("admin").roles("ADMIN"))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "role": "STAFF"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customerId").value(customer.getId().toString()))
+                .andExpect(jsonPath("$.data.role").value("STAFF"));
+
+        mockMvc.perform(get("/api/v1/admin/customers/{customerId}", customer.getId())
+                        .with(user("admin").roles("ADMIN")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    void updateCustomerRoleRejectsInvalidRoleAndNonAdminAccess() throws Exception {
+        AuthUser customer = createActiveCustomer("0901777406");
+
+        mockMvc.perform(put("/api/v1/admin/customers/{customerId}/role", customer.getId())
+                        .with(user("admin").roles("ADMIN"))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "role": "OWNER"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+
+        mockMvc.perform(put("/api/v1/admin/customers/{customerId}/role", customer.getId())
+                        .with(user("customer").roles("CUSTOMER"))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "role": "STAFF"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
     }
 
     @Test

@@ -34,6 +34,7 @@ export function buildAuthSession(data: AuthResponseData): AuthSession {
       status: data.status,
       tier: data.tier ?? null,
       loyaltyBalance: data.loyaltyBalance ?? null,
+      isNewCustomer: data.isNewCustomer ?? false,
     },
   };
 }
@@ -61,6 +62,7 @@ export function isAuthUserInSyncWithProfile(user: AuthUser, profile: UserProfile
     user.role === profile.role &&
     user.status === profile.status &&
     user.tier === profile.tier &&
-    user.loyaltyBalance === profile.loyaltyBalance
+    user.loyaltyBalance === profile.loyaltyBalance &&
+    user.isNewCustomer === profile.isNewCustomer
   );
 }

@@ -16,6 +16,8 @@ import type {
   AdminTierHistoryPage,
   AdminWashHistoryItem,
   AdminWashHistoryPage,
+  UpdateAdminCustomerRolePayload,
+  UpdateAdminCustomerRoleResult,
   UpdateAdminCustomerStatusPayload,
   UpdateAdminCustomerStatusResult,
 } from "@/types/admin-reporting.types";
@@ -66,6 +68,11 @@ export async function getAdminBookingDetail(id: string): Promise<BookingDetail> 
 
 export async function getAdminCustomerDetail(customerId: string): Promise<AdminCustomerDetail> {
   const response = await apiClient.get(`/admin/customers/${customerId}`);
+  return response.data.data;
+}
+
+export async function getAdminAccountDetail(accountId: string): Promise<AdminAccount> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminAccount>>(`/admin/accounts/${accountId}`);
   return response.data.data;
 }
 
@@ -165,6 +172,17 @@ export function updateAdminCustomerStatus(
   return apiRequest<UpdateAdminCustomerStatusResult, UpdateAdminCustomerStatusPayload>({
     method: "PUT",
     url: `/admin/customers/${customerId}/status`,
+    data: payload,
+  });
+}
+
+export function updateAdminCustomerRole(
+  customerId: string,
+  payload: UpdateAdminCustomerRolePayload,
+) {
+  return apiRequest<UpdateAdminCustomerRoleResult, UpdateAdminCustomerRolePayload>({
+    method: "PUT",
+    url: `/admin/customers/${customerId}/role`,
     data: payload,
   });
 }

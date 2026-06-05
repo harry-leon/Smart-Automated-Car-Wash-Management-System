@@ -61,3 +61,9 @@ autowash:
       expiration-seconds: ${AUTOWASH_OTP_TTL:300}
       max-attempts: ${AUTOWASH_OTP_MAX_ATTEMPTS:3}
       expose-for-dev: ${AUTOWASH_OTP_EXPOSE_FOR_DEV:true}
+    google:
+      client-id: ${AUTOWASH_GOOGLE_CLIENT_ID:}
+      client-secret: ${AUTOWASH_GOOGLE_CLIENT_SECRET:}
+      redirect-uri: ${AUTOWASH_GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/auth/google/callback}
+      frontend-base-url: ${AUTOWASH_FRONTEND_BASE_URL:http://localhost:3000}
+      ticket-ttl-seconds: ${AUTOWASH_GOOGLE_TICKET_TTL:300}

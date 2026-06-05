@@ -67,6 +67,9 @@ public class AuthService {
         if (authUserRepository.existsByPhone(request.phone())) {
             throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", "DUPLICATE_PHONE");
         }
+        if (request.email() != null && authUserRepository.existsByEmailIgnoreCase(request.email())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
+        }
 
         AuthUser user = new AuthUser(
                 request.fullName(),
@@ -206,6 +209,7 @@ public class AuthService {
                 user.getStatus().name(),
                 user.getTier().name(),
                 0,
+                user.isNewCustomer(),
                 accessToken,
                 refreshToken,
                 jwtService.getAccessTokenExpirationSeconds()

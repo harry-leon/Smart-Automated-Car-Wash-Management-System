@@ -126,7 +126,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
       <aside
         className={cn(
-          "relative z-20 hidden shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
+          "sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
           sidebarCollapsed ? "w-[5.25rem]" : "w-72",
         )}
       >
@@ -136,7 +136,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           onToggle={() => setSidebarCollapsed((value) => !value)}
         />
 
-        <nav className={cn("flex-1 overflow-y-auto", sidebarCollapsed ? "px-2 py-4" : "px-3 py-4")}>
+        <nav className={cn("min-h-0 flex-1 overflow-y-auto", sidebarCollapsed ? "px-2 py-4" : "px-3 py-4")}>
           <ul className={cn(sidebarCollapsed ? "space-y-3" : "space-y-1")}>
             {navItems.map((item) => (
               <SidebarNavLink
