@@ -8,6 +8,7 @@ import type {
   BookingListFilters,
   BookingListItem,
   BookingListPage,
+  BookingOtpResponse,
   BookingPackage,
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
@@ -49,6 +50,21 @@ export function createCustomerBooking(draft: BookingDraft) {
     method: "POST",
     url: "/customers/bookings",
     data: buildCreateBookingPayload(draft),
+  });
+}
+
+export function resendBookingOtp(bookingId: string) {
+  return apiRequest<BookingOtpResponse>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/otp/resend`,
+  });
+}
+
+export function verifyBookingOtp(bookingId: string, otp: string) {
+  return apiRequest<BookingOtpResponse, { otp: string }>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/otp/verify`,
+    data: { otp },
   });
 }
 

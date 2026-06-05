@@ -351,7 +351,7 @@ class AdminReportingControllerIntegrationTest {
     }
 
     private CustomerBooking createConfirmedBookingForVehicle(AuthUser user, CustomerVehicle vehicle, String bookingId, LocalDate bookingDate, long finalAmount) {
-        return customerBookingRepository.saveAndFlush(new CustomerBooking(
+        CustomerBooking booking = new CustomerBooking(
                 bookingId,
                 user,
                 vehicle,
@@ -366,7 +366,9 @@ class AdminReportingControllerIntegrationTest {
                 0,
                 finalAmount,
                 30
-        ));
+        );
+        booking.confirmByOtp();
+        return customerBookingRepository.saveAndFlush(booking);
     }
 
     private AuthUser createActiveCustomer(String phone) {

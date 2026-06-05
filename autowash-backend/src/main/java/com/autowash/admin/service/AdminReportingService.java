@@ -216,6 +216,8 @@ public class AdminReportingService {
                         booking.getCreatedAt()
                 ),
                 booking.getStatus().name(),
+                booking.getConfirmationStatus().name(),
+                booking.getConfirmationExpiresAt(),
                 washSession == null ? null : washSession.getId().toString(),
                 null,
                 washSession == null ? null : washSession.getStatus().name(),

@@ -66,6 +66,16 @@ public class CustomerBooking {
     @Column(nullable = false, length = 30)
     private BookingStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "confirmation_status", nullable = false, length = 30)
+    private BookingConfirmationStatus confirmationStatus;
+
+    @Column(name = "confirmation_expires_at")
+    private Instant confirmationExpiresAt;
+
+    @Column(name = "confirmed_at")
+    private Instant confirmedAt;
+
     @Column(name = "base_price", nullable = false)
     private long basePrice;
 
@@ -135,7 +145,8 @@ public class CustomerBooking {
         this.bookingTime = bookingTime;
         this.paymentMethod = paymentMethod;
         this.paymentStatus = PaymentStatus.CONFIRMED;
-        this.status = BookingStatus.CONFIRMED;
+        this.status = BookingStatus.PENDING;
+        this.confirmationStatus = BookingConfirmationStatus.PENDING;
         this.basePrice = basePrice;
         this.addonsTotal = addonsTotal;
         this.voucherDiscount = voucherDiscount;
@@ -158,6 +169,9 @@ public class CustomerBooking {
     public PaymentMethod getPaymentMethod() { return paymentMethod; }
     public PaymentStatus getPaymentStatus() { return paymentStatus; }
     public BookingStatus getStatus() { return status; }
+    public BookingConfirmationStatus getConfirmationStatus() { return confirmationStatus; }
+    public Instant getConfirmationExpiresAt() { return confirmationExpiresAt; }
+    public Instant getConfirmedAt() { return confirmedAt; }
     public long getBasePrice() { return basePrice; }
     public long getAddonsTotal() { return addonsTotal; }
     public long getVoucherDiscount() { return voucherDiscount; }
@@ -178,10 +192,29 @@ public class CustomerBooking {
 
     public void cancel(String reason) {
         this.status = BookingStatus.CANCELLED;
+        if (this.confirmationStatus != BookingConfirmationStatus.EXPIRED) {
+            this.confirmationStatus = BookingConfirmationStatus.CANCELLED;
+        }
         this.cancelledAt = Instant.now();
         this.refundAmount = finalAmount;
         this.refundStatus = "INITIATED";
         this.cancelReason = reason;
+    }
+
+    public void startOtpConfirmationWindow(Instant expiresAt) {
+        this.confirmationStatus = BookingConfirmationStatus.PENDING;
+        this.confirmationExpiresAt = expiresAt;
+    }
+
+    public void confirmByOtp() {
+        this.status = BookingStatus.CONFIRMED;
+        this.confirmationStatus = BookingConfirmationStatus.VERIFIED;
+        this.confirmedAt = Instant.now();
+    }
+
+    public void expireOtpConfirmation() {
+        this.confirmationStatus = BookingConfirmationStatus.EXPIRED;
+        cancel("Booking OTP verification expired");
     }
 
     public void updateStatus(BookingStatus status) {

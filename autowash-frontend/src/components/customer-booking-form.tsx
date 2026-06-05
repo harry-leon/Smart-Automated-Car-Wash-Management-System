@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCcw } from "lucide-react";
+import { CheckCircle2, Clock3, Loader2, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +21,9 @@ import {
   useBookingCombos,
   useBookingPackages,
   useCreateCustomerBooking,
+  useResendBookingOtp,
   useValidateBookingVoucher,
+  useVerifyBookingOtp,
 } from "@/hooks/use-bookings";
 import { useCustomerVehicles } from "@/hooks/use-customer-vehicles";
 import {
@@ -50,9 +52,14 @@ export function CustomerBookingForm() {
   const combosQuery = useBookingCombos();
   const voucherMutation = useValidateBookingVoucher();
   const createBookingMutation = useCreateCustomerBooking();
+  const resendOtpMutation = useResendBookingOtp(lastCreatedBooking?.bookingId ?? "");
+  const verifyOtpMutation = useVerifyBookingOtp(lastCreatedBooking?.bookingId ?? "");
   const [validatedVoucher, setValidatedVoucher] = useState<VoucherValidationResult | null>(null);
   const [showValidation, setShowValidation] = useState(false);
   const [voucherInputError, setVoucherInputError] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
+  const [otpInputError, setOtpInputError] = useState<string | null>(null);
 
   const isLoadingCatalog =
     vehiclesQuery.isPending ||
@@ -92,6 +99,24 @@ export function CustomerBookingForm() {
       updateDraft({ comboId: combos[0].comboId });
     }
   }, [combos, draft.comboId, draft.mode, updateDraft]);
+
+  useEffect(() => {
+    if (lastCreatedBooking?.status === "PENDING") {
+      setOtpSecondsLeft(lastCreatedBooking.otpExpiresIn);
+    }
+  }, [lastCreatedBooking?.bookingId, lastCreatedBooking?.otpExpiresIn, lastCreatedBooking?.status]);
+
+  useEffect(() => {
+    if (!lastCreatedBooking || lastCreatedBooking.status !== "PENDING" || otpSecondsLeft <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setOtpSecondsLeft((current) => Math.max(current - 1, 0));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [lastCreatedBooking, otpSecondsLeft]);
 
   const summary = useMemo(
     () =>
@@ -169,8 +194,59 @@ export function CustomerBookingForm() {
 
     try {
       await createBookingMutation.mutateAsync(draft);
-      toast.success("Booking created successfully.");
+      setOtpCode("");
+      setOtpInputError(null);
+      toast.success("Booking created. Please verify the OTP sent to your email.");
     } catch (error) {
+      toast.error(getDisplayErrorMessage(error));
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!lastCreatedBooking) {
+      return;
+    }
+
+    if (!/^\d{6}$/.test(otpCode)) {
+      setOtpInputError("Enter the 6-digit OTP sent to your email.");
+      return;
+    }
+
+    try {
+      const result = await verifyOtpMutation.mutateAsync(otpCode);
+      setLastCreatedBooking({
+        ...lastCreatedBooking,
+        status: result.status,
+        confirmationStatus: result.confirmationStatus,
+        otpExpiresIn: result.otpExpiresIn,
+      });
+      setOtpInputError(null);
+      toast.success("Booking verified successfully.");
+    } catch (error) {
+      setOtpInputError(getDisplayErrorMessage(error));
+      toast.error(getDisplayErrorMessage(error));
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!lastCreatedBooking) {
+      return;
+    }
+
+    try {
+      const result = await resendOtpMutation.mutateAsync();
+      setLastCreatedBooking({
+        ...lastCreatedBooking,
+        status: result.status,
+        confirmationStatus: result.confirmationStatus,
+        otpExpiresIn: result.otpExpiresIn,
+      });
+      setOtpCode("");
+      setOtpInputError(null);
+      setOtpSecondsLeft(result.otpExpiresIn);
+      toast.success("A new OTP was sent to your email.");
+    } catch (error) {
+      setOtpInputError(getDisplayErrorMessage(error));
       toast.error(getDisplayErrorMessage(error));
     }
   };
@@ -187,19 +263,75 @@ export function CustomerBookingForm() {
   };
 
   if (lastCreatedBooking) {
+    const needsOtpVerification =
+      lastCreatedBooking.status === "PENDING" &&
+      lastCreatedBooking.confirmationStatus === "PENDING";
+
     return (
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-        <Card className="border-emerald-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+        <Card className={`${needsOtpVerification ? "border-sky-200" : "border-emerald-200"} bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]`}>
           <CardHeader>
-            <div className="flex items-center gap-3 text-emerald-700">
-              <CheckCircle2 className="h-6 w-6" />
-              <CardTitle>Booking created</CardTitle>
+            <div className={`flex items-center gap-3 ${needsOtpVerification ? "text-sky-700" : "text-emerald-700"}`}>
+              {needsOtpVerification ? <Clock3 className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
+              <CardTitle>{needsOtpVerification ? "Verify booking OTP" : "Booking confirmed"}</CardTitle>
             </div>
             <CardDescription>
-              The checkout completed with the real booking API. You can review the result immediately.
+              {needsOtpVerification
+                ? "The booking was created in pending state. Enter the 6-digit OTP sent to your email to confirm it."
+                : "The checkout completed with the real booking API. You can review the result immediately."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {needsOtpVerification ? (
+              <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-sky-900">Email OTP required</div>
+                    <div className="mt-1 text-sm text-sky-700">
+                      Expires in {formatOtpCountdown(otpSecondsLeft)}. Resend is limited to 3 times per hour.
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void handleResendOtp()}
+                    disabled={resendOtpMutation.isPending || verifyOtpMutation.isPending}
+                  >
+                    {resendOtpMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Resend OTP
+                  </Button>
+                </div>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(event) => {
+                      setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6));
+                      setOtpInputError(null);
+                    }}
+                    placeholder="6-digit OTP"
+                    className="min-h-11 flex-1 rounded-xl border border-sky-200 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => void handleVerifyOtp()}
+                    disabled={verifyOtpMutation.isPending || resendOtpMutation.isPending}
+                  >
+                    {verifyOtpMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Verify booking
+                  </Button>
+                </div>
+                <FieldError message={otpInputError} />
+                {otpSecondsLeft === 0 ? (
+                  <p className="mt-2 text-sm text-amber-700">
+                    This OTP has expired. Resend a new OTP before verifying.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <dl className="grid gap-4 md:grid-cols-2">
               <SummaryItem label="Booking ID" value={lastCreatedBooking.bookingId} />
               <SummaryItem label="Confirmation" value={lastCreatedBooking.confirmationNumber} />
@@ -218,6 +350,7 @@ export function CustomerBookingForm() {
                 value={formatBookingCurrency(lastCreatedBooking.finalAmount)}
               />
               <SummaryItem label="Status" value={lastCreatedBooking.status} />
+              <SummaryItem label="Verification" value={lastCreatedBooking.confirmationStatus} />
             </dl>
             <div className="flex flex-wrap gap-3">
               <Button asChild>
@@ -234,6 +367,9 @@ export function CustomerBookingForm() {
                   resetBookingDraft();
                   setValidatedVoucher(null);
                   setShowValidation(false);
+                  setOtpCode("");
+                  setOtpInputError(null);
+                  setOtpSecondsLeft(0);
                   updateDraft({
                     ...EMPTY_BOOKING_DRAFT,
                     bookingDate: getTomorrowDate(),
@@ -715,6 +851,12 @@ function FieldError({ message }: { message: string | null | undefined }) {
   }
 
   return <p className="text-sm text-rose-600">{message}</p>;
+}
+
+function formatOtpCountdown(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function BookingPageLoadingState() {

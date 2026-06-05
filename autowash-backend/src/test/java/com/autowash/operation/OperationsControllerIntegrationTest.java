@@ -382,6 +382,7 @@ class OperationsControllerIntegrationTest {
                 finalAmount,
                 30
         );
+        booking.confirmByOtp();
         booking.assignStaff(assignedStaff);
         return customerBookingRepository.saveAndFlush(booking);
     }

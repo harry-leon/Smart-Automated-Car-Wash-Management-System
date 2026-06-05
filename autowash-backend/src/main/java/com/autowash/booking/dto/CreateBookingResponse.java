@@ -22,6 +22,8 @@ public record CreateBookingResponse(
         String paymentMethod,
         String paymentStatus,
         String status,
+        String confirmationStatus,
+        int otpExpiresIn,
         Instant createdAt,
         String confirmationNumber
 ) {

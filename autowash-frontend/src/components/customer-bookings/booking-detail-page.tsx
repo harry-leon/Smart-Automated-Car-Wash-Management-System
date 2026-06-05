@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { RefreshCcw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Clock3, Loader2, RefreshCcw } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
@@ -12,11 +14,17 @@ import {
   getPaymentStatusLabel,
   humanizeCode,
 } from "@/lib/booking-format";
-import { useCustomerBookingDetail } from "@/hooks/use-bookings";
+import { useCustomerBookingDetail, useResendBookingOtp, useVerifyBookingOtp } from "@/hooks/use-bookings";
 import { ApplyPointsPanel } from "@/components/customer-bookings/apply-points-panel";
 
 export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) {
   const bookingQuery = useCustomerBookingDetail(bookingId);
+  const resendOtpMutation = useResendBookingOtp(bookingId);
+  const verifyOtpMutation = useVerifyBookingOtp(bookingId);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
+
+  const otpSecondsLeft = useOtpSecondsLeft(bookingQuery.data?.confirmationExpiresAt ?? null);
 
   if (bookingQuery.isPending) {
     return (
@@ -53,6 +61,39 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   }
 
   const booking = bookingQuery.data;
+  const needsOtpVerification =
+    booking.status === "PENDING" && booking.confirmationStatus === "PENDING";
+
+  const handleResendOtp = async () => {
+    try {
+      await resendOtpMutation.mutateAsync();
+      setOtpCode("");
+      setOtpError(null);
+      await bookingQuery.refetch();
+      toast.success("A new OTP was sent to your email.");
+    } catch (error) {
+      setOtpError(getDisplayErrorMessage(error));
+      toast.error(getDisplayErrorMessage(error));
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!/^\d{6}$/.test(otpCode)) {
+      setOtpError("Enter the 6-digit OTP sent to your email.");
+      return;
+    }
+
+    try {
+      await verifyOtpMutation.mutateAsync(otpCode);
+      setOtpCode("");
+      setOtpError(null);
+      await bookingQuery.refetch();
+      toast.success("Booking verified successfully.");
+    } catch (error) {
+      setOtpError(getDisplayErrorMessage(error));
+      toast.error(getDisplayErrorMessage(error));
+    }
+  };
 
   return (
     <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
@@ -97,6 +138,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
               ["Estimated end", booking.scheduling.estimatedEndTime],
               ["Payment method", getPaymentMethodLabel(booking.payment.method)],
               ["Payment status", getPaymentStatusLabel(booking.payment.status)],
+              ["Verification", humanizeCode(booking.confirmationStatus)],
               ["Transaction", booking.payment.transactionId],
             ]}
           />
@@ -153,6 +195,61 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
           </Card>
         </div>
 
+        {needsOtpVerification ? (
+          <Card className="border-sky-200 bg-sky-50 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+            <CardHeader>
+              <div className="flex items-center gap-3 text-sky-800">
+                <Clock3 className="h-5 w-5" />
+                <CardTitle>Verify booking OTP</CardTitle>
+              </div>
+              <CardDescription>
+                This booking is pending. Enter the 6-digit OTP sent to your email before the confirmation window expires.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm font-medium text-sky-800">
+                Expires in {formatOtpCountdown(otpSecondsLeft)}. Resend is limited to 3 times per hour.
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(event) => {
+                    setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6));
+                    setOtpError(null);
+                  }}
+                  placeholder="6-digit OTP"
+                  className="min-h-11 flex-1 rounded-xl border border-sky-200 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900"
+                />
+                <Button
+                  type="button"
+                  onClick={() => void handleVerifyOtp()}
+                  disabled={verifyOtpMutation.isPending || resendOtpMutation.isPending}
+                >
+                  {verifyOtpMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Verify
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleResendOtp()}
+                  disabled={verifyOtpMutation.isPending || resendOtpMutation.isPending}
+                >
+                  {resendOtpMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Resend
+                </Button>
+              </div>
+              {otpError ? <p className="text-sm text-rose-600">{otpError}</p> : null}
+              {otpSecondsLeft === 0 ? (
+                <p className="text-sm text-amber-700">This OTP has expired. Resend a new OTP before verifying.</p>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
+
         <ApplyPointsPanel
           bookingId={booking.bookingId}
           finalAmount={booking.pricing.finalAmount}
@@ -172,6 +269,38 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
       </div>
     </div>
   );
+}
+
+function useOtpSecondsLeft(expiresAt: string | null) {
+  const initialSeconds = useMemo(() => {
+    if (!expiresAt) {
+      return 0;
+    }
+    return Math.max(Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000), 0);
+  }, [expiresAt]);
+  const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
+
+  useEffect(() => {
+    setSecondsLeft(initialSeconds);
+  }, [initialSeconds]);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setSecondsLeft((current) => Math.max(current - 1, 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [secondsLeft]);
+
+  return secondsLeft;
+}
+
+function formatOtpCountdown(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function DetailSection({

@@ -10,11 +10,14 @@ export type BookingStatus =
   | "NO_SHOW";
 
 export type BookingListFilterStatus =
+  | "PENDING"
   | "CONFIRMED"
   | "CHECKED_IN"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "CANCELLED";
+
+export type BookingConfirmationStatus = "PENDING" | "VERIFIED" | "EXPIRED" | "CANCELLED";
 
 export type PaymentMethod = "BANK_TRANSFER" | "E_WALLET" | "CASH_AT_COUNTER";
 
@@ -110,8 +113,20 @@ export type CreateBookingResponse = {
   paymentMethod: PaymentMethod;
   paymentStatus: string;
   status: BookingStatus;
+  confirmationStatus: BookingConfirmationStatus;
+  otpExpiresIn: number;
   createdAt: string;
   confirmationNumber: string;
+};
+
+export type BookingOtpResponse = {
+  bookingId: string;
+  status: BookingStatus;
+  confirmationStatus: BookingConfirmationStatus;
+  otpExpiresIn: number;
+  expiresAt: string;
+  message: string;
+  devOtp?: string;
 };
 
 export type BookingListItem = {
@@ -164,6 +179,8 @@ export type BookingDetail = {
     paidAt: string | null;
   };
   status: BookingStatus;
+  confirmationStatus: BookingConfirmationStatus;
+  confirmationExpiresAt: string | null;
   washSessionId: string | null;
   staffName: string | null;
   washStatus: string | null;

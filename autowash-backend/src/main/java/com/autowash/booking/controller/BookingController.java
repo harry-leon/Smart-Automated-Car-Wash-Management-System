@@ -2,11 +2,14 @@ package com.autowash.booking.controller;
 
 import com.autowash.booking.dto.BookingDetailResponse;
 import com.autowash.booking.dto.BookingListItemResponse;
+import com.autowash.booking.dto.BookingOtpResponse;
 import com.autowash.booking.dto.CancelBookingRequest;
 import com.autowash.booking.dto.CancelBookingResponse;
 import com.autowash.booking.dto.CreateBookingRequest;
 import com.autowash.booking.dto.CreateBookingResponse;
+import com.autowash.booking.dto.VerifyBookingOtpRequest;
 import com.autowash.booking.service.BookingService;
+import com.autowash.booking.service.BookingOtpService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -17,6 +20,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,9 +48,12 @@ public class BookingController {
 
     @PostMapping
     @Operation(summary = "Create new booking")
-    public ResponseEntity<ApiResponse<CreateBookingResponse>> createBooking(@Valid @RequestBody CreateBookingRequest request) {
+    public ResponseEntity<ApiResponse<CreateBookingResponse>> createBooking(
+            @Valid @RequestBody CreateBookingRequest request,
+            HttpServletRequest servletRequest
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.created("Booking created successfully", bookingService.createBooking(request)));
+                .body(ApiResponse.created("Booking created. Please verify OTP.", bookingService.createBooking(request, metadata(servletRequest))));
     }
 
     @GetMapping
@@ -80,5 +87,32 @@ public class BookingController {
                 "Booking cancelled successfully",
                 bookingService.cancelBooking(bookingId, request == null ? null : request.reason())
         );
+    }
+
+    @PostMapping("/{bookingId}/otp/resend")
+    @Operation(summary = "Resend OTP for booking confirmation")
+    public ApiResponse<BookingOtpResponse> resendBookingOtp(
+            @PathVariable String bookingId,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.ok("Booking OTP resent", bookingService.resendBookingOtp(bookingId, metadata(servletRequest)));
+    }
+
+    @PostMapping("/{bookingId}/otp/verify")
+    @Operation(summary = "Verify OTP and confirm booking")
+    public ApiResponse<BookingOtpResponse> verifyBookingOtp(
+            @PathVariable String bookingId,
+            @Valid @RequestBody VerifyBookingOtpRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.ok("Booking OTP verified", bookingService.verifyBookingOtp(bookingId, request.otp(), metadata(servletRequest)));
+    }
+
+    private BookingOtpService.RequestMetadata metadata(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        String requestIp = forwardedFor == null || forwardedFor.isBlank()
+                ? request.getRemoteAddr()
+                : forwardedFor.split(",")[0].trim();
+        return new BookingOtpService.RequestMetadata(requestIp, request.getHeader("User-Agent"));
     }
 }

@@ -86,6 +86,7 @@ class StaffAssignmentServiceIntegrationTest {
                 150000,
                 30
         );
+        booking.confirmByOtp();
         booking.assignStaff(staff);
         customerBookingRepository.saveAndFlush(booking);
     }
