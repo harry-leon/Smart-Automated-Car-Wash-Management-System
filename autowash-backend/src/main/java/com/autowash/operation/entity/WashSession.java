@@ -101,6 +101,10 @@ public class WashSession {
         this.queuedAt = queuedAt;
     }
 
+    public void assignStaff(AuthUser assignedStaff) {
+        this.assignedStaff = assignedStaff;
+    }
+
     public void checkIn(Instant checkedInAt, long feeAmount, String feeCurrency, int projectedLoyaltyPoints) {
         transitionTo(WashSessionStatus.CHECKED_IN);
         this.checkedInAt = checkedInAt;

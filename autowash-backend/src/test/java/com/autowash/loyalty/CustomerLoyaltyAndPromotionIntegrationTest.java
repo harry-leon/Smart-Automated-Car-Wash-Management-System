@@ -2,7 +2,6 @@ package com.autowash.loyalty;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -176,8 +175,13 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     }
 
     private String createCompletedSession(String bookingId) throws Exception {
+        AuthUser staff = createActiveStaff("Loyalty Staff");
+        CustomerBooking booking = customerBookingRepository.findById(bookingId).orElseThrow();
+        booking.assignStaff(staff);
+        customerBookingRepository.saveAndFlush(booking);
+
         String sessionId = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(authenticatedStaff())
+                        .with(authenticatedUser(staff))
                         .contentType("application/json")
                         .content("""
                                 {
@@ -192,26 +196,29 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .replaceAll(".*\"sessionId\":\"([^\"]+)\".*", "$1");
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/complete", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         return sessionId;
     }
 
-    private RequestPostProcessor authenticatedStaff() {
-        AuthUser staff = new AuthUser("Loyalty Staff", uniquePhone("0915"), "loyalty-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+    private AuthUser createActiveStaff(String fullName) {
+        AuthUser staff = new AuthUser(fullName, uniquePhone("0915"), "loyalty-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        authUserRepository.saveAndFlush(staff);
-        AuthUserPrincipal principal = new AuthUserPrincipal(staff);
+        return authUserRepository.saveAndFlush(staff);
+    }
+
+    private RequestPostProcessor authenticatedUser(AuthUser user) {
+        AuthUserPrincipal principal = new AuthUserPrincipal(user);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);

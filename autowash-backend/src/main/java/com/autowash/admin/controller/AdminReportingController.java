@@ -11,6 +11,7 @@ import com.autowash.admin.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.admin.service.AdminReportingService;
 import com.autowash.loyalty.dto.PointTransactionResponse;
 import com.autowash.loyalty.service.LoyaltyService;
+import com.autowash.operation.dto.BookingStaffTransferAuditResponse;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -81,6 +82,16 @@ public class AdminReportingController {
         AdminReportingService.BookingPage bookingPage =
                 adminReportingService.listBookings(status, dateFrom, dateTo, customerId, searchQuery, page, limit);
         return ApiResponse.ok("Bookings retrieved", bookingPage.items(), bookingPage.pagination());
+    }
+
+    @GetMapping("/operations/transfer-audits")
+    @Operation(summary = "List staff booking transfer audit logs")
+    public ApiResponse<List<BookingStaffTransferAuditResponse>> listTransferAudits(
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        AdminReportingService.TransferAuditPage auditPage = adminReportingService.listTransferAudits(page, limit);
+        return ApiResponse.ok("Transfer audits retrieved", auditPage.items(), auditPage.pagination());
     }
 
     @GetMapping("/bookings/{bookingId}")
