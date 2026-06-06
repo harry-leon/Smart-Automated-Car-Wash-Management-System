@@ -1,6 +1,8 @@
 package com.autowash.operation.controller;
 
 import com.autowash.operation.dto.OperationsQueueResponse;
+import com.autowash.operation.dto.StaffDashboardSummaryResponse;
+import com.autowash.operation.dto.StaffOptionResponse;
 import com.autowash.operation.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/operations")
@@ -28,5 +31,18 @@ public class OperationsQueueController {
     @Operation(summary = "Get staff operations queue")
     public ApiResponse<OperationsQueueResponse> getQueue() {
         return ApiResponse.ok("Operations queue retrieved", operationsService.getQueue());
+    }
+
+    @GetMapping("/staff/summary")
+    @Operation(summary = "Get current staff personal dashboard summary")
+    @PreAuthorize("hasRole('STAFF')")
+    public ApiResponse<StaffDashboardSummaryResponse> getStaffSummary() {
+        return ApiResponse.ok("Staff summary retrieved", operationsService.getStaffSummary());
+    }
+
+    @GetMapping("/staff/active")
+    @Operation(summary = "List active staff members for transfer")
+    public ApiResponse<List<StaffOptionResponse>> listActiveStaff() {
+        return ApiResponse.ok("Active staff retrieved", operationsService.listActiveStaff());
     }
 }

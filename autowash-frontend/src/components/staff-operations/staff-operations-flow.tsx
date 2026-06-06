@@ -31,17 +31,21 @@ import { Label } from "@/components/ui/label";
 import {
   checkInWashSession,
   completeWashSession,
+  getActiveStaffOptions,
   getEligibleSessionBookings,
   getOperationsQueue,
   queueWashSession,
   startWashSession,
+  transferWashSession,
 } from "@/lib/operations-service";
+import { getDisplayErrorMessage } from "@/lib/api-errors";
 import { cn } from "@/lib/utils";
 import type { ApiErrorResponse } from "@/types/api.types";
 import type {
   EligibleSessionBooking,
   OperationsQueue,
   OperationsQueueSession,
+  StaffOption,
   WashSessionStatus,
 } from "@/types/operation.types";
 
@@ -321,6 +325,7 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
             onOpenChange={(open) => !open && setDetailSessionId(null)}
             onAction={handleAction}
             canAct={canAct}
+            onTransferred={() => setDetailSessionId(null)}
           />
         </>
       ) : null}
@@ -358,6 +363,7 @@ export function StaffOperationsFlow({ mode, sessionId }: StaffOperationsFlowProp
             onOpenChange={(open) => !open && setDetailSessionId(null)}
             onAction={handleAction}
             canAct={canAct}
+            onTransferred={() => setDetailSessionId(null)}
           />
         </div>
       ) : null}
@@ -759,12 +765,14 @@ function SessionDetailDialog({
   onOpenChange,
   onAction,
   canAct,
+  onTransferred,
 }: {
   session?: OperationsQueueSession;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAction: (action: ActionType, session: OperationsQueueSession) => void;
   canAct: boolean;
+  onTransferred: () => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -788,12 +796,101 @@ function SessionDetailDialog({
             <div className="mt-5 space-y-4">
               <DialogInfoGrid session={session} />
               <DialogTimeline session={session} />
+              <TransferPanel session={session} onTransferred={onTransferred} />
               <DialogActions session={session} onAction={onAction} canAct={canAct} />
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="space-y-4 p-6">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black">Không còn thấy phiên rửa</DialogTitle>
+              <DialogDescription>
+                Phiên có thể vừa được chuyển cho nhân viên khác hoặc không còn nằm trong hàng đợi của bạn.
+              </DialogDescription>
+            </DialogHeader>
+            <Button type="button" className="w-full rounded-2xl" onClick={() => onOpenChange(false)}>
+              Đóng
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function TransferPanel({
+  session,
+  onTransferred,
+}: {
+  session: OperationsQueueSession;
+  onTransferred: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [toStaffId, setToStaffId] = useState("");
+  const [reason, setReason] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+
+  const staffQuery = useQuery({
+    queryKey: ["staff-operations", "active-staff"],
+    queryFn: getActiveStaffOptions,
+  });
+
+  const transferMutation = useMutation({
+    mutationFn: () => transferWashSession(session.sessionId, toStaffId, reason),
+    onSuccess: (response) => {
+      setMessage(`Đã chuyển phiên cho ${response.toStaffName}.`);
+      setToStaffId("");
+      setReason("");
+      void queryClient.invalidateQueries({ queryKey: QUEUE_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: ["staff-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["staff-session-history"] });
+      window.setTimeout(onTransferred, 450);
+    },
+    onError: (error) => {
+      setMessage(getDisplayErrorMessage(error));
+    },
+  });
+
+  const staffOptions = (staffQuery.data ?? []).filter((staff: StaffOption) => staff.staffId !== session.assignedStaffId);
+  const canTransfer = Boolean(toStaffId) && !transferMutation.isPending;
+
+  return (
+    <div className="rounded-2xl border border-blue-100 bg-blue-50/55 p-4">
+      <div className="mb-3">
+        <p className="text-sm font-black text-blue-950">Chuyển phiên cho nhân viên khác</p>
+        <p className="text-xs text-blue-800/80">Mỗi lần chuyển sẽ được ghi audit log để admin theo dõi.</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+        <select
+          value={toStaffId}
+          onChange={(event) => setToStaffId(event.target.value)}
+          className="h-10 rounded-xl border border-blue-100 bg-white px-3 text-sm font-semibold outline-none focus:border-blue-300"
+        >
+          <option value="">{staffQuery.isLoading ? "Đang tải nhân viên..." : "Chọn nhân viên nhận"}</option>
+          {staffOptions.map((staff) => (
+            <option key={staff.staffId} value={staff.staffId}>
+              {staff.staffName}
+            </option>
+          ))}
+        </select>
+        <Input
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Lý do chuyển giao"
+          className="h-10 rounded-xl border-blue-100 bg-white"
+        />
+        <Button
+          type="button"
+          disabled={!canTransfer}
+          onClick={() => transferMutation.mutate()}
+          className="rounded-xl bg-blue-600 px-5 font-bold hover:bg-blue-700"
+        >
+          {transferMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Chuyển
+        </Button>
+      </div>
+      {message ? <p className="mt-2 text-xs font-semibold text-blue-900">{message}</p> : null}
+    </div>
   );
 }
 

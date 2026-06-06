@@ -2,7 +2,6 @@ package com.autowash.loyalty;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -114,12 +113,17 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
-                .andExpect(jsonPath("$.data.newBalance").value(10));
+                .andExpect(jsonPath("$.data.newBalance").value(10))
+                .andExpect(jsonPath("$.data.voucherCode").isString())
+                .andExpect(jsonPath("$.data.voucherValue").value(50000))
+                .andExpect(jsonPath("$.data.expiresAt").exists())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .with(authenticatedCustomer(customer)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.currentPoints").value(10));
+                .andExpect(jsonPath("$.data.currentPoints").value(10))
+                .andExpect(jsonPath("$.data.totalEarnedPoints").value(60));
 
         mockMvc.perform(get("/api/v1/loyalty/transactions")
                         .with(authenticatedCustomer(customer)))
@@ -127,6 +131,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].type").value("REDEEM"))
                 .andExpect(jsonPath("$.data[0].points").value(-50))
+                .andExpect(jsonPath("$.data[0].description").value(org.hamcrest.Matchers.startsWith("Voucher redemption:")))
                 .andExpect(jsonPath("$.data[1].type").value("EARN"))
                 .andExpect(jsonPath("$.data[1].points").value(60));
     }
@@ -162,14 +167,21 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/v1/customers/wash-history']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/promotions/active']").exists())
                 .andExpect(jsonPath("$.components.schemas.LoyaltyAccountResponse.properties.currentPoints.type").value("integer"))
+                .andExpect(jsonPath("$.components.schemas.LoyaltyAccountResponse.properties.totalEarnedPoints.type").value("integer"))
+                .andExpect(jsonPath("$.components.schemas.RedeemPointsResponse.properties.voucherCode.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.LoyaltyTransactionResponse.properties.points.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.WashHistoryItemResponse.properties.awardedPoints.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.CustomerPromotionResponse.properties.promotionCode.type").value("string"));
     }
 
     private String createCompletedSession(String bookingId) throws Exception {
+        AuthUser staff = createActiveStaff("Loyalty Staff");
+        CustomerBooking booking = customerBookingRepository.findById(bookingId).orElseThrow();
+        booking.assignStaff(staff);
+        customerBookingRepository.saveAndFlush(booking);
+
         String sessionId = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(authenticatedStaff())
+                        .with(authenticatedUser(staff))
                         .contentType("application/json")
                         .content("""
                                 {
@@ -184,26 +196,29 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .replaceAll(".*\"sessionId\":\"([^\"]+)\".*", "$1");
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/complete", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         return sessionId;
     }
 
-    private RequestPostProcessor authenticatedStaff() {
-        AuthUser staff = new AuthUser("Loyalty Staff", uniquePhone("0915"), "loyalty-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+    private AuthUser createActiveStaff(String fullName) {
+        AuthUser staff = new AuthUser(fullName, uniquePhone("0915"), "loyalty-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        authUserRepository.saveAndFlush(staff);
-        AuthUserPrincipal principal = new AuthUserPrincipal(staff);
+        return authUserRepository.saveAndFlush(staff);
+    }
+
+    private RequestPostProcessor authenticatedUser(AuthUser user) {
+        AuthUserPrincipal principal = new AuthUserPrincipal(user);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);

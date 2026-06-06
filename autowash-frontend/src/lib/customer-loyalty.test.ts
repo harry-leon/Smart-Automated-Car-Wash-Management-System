@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildLoyaltySummary,
   canRedeemTierOffer,
   formatLoyaltyPoints,
   formatLoyaltyTransactionType,
@@ -46,4 +47,19 @@ test("limits voucher offers by current loyalty tier", () => {
   assert.ok(platinumOffer);
   assert.equal(canRedeemTierOffer("GOLD", platinumOffer), false);
   assert.equal(canRedeemTierOffer("PLATINUM", platinumOffer), true);
+});
+
+test("uses lifetime points for tier progress and available points for redemption affordability", () => {
+  const summary = buildLoyaltySummary({
+    customerId: "customer-1",
+    tier: "SILVER",
+    currentPoints: 40,
+    totalEarnedPoints: 520,
+    availablePoints: 40,
+    lifetimePoints: 520,
+    completedWashCount: 6,
+  });
+
+  assert.equal(summary.progress.currentPoints, 520);
+  assert.equal(summary.voucherOffers.find((offer) => offer.id === "member-50")?.affordable, false);
 });

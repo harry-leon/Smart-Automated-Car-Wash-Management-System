@@ -5,12 +5,20 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowRightFromLine,
   ChevronDown,
+  ClipboardList,
+  History,
+  LayoutDashboard,
   LogOut,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
+  RefreshCw,
+  Settings2,
+  ShieldCheck,
+  UserCog,
   UserRound,
+  Wrench,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -28,6 +36,11 @@ import {
   type WorkspaceNavItem,
 } from "@/components/workspace/workspace-nav";
 import { StaffNotificationListener } from "@/components/staff-operations/staff-notification-listener";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -100,7 +113,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   };
 
   const profileHref =
-    requiredRole === "CUSTOMER" ? "/customer/profile" : `/${requiredRole.toLowerCase()}/dashboard`;
+    requiredRole === "CUSTOMER"
+      ? "/customer/profile"
+      : requiredRole === "STAFF"
+        ? "/staff/profile"
+        : "/admin/dashboard";
+  const quickActions = getProfileQuickActions(requiredRole);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -193,21 +211,91 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <Link
-                href={profileHref}
-                className="group flex max-w-[12rem] items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-2 py-1.5 transition hover:border-primary/30 sm:max-w-none sm:px-3"
-              >
-                <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", theme.accentSoft)}>
-                  <UserRound className="h-4 w-4" />
-                </div>
-                <div className="hidden min-w-0 sm:block">
-                  <div className="truncate text-sm font-bold">{user.fullName}</div>
-                  <div className="truncate text-[11px] font-semibold text-muted-foreground">
-                    {requiredRole === "CUSTOMER" ? (user.tier ?? "MEMBER") : user.role}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="group flex max-w-[12rem] items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-2 py-1.5 text-left transition hover:border-primary/30 hover:bg-card sm:max-w-none sm:px-3"
+                    aria-label="Mở menu hồ sơ"
+                  >
+                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", theme.accentSoft)}>
+                      <UserRound className="h-4 w-4" />
+                    </div>
+                    <div className="hidden min-w-0 sm:block">
+                      <div className="truncate text-sm font-bold">{user.fullName}</div>
+                      <div className="truncate text-[11px] font-semibold text-muted-foreground">
+                        {requiredRole === "CUSTOMER" ? (user.tier ?? "MEMBER") : user.role}
+                      </div>
+                    </div>
+                    <ChevronDown className="hidden h-4 w-4 text-muted-foreground transition group-data-[state=open]:rotate-180 sm:block" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  sideOffset={10}
+                  className="w-72 rounded-2xl border-border/70 bg-white/95 p-2 text-slate-950 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+                >
+                  <div className="px-2 py-2">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-full border", theme.accentSoft)}>
+                        <UserRound className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-extrabold text-slate-950">{user.fullName}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                          {requiredRole === "CUSTOMER" ? (user.tier ?? "MEMBER") : user.role}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
-              </Link>
+
+                  <div className="my-1 h-px bg-slate-100" />
+
+                  <Link
+                    href={profileHref}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-slate-50"
+                  >
+                      <UserCog className="h-4 w-4 text-primary" />
+                      Hồ sơ cá nhân
+                  </Link>
+
+                  {quickActions.map((action) => {
+                    const Icon = action.icon;
+                    return (
+                      <Link
+                        key={action.href}
+                        href={action.href}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-slate-50"
+                      >
+                        <Icon className="h-4 w-4 text-slate-500" />
+                        {action.label}
+                      </Link>
+                    );
+                  })}
+
+                  <div className="my-1 h-px bg-slate-100" />
+
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-50"
+                    onClick={() => router.refresh()}
+                  >
+                    <RefreshCw className="h-4 w-4 text-slate-500" />
+                    Làm mới dữ liệu
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={logoutMutation.isPending}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
+                  </button>
+                </PopoverContent>
+              </Popover>
 
               <button
                 type="button"
@@ -293,6 +381,31 @@ function WorkspaceGate({ message }: { message: string }) {
       </p>
     </main>
   );
+}
+
+function getProfileQuickActions(role: UserRole) {
+  if (role === "STAFF") {
+    return [
+      { href: "/staff/dashboard", label: "Tổng quan ca làm", icon: LayoutDashboard },
+      { href: "/staff/operations", label: "Bảng vận hành", icon: ClipboardList },
+      { href: "/staff/check-in", label: "Duyệt check-in", icon: Wrench },
+      { href: "/staff/sessions/history", label: "Lịch sử phiên rửa", icon: History },
+    ];
+  }
+
+  if (role === "ADMIN") {
+    return [
+      { href: "/admin/dashboard", label: "Tổng quan quản trị", icon: LayoutDashboard },
+      { href: "/admin/accounts", label: "Quản lý tài khoản", icon: UserCog },
+      { href: "/admin/settings", label: "Cài đặt hệ thống", icon: Settings2 },
+    ];
+  }
+
+  return [
+    { href: "/customer/home", label: "Trang khách hàng", icon: LayoutDashboard },
+    { href: "/customer/bookings", label: "Lịch đặt của tôi", icon: ClipboardList },
+    { href: "/customer/settings", label: "Cài đặt tài khoản", icon: Settings2 },
+  ];
 }
 
 function SidebarBrand({

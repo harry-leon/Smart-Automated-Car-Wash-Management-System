@@ -51,6 +51,23 @@ export type OperationsQueue = {
   generatedAt: string;
 };
 
+export type StaffDashboardSummary = {
+  staffId: string;
+  staffName: string;
+  assignedActiveBookings: number;
+  pendingBookings: number;
+  activeSessions: number;
+  completedSessions: number;
+  completedRevenue: number;
+  kpiTargetRevenue: number;
+  kpiProgressPercent: number;
+};
+
+export type StaffOption = {
+  staffId: string;
+  staffName: string;
+};
+
 export type EligibleSessionBooking = {
   bookingId: string;
   customerName: string;
@@ -99,4 +116,16 @@ export type CompleteWashSessionResponse = {
   status: WashSessionStatus;
   completedAt: string;
   awardedLoyaltyPoints: number;
+};
+
+export type TransferWashSessionResponse = {
+  auditId: string;
+  sessionId: string;
+  bookingId: string;
+  fromStaffId: string | null;
+  fromStaffName: string | null;
+  toStaffId: string;
+  toStaffName: string;
+  reason: string | null;
+  transferredAt: string;
 };

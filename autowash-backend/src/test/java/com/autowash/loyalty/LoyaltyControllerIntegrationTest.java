@@ -95,7 +95,24 @@ class LoyaltyControllerIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
-                .andExpect(jsonPath("$.data.newBalance").value(10));
+                .andExpect(jsonPath("$.data.newBalance").value(10))
+                .andExpect(jsonPath("$.data.voucherCode").isString())
+                .andExpect(jsonPath("$.data.voucherValue").value(50000))
+                .andExpect(jsonPath("$.data.expiresAt").exists())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+
+        mockMvc.perform(get("/api/v1/loyalty/account")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentPoints").value(10))
+                .andExpect(jsonPath("$.data.totalEarnedPoints").value(60));
+
+        mockMvc.perform(get("/api/v1/loyalty/history")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .param("type", "REDEEM"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].type").value("REDEEM"))
+                .andExpect(jsonPath("$.data[0].reason").value(org.hamcrest.Matchers.startsWith("Voucher redemption:")));
 
         mockMvc.perform(post("/api/v1/loyalty/redeem")
                         .header("Authorization", "Bearer " + accessToken)

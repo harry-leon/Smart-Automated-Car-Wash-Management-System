@@ -64,7 +64,8 @@ export function CustomerHistoryPageContent() {
 
         {summary ? (
           <section className="grid gap-4 md:grid-cols-3">
-            <StatCard label="Current points" value={summary.currentPoints.toLocaleString("vi-VN")} />
+            <StatCard label="Available points" value={summary.availablePoints.toLocaleString("vi-VN")} />
+            <StatCard label="Lifetime points" value={summary.lifetimePoints.toLocaleString("vi-VN")} />
             <StatCard
               label="Tier progress"
               value={
@@ -73,7 +74,6 @@ export function CustomerHistoryPageContent() {
                   : "Top tier reached"
               }
             />
-            <StatCard label="Completed washes" value={String(summary.completedWashCount)} />
           </section>
         ) : null}
 
