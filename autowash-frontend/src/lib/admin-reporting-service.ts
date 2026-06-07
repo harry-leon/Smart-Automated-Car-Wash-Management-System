@@ -1,6 +1,12 @@
 import { apiClient } from "@/lib/api";
 import type { ApiPaginatedResponse, ApiSuccessResponse } from "@/types/api.types";
-import type { AdminBookingResponse, AdminBookingListPage } from "@/types/admin-reporting.types";
+import type {
+  AdminBookingResponse,
+  AdminBookingListPage,
+  AdminBusinessHealthReport,
+  ReportAnalysisGroup,
+  ReportRangeKey,
+} from "@/types/admin-reporting.types";
 import type { BookingDetail } from "@/types/booking.types";
 
 export async function listAdminBookings(
@@ -26,5 +32,18 @@ export async function listAdminBookings(
 
 export async function getAdminBookingDetail(id: string): Promise<BookingDetail> {
   const response = await apiClient.get<ApiSuccessResponse<BookingDetail>>(`/admin/bookings/${id}`);
+  return response.data.data;
+}
+
+export async function getAdminBusinessHealthReport(params: {
+  range: ReportRangeKey;
+  analysisGroup: ReportAnalysisGroup;
+}): Promise<AdminBusinessHealthReport> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminBusinessHealthReport>>(
+    "/admin/reports/business-health",
+    {
+      params,
+    },
+  );
   return response.data.data;
 }

@@ -1,6 +1,7 @@
 package com.autowash.admin.controller;
 
 import com.autowash.admin.dto.AdminBookingResponse;
+import com.autowash.admin.dto.AdminBusinessHealthReportResponse;
 import com.autowash.admin.dto.AdminCustomerDetailResponse;
 import com.autowash.admin.dto.AdminWashHistoryResponse;
 import com.autowash.admin.service.AdminReportingService;
@@ -37,6 +38,20 @@ public class AdminReportingController {
 
     public AdminReportingController(AdminReportingService adminReportingService) {
         this.adminReportingService = adminReportingService;
+    }
+
+    @GetMapping("/reports/business-health")
+    @Operation(summary = "Get executive business health report")
+    public ApiResponse<AdminBusinessHealthReportResponse> getBusinessHealthReport(
+            @RequestParam(defaultValue = "LAST_30_DAYS") String range,
+            @RequestParam(defaultValue = "revenue") String analysisGroup,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo
+    ) {
+        return ApiResponse.ok(
+                "Business health report retrieved",
+                adminReportingService.getBusinessHealthReport(range, analysisGroup, dateFrom, dateTo)
+        );
     }
 
     @GetMapping("/bookings")
