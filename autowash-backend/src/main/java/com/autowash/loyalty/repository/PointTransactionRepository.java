@@ -37,4 +37,22 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
 
     @Query("select coalesce(sum(pt.points), 0) from PointTransaction pt where pt.customer = :customer and pt.type = :type")
     long sumPointsByCustomerAndType(@Param("customer") AuthUser customer, @Param("type") PointTransactionType type);
+
+    @Query("""
+            select pt from PointTransaction pt
+            where pt.type = :type
+              and (:#{#searchQuery == null} = true or lower(pt.referenceId) like :searchQuery
+                   or lower(pt.customer.fullName) like :searchQuery
+                   or lower(pt.customer.phone) like :searchQuery
+                   or lower(pt.customer.email) like :searchQuery)
+              and (:#{#dateFrom == null} = true or pt.createdAt >= :dateFrom)
+              and (:#{#dateTo == null} = true or pt.createdAt <= :dateTo)
+            """)
+    Page<PointTransaction> searchAdminByType(
+            @Param("type") PointTransactionType type,
+            @Param("searchQuery") String searchQuery,
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            Pageable pageable
+    );
 }

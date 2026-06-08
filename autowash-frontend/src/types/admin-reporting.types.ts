@@ -18,15 +18,17 @@ export type AdminBookingResponse = {
   createdAt: string;
 };
 
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+};
+
 export type AdminBookingListPage = {
   items: AdminBookingResponse[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
+  pagination: PaginationMeta;
 };
 
 export type ReportRangeKey = "LAST_7_DAYS" | "LAST_30_DAYS" | "THIS_MONTH" | "THIS_QUARTER";

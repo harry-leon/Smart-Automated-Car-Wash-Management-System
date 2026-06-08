@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { redirect } from "next/navigation";
 
 export default function AdminCombosPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Admin"
-      title="Combos"
-      description="Combo package management shell."
-      endpoints={["GET /admin/combos", "POST /admin/combos"]}
-    />
-  );
+  redirect("/admin/services?tab=combos");
 }

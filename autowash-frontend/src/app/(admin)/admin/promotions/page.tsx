@@ -1,6 +1,6 @@
-import { AdminPromotionsPageContent } from "@/components/admin-promotions/admin-promotions-page";
+import { redirect } from "next/navigation";
 
 export default function AdminPromotionsPage() {
-  return <AdminPromotionsPageContent />;
+  redirect("/admin/offers?tab=promotions");
 }
 

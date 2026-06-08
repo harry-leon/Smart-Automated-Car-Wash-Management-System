@@ -18,9 +18,9 @@ const QUICK_LINKS = [
   { href: "/admin/bookings", label: "Bookings", icon: CalendarDays, color: "text-indigo-600 bg-indigo-50" },
   { href: "/admin/customers", label: "Customers", icon: Users, color: "text-emerald-600 bg-emerald-50" },
   { href: "/admin/staff", label: "Staff Team", icon: Briefcase, color: "text-amber-600 bg-amber-50" },
-  { href: "/admin/packages", label: "Services", icon: Package, color: "text-rose-600 bg-rose-50" },
-  { href: "/admin/promotions", label: "Promotions", icon: BadgePercent, color: "text-purple-600 bg-purple-50" },
-  { href: "/admin/vouchers", label: "Vouchers", icon: Ticket, color: "text-pink-600 bg-pink-50" },
+  { href: "/admin/services", label: "Services", icon: Package, color: "text-rose-600 bg-rose-50" },
+  { href: "/admin/offers?tab=promotions", label: "Promotions", icon: BadgePercent, color: "text-purple-600 bg-purple-50" },
+  { href: "/admin/offers?tab=vouchers", label: "Vouchers", icon: Ticket, color: "text-pink-600 bg-pink-50" },
   { href: "/admin/reports", label: "Reports", icon: BarChart3, color: "text-teal-600 bg-teal-50" },
 ];
 

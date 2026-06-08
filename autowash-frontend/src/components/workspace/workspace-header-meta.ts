@@ -158,16 +158,34 @@ const ROUTE_META: Array<{
   },
   {
     match: (pathname) =>
+      pathname.startsWith("/admin/services") ||
       pathname.startsWith("/admin/packages") ||
       pathname.startsWith("/admin/add-ons") ||
-      pathname.startsWith("/admin/combos") ||
+      pathname.startsWith("/admin/combos"),
+    meta: {
+      title: "Service Management",
+      subtitle: "Organize packages, add-ons, and combos by service offering",
+      workspace: "ADMIN",
+    },
+  },
+  {
+    match: (pathname) =>
+      pathname.startsWith("/admin/offers") ||
       pathname.startsWith("/admin/promotions") ||
-      pathname.startsWith("/admin/vouchers") ||
+      pathname.startsWith("/admin/vouchers"),
+    meta: {
+      title: "Offers Management",
+      subtitle: "Review promotions, vouchers, and redemption oversight",
+      workspace: "ADMIN",
+    },
+  },
+  {
+    match: (pathname) =>
       pathname.startsWith("/admin/staff") ||
       pathname.startsWith("/admin/settings"),
     meta: {
       title: "Admin Workspace",
-      subtitle: "Configure services, promotions, staff, and workspace settings",
+      subtitle: "Manage staff access and workspace settings",
       workspace: "ADMIN",
     },
   },
