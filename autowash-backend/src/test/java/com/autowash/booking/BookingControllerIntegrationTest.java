@@ -150,6 +150,55 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
+    void createComboBookingCreatesOwnedComboAndActiveComboLookup() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234720");
+        String vehicleId = createVehicle(accessToken, "30H-223468");
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "comboId": "combo_001",
+                                  "bookingDate": "2026-06-10",
+                                  "bookingTime": "14:00",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data.customerComboId").isNotEmpty())
+                .andExpect(jsonPath("$.data.comboPurchased").value(true));
+
+        mockMvc.perform(get("/api/v1/customers/combos/active")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data[0].remainingUsages").value(3));
+    }
+
+    @Test
+    void activateComboCreatesOwnedCombo() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234721");
+
+        mockMvc.perform(post("/api/v1/customers/combos/{comboId}/activate", "combo_001")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "comboId": "combo_001",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("E_WALLET"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
+    }
+
+    @Test
     void createBookingRejectsVehicleOwnedByAnotherCustomer() throws Exception {
         String ownerToken = registerActivateAndLogin("0901234704");
         String otherToken = registerActivateAndLogin("0901234705");
