@@ -62,31 +62,32 @@ class AdminVoucherControllerIntegrationTest {
 
     @Test
     void adminCanInspectVoucherRedemptionHistory() throws Exception {
-        AuthUser customer = createActiveCustomer("0901888001");
-        CustomerBooking booking = createConfirmedBooking(customer, "ADMIN_VOUCHER_BK_001", "30H-888001", LocalDate.of(2026, 6, 14), 320000);
-        String sessionId = completeSession(booking.getId());
+        String voucherCode = "ADMINVOUCHER50";
+        AuthUser customer = createActiveCustomer("0901999001");
+        CustomerBooking booking = createConfirmedBooking(customer, "ADMIN_VOUCHER_BK_001", "30H-999001", LocalDate.of(2026, 6, 14), 600000);
+        completeSession(booking.getId());
 
         mockMvc.perform(post("/api/v1/loyalty/redeem")
                         .with(authenticatedCustomer(customer))
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "pointsToRedeem": 20,
-                                  "referenceId": "WELCOME20"
+                                  "pointsToRedeem": 50,
+                                  "referenceId": "%s"
                                 }
-                                """))
+                                """.formatted(voucherCode)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/v1/admin/vouchers/redemptions")
                         .with(user("admin").roles("ADMIN"))
-                        .param("searchQuery", "WELCOME20"))
+                        .param("searchQuery", voucherCode))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()", greaterThan(0)))
                 .andExpect(jsonPath("$.data[0].customerId").value(customer.getId().toString()))
                 .andExpect(jsonPath("$.data[0].customerName").value("Nguyen Van A"))
-                .andExpect(jsonPath("$.data[0].voucherCode").value("WELCOME20"))
-                .andExpect(jsonPath("$.data[0].pointsRedeemed").value(20))
-                .andExpect(jsonPath("$.data[0].balanceAfter").value(12));
+                .andExpect(jsonPath("$.data[0].voucherCode").value(voucherCode))
+                .andExpect(jsonPath("$.data[0].pointsRedeemed").value(50))
+                .andExpect(jsonPath("$.data[0].balanceAfter").value(10));
     }
 
     private String completeSession(String bookingId) throws Exception {
