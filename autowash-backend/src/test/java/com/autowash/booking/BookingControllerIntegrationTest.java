@@ -79,7 +79,7 @@ class BookingControllerIntegrationTest {
     void getAvailableCombosReturnsActiveCombos() throws Exception {
         mockMvc.perform(get("/api/v1/combos/available"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data.length()").value(10))
                 .andExpect(jsonPath("$.data[0].comboId").value("combo_001"));
     }
 
@@ -191,11 +191,11 @@ class BookingControllerIntegrationTest {
                                   "comboId": "combo_001",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """))
+                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.comboId").value("combo_001"))
                 .andExpect(jsonPath("$.data.paymentMethod").value("E_WALLET"))
-                .andExpect(jsonPath("$.data.status").value("PENDING"));
+                .andExpect(jsonPath("$.data.paymentStatus").value("PENDING"));
     }
 
     @Test

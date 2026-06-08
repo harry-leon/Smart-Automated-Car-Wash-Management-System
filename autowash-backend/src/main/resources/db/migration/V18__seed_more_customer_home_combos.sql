@@ -14,8 +14,6 @@ INSERT INTO service_combos (
     upgrade_price_from
 )
 VALUES
-    ('combo_002', 'Wash & Odor Removal', 'Basic wash with ozone treatment', 240000, 1, 1, 'Basic Wash|Ozone Odor Removal', 'https://example.com/combos/wash-odor.jpg', TRUE, FALSE, 320000),
-    ('combo_003', '3-Month Comprehensive', 'Monthly detailing for 3 months', 1890000, 90, 3, 'VIP Detailing x3', 'https://example.com/combos/3-month.jpg', TRUE, FALSE, 2490000),
     ('combo_004', 'Express Shield', 'Fast exterior wash with quick protection', 280000, 1, 1, 'Quick Wash|Protective spray', 'https://example.com/combos/express-shield.jpg', TRUE, FALSE, 390000),
     ('combo_005', 'Gloss Restore', 'Deep clean with gloss finish', 420000, 7, 2, 'Premium Clean|Gloss finish', 'https://example.com/combos/gloss-restore.jpg', TRUE, FALSE, 590000),
     ('combo_006', 'Urban Refresh', 'Best for city drivers with frequent visits', 360000, 14, 2, 'Interior vacuum|Tire shine', 'https://example.com/combos/urban-refresh.jpg', TRUE, FALSE, 510000),
