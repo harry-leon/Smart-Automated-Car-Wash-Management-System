@@ -10,6 +10,7 @@ autowash-backend/target/
 autowash-backend/build/
 autowash-backend/.gradle/
 autowash-backend/.env
+autowash-backend/*.log
 
 .idea/
 .vscode/

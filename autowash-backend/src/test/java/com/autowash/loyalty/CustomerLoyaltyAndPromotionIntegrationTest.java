@@ -246,7 +246,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 true
         ));
 
-        return customerBookingRepository.saveAndFlush(new CustomerBooking(
+        CustomerBooking booking = new CustomerBooking(
                 bookingId,
                 user,
                 vehicle,
@@ -261,7 +261,9 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 0,
                 finalAmount,
                 30
-        ));
+        );
+        booking.confirmByOtp();
+        return customerBookingRepository.saveAndFlush(booking);
     }
 
     private AuthUser createActiveCustomer(String phone) {

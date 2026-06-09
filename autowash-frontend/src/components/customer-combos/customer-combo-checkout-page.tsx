@@ -245,7 +245,7 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
         });
 
         toast.success("Đã dùng combo sẵn có và tạo lịch thành công.");
-        router.push(`/customer/bookings/success?bookingId=${booking.bookingId}`);
+        router.push(`/customer/bookings/success?bookingId=${booking.bookingId}&otpExpiresAt=${encodeURIComponent(booking.otpExpiresAt)}`);
         return;
       }
 

@@ -165,7 +165,7 @@ class LoyaltyControllerIntegrationTest {
                 true
         ));
 
-        CustomerBooking booking = customerBookingRepository.save(new CustomerBooking(
+        CustomerBooking booking = new CustomerBooking(
                 bookingId,
                 customer,
                 vehicle,
@@ -180,7 +180,9 @@ class LoyaltyControllerIntegrationTest {
                 0,
                 finalAmount,
                 30
-        ));
+        );
+        booking.confirmByOtp();
+        customerBookingRepository.save(booking);
         WashSession session = new WashSession(booking, "Loyalty controller test");
         Instant now = Instant.now();
         session.queue(now);

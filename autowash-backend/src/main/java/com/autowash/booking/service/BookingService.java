@@ -6,6 +6,7 @@ import com.autowash.booking.dto.ApplyPointsRequest;
 import com.autowash.booking.dto.ApplyPointsResponse;
 import com.autowash.booking.dto.BookingDetailResponse;
 import com.autowash.booking.dto.BookingListItemResponse;
+import com.autowash.booking.dto.BookingOtpResponse;
 import com.autowash.booking.dto.CancelBookingResponse;
 import com.autowash.booking.dto.CreateBookingRequest;
 import com.autowash.booking.dto.CreateBookingResponse;
@@ -66,6 +67,7 @@ public class BookingService {
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyService loyaltyService;
     private final StaffAssignmentService staffAssignmentService;
+    private final BookingOtpService bookingOtpService;
     private final CustomerComboService customerComboService;
 
     public BookingService(
@@ -78,6 +80,7 @@ public class BookingService {
             WashSessionRepository washSessionRepository,
             LoyaltyService loyaltyService,
             StaffAssignmentService staffAssignmentService,
+            BookingOtpService bookingOtpService,
             CustomerComboService customerComboService
     ) {
         this.currentUserService = currentUserService;
@@ -89,11 +92,12 @@ public class BookingService {
         this.washSessionRepository = washSessionRepository;
         this.loyaltyService = loyaltyService;
         this.staffAssignmentService = staffAssignmentService;
+        this.bookingOtpService = bookingOtpService;
         this.customerComboService = customerComboService;
     }
 
     @Transactional
-    public CreateBookingResponse createBooking(CreateBookingRequest request) {
+    public CreateBookingResponse createBooking(CreateBookingRequest request, BookingOtpService.RequestMetadata metadata) {
         AuthUser user = currentUserService.getCurrentUser();
         if (customerBookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
@@ -172,6 +176,7 @@ public class BookingService {
         booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
         addons.forEach(addon -> booking.addAddon(new BookingAddon(booking, addon.getId(), addon.getName(), addon.getPrice())));
         customerBookingRepository.save(booking);
+        var otpResponse = bookingOtpService.issueInitialOtp(booking, metadata);
 
         if (serviceCombo != null) {
             if (ownedCombo == null) {
@@ -199,6 +204,9 @@ public class BookingService {
                 booking.getPaymentMethod().name(),
                 booking.getPaymentStatus().name(),
                 booking.getStatus().name(),
+                booking.getConfirmationStatus().name(),
+                otpResponse.otpExpiresIn(),
+                otpResponse.expiresAt(),
                 booking.getCreatedAt(),
                 booking.getId(),
                 serviceCombo == null ? null : serviceCombo.getId(),
@@ -262,6 +270,16 @@ public class BookingService {
                 booking.getRefundStatus(),
                 "Refund will be processed within 3-5 business days"
         );
+    }
+
+    @Transactional
+    public BookingOtpResponse resendBookingOtp(String bookingId, BookingOtpService.RequestMetadata metadata) {
+        return bookingOtpService.resendOtp(findOwnedBooking(bookingId), metadata);
+    }
+
+    @Transactional(noRollbackFor = ApiException.class)
+    public BookingOtpResponse verifyBookingOtp(String bookingId, String otp, BookingOtpService.RequestMetadata metadata) {
+        return bookingOtpService.verifyOtp(findOwnedBooking(bookingId), otp, metadata);
     }
 
     @Transactional
@@ -378,6 +396,8 @@ public class BookingService {
                         booking.getCreatedAt()
                 ),
                 booking.getStatus().name(),
+                booking.getConfirmationStatus().name(),
+                booking.getConfirmationExpiresAt(),
                 washSession == null ? null : washSession.getId().toString(),
                 resolveAssignedStaffName(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),

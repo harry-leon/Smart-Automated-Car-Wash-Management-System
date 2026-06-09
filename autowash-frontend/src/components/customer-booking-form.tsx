@@ -3,15 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, RefreshCcw } from "lucide-react";
+import type { ReactNode } from "react";
+import { CheckCircle2, Loader2, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDisplayErrorMessage, getFieldErrorMessage } from "@/lib/api-errors";
-import {
-  CustomerBookingMultiSelect,
-  CustomerBookingSelect,
-} from "@/components/customer-booking-select";
+import { CustomerBookingSelect } from "@/components/customer-booking-select";
 import {
   BOOKING_TIME_SLOTS,
   buildBookingSummary,
@@ -20,7 +18,11 @@ import {
   getPaymentMethodLabel,
   validateBookingDraft,
 } from "@/lib/booking-format";
-import { getVoucherCodeFormatError, sanitizeVoucherCodeInput, voucherCodeFormatMessage } from "@/lib/validators";
+import {
+  getVoucherCodeFormatError,
+  sanitizeVoucherCodeInput,
+  voucherCodeFormatMessage,
+} from "@/lib/validators";
 import {
   useActiveCustomerCombos,
   useBookingAddons,
@@ -39,6 +41,42 @@ function getTomorrowDate() {
   const next = new Date();
   next.setDate(next.getDate() + 1);
   return next.toISOString().slice(0, 10);
+}
+
+function optionCardClass(active: boolean, disabled = false) {
+  return [
+    "group relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
+    active
+      ? "border-sky-500 bg-sky-50 shadow-[0_18px_38px_rgba(14,165,233,0.18)]"
+      : "border-slate-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-[0_16px_34px_rgba(15,23,42,0.10)]",
+    disabled
+      ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:border-slate-200 hover:shadow-sm"
+      : "",
+  ].join(" ");
+}
+
+function SelectionMark({ active }: { active: boolean }) {
+  return (
+    <span
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all duration-200 ${
+        active
+          ? "border-sky-500 bg-sky-500 text-white"
+          : "border-slate-200 bg-white text-transparent group-hover:border-sky-200"
+      }`}
+      aria-hidden="true"
+    >
+      <CheckCircle2 className="h-4 w-4" />
+    </span>
+  );
+}
+
+function OptionPill({ children }: { children: ReactNode }) {
+  return (
+    <span className="rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+      {children}
+    </span>
+  );
 }
 
 export function CustomerBookingForm() {
@@ -144,7 +182,7 @@ export function CustomerBookingForm() {
 
   const selectedCustomerCombo =
     draft.mode === "COMBO"
-      ? activeCustomerCombos.find((item) => item.comboId === draft.comboId) ?? null
+      ? (activeCustomerCombos.find((item) => item.comboId === draft.comboId) ?? null)
       : null;
 
   const summary = useMemo(
@@ -161,9 +199,7 @@ export function CustomerBookingForm() {
 
   const errors = useMemo(() => {
     const validationSummary =
-      draft.voucherCode.trim().length > 0 && !validatedVoucher
-        ? null
-        : summary;
+      draft.voucherCode.trim().length > 0 && !validatedVoucher ? null : summary;
 
     return validateBookingDraft(draft, validationSummary);
   }, [draft, summary, validatedVoucher]);
@@ -181,35 +217,6 @@ export function CustomerBookingForm() {
     label: `${vehicle.plate} · ${vehicle.brand} ${vehicle.model}`,
     description: `${vehicle.type}${vehicle.isPrimary ? " · Primary vehicle" : ""}`,
   }));
-  const packageOptions = packages.map((item) => ({
-    value: item.packageId,
-    label: item.name,
-    description: item.description,
-    helper: `${formatBookingCurrency(item.basePrice)} · ${item.duration} min`,
-  }));
-  const _comboOptionsCatalog = combos.map((item) => ({
-    value: item.comboId,
-    label: item.name,
-    description: item.description,
-    helper: `${formatBookingCurrency(item.basePrice)} · ${item.durationDays} days · max ${item.maxServices} services`,
-  }));
-  const comboOptions = _comboOptionsCatalog.map((item) => {
-    const ownedCombo = activeOwnedComboMap.get(item.value);
-
-    return ownedCombo
-      ? {
-          ...item,
-          description: `Owned combo · ${ownedCombo.remainingUsages} usages left · expires ${new Date(ownedCombo.expiresAt).toLocaleDateString("vi-VN")}`,
-        }
-      : item;
-  });
-  const addonOptions = selectedPackageAddons.map((addon) => ({
-    value: addon.addonId,
-    label: addon.name,
-    description: addon.description,
-    helper: `${formatBookingCurrency(addon.price)} · ${addon.duration} min`,
-  }));
-
   const validateVoucher = async () => {
     const normalizedCode = sanitizeVoucherCodeInput(draft.voucherCode);
     const formatError = getVoucherCodeFormatError(normalizedCode);
@@ -259,7 +266,9 @@ export function CustomerBookingForm() {
     try {
       const booking = await createBookingMutation.mutateAsync(draft);
       toast.success("Booking created successfully.");
-      router.push(`/customer/bookings/success?bookingId=${booking.bookingId}`);
+      router.push(
+        `/customer/bookings/success?bookingId=${booking.bookingId}&otpExpiresAt=${encodeURIComponent(booking.otpExpiresAt)}`,
+      );
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
     }
@@ -269,8 +278,8 @@ export function CustomerBookingForm() {
     setValidatedVoucher(null);
     updateDraft({
       mode,
-      packageId: mode === "PACKAGE" ? packages[0]?.packageId ?? "" : "",
-        comboId: mode === "COMBO" ? preferredOwnedComboId || combos[0]?.comboId || "" : "",
+      packageId: mode === "PACKAGE" ? (packages[0]?.packageId ?? "") : "",
+      comboId: mode === "COMBO" ? preferredOwnedComboId || combos[0]?.comboId || "" : "",
       addonIds: [],
       voucherCode: "",
     });
@@ -341,29 +350,49 @@ export function CustomerBookingForm() {
 
           <CheckoutSection step="2" title="Choose booking type">
             <div className="grid gap-3 md:grid-cols-2">
-              {(["PACKAGE", "COMBO"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  className={`rounded-2xl border p-4 text-left transition ${
-                    draft.mode === mode
-                      ? "border-sky-600 bg-sky-50"
-                      : "border-slate-200 bg-white hover:border-slate-400"
-                  } ${mode === "COMBO" && combos.length === 0 ? "cursor-not-allowed opacity-60" : ""}`}
-                  disabled={mode === "COMBO" && combos.length === 0}
-                  onClick={() => updateMode(mode)}
-                >
-                  <div className="text-base font-bold">{getModeLabel(mode)}</div>
-                  <div className="mt-1 text-sm text-slate-500">
-                    {mode === "PACKAGE"
-                      ? "Chọn một gói rửa và dịch vụ thêm nếu cần."
-                      : "Đặt trực tiếp từ danh sách combo hiện có."}
-                  </div>
-                </button>
-              ))}
+              {(["PACKAGE", "COMBO"] as const).map((mode) => {
+                const active = draft.mode === mode;
+                const disabled = mode === "COMBO" && combos.length === 0;
+
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={optionCardClass(active, disabled)}
+                    disabled={disabled}
+                    onClick={() => updateMode(mode)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-base font-bold text-slate-950">
+                          {getModeLabel(mode)}
+                        </div>
+                        <div className="mt-1 text-sm leading-6 text-slate-500">
+                          {mode === "PACKAGE"
+                            ? "Chọn một gói rửa và dịch vụ thêm nếu cần."
+                            : "Đặt trực tiếp từ danh sách combo hiện có."}
+                        </div>
+                      </div>
+                      <SelectionMark active={active} />
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <OptionPill>
+                        {mode === "PACKAGE"
+                          ? `${packages.length} packages`
+                          : `${combos.length} combos`}
+                      </OptionPill>
+                      <OptionPill>
+                        {mode === "PACKAGE"
+                          ? `${addons.length} add-ons`
+                          : `${activeOwnedCombos.length} active owned`}
+                      </OptionPill>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
             {draft.mode === "COMBO" ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-sm leading-6 text-slate-600">
                 Select a combo first. If you already own a valid combo of the same type, the combo
                 charge is skipped and the booking uses the remaining usages from that owned combo.
               </div>
@@ -375,57 +404,76 @@ export function CustomerBookingForm() {
             title={draft.mode === "PACKAGE" ? "Select wash package" : "Select combo"}
           >
             {draft.mode === "PACKAGE" ? (
-              <CustomerBookingSelect
-                options={packageOptions}
-                value={draft.packageId}
-                onValueChange={(packageId) =>
-                  updateDraft({
-                    packageId,
-                    addonIds: [],
-                    voucherCode: "",
-                  })
-                }
-                placeholder="Select a wash package"
-                searchPlaceholder="Search package name or description..."
-                emptyText="No packages found."
-                renderValue={(option) =>
-                  option ? (
-                    <span className="block">
-                      <span className="block truncate font-semibold text-slate-900">
-                        {option.label}
-                      </span>
-                      <span className="block truncate text-xs font-normal text-slate-500">
-                        {option.helper}
-                      </span>
-                    </span>
-                  ) : (
-                    "Select a wash package"
-                  )
-                }
-              />
+              <div className="grid gap-3">
+                {packages.map((item) => {
+                  const active = draft.packageId === item.packageId;
+                  return (
+                    <button
+                      key={item.packageId}
+                      type="button"
+                      className={optionCardClass(active)}
+                      onClick={() =>
+                        updateDraft({
+                          packageId: item.packageId,
+                          addonIds: [],
+                          voucherCode: "",
+                        })
+                      }
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="text-lg font-bold text-slate-950">{item.name}</div>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                            {item.description}
+                          </p>
+                        </div>
+                        <SelectionMark active={active} />
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <OptionPill>{item.duration} min</OptionPill>
+                        <OptionPill>{formatBookingCurrency(item.basePrice)}</OptionPill>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             ) : (
-              <CustomerBookingSelect
-                options={comboOptions}
-                value={draft.comboId}
-                onValueChange={(comboId) => updateDraft({ comboId, voucherCode: "" })}
-                placeholder="Select a combo"
-                searchPlaceholder="Search combo name or description..."
-                emptyText="No combos found."
-                renderValue={(option) =>
-                  option ? (
-                    <span className="block">
-                      <span className="block truncate font-semibold text-slate-900">
-                        {option.label}
-                      </span>
-                      <span className="block truncate text-xs font-normal text-slate-500">
-                        {option.helper}
-                      </span>
-                    </span>
-                  ) : (
-                    "Select a combo"
-                  )
-                }
-              />
+              <div className="grid gap-3">
+                {combos.map((item) => {
+                  const active = draft.comboId === item.comboId;
+                  const ownedCombo = activeOwnedComboMap.get(item.comboId);
+
+                  return (
+                    <button
+                      key={item.comboId}
+                      type="button"
+                      className={optionCardClass(active)}
+                      onClick={() => updateDraft({ comboId: item.comboId, voucherCode: "" })}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="text-lg font-bold text-slate-950">{item.name}</div>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                            {item.description}
+                          </p>
+                        </div>
+                        <SelectionMark active={active} />
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <OptionPill>{item.durationDays} days</OptionPill>
+                        <OptionPill>Max {item.maxServices} services</OptionPill>
+                        <OptionPill>{formatBookingCurrency(item.basePrice)}</OptionPill>
+                      </div>
+                      {ownedCombo ? (
+                        <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+                          Owned combo · {ownedCombo.remainingUsages} usages left · expires{" "}
+                          {new Date(ownedCombo.expiresAt).toLocaleDateString("vi-VN")}
+                        </p>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
             )}
             <FieldError
               message={
@@ -464,21 +512,49 @@ export function CustomerBookingForm() {
                 No active add-ons are available for the selected package.
               </p>
             ) : (
-              <CustomerBookingMultiSelect
-                options={addonOptions}
-                value={draft.addonIds}
-                onValueChange={(addonIds) => updateDraft({ addonIds, voucherCode: "" })}
-                placeholder="Select one or more add-ons"
-                searchPlaceholder="Search add-on name or description..."
-                emptyText="No add-ons found."
-              />
+              <div className="grid gap-3 md:grid-cols-2">
+                {selectedPackageAddons.map((addon) => {
+                  const active = draft.addonIds.includes(addon.addonId);
+                  return (
+                    <button
+                      key={addon.addonId}
+                      type="button"
+                      className={optionCardClass(active)}
+                      onClick={() =>
+                        updateDraft({
+                          addonIds: active
+                            ? draft.addonIds.filter((addonId) => addonId !== addon.addonId)
+                            : [...draft.addonIds, addon.addonId],
+                          voucherCode: "",
+                        })
+                      }
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-slate-950">{addon.name}</div>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                            {addon.description}
+                          </p>
+                        </div>
+                        <SelectionMark active={active} />
+                      </div>
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <OptionPill>{addon.duration} min</OptionPill>
+                        <OptionPill>{formatBookingCurrency(addon.price)}</OptionPill>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </CheckoutSection>
 
           <CheckoutSection step="5" title="Choose schedule">
             <div className="grid gap-4 xl:grid-cols-[220px,1fr]">
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Booking date</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Booking date
+                </label>
                 <input
                   type="date"
                   min={getTomorrowDate()}
@@ -489,7 +565,9 @@ export function CustomerBookingForm() {
                 <FieldError message={showValidation ? errors.bookingDate : null} />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Booking time</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Booking time
+                </label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {BOOKING_TIME_SLOTS.map((time) => (
                     <button
@@ -539,7 +617,9 @@ export function CustomerBookingForm() {
                   !summary
                 }
               >
-                {voucherMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {voucherMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 Validate
               </Button>
               <Button
@@ -631,7 +711,9 @@ export function CustomerBookingForm() {
                   <SummaryItem label="Selected item" value={summary.itemName} />
                   <SummaryItem
                     label="Vehicle"
-                    value={vehicles.find((item) => item.vehicleId === draft.vehicleId)?.plate ?? "--"}
+                    value={
+                      vehicles.find((item) => item.vehicleId === draft.vehicleId)?.plate ?? "--"
+                    }
                   />
                   <SummaryItem
                     label="Schedule"
@@ -664,9 +746,7 @@ export function CustomerBookingForm() {
                   ) : null}
                   <SummaryItem
                     label="Payment method"
-                    value={
-                      draft.paymentMethod ? getPaymentMethodLabel(draft.paymentMethod) : "--"
-                    }
+                    value={draft.paymentMethod ? getPaymentMethodLabel(draft.paymentMethod) : "--"}
                   />
                   <SummaryItem
                     label="Final amount"
@@ -787,5 +867,3 @@ function BookingPageErrorState({
     </div>
   );
 }
-
-

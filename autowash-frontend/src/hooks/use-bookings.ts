@@ -13,8 +13,10 @@ import {
   listBookingPackages,
   listActiveCustomerCombos,
   listCustomerBookings,
+  resendBookingOtp,
   purchaseCustomerCombo,
   validateBookingVoucher,
+  verifyBookingOtp,
 } from "@/lib/booking-service";
 import {
   bookingDetailQueryKey,
@@ -30,6 +32,7 @@ import type {
   BookingDraft,
   BookingListFilters,
   BookingListPage,
+  BookingOtpResponse,
   BookingPackage,
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
@@ -52,6 +55,18 @@ function useBookingQueryContext() {
   const enabled = Boolean(accessToken && userId && user?.role === "CUSTOMER");
 
   return { enabled, userId };
+}
+
+async function invalidateBookingViews(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: string | null,
+  bookingId: string,
+) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, bookingId) }),
+    queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) }),
+    queryClient.invalidateQueries({ queryKey: washTrackingActiveQueryKey(userId) }),
+  ]);
 }
 
 export function useBookingPackages() {
@@ -121,6 +136,30 @@ export function useCreateCustomerBooking() {
     mutationFn: createCustomerBooking,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) });
+    },
+  });
+}
+
+export function useResendBookingOtp(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<BookingOtpResponse, ApiErrorResponse, void>({
+    mutationFn: () => resendBookingOtp(bookingId),
+    onSuccess: async () => {
+      await invalidateBookingViews(queryClient, userId, bookingId);
+    },
+  });
+}
+
+export function useVerifyBookingOtp(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<BookingOtpResponse, ApiErrorResponse, string>({
+    mutationFn: (otp) => verifyBookingOtp(bookingId, otp),
+    onSuccess: async () => {
+      await invalidateBookingViews(queryClient, userId, bookingId);
     },
   });
 }
