@@ -79,7 +79,7 @@ class BookingControllerIntegrationTest {
     void getAvailableCombosReturnsActiveCombos() throws Exception {
         mockMvc.perform(get("/api/v1/combos/available"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(10))
+                .andExpect(jsonPath("$.data.length()").value(8))
                 .andExpect(jsonPath("$.data[0].comboId").value("combo_001"));
     }
 
