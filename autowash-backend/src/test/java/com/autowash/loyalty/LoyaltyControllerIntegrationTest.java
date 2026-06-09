@@ -193,7 +193,7 @@ class LoyaltyControllerIntegrationTest {
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {
-        mockMvc.perform(post("/api/v1/auth/register")
+        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
@@ -204,17 +204,9 @@ class LoyaltyControllerIntegrationTest {
                                   "passwordConfirm": "SecurePass1!"
                                 }
                                 """.formatted(phone, phone)))
-                .andExpect(status().isCreated());
-
-        MvcResult sendOtpResult = mockMvc.perform(post("/api/v1/auth/otp/send")
-                        .contentType("application/json")
-                        .content("""
-                                { "phone": "%s" }
-                                """.formatted(phone)))
-                .andExpect(status().isOk())
                 .andReturn();
 
-        String otp = readJson(sendOtpResult).path("data").path("devOtp").asText();
+        String otp = readJson(registerResult).path("data").path("devOtp").asText();
 
         MvcResult verifyOtpResult = mockMvc.perform(post("/api/v1/auth/otp/verify")
                         .contentType("application/json")

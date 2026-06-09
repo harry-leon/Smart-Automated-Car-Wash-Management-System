@@ -95,7 +95,7 @@ public class AuthUser {
         this.emailVerified = false;
         this.avatarUrl = null;
         this.role = UserRole.CUSTOMER;
-        this.status = UserStatus.PENDING;
+        this.status = UserStatus.PENDING_VERIFY;
         this.tier = LoyaltyTier.MEMBER;
         this.isNewCustomer = true;
         this.language = LanguagePreference.VI;
@@ -229,6 +229,7 @@ public class AuthUser {
 
     public void activate() {
         this.status = UserStatus.ACTIVE;
+        this.emailVerified = true;
         this.updatedAt = Instant.now();
     }
 

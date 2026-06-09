@@ -6,14 +6,17 @@ export default function VerifyOtpPage({
   searchParams,
 }: {
   searchParams?: {
+    email?: string;
     phone?: string;
     autoSend?: string;
+    expiresIn?: string;
   };
 }) {
+  const expiresIn = Number(searchParams?.expiresIn ?? "300");
   return (
     <PublicAuthShell
-      title="Verify your number"
-      description="Confirm the 6-digit OTP to activate your account."
+      title="Verify your email"
+      description="Confirm the 6-digit OTP sent to your email to activate your account."
       footer={
         <div>
           <span className="text-slate-500">Need to restart? </span>
@@ -25,7 +28,9 @@ export default function VerifyOtpPage({
     >
       <VerifyOtpForm
         autoSend={searchParams?.autoSend === "1"}
+        initialEmail={searchParams?.email ?? ""}
         initialPhone={searchParams?.phone ?? ""}
+        initialExpiresIn={Number.isFinite(expiresIn) ? expiresIn : 300}
       />
     </PublicAuthShell>
   );

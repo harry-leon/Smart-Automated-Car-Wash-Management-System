@@ -10,6 +10,7 @@ import com.autowash.booking.dto.BookingOtpResponse;
 import com.autowash.booking.dto.CancelBookingResponse;
 import com.autowash.booking.dto.CreateBookingRequest;
 import com.autowash.booking.dto.CreateBookingResponse;
+import com.autowash.booking.entity.CustomerCombo;
 import com.autowash.booking.entity.BookingAddon;
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.entity.CustomerBooking;
@@ -67,6 +68,7 @@ public class BookingService {
     private final LoyaltyService loyaltyService;
     private final StaffAssignmentService staffAssignmentService;
     private final BookingOtpService bookingOtpService;
+    private final CustomerComboService customerComboService;
 
     public BookingService(
             CurrentUserService currentUserService,
@@ -78,7 +80,8 @@ public class BookingService {
             WashSessionRepository washSessionRepository,
             LoyaltyService loyaltyService,
             StaffAssignmentService staffAssignmentService,
-            BookingOtpService bookingOtpService
+            BookingOtpService bookingOtpService,
+            CustomerComboService customerComboService
     ) {
         this.currentUserService = currentUserService;
         this.customerVehicleRepository = customerVehicleRepository;
@@ -90,6 +93,7 @@ public class BookingService {
         this.loyaltyService = loyaltyService;
         this.staffAssignmentService = staffAssignmentService;
         this.bookingOtpService = bookingOtpService;
+        this.customerComboService = customerComboService;
     }
 
     @Transactional
@@ -109,10 +113,13 @@ public class BookingService {
         List<ServiceAddon> addons = catalogService.requireActiveAddons(request.addons());
         ServicePackage servicePackage = null;
         ServiceCombo serviceCombo = null;
+        CustomerCombo ownedCombo = null;
         long basePrice;
         int baseDuration;
         String responsePackageId = null;
         String responsePackageName;
+        String customerComboId = null;
+        boolean comboPurchased = false;
 
         if (request.packageId() != null && !request.packageId().isBlank()) {
             servicePackage = catalogService.requireActivePackage(request.packageId());
@@ -122,9 +129,23 @@ public class BookingService {
             responsePackageName = servicePackage.getName();
         } else {
             serviceCombo = catalogService.requireActiveCombo(request.comboId());
-            basePrice = serviceCombo.getBasePrice();
+            ownedCombo = customerComboService.findActiveOwnedCombo(user, serviceCombo.getId());
             baseDuration = 0;
             responsePackageName = serviceCombo.getName();
+            if (ownedCombo != null) {
+                if (ownedCombo.isExpired()) {
+                    customerComboService.markExpired(ownedCombo);
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is expired", "BUSINESS_RULE_VIOLATION");
+                }
+                if (!ownedCombo.hasRemainingUsages()) {
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo has no remaining usages", "BUSINESS_RULE_VIOLATION");
+                }
+                basePrice = 0;
+                customerComboId = ownedCombo.getId();
+            } else {
+                basePrice = serviceCombo.getBasePrice();
+                comboPurchased = true;
+            }
         }
 
         long addonsTotal = addons.stream().mapToLong(ServiceAddon::getPrice).sum();
@@ -157,6 +178,14 @@ public class BookingService {
         customerBookingRepository.save(booking);
         var otpResponse = bookingOtpService.issueInitialOtp(booking, metadata);
 
+        if (serviceCombo != null) {
+            if (ownedCombo == null) {
+                ownedCombo = customerComboService.createOwnedCombo(user, serviceCombo.getId(), booking.getId());
+                customerComboId = ownedCombo.getId();
+            }
+            customerComboService.recordUsage(ownedCombo, booking.getId(), request.bookingDate());
+        }
+
         return new CreateBookingResponse(
                 booking.getId(),
                 user.getId().toString(),
@@ -178,7 +207,10 @@ public class BookingService {
                 booking.getConfirmationStatus().name(),
                 otpResponse.otpExpiresIn(),
                 booking.getCreatedAt(),
-                booking.getId()
+                booking.getId(),
+                serviceCombo == null ? null : serviceCombo.getId(),
+                customerComboId,
+                comboPurchased
         );
     }
 

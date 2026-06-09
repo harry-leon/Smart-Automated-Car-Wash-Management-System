@@ -91,7 +91,7 @@ class BookingControllerIntegrationTest {
     void getAvailableCombosReturnsActiveCombos() throws Exception {
         mockMvc.perform(get("/api/v1/combos/available"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data.length()").value(8))
                 .andExpect(jsonPath("$.data[0].comboId").value("combo_001"));
     }
 
@@ -168,6 +168,55 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.data.confirmationStatus").value("VERIFIED"));
+    }
+
+    @Test
+    void createComboBookingCreatesOwnedComboAndActiveComboLookup() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234720");
+        String vehicleId = createVehicle(accessToken, "30H-223468");
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "comboId": "combo_001",
+                                  "bookingDate": "2026-06-10",
+                                  "bookingTime": "14:00",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data.customerComboId").isNotEmpty())
+                .andExpect(jsonPath("$.data.comboPurchased").value(true));
+
+        mockMvc.perform(get("/api/v1/customers/combos/active")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data[0].remainingUsages").value(3));
+    }
+
+    @Test
+    void activateComboCreatesOwnedCombo() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234721");
+
+        mockMvc.perform(post("/api/v1/customers/combos/{comboId}/activate", "combo_001")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "comboId": "combo_001",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                        """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("E_WALLET"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("PENDING"));
     }
 
     @Test
@@ -450,8 +499,8 @@ class BookingControllerIntegrationTest {
 
     @Test
     void bookingOtpRejectsWrongCodeLocksAfterThreeFailuresAndAllowsNewResend() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234720");
-        String vehicleId = createVehicle(accessToken, "30H-223468");
+        String accessToken = registerActivateAndLogin("0901234730");
+        String vehicleId = createVehicle(accessToken, "30H-223478");
         String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
 
         for (int i = 0; i < 2; i++) {
@@ -491,8 +540,8 @@ class BookingControllerIntegrationTest {
 
     @Test
     void bookingOtpResendInvalidatesOldOtpAndEnforcesHourlyLimit() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234721");
-        String vehicleId = createVehicle(accessToken, "30H-223469");
+        String accessToken = registerActivateAndLogin("0901234731");
+        String vehicleId = createVehicle(accessToken, "30H-223479");
         String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
 
         String oldOtp = resendBookingOtp(accessToken, bookingId).path("data").path("devOtp").asText();
@@ -521,8 +570,8 @@ class BookingControllerIntegrationTest {
 
     @Test
     void bookingOtpExpiredCodeCancelsPendingBooking() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234722");
-        String vehicleId = createVehicle(accessToken, "30H-223470");
+        String accessToken = registerActivateAndLogin("0901234732");
+        String vehicleId = createVehicle(accessToken, "30H-223480");
         String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
         var booking = customerBookingRepository.findById(bookingId).orElseThrow();
         var challenge = bookingOtpChallengeRepository
@@ -652,7 +701,7 @@ class BookingControllerIntegrationTest {
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {
-        mockMvc.perform(post("/api/v1/auth/register")
+        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
@@ -663,17 +712,9 @@ class BookingControllerIntegrationTest {
                                   "passwordConfirm": "SecurePass1!"
                                 }
                                 """.formatted(phone, phone)))
-                .andExpect(status().isCreated());
-
-        MvcResult sendOtpResult = mockMvc.perform(post("/api/v1/auth/otp/send")
-                        .contentType("application/json")
-                        .content("""
-                                { "phone": "%s" }
-                                """.formatted(phone)))
-                .andExpect(status().isOk())
                 .andReturn();
 
-        String otp = readJson(sendOtpResult).path("data").path("devOtp").asText();
+        String otp = readJson(registerResult).path("data").path("devOtp").asText();
 
         MvcResult verifyOtpResult = mockMvc.perform(post("/api/v1/auth/otp/verify")
                         .contentType("application/json")

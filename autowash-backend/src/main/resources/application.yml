@@ -44,9 +44,12 @@ spring:
       mail:
         smtp:
           auth: true
+          connectiontimeout: ${AUTOWASH_MAIL_CONNECTION_TIMEOUT_MS:10000}
           starttls:
             enable: true
             required: true
+          timeout: ${AUTOWASH_MAIL_TIMEOUT_MS:10000}
+          writetimeout: ${AUTOWASH_MAIL_WRITE_TIMEOUT_MS:10000}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -75,7 +78,7 @@ autowash:
       refresh-token-expiration-seconds: ${AUTOWASH_JWT_REFRESH_TTL:2592000}
     otp:
       expiration-seconds: ${AUTOWASH_OTP_TTL:300}
-      max-attempts: ${AUTOWASH_OTP_MAX_ATTEMPTS:3}
+      max-attempts: ${AUTOWASH_OTP_MAX_ATTEMPTS:5}
       expose-for-dev: ${AUTOWASH_OTP_EXPOSE_FOR_DEV:true}
     google:
       client-id: ${AUTOWASH_GOOGLE_CLIENT_ID:}

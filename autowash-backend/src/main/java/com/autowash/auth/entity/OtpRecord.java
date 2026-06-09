@@ -27,8 +27,11 @@ public class OtpRecord {
     @Column(nullable = false, length = 50)
     private OtpPurpose purpose;
 
-    @Column(nullable = false, length = 6)
+    @Column(nullable = false, length = 255)
     private String code;
+
+    @Column(name = "delivery_address", nullable = false, length = 255)
+    private String deliveryAddress;
 
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
@@ -39,17 +42,24 @@ public class OtpRecord {
     @Column(nullable = false)
     private boolean verified;
 
+    @Column(name = "invalidated_at")
+    private Instant invalidatedAt;
+
+    @Column(name = "locked_at")
+    private Instant lockedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     protected OtpRecord() {
     }
 
-    public OtpRecord(AuthUser user, OtpPurpose purpose, String code, Instant expiresAt) {
+    public OtpRecord(AuthUser user, OtpPurpose purpose, String codeHash, String deliveryAddress, Instant expiresAt) {
         this.id = UUID.randomUUID();
         this.user = user;
         this.purpose = purpose;
-        this.code = code;
+        this.code = codeHash;
+        this.deliveryAddress = deliveryAddress;
         this.expiresAt = expiresAt;
         this.attempts = 0;
         this.verified = false;
@@ -68,6 +78,10 @@ public class OtpRecord {
         return code;
     }
 
+    public String getDeliveryAddress() {
+        return deliveryAddress;
+    }
+
     public Instant getExpiresAt() {
         return expiresAt;
     }
@@ -80,11 +94,45 @@ public class OtpRecord {
         return verified;
     }
 
+    public Instant getInvalidatedAt() {
+        return invalidatedAt;
+    }
+
+    public Instant getLockedAt() {
+        return lockedAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public boolean isLocked() {
+        return lockedAt != null;
+    }
+
+    public boolean isInvalidated() {
+        return invalidatedAt != null;
+    }
+
     public void incrementAttempts() {
         this.attempts++;
     }
 
     public void markVerified() {
         this.verified = true;
+        this.invalidatedAt = Instant.now();
+    }
+
+    public void invalidate() {
+        if (this.invalidatedAt == null) {
+            this.invalidatedAt = Instant.now();
+        }
+    }
+
+    public void lock() {
+        if (this.lockedAt == null) {
+            this.lockedAt = Instant.now();
+            invalidate();
+        }
     }
 }

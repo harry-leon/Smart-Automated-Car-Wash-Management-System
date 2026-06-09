@@ -25,6 +25,9 @@ public record CreateBookingResponse(
         String confirmationStatus,
         int otpExpiresIn,
         Instant createdAt,
-        String confirmationNumber
+        String confirmationNumber,
+        String comboId,
+        String customerComboId,
+        boolean comboPurchased
 ) {
 }

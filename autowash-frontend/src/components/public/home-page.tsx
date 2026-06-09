@@ -177,7 +177,7 @@ const navigationItems = [
 
 export function HomePageView() {
   const [authMode, setAuthMode] = useState<"login" | "register" | "otp" | null>(null);
-  const [otpPhone, setOtpPhone] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
   const [language, setLanguage] = useState<"vi" | "en">("en");
   const copy = HOME_COPY[language];
 
@@ -253,8 +253,8 @@ export function HomePageView() {
       {authMode && (
         <ModernAuthPopupModal
           mode={authMode}
-          otpPhone={otpPhone}
-          setOtpPhone={setOtpPhone}
+          otpEmail={otpEmail}
+          setOtpEmail={setOtpEmail}
           setMode={setAuthMode}
           onClose={handleCloseAuth}
           language={language}

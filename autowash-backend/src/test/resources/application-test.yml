@@ -18,6 +18,9 @@ spring:
         hbm2ddl:
           auto: none
 autowash:
+  email:
+    provider: logging
   auth:
     otp:
+      max-attempts: 5
       expose-for-dev: true
