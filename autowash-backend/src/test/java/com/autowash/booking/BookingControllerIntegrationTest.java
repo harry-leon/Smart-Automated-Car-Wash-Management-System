@@ -33,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @SpringBootTest
@@ -148,12 +149,12 @@ class BookingControllerIntegrationTest {
                                   "vehicleId": "%s",
                                   "packageId": "pkg_001",
                                   "addons": ["addon_001"],
-                                  "bookingDate": "2026-06-10",
+                                  "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId)))
+                                """.formatted(vehicleId, futureBookingDate())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.confirmationStatus").value("PENDING"))
@@ -182,11 +183,11 @@ class BookingControllerIntegrationTest {
                                 {
                                   "vehicleId": "%s",
                                   "comboId": "combo_001",
-                                  "bookingDate": "2026-06-10",
+                                  "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId)))
+                                """.formatted(vehicleId, futureBookingDate())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.comboId").value("combo_001"))
                 .andExpect(jsonPath("$.data.customerComboId").isNotEmpty())
@@ -232,11 +233,11 @@ class BookingControllerIntegrationTest {
                                 {
                                   "vehicleId": "%s",
                                   "packageId": "pkg_001",
-                                  "bookingDate": "2026-06-10",
+                                  "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId)))
+                                """.formatted(vehicleId, futureBookingDate())))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
     }
@@ -253,11 +254,11 @@ class BookingControllerIntegrationTest {
                                 {
                                   "vehicleId": "%s",
                                   "packageId": "pkg_001",
-                                  "bookingDate": "2026-06-10",
+                                  "bookingDate": "%s",
                                   "bookingTime": "2pm",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId)))
+                                """.formatted(vehicleId, futureBookingDate())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.errors[0].field").value("bookingTime"));
@@ -603,12 +604,12 @@ class BookingControllerIntegrationTest {
                                   "vehicleId": "%s",
                                   "packageId": "pkg_001",
                                   "addons": ["addon_001"],
-                                  "bookingDate": "2026-06-10",
+                                  "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",
                                   "paymentMethod": "E_WALLET"
                                 }
-                                """.formatted(vehicleId)))
+                                """.formatted(vehicleId, futureBookingDate())))
                 .andReturn();
         return readJson(result);
     }
@@ -673,6 +674,10 @@ class BookingControllerIntegrationTest {
             digits += "0";
         }
         return prefix + digits.substring(0, 6);
+    }
+
+    private String futureBookingDate() {
+        return LocalDate.now().plusDays(7).toString();
     }
 
     private String createVehicle(String accessToken, String plate) throws Exception {
