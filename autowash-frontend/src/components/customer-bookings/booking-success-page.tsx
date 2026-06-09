@@ -1,17 +1,51 @@
- "use client";
+"use client";
 
 import Link from "next/link";
-import { CheckCircle2, Loader2, Check, Car, Calendar, User, Mail, Phone, FileText, ChevronRight, Download, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Car, Calendar, User, Mail, Phone, FileText, Download, ArrowRight, Clock3, RefreshCcw, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
 import { formatBookingCurrency, getPaymentMethodLabel, getPaymentStatusLabel } from "@/lib/booking-format";
-import { useCustomerBookingDetail } from "@/hooks/use-bookings";
+import { useCustomerBookingDetail, useResendBookingOtp, useVerifyBookingOtp } from "@/hooks/use-bookings";
 import { useCustomerProfile } from "@/hooks/use-customer-profile";
+
+function formatOtpCountdown(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function useOtpSecondsLeft(expiresAt: string | null) {
+  const [secondsLeft, setSecondsLeft] = useState(0);
+
+  useEffect(() => {
+    if (!expiresAt) {
+      setSecondsLeft(0);
+      return;
+    }
+
+    const update = () => {
+      setSecondsLeft(Math.max(Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000), 0));
+    };
+
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [expiresAt]);
+
+  return secondsLeft;
+}
 
 export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string }) {
   const bookingQuery = useCustomerBookingDetail(bookingId);
   const profileQuery = useCustomerProfile();
+  const resendOtpMutation = useResendBookingOtp(bookingId);
+  const verifyOtpMutation = useVerifyBookingOtp(bookingId);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const otpSecondsLeft = useOtpSecondsLeft(bookingQuery.data?.confirmationExpiresAt ?? null);
 
   if (!bookingId) {
     return (
@@ -65,6 +99,8 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
   }
 
   const booking = bookingQuery.data;
+  const needsOtpVerification =
+    booking.status === "PENDING" && booking.confirmationStatus === "PENDING";
   const customerName = booking.customerName || profileQuery.data?.fullName || "Customer";
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || "No phone number";
   const customerEmail = profileQuery.data?.email || "customer@example.com";
@@ -80,6 +116,37 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
     month: "long",
     day: "numeric",
   });
+
+  const handleResendOtp = async () => {
+    try {
+      await resendOtpMutation.mutateAsync();
+      setOtpCode("");
+      setOtpError(null);
+      await bookingQuery.refetch();
+      toast.success("A new booking OTP was sent to your email.");
+    } catch (error) {
+      setOtpError(getDisplayErrorMessage(error));
+      toast.error(getDisplayErrorMessage(error));
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!/^\d{6}$/.test(otpCode)) {
+      setOtpError("Enter the 6-digit OTP sent to your email.");
+      return;
+    }
+
+    try {
+      await verifyOtpMutation.mutateAsync(otpCode);
+      setOtpCode("");
+      setOtpError(null);
+      await bookingQuery.refetch();
+      toast.success("Booking verified successfully.");
+    } catch (error) {
+      setOtpError(getDisplayErrorMessage(error));
+      toast.error(getDisplayErrorMessage(error));
+    }
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 bg-slate-50 min-h-screen">
@@ -102,15 +169,15 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
         {/* Left Area - Green Box & Stepper Progress (Spans 2 columns on large screens) */}
         <div className="space-y-6 lg:col-span-2">
           {/* Green Hero Section */}
-          <div className="relative overflow-hidden rounded-3xl bg-[#2ecc71] px-6 py-12 text-center text-white shadow-lg">
+          <div className={`relative overflow-hidden rounded-3xl ${needsOtpVerification ? "bg-sky-600" : "bg-[#2ecc71]"} px-6 py-12 text-center text-white shadow-lg`}>
             {/* Decorative floating shapes in background */}
             <div className="absolute top-10 left-10 h-3 w-3 rounded-full bg-white/20 animate-ping" />
             <div className="absolute bottom-10 right-10 h-4 w-4 rounded-full bg-white/10" />
 
             <div className="flex flex-col items-center justify-center">
               {/* Floating animated checkmark circle with confetti */}
-              <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white text-[#2ecc71] shadow-xl transition-transform hover:scale-105">
-                <Check className="h-12 w-12 stroke-[4]" />
+              <div className={`relative mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white ${needsOtpVerification ? "text-sky-600" : "text-[#2ecc71]"} shadow-xl transition-transform hover:scale-105`}>
+                {needsOtpVerification ? <Clock3 className="h-12 w-12" /> : <Check className="h-12 w-12 stroke-[4]" />}
                 {/* Confetti details */}
                 <span className="absolute -top-3 -left-3 animate-pulse text-amber-300 text-xl">✦</span>
                 <span className="absolute -top-6 right-2 text-violet-200 text-sm">◆</span>
@@ -120,16 +187,86 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 <span className="absolute bottom-6 -right-4 text-yellow-300 text-xs">■</span>
               </div>
 
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-100">Thank You</p>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/75">
+                {needsOtpVerification ? "Verification Required" : "Thank You"}
+              </p>
               <h1 className="mt-2 text-2xl font-extrabold tracking-wide uppercase sm:text-3xl">
-                Your Booking is Confirmed
+                {needsOtpVerification ? "Verify Your Booking" : "Your Booking is Confirmed"}
               </h1>
               <p className="mt-4 max-w-md text-sm text-emerald-50 text-center leading-relaxed">
-                We have received your booking and sent a confirmation email to{" "}
-                <span className="font-semibold underline">{customerEmail}</span> shortly.
+                {needsOtpVerification ? (
+                  <>
+                    Your booking is pending. Enter the 6-digit OTP sent to{" "}
+                    <span className="font-semibold underline">{customerEmail}</span> to confirm it.
+                  </>
+                ) : (
+                  <>
+                    We have confirmed your booking and sent a confirmation email to{" "}
+                    <span className="font-semibold underline">{customerEmail}</span>.
+                  </>
+                )}
               </p>
             </div>
           </div>
+
+          {needsOtpVerification ? (
+            <Card className="border-sky-200 bg-sky-50 shadow-md rounded-2xl overflow-hidden">
+              <CardHeader>
+                <div className="flex items-center gap-3 text-sky-800">
+                  <Clock3 className="h-5 w-5" />
+                  <CardTitle>Email OTP required</CardTitle>
+                </div>
+                <CardDescription>
+                  The booking is saved as pending. It will only become confirmed after OTP verification.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm font-medium text-sky-800">
+                  Expires in {formatOtpCountdown(otpSecondsLeft)}. Resend is limited to 3 times per hour.
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(event) => {
+                      setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6));
+                      setOtpError(null);
+                    }}
+                    placeholder="6-digit OTP"
+                    className="min-h-11 flex-1 rounded-xl border border-sky-200 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900"
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={verifyOtpMutation.isPending || resendOtpMutation.isPending}
+                  >
+                    {verifyOtpMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Verify booking
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleResendOtp}
+                    disabled={resendOtpMutation.isPending || verifyOtpMutation.isPending}
+                  >
+                    {resendOtpMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                    )}
+                    Resend OTP
+                  </Button>
+                </div>
+                {otpError ? <p className="text-sm text-rose-600">{otpError}</p> : null}
+                {otpSecondsLeft === 0 ? (
+                  <p className="text-sm text-amber-700">This OTP has expired. Resend a new OTP before verifying.</p>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
           {/* Progress / Status Panel */}
           <Card className="border-slate-200 bg-white shadow-md rounded-2xl overflow-hidden">
@@ -139,7 +276,9 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                   Booking <span className="font-mono text-emerald-600">#{booking.confirmationNumber}</span> was placed on <span className="font-medium text-slate-900">{formattedPlacedDate}</span>
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Your car wash session schedule is confirmed and is currently pending check-in.
+                  {needsOtpVerification
+                    ? "Your booking is pending email OTP verification."
+                    : "Your car wash session schedule is confirmed and is currently pending check-in."}
                 </p>
               </div>
 
@@ -150,13 +289,17 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                   <div className="h-full bg-emerald-500" style={{ width: "20%" }} />
                 </div>
 
-                {/* Step 1: CONFIRMED */}
+                {/* Step 1: PENDING / CONFIRMED */}
                 <div className="flex flex-col items-center text-center relative z-10 flex-1">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-emerald-500 bg-emerald-500 text-white shadow-md">
-                    <Check className="h-5 w-5 stroke-[3]" />
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${needsOtpVerification ? "border-sky-500 bg-sky-500" : "border-emerald-500 bg-emerald-500"} text-white shadow-md`}>
+                    {needsOtpVerification ? <Clock3 className="h-5 w-5" /> : <Check className="h-5 w-5 stroke-[3]" />}
                   </div>
-                  <div className="mt-2 text-xs font-bold text-slate-800">BOOKING CONFIRMED</div>
-                  <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Scheduled</div>
+                  <div className="mt-2 text-xs font-bold text-slate-800">
+                    {needsOtpVerification ? "WAITING FOR OTP" : "BOOKING CONFIRMED"}
+                  </div>
+                  <div className={`text-[10px] ${needsOtpVerification ? "text-sky-600" : "text-emerald-600"} font-semibold mt-0.5`}>
+                    {needsOtpVerification ? "Pending verification" : "Scheduled"}
+                  </div>
                 </div>
 
                 {/* Step 2: CHECKED IN */}
