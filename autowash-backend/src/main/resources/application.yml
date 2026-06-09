@@ -44,9 +44,12 @@ spring:
       mail:
         smtp:
           auth: true
+          connectiontimeout: ${AUTOWASH_MAIL_CONNECTION_TIMEOUT_MS:10000}
           starttls:
             enable: true
             required: true
+          timeout: ${AUTOWASH_MAIL_TIMEOUT_MS:10000}
+          writetimeout: ${AUTOWASH_MAIL_WRITE_TIMEOUT_MS:10000}
 
 server:
   port: ${SERVER_PORT:8080}

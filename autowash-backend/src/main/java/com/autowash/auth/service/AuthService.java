@@ -87,7 +87,7 @@ public class AuthService {
                 passwordEncoder.encode(request.password())
         );
         authUserRepository.save(user);
-        issueRegistrationOtp(user, metadata, false);
+        SendOtpResponse otpResponse = issueRegistrationOtp(user, metadata, false);
 
         return new RegisterResponse(
                 user.getId().toString(),
@@ -96,7 +96,8 @@ public class AuthService {
                 user.getEmail(),
                 user.getStatus().name(),
                 true,
-                (int) otpExpirationSeconds
+                (int) otpExpirationSeconds,
+                otpResponse.devOtp()
         );
     }
 

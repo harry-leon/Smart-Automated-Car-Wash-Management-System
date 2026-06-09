@@ -7,6 +7,7 @@ public record RegisterResponse(
         String email,
         String status,
         boolean requiresOtpVerification,
-        int otpExpiresIn
+        int otpExpiresIn,
+        String devOtp
 ) {
 }

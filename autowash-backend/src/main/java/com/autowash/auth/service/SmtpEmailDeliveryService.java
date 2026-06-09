@@ -1,17 +1,19 @@
 package com.autowash.auth.service;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import java.io.UnsupportedEncodingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnProperty(prefix = "autowash.email", name = "provider", havingValue = "smtp")
 public class SmtpEmailDeliveryService implements EmailDeliveryService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SmtpEmailDeliveryService.class);
 
     private final JavaMailSender mailSender;
     private final String from;
@@ -29,16 +31,17 @@ public class SmtpEmailDeliveryService implements EmailDeliveryService {
 
     @Override
     public void sendRegistrationOtp(String email, String fullName, String otp, int expiresInSeconds) {
+        MimeMessage message = mailSender.createMimeMessage();
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(from, fromName);
             helper.setTo(email);
             helper.setSubject("AURA Car Wash email verification OTP");
             helper.setText(textBody(fullName, otp, expiresInSeconds), htmlBody(fullName, otp, expiresInSeconds));
             mailSender.send(message);
-        } catch (MessagingException | UnsupportedEncodingException exception) {
-            throw new IllegalStateException("Unable to build registration OTP email", exception);
+        } catch (Exception exception) {
+            LOGGER.error("Failed to send registration OTP email to {}", email, exception);
+            throw new IllegalStateException("Unable to send registration OTP email", exception);
         }
     }
 

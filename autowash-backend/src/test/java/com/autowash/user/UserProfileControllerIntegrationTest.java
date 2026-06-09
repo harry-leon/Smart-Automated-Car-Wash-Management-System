@@ -59,13 +59,13 @@ class UserProfileControllerIntegrationTest {
                                 {
                                   "fullName": "Nguyen Van Updated",
                                   "email": "updated@example.com",
-                                  "phone": "0901234591"
+                                  "phone": "0901234699"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.fullName").value("Nguyen Van Updated"))
                 .andExpect(jsonPath("$.data.email").value("updated@example.com"))
-                .andExpect(jsonPath("$.data.phone").value("0901234591"));
+                .andExpect(jsonPath("$.data.phone").value("0901234699"));
     }
 
     @Test
@@ -166,7 +166,7 @@ class UserProfileControllerIntegrationTest {
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {
-        mockMvc.perform(post("/api/v1/auth/register")
+        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
@@ -177,17 +177,9 @@ class UserProfileControllerIntegrationTest {
                                   "passwordConfirm": "SecurePass1!"
                                 }
                                 """.formatted(phone, phone)))
-                .andExpect(status().isCreated());
-
-        MvcResult sendOtpResult = mockMvc.perform(post("/api/v1/auth/otp/send")
-                        .contentType("application/json")
-                        .content("""
-                                { "phone": "%s" }
-                                """.formatted(phone)))
-                .andExpect(status().isOk())
                 .andReturn();
 
-        String otp = readJson(sendOtpResult).path("data").path("devOtp").asText();
+        String otp = readJson(registerResult).path("data").path("devOtp").asText();
 
         MvcResult verifyOtpResult = mockMvc.perform(post("/api/v1/auth/otp/verify")
                         .contentType("application/json")
