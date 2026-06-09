@@ -23,6 +23,9 @@ public record CreateBookingResponse(
         String paymentStatus,
         String status,
         Instant createdAt,
-        String confirmationNumber
+        String confirmationNumber,
+        String comboId,
+        String customerComboId,
+        boolean comboPurchased
 ) {
 }
