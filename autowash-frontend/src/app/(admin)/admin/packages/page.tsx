@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { redirect } from "next/navigation";
 
 export default function AdminPackagesPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Admin"
-      title="Packages"
-      description="Wash package management shell."
-      endpoints={["GET /admin/packages", "POST /admin/packages"]}
-    />
-  );
+  redirect("/admin/services?tab=packages");
 }

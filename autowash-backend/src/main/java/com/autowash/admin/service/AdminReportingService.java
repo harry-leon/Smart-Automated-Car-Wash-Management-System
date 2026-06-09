@@ -1,6 +1,7 @@
 package com.autowash.admin.service;
 
 import com.autowash.admin.dto.AdminBookingResponse;
+import com.autowash.admin.dto.AdminBusinessHealthReportResponse;
 import com.autowash.admin.dto.AdminAccountResponse;
 import com.autowash.admin.dto.AdminCustomerDetailResponse;
 import com.autowash.admin.dto.AdminCustomerVehicleResponse;
@@ -35,8 +36,14 @@ import com.autowash.vehicle.entity.VehicleStatus;
 import com.autowash.vehicle.repository.CustomerVehicleRepository;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +60,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdminReportingService {
+    private static final EnumSet<BookingStatus> REVENUE_STATUSES = EnumSet.of(
+            BookingStatus.CONFIRMED,
+            BookingStatus.CHECKED_IN,
+            BookingStatus.IN_PROGRESS,
+            BookingStatus.COMPLETED
+    );
 
     private final CustomerBookingRepository bookingRepository;
     private final WashSessionRepository washSessionRepository;
@@ -111,6 +124,86 @@ public class AdminReportingService {
         AuthUser account = authUserRepository.findById(accountId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         return toAccountResponse(account);
+    }
+
+    @Transactional(readOnly = true)
+    public AdminBusinessHealthReportResponse getBusinessHealthReport(
+            String range,
+            String analysisGroup,
+            LocalDate customDateFrom,
+            LocalDate customDateTo
+    ) {
+        ReportWindow window = ReportWindow.resolve(range, customDateFrom, customDateTo);
+        validateDateRange(window.currentFrom(), window.currentTo());
+        validateDateRange(window.previousFrom(), window.previousTo());
+
+        List<CustomerBooking> allBookings = bookingRepository.findAll();
+        List<WashSession> allSessions = washSessionRepository.findAllByOrderByCreatedAtDesc();
+
+        List<CustomerBooking> currentBookings = filterBookingsByDate(allBookings, window.currentFrom(), window.currentTo());
+        List<CustomerBooking> previousBookings = filterBookingsByDate(allBookings, window.previousFrom(), window.previousTo());
+        List<WashSession> currentCompletedSessions = filterCompletedSessionsByDate(allSessions, window.currentFrom(), window.currentTo());
+        List<WashSession> previousCompletedSessions = filterCompletedSessionsByDate(allSessions, window.previousFrom(), window.previousTo());
+
+        Map<String, String> serviceNames = serviceNames(allBookings);
+        long currentRevenue = sumRevenue(currentBookings);
+        long previousRevenue = sumRevenue(previousBookings);
+        long completedBookings = currentCompletedSessions.size();
+        long previousCompletedBookings = previousCompletedSessions.size();
+        long averageBookingValue = currentBookings.isEmpty() ? 0 : Math.round((double) currentRevenue / currentBookings.size());
+        double cancellationRate = percentage(countCancelled(currentBookings), currentBookings.size());
+        long discountAssistedRevenue = currentBookings.stream()
+                .filter(this::isDiscountAssisted)
+                .mapToLong(CustomerBooking::getFinalAmount)
+                .sum();
+
+        AdminBusinessHealthReportResponse.Kpis kpis = new AdminBusinessHealthReportResponse.Kpis(
+                currentRevenue,
+                previousRevenue,
+                growthRate(currentRevenue, previousRevenue),
+                completedBookings,
+                growthRate(completedBookings, previousCompletedBookings),
+                averageBookingValue,
+                cancellationRate,
+                discountAssistedRevenue
+        );
+
+        AdminBusinessHealthReportResponse.Trends trends = new AdminBusinessHealthReportResponse.Trends(
+                buildRevenueTrend(currentBookings, previousBookings, window),
+                buildCompletedBookingsTrend(currentCompletedSessions, previousCompletedSessions, window)
+        );
+
+        AdminBusinessHealthReportResponse.Breakdowns breakdowns = new AdminBusinessHealthReportResponse.Breakdowns(
+                buildRevenueBreakdown(currentBookings, currentRevenue),
+                buildServiceBreakdown(currentBookings, currentRevenue, serviceNames),
+                buildPromotionBreakdown(currentBookings, currentRevenue),
+                new AdminBusinessHealthReportResponse.Breakdown(false, List.of(), "Channel data is unavailable in the current data model.")
+        );
+
+        List<AdminBusinessHealthReportResponse.Insight> insights = buildInsights(
+                currentBookings,
+                previousBookings,
+                currentRevenue,
+                previousRevenue,
+                cancellationRate,
+                percentage(countCancelled(previousBookings), previousBookings.size()),
+                breakdowns.service().items()
+        );
+
+        List<AdminBusinessHealthReportResponse.BreakdownItem> topServices = breakdowns.service().items().stream()
+                .limit(5)
+                .toList();
+
+        return new AdminBusinessHealthReportResponse(
+                new AdminBusinessHealthReportResponse.Period(window.key(), window.label(), window.currentFrom().toString(), window.currentTo().toString()),
+                new AdminBusinessHealthReportResponse.Period("PREVIOUS", "Previous period", window.previousFrom().toString(), window.previousTo().toString()),
+                kpis,
+                trends,
+                breakdowns,
+                insights,
+                new AdminBusinessHealthReportResponse.TopItems(topServices),
+                new AdminBusinessHealthReportResponse.Capabilities(false, false)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -566,6 +659,302 @@ public class AdminReportingService {
 
     private PaginationMeta pagination(Page<?> page) {
         return new PaginationMeta(page.getNumber() + 1, page.getSize(), page.getTotalElements(), page.getTotalPages(), page.hasNext());
+    }
+
+    private List<CustomerBooking> filterBookingsByDate(List<CustomerBooking> bookings, LocalDate dateFrom, LocalDate dateTo) {
+        return bookings.stream()
+                .filter(booking -> !booking.getBookingDate().isBefore(dateFrom))
+                .filter(booking -> !booking.getBookingDate().isAfter(dateTo))
+                .toList();
+    }
+
+    private List<WashSession> filterCompletedSessionsByDate(List<WashSession> sessions, LocalDate dateFrom, LocalDate dateTo) {
+        return sessions.stream()
+                .filter(session -> session.getCompletedAt() != null)
+                .filter(session -> session.getCompletedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().compareTo(dateFrom) >= 0)
+                .filter(session -> session.getCompletedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().compareTo(dateTo) <= 0)
+                .toList();
+    }
+
+    private long sumRevenue(List<CustomerBooking> bookings) {
+        return bookings.stream()
+                .filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()))
+                .mapToLong(CustomerBooking::getFinalAmount)
+                .sum();
+    }
+
+    private long countCancelled(List<CustomerBooking> bookings) {
+        return bookings.stream()
+                .filter(booking -> booking.getStatus() == BookingStatus.CANCELLED)
+                .count();
+    }
+
+    private boolean isDiscountAssisted(CustomerBooking booking) {
+        return booking.getVoucherDiscount() > 0 || booking.getVoucherCode() != null;
+    }
+
+    private double growthRate(long current, long previous) {
+        if (previous == 0) {
+            return current == 0 ? 0 : 100;
+        }
+        return roundTwoDecimals(((double) (current - previous) / previous) * 100);
+    }
+
+    private double percentage(long part, long total) {
+        if (total == 0) {
+            return 0;
+        }
+        return roundTwoDecimals(((double) part / total) * 100);
+    }
+
+    private double roundTwoDecimals(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+
+    private AdminBusinessHealthReportResponse.Series buildRevenueTrend(
+            List<CustomerBooking> currentBookings,
+            List<CustomerBooking> previousBookings,
+            ReportWindow window
+    ) {
+        return new AdminBusinessHealthReportResponse.Series(
+                buildDailyPoints(currentBookings, window.currentFrom(), window.currentTo(), booking -> REVENUE_STATUSES.contains(booking.getStatus()) ? booking.getFinalAmount() : 0),
+                buildDailyPoints(previousBookings, window.previousFrom(), window.previousTo(), booking -> REVENUE_STATUSES.contains(booking.getStatus()) ? booking.getFinalAmount() : 0)
+        );
+    }
+
+    private AdminBusinessHealthReportResponse.Series buildCompletedBookingsTrend(
+            List<WashSession> currentSessions,
+            List<WashSession> previousSessions,
+            ReportWindow window
+    ) {
+        return new AdminBusinessHealthReportResponse.Series(
+                buildDailySessionPoints(currentSessions, window.currentFrom(), window.currentTo()),
+                buildDailySessionPoints(previousSessions, window.previousFrom(), window.previousTo())
+        );
+    }
+
+    private List<AdminBusinessHealthReportResponse.Point> buildDailyPoints(
+            List<CustomerBooking> bookings,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            java.util.function.ToLongFunction<CustomerBooking> mapper
+    ) {
+        List<AdminBusinessHealthReportResponse.Point> points = new ArrayList<>();
+        for (LocalDate cursor = dateFrom; !cursor.isAfter(dateTo); cursor = cursor.plusDays(1)) {
+            LocalDate current = cursor;
+            long value = bookings.stream()
+                    .filter(booking -> booking.getBookingDate().isEqual(current))
+                    .mapToLong(mapper)
+                    .sum();
+            points.add(new AdminBusinessHealthReportResponse.Point(shortDateLabel(current), value));
+        }
+        return points;
+    }
+
+    private List<AdminBusinessHealthReportResponse.Point> buildDailySessionPoints(
+            List<WashSession> sessions,
+            LocalDate dateFrom,
+            LocalDate dateTo
+    ) {
+        List<AdminBusinessHealthReportResponse.Point> points = new ArrayList<>();
+        for (LocalDate cursor = dateFrom; !cursor.isAfter(dateTo); cursor = cursor.plusDays(1)) {
+            LocalDate current = cursor;
+            long value = sessions.stream()
+                    .filter(session -> session.getCompletedAt() != null)
+                    .filter(session -> session.getCompletedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().isEqual(current))
+                    .count();
+            points.add(new AdminBusinessHealthReportResponse.Point(shortDateLabel(current), value));
+        }
+        return points;
+    }
+
+    private String shortDateLabel(LocalDate date) {
+        return date.getMonthValue() + "/" + date.getDayOfMonth();
+    }
+
+    private AdminBusinessHealthReportResponse.Breakdown buildRevenueBreakdown(List<CustomerBooking> bookings, long totalRevenue) {
+        long discountRevenue = bookings.stream()
+                .filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()))
+                .filter(this::isDiscountAssisted)
+                .mapToLong(CustomerBooking::getFinalAmount)
+                .sum();
+        long fullPriceRevenue = Math.max(totalRevenue - discountRevenue, 0);
+
+        return new AdminBusinessHealthReportResponse.Breakdown(
+                true,
+                List.of(
+                        new AdminBusinessHealthReportResponse.BreakdownItem(
+                                "full-price",
+                                "Full price",
+                                fullPriceRevenue,
+                                bookings.stream().filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()) && !isDiscountAssisted(booking)).count(),
+                                percentage(fullPriceRevenue, totalRevenue)
+                        ),
+                        new AdminBusinessHealthReportResponse.BreakdownItem(
+                                "discount-assisted",
+                                "Discount-assisted",
+                                discountRevenue,
+                                bookings.stream().filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()) && isDiscountAssisted(booking)).count(),
+                                percentage(discountRevenue, totalRevenue)
+                        )
+                ),
+                null
+        );
+    }
+
+    private AdminBusinessHealthReportResponse.Breakdown buildServiceBreakdown(
+            List<CustomerBooking> bookings,
+            long totalRevenue,
+            Map<String, String> serviceNames
+    ) {
+        Map<String, List<CustomerBooking>> grouped = bookings.stream()
+                .filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()))
+                .collect(Collectors.groupingBy(this::serviceId));
+
+        List<AdminBusinessHealthReportResponse.BreakdownItem> items = grouped.entrySet().stream()
+                .map(entry -> {
+                    long revenue = entry.getValue().stream().mapToLong(CustomerBooking::getFinalAmount).sum();
+                    return new AdminBusinessHealthReportResponse.BreakdownItem(
+                            entry.getKey(),
+                            serviceNames.getOrDefault(entry.getKey(), entry.getKey()),
+                            revenue,
+                            entry.getValue().size(),
+                            percentage(revenue, totalRevenue)
+                    );
+                })
+                .sorted(Comparator.comparingLong(AdminBusinessHealthReportResponse.BreakdownItem::revenue).reversed())
+                .toList();
+
+        return new AdminBusinessHealthReportResponse.Breakdown(true, items, null);
+    }
+
+    private AdminBusinessHealthReportResponse.Breakdown buildPromotionBreakdown(List<CustomerBooking> bookings, long totalRevenue) {
+        Map<String, List<CustomerBooking>> grouped = bookings.stream()
+                .filter(booking -> REVENUE_STATUSES.contains(booking.getStatus()))
+                .filter(this::isDiscountAssisted)
+                .collect(Collectors.groupingBy(booking -> booking.getVoucherCode() == null ? "DISCOUNT_APPLIED" : booking.getVoucherCode()));
+
+        List<AdminBusinessHealthReportResponse.BreakdownItem> items = grouped.entrySet().stream()
+                .map(entry -> {
+                    long revenue = entry.getValue().stream().mapToLong(CustomerBooking::getFinalAmount).sum();
+                    return new AdminBusinessHealthReportResponse.BreakdownItem(
+                            entry.getKey(),
+                            entry.getKey(),
+                            revenue,
+                            entry.getValue().size(),
+                            percentage(revenue, totalRevenue)
+                    );
+                })
+                .sorted(Comparator.comparingLong(AdminBusinessHealthReportResponse.BreakdownItem::revenue).reversed())
+                .toList();
+
+        String message = "Promotion contribution is approximated from voucher and discount-assisted bookings.";
+        return new AdminBusinessHealthReportResponse.Breakdown(true, items, message);
+    }
+
+    private List<AdminBusinessHealthReportResponse.Insight> buildInsights(
+            List<CustomerBooking> currentBookings,
+            List<CustomerBooking> previousBookings,
+            long currentRevenue,
+            long previousRevenue,
+            double currentCancellationRate,
+            double previousCancellationRate,
+            List<AdminBusinessHealthReportResponse.BreakdownItem> serviceItems
+    ) {
+        List<AdminBusinessHealthReportResponse.Insight> insights = new ArrayList<>();
+
+        double revenueGrowth = growthRate(currentRevenue, previousRevenue);
+        String revenueTone = revenueGrowth > 0 ? "positive" : revenueGrowth < 0 ? "negative" : "neutral";
+        insights.add(new AdminBusinessHealthReportResponse.Insight(
+                revenueTone,
+                "Revenue momentum",
+                revenueGrowth >= 0
+                        ? "Revenue is up " + revenueGrowth + "% compared with the previous period."
+                        : "Revenue is down " + Math.abs(revenueGrowth) + "% compared with the previous period."
+        ));
+
+        if (!serviceItems.isEmpty()) {
+            AdminBusinessHealthReportResponse.BreakdownItem topService = serviceItems.getFirst();
+            insights.add(new AdminBusinessHealthReportResponse.Insight(
+                    "neutral",
+                    "Top service contributor",
+                    topService.label() + " is leading revenue contribution with " + topService.bookings() + " bookings in the selected period."
+            ));
+        }
+
+        double cancellationDelta = roundTwoDecimals(currentCancellationRate - previousCancellationRate);
+        String cancellationTone = cancellationDelta > 0 ? "negative" : cancellationDelta < 0 ? "positive" : "neutral";
+        insights.add(new AdminBusinessHealthReportResponse.Insight(
+                cancellationTone,
+                "Cancellation pressure",
+                cancellationDelta > 0
+                        ? "Cancellation rate increased by " + cancellationDelta + " percentage points versus the previous period."
+                        : cancellationDelta < 0
+                        ? "Cancellation rate improved by " + Math.abs(cancellationDelta) + " percentage points versus the previous period."
+                        : "Cancellation rate is stable versus the previous period."
+        ));
+
+        long discountAssistedBookings = currentBookings.stream().filter(this::isDiscountAssisted).count();
+        if (discountAssistedBookings > 0) {
+            insights.add(new AdminBusinessHealthReportResponse.Insight(
+                    "neutral",
+                    "Promotion visibility",
+                    "Discount-assisted bookings are tracked, but exact campaign attribution remains limited by the current data model."
+            ));
+        }
+
+        return insights;
+    }
+
+    private record ReportWindow(
+            String key,
+            String label,
+            LocalDate currentFrom,
+            LocalDate currentTo,
+            LocalDate previousFrom,
+            LocalDate previousTo
+    ) {
+        private static ReportWindow resolve(String range, LocalDate customDateFrom, LocalDate customDateTo) {
+            LocalDate today = LocalDate.now();
+            String normalizedRange = range == null ? "LAST_30_DAYS" : range.trim().toUpperCase();
+            return switch (normalizedRange) {
+                case "LAST_7_DAYS" -> rollingWindow("LAST_7_DAYS", "Last 7 days", today.minusDays(6), today);
+                case "THIS_MONTH" -> {
+                    LocalDate start = today.withDayOfMonth(1);
+                    yield windowWithEquivalentPrevious("THIS_MONTH", "This month", start, today);
+                }
+                case "THIS_QUARTER" -> {
+                    LocalDate start = startOfQuarter(today);
+                    yield windowWithEquivalentPrevious("THIS_QUARTER", "This quarter", start, today);
+                }
+                case "CUSTOM" -> {
+                    if (customDateFrom == null || customDateTo == null) {
+                        throw new ApiException(HttpStatus.BAD_REQUEST, "Custom range requires dateFrom and dateTo", "VALIDATION_ERROR");
+                    }
+                    yield windowWithEquivalentPrevious("CUSTOM", "Custom range", customDateFrom, customDateTo);
+                }
+                default -> rollingWindow("LAST_30_DAYS", "Last 30 days", today.minusDays(29), today);
+            };
+        }
+
+        private static ReportWindow rollingWindow(String key, String label, LocalDate currentFrom, LocalDate currentTo) {
+            long days = ChronoUnit.DAYS.between(currentFrom, currentTo) + 1;
+            LocalDate previousTo = currentFrom.minusDays(1);
+            LocalDate previousFrom = previousTo.minusDays(days - 1);
+            return new ReportWindow(key, label, currentFrom, currentTo, previousFrom, previousTo);
+        }
+
+        private static ReportWindow windowWithEquivalentPrevious(String key, String label, LocalDate currentFrom, LocalDate currentTo) {
+            long days = ChronoUnit.DAYS.between(currentFrom, currentTo) + 1;
+            LocalDate previousTo = currentFrom.minusDays(1);
+            LocalDate previousFrom = previousTo.minusDays(days - 1);
+            return new ReportWindow(key, label, currentFrom, currentTo, previousFrom, previousTo);
+        }
+
+        private static LocalDate startOfQuarter(LocalDate date) {
+            Month firstMonthOfQuarter = Month.of(((date.getMonthValue() - 1) / 3) * 3 + 1);
+            return LocalDate.of(date.getYear(), firstMonthOfQuarter, 1).with(TemporalAdjusters.firstDayOfMonth());
+        }
     }
 
     public record BookingPage(List<AdminBookingResponse> items, PaginationMeta pagination) {

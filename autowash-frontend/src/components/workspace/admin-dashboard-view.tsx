@@ -3,8 +3,17 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AlertCircle, BarChart3, CalendarDays, Droplets, Loader2,
-  TrendingUp, Users, Package, Ticket, BadgePercent, DollarSign
+  AlertCircle,
+  BarChart3,
+  CalendarDays,
+  Droplets,
+  Loader2,
+  TrendingUp,
+  Users,
+  Package,
+  Ticket,
+  BadgePercent,
+  DollarSign,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { Card } from "@/components/ui/card";
@@ -17,9 +26,9 @@ const QUICK_LINKS = [
   { href: "/admin/operations", label: "Operations", icon: Droplets, color: "text-blue-600 bg-blue-50" },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarDays, color: "text-indigo-600 bg-indigo-50" },
   { href: "/admin/accounts", label: "Accounts", icon: Users, color: "text-emerald-600 bg-emerald-50" },
-  { href: "/admin/packages", label: "Services", icon: Package, color: "text-rose-600 bg-rose-50" },
-  { href: "/admin/promotions", label: "Promotions", icon: BadgePercent, color: "text-purple-600 bg-purple-50" },
-  { href: "/admin/vouchers", label: "Vouchers", icon: Ticket, color: "text-pink-600 bg-pink-50" },
+  { href: "/admin/services", label: "Services", icon: Package, color: "text-rose-600 bg-rose-50" },
+  { href: "/admin/offers?tab=promotions", label: "Promotions", icon: BadgePercent, color: "text-purple-600 bg-purple-50" },
+  { href: "/admin/offers?tab=vouchers", label: "Vouchers", icon: Ticket, color: "text-pink-600 bg-pink-50" },
   { href: "/admin/reports", label: "Reports", icon: BarChart3, color: "text-teal-600 bg-teal-50" },
 ];
 
@@ -101,7 +110,6 @@ export function AdminDashboardView() {
 
   return (
     <WorkspacePage className="space-y-8">
-      {/* API metrics */}
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
@@ -121,7 +129,6 @@ export function AdminDashboardView() {
         </div>
       </section>
 
-      {/* Live operations */}
       <section>
         <div className="mb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
@@ -135,7 +142,6 @@ export function AdminDashboardView() {
         </div>
       </section>
 
-      {/* Quick links */}
       <section>
         <Card className="border-border/70 bg-card/95 p-8 shadow-sm">
           <div className="text-center sm:text-left">
@@ -144,13 +150,13 @@ export function AdminDashboardView() {
               Jump into the most common admin workflows without changing the existing routes.
             </p>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
             {QUICK_LINKS.map((link) => {
               const Icon = link.icon;
               return (
-                <Link 
-                  key={link.href} 
-                  href={link.href} 
+                <Link
+                  key={link.href}
+                  href={link.href}
                   className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition-all hover:-translate-y-1 hover:border-slate-300 hover:shadow-md"
                 >
                   <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", link.color)}>
