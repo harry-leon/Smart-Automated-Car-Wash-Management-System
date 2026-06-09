@@ -42,7 +42,7 @@ export function RegisterForm() {
     return (
       fullName.trim().length > 0 &&
       phonePattern.test(phone) &&
-      (email.length === 0 || emailPattern.test(email)) &&
+      emailPattern.test(email) &&
       passwordPattern.test(password) &&
       passwordConfirm === password &&
       !registerMutation.isPending
@@ -59,12 +59,12 @@ export function RegisterForm() {
     const response = await registerMutation.mutateAsync({
       fullName: fullName.trim(),
       phone,
-      email: email || undefined,
+      email,
       password,
       passwordConfirm,
     });
 
-    router.push(`/verify-otp?phone=${encodeURIComponent(response.phone)}&autoSend=1`);
+    router.push(`/verify-otp?email=${encodeURIComponent(response.email)}&expiresIn=${response.otpExpiresIn}`);
   };
 
   const errorMessage = registerMutation.error

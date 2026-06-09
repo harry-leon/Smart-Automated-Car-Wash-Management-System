@@ -18,6 +18,7 @@ import com.autowash.auth.service.GoogleAuthService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,24 +46,33 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Register new customer account")
-    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest servletRequest
+    ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(
-                        "Registration successful. Please verify OTP.",
-                        authService.register(request)
+                        "Registration successful. Please verify the OTP sent to your email.",
+                        authService.register(request, metadata(servletRequest))
                 ));
     }
 
     @PostMapping("/otp/send")
     @Operation(summary = "Send OTP for registration verification")
-    public ApiResponse<SendOtpResponse> sendOtp(@Valid @RequestBody SendOtpRequest request) {
-        return ApiResponse.ok("OTP sent successfully", authService.sendRegistrationOtp(request.phone()));
+    public ApiResponse<SendOtpResponse> sendOtp(
+            @Valid @RequestBody SendOtpRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.ok("OTP sent successfully", authService.sendRegistrationOtp(request.email(), request.phone(), metadata(servletRequest)));
     }
 
     @PostMapping("/otp/verify")
     @Operation(summary = "Verify OTP and activate account")
-    public ApiResponse<LoginResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        return ApiResponse.ok("OTP verified. Account activated.", authService.verifyRegistrationOtp(request.phone(), request.otp()));
+    public ApiResponse<LoginResponse> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.ok("OTP verified. Account activated.", authService.verifyRegistrationOtp(request.email(), request.phone(), request.otp(), metadata(servletRequest)));
     }
 
     @PostMapping("/login")
@@ -117,5 +127,17 @@ public class AuthController {
     public ApiResponse<Void> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request.refreshToken());
         return ApiResponse.ok("Logout successful", null);
+    }
+
+    private AuthService.RequestMetadata metadata(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        String requestIp = forwardedFor == null || forwardedFor.isBlank()
+                ? request.getRemoteAddr()
+                : forwardedFor.split(",")[0].trim();
+        return new AuthService.RequestMetadata(
+                requestIp,
+                request.getHeader("User-Agent"),
+                request.getHeader("X-Device-Fingerprint")
+        );
     }
 }

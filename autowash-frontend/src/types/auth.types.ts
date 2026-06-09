@@ -1,11 +1,11 @@
 export type UserRole = "CUSTOMER" | "STAFF" | "ADMIN";
-export type UserStatus = "ACTIVE" | "PENDING" | "BLOCKED" | "SUSPENDED";
+export type UserStatus = "ACTIVE" | "PENDING" | "PENDING_VERIFY" | "BLOCKED" | "SUSPENDED";
 export type LoyaltyTier = "MEMBER" | "SILVER" | "GOLD" | "PLATINUM";
 
 export type RegisterRequest = {
   fullName: string;
   phone: string;
-  email?: string;
+  email: string;
   password: string;
   passwordConfirm: string;
 };
@@ -14,8 +14,8 @@ export type RegisterResponseData = {
   userId: string;
   phone: string;
   fullName: string;
-  email?: string;
-  status: "PENDING";
+  email: string;
+  status: "PENDING_VERIFY";
   requiresOtpVerification: boolean;
   otpExpiresIn: number;
 };
@@ -27,18 +27,22 @@ export type LoginRequest = {
 };
 
 export type SendOtpRequest = {
-  phone: string;
+  email: string;
+  phone?: string;
 };
 
 export type SendOtpResponseData = {
+  email: string;
   phone: string;
   otpExpiresIn: number;
+  maskedEmail?: string;
   maskedPhone?: string;
   message?: string;
 };
 
 export type VerifyOtpRequest = {
-  phone: string;
+  email: string;
+  phone?: string;
   otp: string;
 };
 
