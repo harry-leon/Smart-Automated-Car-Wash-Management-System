@@ -163,6 +163,7 @@ class AdminVoucherControllerIntegrationTest {
                 30
         );
         booking.assignStaff(assignedStaff);
+        booking.confirmByOtp();
         return customerBookingRepository.saveAndFlush(booking);
     }
 
