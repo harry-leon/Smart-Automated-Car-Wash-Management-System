@@ -127,6 +127,7 @@ export type CreateBookingResponse = {
   status: BookingStatus;
   confirmationStatus: BookingConfirmationStatus;
   otpExpiresIn: number;
+  otpExpiresAt: string;
   createdAt: string;
   confirmationNumber: string;
   comboId: string | null;

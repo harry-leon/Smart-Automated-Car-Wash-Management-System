@@ -82,8 +82,21 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
   const [cancelReason, setCancelReason] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [localOtpExpiresAt, setLocalOtpExpiresAt] = useState<string | null>(null);
 
-  const otpSecondsLeft = useOtpSecondsLeft(bookingQuery.data?.confirmationExpiresAt ?? null);
+  const otpExpiresAt = localOtpExpiresAt ?? bookingQuery.data?.confirmationExpiresAt ?? null;
+  const otpSecondsLeft = useOtpSecondsLeft(otpExpiresAt);
+
+  useEffect(() => {
+    const serverExpiresAt = bookingQuery.data?.confirmationExpiresAt ?? null;
+    if (!serverExpiresAt) {
+      return;
+    }
+
+    if (!localOtpExpiresAt || new Date(serverExpiresAt).getTime() >= new Date(localOtpExpiresAt).getTime()) {
+      setLocalOtpExpiresAt(serverExpiresAt);
+    }
+  }, [bookingQuery.data?.confirmationExpiresAt, localOtpExpiresAt]);
 
   if (bookingQuery.isPending) {
     return (
@@ -164,7 +177,8 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
 
   const handleResendOtp = async () => {
     try {
-      await resendOtpMutation.mutateAsync();
+      const response = await resendOtpMutation.mutateAsync();
+      setLocalOtpExpiresAt(response.expiresAt);
       setOtpCode("");
       setOtpError(null);
       await bookingQuery.refetch();
@@ -183,6 +197,7 @@ export function CustomerBookingDetailPage({ bookingId }: { bookingId: string }) 
 
     try {
       await verifyOtpMutation.mutateAsync(otpCode);
+      setLocalOtpExpiresAt(null);
       setOtpCode("");
       setOtpError(null);
       await bookingQuery.refetch();

@@ -11,7 +11,6 @@ import { useCustomerBookings } from "@/hooks/use-bookings";
 import type { BookingListFilterStatus } from "@/types/booking.types";
 
 const STATUS_OPTIONS: Array<{ label: string; value: BookingListFilterStatus }> = [
-  { label: "Pending", value: "PENDING" },
   { label: "Confirmed", value: "CONFIRMED" },
   { label: "Checked in", value: "CHECKED_IN" },
   { label: "In progress", value: "IN_PROGRESS" },

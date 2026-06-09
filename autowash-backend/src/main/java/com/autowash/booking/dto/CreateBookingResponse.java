@@ -24,6 +24,7 @@ public record CreateBookingResponse(
         String status,
         String confirmationStatus,
         int otpExpiresIn,
+        Instant otpExpiresAt,
         Instant createdAt,
         String confirmationNumber,
         String comboId,

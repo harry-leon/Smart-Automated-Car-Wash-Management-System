@@ -2,13 +2,34 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Check, Car, Calendar, User, Mail, Phone, FileText, Download, ArrowRight, Clock3, RefreshCcw, Loader2 } from "lucide-react";
+import {
+  Check,
+  Car,
+  Calendar,
+  User,
+  Mail,
+  Phone,
+  FileText,
+  Download,
+  ArrowRight,
+  Clock3,
+  RefreshCcw,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getDisplayErrorMessage } from "@/lib/api-errors";
-import { formatBookingCurrency, getPaymentMethodLabel, getPaymentStatusLabel } from "@/lib/booking-format";
-import { useCustomerBookingDetail, useResendBookingOtp, useVerifyBookingOtp } from "@/hooks/use-bookings";
+import {
+  formatBookingCurrency,
+  getPaymentMethodLabel,
+  getPaymentStatusLabel,
+} from "@/lib/booking-format";
+import {
+  useCustomerBookingDetail,
+  useResendBookingOtp,
+  useVerifyBookingOtp,
+} from "@/hooks/use-bookings";
 import { useCustomerProfile } from "@/hooks/use-customer-profile";
 
 function formatOtpCountdown(totalSeconds: number) {
@@ -38,14 +59,42 @@ function useOtpSecondsLeft(expiresAt: string | null) {
   return secondsLeft;
 }
 
-export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string }) {
+export function CustomerBookingSuccessPage({
+  bookingId,
+  initialOtpExpiresAt = null,
+}: {
+  bookingId: string;
+  initialOtpExpiresAt?: string | null;
+}) {
   const bookingQuery = useCustomerBookingDetail(bookingId);
   const profileQuery = useCustomerProfile();
   const resendOtpMutation = useResendBookingOtp(bookingId);
   const verifyOtpMutation = useVerifyBookingOtp(bookingId);
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState<string | null>(null);
-  const otpSecondsLeft = useOtpSecondsLeft(bookingQuery.data?.confirmationExpiresAt ?? null);
+  const [localOtpExpiresAt, setLocalOtpExpiresAt] = useState<string | null>(initialOtpExpiresAt);
+  const otpExpiresAt = localOtpExpiresAt ?? bookingQuery.data?.confirmationExpiresAt ?? null;
+  const otpSecondsLeft = useOtpSecondsLeft(otpExpiresAt);
+
+  useEffect(() => {
+    const serverExpiresAt = bookingQuery.data?.confirmationExpiresAt ?? null;
+    if (!serverExpiresAt) {
+      return;
+    }
+
+    if (
+      !localOtpExpiresAt ||
+      new Date(serverExpiresAt).getTime() >= new Date(localOtpExpiresAt).getTime()
+    ) {
+      setLocalOtpExpiresAt(serverExpiresAt);
+    }
+  }, [bookingQuery.data?.confirmationExpiresAt, localOtpExpiresAt]);
+
+  useEffect(() => {
+    if (initialOtpExpiresAt) {
+      setLocalOtpExpiresAt(initialOtpExpiresAt);
+    }
+  }, [initialOtpExpiresAt]);
 
   if (!bookingId) {
     return (
@@ -82,7 +131,9 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
           <CardHeader>
             <CardTitle>Unable to load booking success details</CardTitle>
             <CardDescription>
-              {bookingQuery.isError ? getDisplayErrorMessage(bookingQuery.error) : "Booking not found."}
+              {bookingQuery.isError
+                ? getDisplayErrorMessage(bookingQuery.error)
+                : "Booking not found."}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
@@ -105,21 +156,40 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
   const customerPhone = booking.customerPhone || profileQuery.data?.phone || "No phone number";
   const customerEmail = profileQuery.data?.email || "customer@example.com";
 
-  const formattedPlacedDate = new Date(booking.createdAt || Date.now()).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedPlacedDate = new Date(booking.createdAt || Date.now()).toLocaleDateString(
+    "en-US",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    },
+  );
 
-  const formattedExpectedDate = new Date(booking.scheduling.bookingDate).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedExpectedDate = new Date(booking.scheduling.bookingDate).toLocaleDateString(
+    "en-US",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    },
+  );
+  const progressSteps = [
+    {
+      number: 1,
+      title: needsOtpVerification ? "WAITING FOR OTP" : "BOOKING CONFIRMED",
+      subtitle: needsOtpVerification ? "Pending verification" : "Scheduled",
+      active: true,
+    },
+    { number: 2, title: "CHECKED IN", subtitle: "Vehicle at bay", active: false },
+    { number: 3, title: "WASHING", subtitle: "In progress", active: false },
+    { number: 4, title: "QUALITY CHECK", subtitle: "Inspection", active: false },
+    { number: 5, title: "COMPLETED", subtitle: "Ready for pickup", active: false },
+  ];
 
   const handleResendOtp = async () => {
     try {
-      await resendOtpMutation.mutateAsync();
+      const response = await resendOtpMutation.mutateAsync();
+      setLocalOtpExpiresAt(response.expiresAt);
       setOtpCode("");
       setOtpError(null);
       await bookingQuery.refetch();
@@ -138,6 +208,7 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
 
     try {
       await verifyOtpMutation.mutateAsync(otpCode);
+      setLocalOtpExpiresAt(null);
       setOtpCode("");
       setOtpError(null);
       await bookingQuery.refetch();
@@ -169,17 +240,27 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
         {/* Left Area - Green Box & Stepper Progress (Spans 2 columns on large screens) */}
         <div className="space-y-6 lg:col-span-2">
           {/* Green Hero Section */}
-          <div className={`relative overflow-hidden rounded-3xl ${needsOtpVerification ? "bg-sky-600" : "bg-[#2ecc71]"} px-6 py-12 text-center text-white shadow-lg`}>
+          <div
+            className={`relative overflow-hidden rounded-3xl ${needsOtpVerification ? "bg-sky-600" : "bg-[#2ecc71]"} px-6 py-12 text-center text-white shadow-lg`}
+          >
             {/* Decorative floating shapes in background */}
             <div className="absolute top-10 left-10 h-3 w-3 rounded-full bg-white/20 animate-ping" />
             <div className="absolute bottom-10 right-10 h-4 w-4 rounded-full bg-white/10" />
 
             <div className="flex flex-col items-center justify-center">
               {/* Floating animated checkmark circle with confetti */}
-              <div className={`relative mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white ${needsOtpVerification ? "text-sky-600" : "text-[#2ecc71]"} shadow-xl transition-transform hover:scale-105`}>
-                {needsOtpVerification ? <Clock3 className="h-12 w-12" /> : <Check className="h-12 w-12 stroke-[4]" />}
+              <div
+                className={`relative mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white ${needsOtpVerification ? "text-sky-600" : "text-[#2ecc71]"} shadow-xl transition-transform hover:scale-105`}
+              >
+                {needsOtpVerification ? (
+                  <Clock3 className="h-12 w-12" />
+                ) : (
+                  <Check className="h-12 w-12 stroke-[4]" />
+                )}
                 {/* Confetti details */}
-                <span className="absolute -top-3 -left-3 animate-pulse text-amber-300 text-xl">✦</span>
+                <span className="absolute -top-3 -left-3 animate-pulse text-amber-300 text-xl">
+                  ✦
+                </span>
                 <span className="absolute -top-6 right-2 text-violet-200 text-sm">◆</span>
                 <span className="absolute top-2 -right-6 text-pink-300 text-sm">●</span>
                 <span className="absolute bottom-2 -left-6 text-sky-200 text-md">▲</span>
@@ -217,12 +298,14 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                   <CardTitle>Email OTP required</CardTitle>
                 </div>
                 <CardDescription>
-                  The booking is saved as pending. It will only become confirmed after OTP verification.
+                  The booking is saved as pending. It will only become confirmed after OTP
+                  verification.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-sm font-medium text-sky-800">
-                  Expires in {formatOtpCountdown(otpSecondsLeft)}. Resend is limited to 3 times per hour.
+                  Expires in {formatOtpCountdown(otpSecondsLeft)}. Resend is limited to 3 times per
+                  hour.
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <input
@@ -243,7 +326,9 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                     onClick={handleVerifyOtp}
                     disabled={verifyOtpMutation.isPending || resendOtpMutation.isPending}
                   >
-                    {verifyOtpMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {verifyOtpMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     Verify booking
                   </Button>
                   <Button
@@ -262,90 +347,111 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 </div>
                 {otpError ? <p className="text-sm text-rose-600">{otpError}</p> : null}
                 {otpSecondsLeft === 0 ? (
-                  <p className="text-sm text-amber-700">This OTP has expired. Resend a new OTP before verifying.</p>
+                  <p className="text-sm text-amber-700">
+                    This OTP has expired. Resend a new OTP before verifying.
+                  </p>
                 ) : null}
               </CardContent>
             </Card>
           ) : null}
 
           {/* Progress / Status Panel */}
-          <Card className="border-slate-200 bg-white shadow-md rounded-2xl overflow-hidden">
-            <CardContent className="p-6 sm:p-8 space-y-8">
-              <div className="text-center sm:text-left">
-                <h3 className="text-base font-semibold text-slate-800">
-                  Booking <span className="font-mono text-emerald-600">#{booking.confirmationNumber}</span> was placed on <span className="font-medium text-slate-900">{formattedPlacedDate}</span>
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  {needsOtpVerification
-                    ? "Your booking is pending email OTP verification."
-                    : "Your car wash session schedule is confirmed and is currently pending check-in."}
-                </p>
+          <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+            <CardContent className="space-y-7 p-6 sm:p-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold leading-7 text-slate-950">
+                    Booking{" "}
+                    <span className="font-mono text-emerald-600">
+                      #{booking.confirmationNumber}
+                    </span>
+                  </h3>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Placed on{" "}
+                    <span className="font-semibold text-slate-800">{formattedPlacedDate}</span>.{" "}
+                    {needsOtpVerification
+                      ? "Email OTP verification is still required."
+                      : "Your schedule is confirmed and pending check-in."}
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
+                    needsOtpVerification
+                      ? "bg-sky-50 text-sky-700 ring-1 ring-sky-100"
+                      : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                  }`}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      needsOtpVerification ? "bg-sky-500" : "bg-emerald-500"
+                    }`}
+                  />
+                  {needsOtpVerification ? "Verification pending" : "Confirmed"}
+                </span>
               </div>
 
-              {/* Progress Timeline Stepper */}
-              <div className="relative flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4 py-4">
-                {/* Connecting Line (Desktop) */}
-                <div className="absolute top-[24px] left-[10%] right-[10%] h-0.5 bg-slate-100 -z-1 hidden md:block">
-                  <div className="h-full bg-emerald-500" style={{ width: "20%" }} />
-                </div>
-
-                {/* Step 1: PENDING / CONFIRMED */}
-                <div className="flex flex-col items-center text-center relative z-10 flex-1">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${needsOtpVerification ? "border-sky-500 bg-sky-500" : "border-emerald-500 bg-emerald-500"} text-white shadow-md`}>
-                    {needsOtpVerification ? <Clock3 className="h-5 w-5" /> : <Check className="h-5 w-5 stroke-[3]" />}
-                  </div>
-                  <div className="mt-2 text-xs font-bold text-slate-800">
-                    {needsOtpVerification ? "WAITING FOR OTP" : "BOOKING CONFIRMED"}
-                  </div>
-                  <div className={`text-[10px] ${needsOtpVerification ? "text-sky-600" : "text-emerald-600"} font-semibold mt-0.5`}>
-                    {needsOtpVerification ? "Pending verification" : "Scheduled"}
-                  </div>
-                </div>
-
-                {/* Step 2: CHECKED IN */}
-                <div className="flex flex-col items-center text-center relative z-10 flex-1">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-slate-400">
-                    <span>2</span>
-                  </div>
-                  <div className="mt-2 text-xs font-bold text-slate-400">CHECKED IN</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Vehicle at bay</div>
-                </div>
-
-                {/* Step 3: WASHING */}
-                <div className="flex flex-col items-center text-center relative z-10 flex-1">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-slate-400">
-                    <span>3</span>
-                  </div>
-                  <div className="mt-2 text-xs font-bold text-slate-400">WASHING</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">In progress</div>
-                </div>
-
-                {/* Step 4: QUALITY CHECK */}
-                <div className="flex flex-col items-center text-center relative z-10 flex-1">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-slate-400">
-                    <span>4</span>
-                  </div>
-                  <div className="mt-2 text-xs font-bold text-slate-400">QUALITY CHECK</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Inspection</div>
-                </div>
-
-                {/* Step 5: COMPLETED */}
-                <div className="flex flex-col items-center text-center relative z-10 flex-1">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-slate-400">
-                    <span>5</span>
-                  </div>
-                  <div className="mt-2 text-xs font-bold text-slate-400">COMPLETED</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Ready for pickup</div>
+              <div className="relative rounded-2xl bg-slate-50/70 px-4 py-6 sm:px-6">
+                <div className="absolute left-[10%] right-[10%] top-12 hidden h-0.5 rounded-full bg-slate-200 md:block" />
+                <div className="grid gap-5 md:grid-cols-5">
+                  {progressSteps.map((step) => (
+                    <div
+                      key={step.number}
+                      className="relative z-10 flex min-h-[112px] flex-col items-center text-center"
+                    >
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-bold shadow-sm transition-all ${
+                          step.active
+                            ? needsOtpVerification
+                              ? "border-sky-500 bg-sky-500 text-white shadow-sky-100"
+                              : "border-emerald-500 bg-emerald-500 text-white shadow-emerald-100"
+                            : "border-slate-200 bg-white text-slate-400"
+                        }`}
+                      >
+                        {step.number === 1 ? (
+                          needsOtpVerification ? (
+                            <Clock3 className="h-5 w-5" />
+                          ) : (
+                            <Check className="h-5 w-5 stroke-[3]" />
+                          )
+                        ) : (
+                          step.number
+                        )}
+                      </div>
+                      <div
+                        className={`mt-3 max-w-[130px] text-xs font-extrabold leading-4 ${
+                          step.active ? "text-slate-900" : "text-slate-400"
+                        }`}
+                      >
+                        {step.title}
+                      </div>
+                      <div
+                        className={`mt-1 text-[11px] font-medium leading-4 ${
+                          step.active
+                            ? needsOtpVerification
+                              ? "text-sky-600"
+                              : "text-emerald-600"
+                            : "text-slate-400"
+                        }`}
+                      >
+                        {step.subtitle}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 pt-6 gap-4">
-                <div className="text-sm text-slate-600">
-                  Expected Wash Time: <span className="font-semibold text-slate-800">{formattedExpectedDate}</span> at <span className="font-semibold text-slate-800">{booking.scheduling.bookingTime}</span>
+              <div className="flex flex-col gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Expected wash time
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900">
+                    {formattedExpectedDate} at {booking.scheduling.bookingTime}
+                  </div>
                 </div>
                 <Link
                   href={`/customer/bookings/${booking.bookingId}`}
-                  className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 transition hover:border-indigo-200 hover:bg-indigo-100"
                 >
                   Track Your Booking <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -358,10 +464,18 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
             <Button asChild className="rounded-xl px-5 py-2.5 font-semibold">
               <Link href={`/customer/bookings/${booking.bookingId}`}>View Booking Detail</Link>
             </Button>
-            <Button asChild variant="outline" className="rounded-xl px-5 py-2.5 font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50">
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-xl px-5 py-2.5 font-semibold bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+            >
               <Link href="/customer/bookings">Back to Bookings List</Link>
             </Button>
-            <Button asChild variant="ghost" className="rounded-xl text-slate-500 hover:text-slate-700 font-semibold">
+            <Button
+              asChild
+              variant="ghost"
+              className="rounded-xl text-slate-500 hover:text-slate-700 font-semibold"
+            >
               <Link href="/customer/bookings/new">Book Another Service</Link>
             </Button>
           </div>
@@ -374,7 +488,9 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
             <div className="p-6 bg-slate-50/50">
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Order Detail</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Order Detail
+                  </span>
                   <h2 className="text-xl font-extrabold text-slate-900 mt-0.5">
                     #{booking.confirmationNumber}
                   </h2>
@@ -420,15 +536,21 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Date:</span>
-                  <span className="font-semibold text-slate-800">{booking.scheduling.bookingDate}</span>
+                  <span className="font-semibold text-slate-800">
+                    {booking.scheduling.bookingDate}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Time Window:</span>
-                  <span className="font-semibold text-slate-800">{booking.scheduling.bookingTime}</span>
+                  <span className="font-semibold text-slate-800">
+                    {booking.scheduling.bookingTime}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Est. Duration:</span>
-                  <span className="font-semibold text-slate-800">{booking.scheduling.estimatedDuration} mins</span>
+                  <span className="font-semibold text-slate-800">
+                    {booking.scheduling.estimatedDuration} mins
+                  </span>
                 </div>
               </div>
             </div>
@@ -470,7 +592,10 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 {booking.addons && booking.addons.length > 0 && (
                   <div className="pl-3 border-l border-slate-100 space-y-1">
                     {booking.addons.map((addon) => (
-                      <div key={addon.addonId} className="flex justify-between text-xs text-slate-400">
+                      <div
+                        key={addon.addonId}
+                        className="flex justify-between text-xs text-slate-400"
+                      >
                         <span>+ {addon.addonName}</span>
                         <span>{formatBookingCurrency(addon.addonPrice)}</span>
                       </div>
@@ -480,9 +605,7 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
 
                 <div className="flex justify-between border-t border-slate-100 pt-2 text-xs text-slate-400">
                   <span>Subtotal</span>
-                  <span>
-                    {formatBookingCurrency(booking.pricing.subtotal)}
-                  </span>
+                  <span>{formatBookingCurrency(booking.pricing.subtotal)}</span>
                 </div>
 
                 {booking.pricing.voucherDiscount > 0 && (

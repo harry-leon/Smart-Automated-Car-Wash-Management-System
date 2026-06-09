@@ -206,6 +206,7 @@ public class BookingService {
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),
                 otpResponse.otpExpiresIn(),
+                otpResponse.expiresAt(),
                 booking.getCreatedAt(),
                 booking.getId(),
                 serviceCombo == null ? null : serviceCombo.getId(),
