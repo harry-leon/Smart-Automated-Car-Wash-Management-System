@@ -116,7 +116,7 @@ const ADMIN_NAV: NavGroup[] = [
         exact: true,
       },
       { to: "/admin/bookings", label: "Bookings", labelVi: "Lịch đặt", icon: ClipboardList },
-      { to: "/admin/customers", label: "Accounts", labelVi: "Tài khoản", icon: Users },
+      { to: "/admin/accounts", label: "Accounts", labelVi: "Tài khoản", icon: Users },
       { to: "/admin/packages", label: "Wash Packages", labelVi: "Gói rửa xe", icon: Droplets },
       { to: "/admin/loyalty", label: "Loyalty", labelVi: "Tích điểm", icon: Gift },
       { to: "/admin/promotions", label: "Promotions", labelVi: "Khuyến mãi", icon: Sparkles },
@@ -201,7 +201,7 @@ export function AppShell({ role }: { role: Role }) {
     headerSubtitle = "Add, edit, or remove your registered vehicles";
     headerSubtitleVi = "Thêm, sửa hoặc xóa xe đã đăng ký";
   } else if (pathname.includes("/cb/booking") || pathname === "/customer/bookings") {
-    headerTitle = "Book a Wash";
+    headerTitle = "Đặt lịch rửa xe";
     headerTitleVi = "Đặt lịch rửa xe";
     headerSubtitle = "Choose a wash, voucher, payment method, or active combo";
     headerSubtitleVi = "Chọn gói rửa, voucher, thanh toán hoặc combo";

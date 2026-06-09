@@ -45,6 +45,7 @@ export function buildBookingSummary(
     addons: BookingAddon[];
     combos: BookingCombo[];
     voucher: VoucherValidationResult | null;
+    ownedComboApplied?: boolean;
   },
 ): BookingSummary | null {
   const selectedAddons = input.addons.filter((addon) => draft.addonIds.includes(addon.addonId));
@@ -81,7 +82,7 @@ export function buildBookingSummary(
     return null;
   }
 
-  const subtotal = selectedCombo.basePrice;
+  const subtotal = input.ownedComboApplied ? 0 : selectedCombo.basePrice;
   const discountAmount = input.voucher?.discountAmount ?? 0;
   const finalAmount = input.voucher?.finalAmount ?? Math.max(subtotal - discountAmount, 0);
 

@@ -124,6 +124,10 @@ Hãy viết một nhận xét đánh giá chi tiết bằng tiếng Việt với
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
+      if (geminiResponse.status === 429) {
+        console.warn(`⚠️ Gemini API Rate Limit (429) exceeded. Skipping AI review comment to avoid blocking CI. Details: ${errorText}`);
+        return;
+      }
       throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText}`);
     }
 

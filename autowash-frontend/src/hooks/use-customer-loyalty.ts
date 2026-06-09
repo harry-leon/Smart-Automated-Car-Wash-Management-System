@@ -1,7 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  customerLoyaltyScope,
   customerPromotionsQueryKey,
   loyaltyAccountQueryKey,
   loyaltyTransactionsQueryKey,
@@ -9,6 +10,7 @@ import {
 } from "@/hooks/customer-loyalty-query";
 import {
   getCustomerLoyaltyAccount,
+  redeemCustomerLoyaltyPoints,
   listCustomerLoyaltyTransactions,
   listCustomerPromotions,
   listCustomerWashHistory,
@@ -18,6 +20,8 @@ import type { ApiErrorResponse } from "@/types/api.types";
 import type {
   CustomerPromotion,
   LoyaltyAccount,
+  RedeemPointsRequest,
+  RedeemPointsResponse,
   LoyaltyTransaction,
   WashHistoryItem,
 } from "@/types/loyalty.types";
@@ -79,5 +83,17 @@ export function useCustomerPromotions() {
     queryKey: customerPromotionsQueryKey(userId),
     queryFn: listCustomerPromotions,
     enabled,
+  });
+}
+
+export function useCustomerRedeemPoints() {
+  const { userId } = useCustomerLoyaltyContext();
+  const queryClient = useQueryClient();
+
+  return useMutation<RedeemPointsResponse, ApiErrorResponse, RedeemPointsRequest>({
+    mutationFn: redeemCustomerLoyaltyPoints,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: customerLoyaltyScope(userId) });
+    },
   });
 }

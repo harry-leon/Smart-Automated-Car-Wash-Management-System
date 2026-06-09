@@ -1,5 +1,6 @@
 package com.autowash.operation.entity;
 
+import com.autowash.auth.entity.AuthUser;
 import com.autowash.booking.entity.CustomerBooking;
 import com.autowash.operation.service.WashSessionLifecycle;
 import jakarta.persistence.Column;
@@ -9,6 +10,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -31,6 +33,10 @@ public class WashSession {
 
     @Column(length = 500)
     private String notes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_staff_id")
+    private AuthUser assignedStaff;
 
     @Column(name = "fee_amount")
     private Long feeAmount;
@@ -63,9 +69,14 @@ public class WashSession {
     }
 
     public WashSession(CustomerBooking booking, String notes) {
+        this(booking, notes, null);
+    }
+
+    public WashSession(CustomerBooking booking, String notes, AuthUser assignedStaff) {
         this.id = UUID.randomUUID();
         this.booking = booking;
         this.notes = notes;
+        this.assignedStaff = assignedStaff;
         this.status = WashSessionStatus.PENDING;
         this.createdAt = Instant.now();
     }
@@ -74,6 +85,7 @@ public class WashSession {
     public CustomerBooking getBooking() { return booking; }
     public WashSessionStatus getStatus() { return status; }
     public String getNotes() { return notes; }
+    public AuthUser getAssignedStaff() { return assignedStaff; }
     public Long getFeeAmount() { return feeAmount; }
     public String getFeeCurrency() { return feeCurrency; }
     public Integer getProjectedLoyaltyPoints() { return projectedLoyaltyPoints; }
@@ -87,6 +99,10 @@ public class WashSession {
     public void queue(Instant queuedAt) {
         transitionTo(WashSessionStatus.QUEUED);
         this.queuedAt = queuedAt;
+    }
+
+    public void assignStaff(AuthUser assignedStaff) {
+        this.assignedStaff = assignedStaff;
     }
 
     public void checkIn(Instant checkedInAt, long feeAmount, String feeCurrency, int projectedLoyaltyPoints) {

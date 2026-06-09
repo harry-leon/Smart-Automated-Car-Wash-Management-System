@@ -30,6 +30,18 @@ public class AuthUser {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Column(name = "auth_provider", nullable = false, length = 20)
+    private String authProvider;
+
+    @Column(name = "oauth_subject", length = 255)
+    private String oauthSubject;
+
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role;
@@ -78,8 +90,12 @@ public class AuthUser {
         this.phone = phone;
         this.email = email;
         this.passwordHash = passwordHash;
+        this.authProvider = "LOCAL";
+        this.oauthSubject = null;
+        this.emailVerified = false;
+        this.avatarUrl = null;
         this.role = UserRole.CUSTOMER;
-        this.status = UserStatus.PENDING;
+        this.status = UserStatus.PENDING_VERIFY;
         this.tier = LoyaltyTier.MEMBER;
         this.isNewCustomer = true;
         this.language = LanguagePreference.VI;
@@ -89,6 +105,24 @@ public class AuthUser {
         this.smsNotifications = true;
         this.createdAt = now;
         this.updatedAt = now;
+    }
+
+    public static AuthUser createGoogleCustomer(
+            String fullName,
+            String phone,
+            String email,
+            String oauthSubject,
+            String avatarUrl,
+            String passwordHash
+    ) {
+        AuthUser user = new AuthUser(fullName, phone, email, passwordHash);
+        user.authProvider = "GOOGLE";
+        user.oauthSubject = oauthSubject;
+        user.emailVerified = true;
+        user.avatarUrl = avatarUrl;
+        user.status = UserStatus.ACTIVE;
+        user.isNewCustomer = true;
+        return user;
     }
 
     public UUID getId() {
@@ -109,6 +143,22 @@ public class AuthUser {
 
     public String getPasswordHash() {
         return passwordHash;
+    }
+
+    public String getAuthProvider() {
+        return authProvider;
+    }
+
+    public String getOauthSubject() {
+        return oauthSubject;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
     }
 
     public UserRole getRole() {
@@ -179,11 +229,31 @@ public class AuthUser {
 
     public void activate() {
         this.status = UserStatus.ACTIVE;
+        this.emailVerified = true;
         this.updatedAt = Instant.now();
     }
 
     public void updateTier(LoyaltyTier tier) {
         this.tier = tier;
+        this.updatedAt = Instant.now();
+    }
+
+    public void updateRole(UserRole role) {
+        this.role = role;
+        this.updatedAt = Instant.now();
+    }
+
+    public void linkGoogleAccount(String oauthSubject, String email, String avatarUrl) {
+        this.authProvider = "GOOGLE";
+        this.oauthSubject = oauthSubject;
+        this.email = email;
+        this.avatarUrl = avatarUrl;
+        this.emailVerified = true;
+        this.updatedAt = Instant.now();
+    }
+
+    public void markEmailVerified() {
+        this.emailVerified = true;
         this.updatedAt = Instant.now();
     }
 

@@ -4,8 +4,6 @@ import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { getDisplayErrorMessage, getFieldErrorMessage } from "@/lib/api-errors";
 import { useCustomerRegister } from "@/hooks/use-auth";
 import { emailPattern, passwordPattern, phonePattern } from "@/lib/validators";
@@ -29,22 +27,22 @@ export function RegisterForm() {
       ? "Phone must use Vietnamese format 0XXXXXXXXX."
       : null) ?? getFieldErrorMessage(fieldErrors, "phone");
   const emailError =
-    (email.length > 0 && !emailPattern.test(email) ? "Email format is invalid." : null) ??
+    (email.length > 0 && !emailPattern.test(email) ? "Email không hợp lệ." : null) ??
     getFieldErrorMessage(fieldErrors, "email");
   const passwordError =
     (password.length > 0 && !passwordPattern.test(password)
-      ? "Password must contain upper, lower, number, special character, and 8+ chars."
+      ? "Mật khẩu cần có chữ hoa, chữ thường, số, ký tự đặc biệt và tối thiểu 8 ký tự."
       : null) ?? getFieldErrorMessage(fieldErrors, "password");
   const passwordConfirmError =
     (passwordConfirm.length > 0 && passwordConfirm !== password
-      ? "Password confirmation must match password."
+      ? "Mật khẩu xác nhận phải khớp với mật khẩu."
       : null) ?? getFieldErrorMessage(fieldErrors, "passwordConfirm");
 
   const canSubmit = useMemo(() => {
     return (
       fullName.trim().length > 0 &&
       phonePattern.test(phone) &&
-      (email.length === 0 || emailPattern.test(email)) &&
+      emailPattern.test(email) &&
       passwordPattern.test(password) &&
       passwordConfirm === password &&
       !registerMutation.isPending
@@ -61,12 +59,12 @@ export function RegisterForm() {
     const response = await registerMutation.mutateAsync({
       fullName: fullName.trim(),
       phone,
-      email: email || undefined,
+      email,
       password,
       passwordConfirm,
     });
 
-    router.push(`/verify-otp?phone=${encodeURIComponent(response.phone)}&autoSend=1`);
+    router.push(`/verify-otp?email=${encodeURIComponent(response.email)}&expiresIn=${response.otpExpiresIn}`);
   };
 
   const errorMessage = registerMutation.error
@@ -75,129 +73,156 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="grid gap-2">
-        <Label htmlFor="fullName" className="text-sm font-semibold text-slate-700">
-          Full name
-        </Label>
-        <div className="relative">
-          <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            id="fullName"
-            autoComplete="name"
-            name="fullName"
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-            placeholder="Nguyen Van A"
-            className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
-          />
+      <div className="space-y-4">
+        {/* Full Name */}
+        <div className="space-y-2">
+          <label htmlFor="fullName" className="text-sm font-bold tracking-wide text-slate-700">
+            Full name
+          </label>
+          <div className="relative flex items-center">
+            <input
+              id="fullName"
+              autoComplete="name"
+              name="fullName"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Nguyen Van A"
+              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+            />
+            <div className="absolute left-4 flex items-center justify-center text-slate-400">
+              <UserRound className="h-4 w-4" />
+            </div>
+          </div>
+          {fullNameError ? (
+            <p className="text-xs font-semibold text-rose-600 pl-1">{fullNameError}</p>
+          ) : null}
         </div>
-        {fullNameError ? <p className="text-sm text-rose-600">{fullNameError}</p> : null}
+
+        {/* Phone */}
+        <div className="space-y-2">
+          <label htmlFor="phone" className="text-sm font-bold tracking-wide text-slate-700">
+            Phone
+          </label>
+          <div className="relative flex items-center">
+            <input
+              id="phone"
+              autoComplete="tel"
+              inputMode="tel"
+              name="phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value.replace(/\s/g, ""))}
+              placeholder="0901234567"
+              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+            />
+            <div className="absolute left-4 flex items-center justify-center text-slate-400">
+              <Phone className="h-4 w-4" />
+            </div>
+          </div>
+          {phoneError ? (
+            <p className="text-xs font-semibold text-rose-600 pl-1">{phoneError}</p>
+          ) : null}
+        </div>
+
+        {/* Email */}
+        <div className="space-y-2">
+          <label htmlFor="email" className="text-sm font-bold tracking-wide text-slate-700">
+            Email
+          </label>
+          <div className="relative flex items-center">
+            <input
+              id="email"
+              autoComplete="email"
+              name="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="name@example.com"
+              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+            />
+            <div className="absolute left-4 flex items-center justify-center text-slate-400">
+              <Mail className="h-4 w-4" />
+            </div>
+          </div>
+          {emailError ? (
+            <p className="text-xs font-semibold text-rose-600 pl-1">{emailError}</p>
+          ) : null}
+        </div>
+
+        {/* Password */}
+        <div className="space-y-2">
+          <label htmlFor="password" className="text-sm font-bold tracking-wide text-slate-700">
+            Mật khẩu
+          </label>
+          <div className="relative flex items-center">
+            <input
+              id="password"
+              autoComplete="new-password"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="••••••••"
+              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+            />
+            <div className="absolute left-4 flex items-center justify-center text-slate-400">
+              <LockKeyhole className="h-4 w-4" />
+            </div>
+          </div>
+          {passwordError ? (
+            <p className="text-xs font-semibold text-rose-600 pl-1">{passwordError}</p>
+          ) : null}
+        </div>
+
+        {/* Confirm Password */}
+        <div className="space-y-2">
+          <label htmlFor="passwordConfirm" className="text-sm font-bold tracking-wide text-slate-700">
+            Xác nhận mật khẩu
+          </label>
+          <div className="relative flex items-center">
+            <input
+              id="passwordConfirm"
+              autoComplete="new-password"
+              name="passwordConfirm"
+              type="password"
+              value={passwordConfirm}
+              onChange={(event) => setPasswordConfirm(event.target.value)}
+              placeholder="••••••••"
+              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+            />
+            <div className="absolute left-4 flex items-center justify-center text-slate-400">
+              <LockKeyhole className="h-4 w-4" />
+            </div>
+          </div>
+          {passwordConfirmError ? (
+            <p className="text-xs font-semibold text-rose-600 pl-1">{passwordConfirmError}</p>
+          ) : null}
+        </div>
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="phone" className="text-sm font-semibold text-slate-700">
-          Phone
-        </Label>
-        <div className="relative">
-          <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            id="phone"
-            autoComplete="tel"
-            inputMode="tel"
-            name="phone"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value.replace(/\s/g, ""))}
-            placeholder="0901234567"
-            className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
-          />
-        </div>
-        {phoneError ? <p className="text-sm text-rose-600">{phoneError}</p> : null}
+      <div className="pt-2">
+        <Button
+          type="submit"
+          disabled={!canSubmit}
+          className="h-12 w-full rounded-full text-sm font-bold shadow-[0_12px_32px_rgba(37,99,235,0.24)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          {registerMutation.isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+              Creating account...
+            </>
+          ) : (
+            <>
+              Đăng ký
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
+        </Button>
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
-          Email
-        </Label>
-        <div className="relative">
-          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            id="email"
-            autoComplete="email"
-            name="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="name@example.com"
-            className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
-          />
+      {errorMessage ? (
+        <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 text-center text-xs font-bold text-rose-600 animate-pulse">
+          {errorMessage}
         </div>
-        {emailError ? <p className="text-sm text-rose-600">{emailError}</p> : null}
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="password" className="text-sm font-semibold text-slate-700">
-          Password
-        </Label>
-        <div className="relative">
-          <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            id="password"
-            autoComplete="new-password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="••••••••"
-            className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
-          />
-        </div>
-        {passwordError ? <p className="text-sm text-rose-600">{passwordError}</p> : null}
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="passwordConfirm" className="text-sm font-semibold text-slate-700">
-          Confirm password
-        </Label>
-        <div className="relative">
-          <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            id="passwordConfirm"
-            autoComplete="new-password"
-            name="passwordConfirm"
-            type="password"
-            value={passwordConfirm}
-            onChange={(event) => setPasswordConfirm(event.target.value)}
-            placeholder="••••••••"
-            className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
-          />
-        </div>
-        {passwordConfirmError ? (
-          <p className="text-sm text-rose-600">{passwordConfirmError}</p>
-        ) : null}
-      </div>
-
-      <Button
-        type="submit"
-        size="lg"
-        disabled={!canSubmit}
-        className={cn(
-          "h-12 w-full rounded-xl bg-slate-900 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-0.5 hover:bg-slate-800",
-          "disabled:translate-y-0 disabled:shadow-none",
-        )}
-      >
-        {registerMutation.isPending ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Creating account...
-          </>
-        ) : (
-          <>
-            Register
-            <ArrowRight className="h-4 w-4" />
-          </>
-        )}
-      </Button>
-
-      {errorMessage ? <p className="text-sm text-rose-600">{errorMessage}</p> : null}
+      ) : null}
     </form>
   );
 }

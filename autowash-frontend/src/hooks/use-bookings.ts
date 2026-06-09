@@ -2,21 +2,28 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  applyBookingPoints,
+  cancelCustomerBooking,
   createCustomerBooking,
+  getActiveWashTracking,
   getCustomerBookingDetail,
+  getWashTrackingDetail,
   listBookingAddons,
   listBookingCombos,
   listBookingPackages,
+  listActiveCustomerCombos,
   listCustomerBookings,
+  purchaseCustomerCombo,
   validateBookingVoucher,
 } from "@/lib/booking-service";
 import {
   bookingDetailQueryKey,
   bookingQueryScope,
   bookingsListQueryKey,
+  washTrackingActiveQueryKey,
+  washTrackingDetailQueryKey,
 } from "@/hooks/booking-query";
 import { useAuthStore } from "@/store/auth.store";
-import { resetBookingDraft, setLastCreatedBooking } from "@/store/booking.store";
 import type { ApiErrorResponse } from "@/types/api.types";
 import type {
   BookingDetail,
@@ -24,11 +31,18 @@ import type {
   BookingListFilters,
   BookingListPage,
   BookingPackage,
+  ApplyBookingPointsRequest,
+  ApplyBookingPointsResponse,
   CreateBookingResponse,
+  CancelBookingResponse,
+  PurchaseCustomerComboRequest,
+  PurchaseCustomerComboResponse,
+  WashTrackingSession,
   VoucherValidationRequest,
   VoucherValidationResult,
   BookingAddon,
   BookingCombo,
+  CustomerCombo,
 } from "@/types/booking.types";
 
 function useBookingQueryContext() {
@@ -70,6 +84,29 @@ export function useBookingCombos() {
   });
 }
 
+export function useActiveCustomerCombos() {
+  const { enabled } = useBookingQueryContext();
+
+  return useQuery<CustomerCombo[], ApiErrorResponse>({
+    queryKey: ["booking-catalog", "customer-combos", "active"],
+    queryFn: listActiveCustomerCombos,
+    enabled,
+  });
+}
+
+export function usePurchaseCustomerCombo() {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<PurchaseCustomerComboResponse, ApiErrorResponse, PurchaseCustomerComboRequest>({
+    mutationFn: purchaseCustomerCombo,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["booking-catalog", "customer-combos", "active"] });
+      await queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) });
+    },
+  });
+}
+
 export function useValidateBookingVoucher() {
   return useMutation<VoucherValidationResult, ApiErrorResponse, VoucherValidationRequest>({
     mutationFn: validateBookingVoucher,
@@ -82,9 +119,7 @@ export function useCreateCustomerBooking() {
 
   return useMutation<CreateBookingResponse, ApiErrorResponse, BookingDraft>({
     mutationFn: createCustomerBooking,
-    onSuccess: async (booking) => {
-      setLastCreatedBooking(booking);
-      resetBookingDraft();
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) });
     },
   });
@@ -107,5 +142,55 @@ export function useCustomerBookingDetail(bookingId: string) {
     queryKey: bookingDetailQueryKey(userId, bookingId),
     queryFn: () => getCustomerBookingDetail(bookingId),
     enabled: enabled && bookingId.length > 0,
+  });
+}
+
+export function useApplyBookingPoints(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<ApplyBookingPointsResponse, ApiErrorResponse, ApplyBookingPointsRequest>({
+    mutationFn: (payload) => applyBookingPoints(bookingId, payload),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, bookingId) }),
+        queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) }),
+      ]);
+    },
+  });
+}
+
+export function useCancelCustomerBooking(bookingId: string) {
+  const queryClient = useQueryClient();
+  const { userId } = useBookingQueryContext();
+
+  return useMutation<CancelBookingResponse, ApiErrorResponse, string | undefined>({
+    mutationFn: (reason) => cancelCustomerBooking(bookingId, reason),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: bookingDetailQueryKey(userId, bookingId) }),
+        queryClient.invalidateQueries({ queryKey: bookingQueryScope(userId) }),
+      ]);
+    },
+  });
+}
+
+export function useActiveWashTracking() {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<WashTrackingSession | null, ApiErrorResponse>({
+    queryKey: washTrackingActiveQueryKey(userId),
+    queryFn: getActiveWashTracking,
+    enabled,
+  });
+}
+
+export function useWashTrackingDetail(washSessionId: string) {
+  const { enabled, userId } = useBookingQueryContext();
+
+  return useQuery<WashTrackingSession, ApiErrorResponse>({
+    queryKey: washTrackingDetailQueryKey(userId, washSessionId),
+    queryFn: () => getWashTrackingDetail(washSessionId),
+    enabled: enabled && washSessionId.length > 0,
   });
 }

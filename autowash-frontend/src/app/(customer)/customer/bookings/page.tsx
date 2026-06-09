@@ -1,5 +1,5 @@
-import { CustomerBookingListPage } from "@/components/customer-bookings/booking-list-page";
+import { redirect } from "next/navigation";
 
 export default function CustomerBookingsPage() {
-  return <CustomerBookingListPage />;
+  redirect("/customer/bookings/new");
 }

@@ -35,6 +35,8 @@ public record OperationsQueueResponse(
             String customerPhone,
             String vehiclePlate,
             String packageId,
+            UUID assignedStaffId,
+            String assignedStaffName,
             String status,
             LocalDate bookingDate,
             LocalTime bookingTime,
@@ -46,7 +48,8 @@ public record OperationsQueueResponse(
             Instant queuedAt,
             Instant checkedInAt,
             Instant startedAt,
-            Instant completedAt
+            Instant completedAt,
+            String notes
     ) {
     }
 }

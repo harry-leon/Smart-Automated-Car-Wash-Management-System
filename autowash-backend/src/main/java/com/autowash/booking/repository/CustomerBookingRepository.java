@@ -3,8 +3,10 @@ package com.autowash.booking.repository;
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.entity.CustomerBooking;
+import com.autowash.operation.entity.WashSessionStatus;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -18,6 +20,13 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
 
     long countByCustomerAndStatusIn(AuthUser customer, Collection<BookingStatus> statuses);
 
+    long countByAssignedStaffAndStatusIn(AuthUser assignedStaff, Collection<BookingStatus> statuses);
+
+    long countByAssignedStaffAndStatus(AuthUser assignedStaff, BookingStatus status);
+
+    @Query("select coalesce(sum(booking.finalAmount), 0) from CustomerBooking booking where booking.assignedStaff = :staff and booking.status = :status")
+    long sumFinalAmountByAssignedStaffAndStatus(@Param("staff") AuthUser staff, @Param("status") BookingStatus status);
+
     @EntityGraph(attributePaths = {"vehicle", "addons"})
     Optional<CustomerBooking> findByCustomerAndId(AuthUser customer, String id);
 
@@ -30,7 +39,7 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
     @EntityGraph(attributePaths = {"vehicle"})
     Page<CustomerBooking> findByCustomerAndBookingDateBetweenOrderByCreatedAtDesc(AuthUser customer, LocalDate dateFrom, LocalDate dateTo, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
             select booking from CustomerBooking booking
             where (:statusFilter = false or booking.status in :statuses)
@@ -55,6 +64,23 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
             Pageable pageable
     );
 
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @Query("""
+            select booking from CustomerBooking booking
+            where booking.assignedStaff = :staff
+              and (:statusFilter = false or booking.status in :statuses)
+              and (:dateFrom is null or booking.bookingDate >= :dateFrom)
+              and (:dateTo is null or booking.bookingDate <= :dateTo)
+            """)
+    Page<CustomerBooking> searchAssignedStaffBookings(
+            @Param("staff") AuthUser staff,
+            @Param("statuses") Collection<BookingStatus> statuses,
+            @Param("statusFilter") boolean statusFilter,
+            @Param("dateFrom") LocalDate dateFrom,
+            @Param("dateTo") LocalDate dateTo,
+            Pageable pageable
+    );
+
     @Query("select count(booking) from CustomerBooking booking where booking.customer = :customer")
     long countByCustomer(@Param("customer") AuthUser customer);
 
@@ -70,4 +96,40 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
 
     @Query("select coalesce(sum(b.finalAmount), 0) from CustomerBooking b where b.status = :status")
     long sumFinalAmountByStatus(@Param("status") BookingStatus status);
+
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @Query("""
+            select booking from CustomerBooking booking
+            where booking.status = :status
+              and not exists (
+                    select session.id from WashSession session
+                    where session.booking = booking
+                      and session.status in :activeStatuses
+              )
+            order by booking.bookingDate asc, booking.bookingTime asc, booking.createdAt desc
+            """)
+    List<CustomerBooking> findEligibleForOperationsSession(
+            @Param("status") BookingStatus status,
+            @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
+    @Query("""
+            select booking from CustomerBooking booking
+            where booking.status = :status
+              and booking.assignedStaff = :staff
+              and not exists (
+                    select session.id from WashSession session
+                    where session.booking = booking
+                      and session.status in :activeStatuses
+              )
+            order by booking.bookingDate asc, booking.bookingTime asc, booking.createdAt desc
+            """)
+    List<CustomerBooking> findEligibleForAssignedStaffOperationsSession(
+            @Param("staff") AuthUser staff,
+            @Param("status") BookingStatus status,
+            @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            Pageable pageable
+    );
 }

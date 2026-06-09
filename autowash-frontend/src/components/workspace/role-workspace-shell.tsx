@@ -1,16 +1,24 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowRightFromLine,
   ChevronDown,
+  ClipboardList,
+  History,
+  LayoutDashboard,
   LogOut,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
+  RefreshCw,
+  Settings2,
+  ShieldCheck,
+  UserCog,
   UserRound,
+  Wrench,
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -27,6 +35,12 @@ import {
   WORKSPACE_THEMES,
   type WorkspaceNavItem,
 } from "@/components/workspace/workspace-nav";
+import { StaffNotificationListener } from "@/components/staff-operations/staff-notification-listener";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -77,15 +91,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   }
 
   if (!isMounted) {
-    return <WorkspaceGate message="Loading workspace..." />;
+    return <WorkspaceGate message="Đang tải khu vực làm việc..." />;
   }
 
   if (!accessToken || !user) {
-    return <WorkspaceGate message="Redirecting to sign in..." />;
+    return <WorkspaceGate message="Đang chuyển đến trang đăng nhập..." />;
   }
 
   if (user.role !== requiredRole) {
-    return <WorkspaceGate message="Redirecting to your workspace..." />;
+    return <WorkspaceGate message="Đang chuyển đến khu vực phù hợp..." />;
   }
 
   const handleLogout = () => {
@@ -99,7 +113,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   };
 
   const profileHref =
-    requiredRole === "CUSTOMER" ? "/customer/profile" : `/${requiredRole.toLowerCase()}/dashboard`;
+    requiredRole === "CUSTOMER"
+      ? "/customer/profile"
+      : requiredRole === "STAFF"
+        ? "/staff/profile"
+        : "/admin/dashboard";
+  const quickActions = getProfileQuickActions(requiredRole);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -107,7 +126,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
       <aside
         className={cn(
-          "relative z-20 hidden shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
+          "sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
           sidebarCollapsed ? "w-[5.25rem]" : "w-72",
         )}
       >
@@ -117,8 +136,8 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           onToggle={() => setSidebarCollapsed((value) => !value)}
         />
 
-        <nav className={cn("flex-1 overflow-y-auto py-4", sidebarCollapsed ? "px-2" : "px-3")}>
-          <ul className="space-y-1">
+        <nav className={cn("min-h-0 flex-1 overflow-y-auto", sidebarCollapsed ? "px-2 py-4" : "px-3 py-4")}>
+          <ul className={cn(sidebarCollapsed ? "space-y-3" : "space-y-1")}>
             {navItems.map((item) => (
               <SidebarNavLink
                 key={item.href}
@@ -139,9 +158,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <Phone className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold">Support</div>
+                  <div className="text-xs font-bold">Hỗ trợ</div>
                   <div className="mt-0.5 text-sm font-extrabold tracking-tight">1900 1234</div>
-                  <div className="mt-1 text-[10px] text-muted-foreground">8:00 - 20:00 daily</div>
+                  <div className="mt-1 text-[10px] text-muted-foreground">8:00 - 20:00 hằng ngày</div>
                 </div>
               </div>
             </div>
@@ -154,7 +173,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           >
             <LogOut className="h-4 w-4" />
             {!sidebarCollapsed ? (
-              <span>{logoutMutation.isPending ? "Signing out..." : "Sign out"}</span>
+              <span>{logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}</span>
             ) : null}
           </button>
         </div>
@@ -168,7 +187,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-card lg:hidden"
                 onClick={() => setMobileMenuOpen(true)}
-                aria-label="Open navigation menu"
+                aria-label="Mở menu điều hướng"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -192,28 +211,98 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <Link
-                href={profileHref}
-                className="group flex max-w-[12rem] items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-2 py-1.5 transition hover:border-primary/30 sm:max-w-none sm:px-3"
-              >
-                <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", theme.accentSoft)}>
-                  <UserRound className="h-4 w-4" />
-                </div>
-                <div className="hidden min-w-0 sm:block">
-                  <div className="truncate text-sm font-bold">{user.fullName}</div>
-                  <div className="truncate text-[11px] font-semibold text-muted-foreground">
-                    {requiredRole === "CUSTOMER" ? (user.tier ?? "MEMBER") : user.role}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="group flex max-w-[12rem] items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-2 py-1.5 text-left transition hover:border-primary/30 hover:bg-card sm:max-w-none sm:px-3"
+                    aria-label="Mở menu hồ sơ"
+                  >
+                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", theme.accentSoft)}>
+                      <UserRound className="h-4 w-4" />
+                    </div>
+                    <div className="hidden min-w-0 sm:block">
+                      <div className="truncate text-sm font-bold">{user.fullName}</div>
+                      <div className="truncate text-[11px] font-semibold text-muted-foreground">
+                        {requiredRole === "CUSTOMER" ? (user.tier ?? "MEMBER") : user.role}
+                      </div>
+                    </div>
+                    <ChevronDown className="hidden h-4 w-4 text-muted-foreground transition group-data-[state=open]:rotate-180 sm:block" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  sideOffset={10}
+                  className="w-72 rounded-2xl border-border/70 bg-white/95 p-2 text-slate-950 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+                >
+                  <div className="px-2 py-2">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-full border", theme.accentSoft)}>
+                        <UserRound className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-extrabold text-slate-950">{user.fullName}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                          {requiredRole === "CUSTOMER" ? (user.tier ?? "MEMBER") : user.role}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" />
-              </Link>
+
+                  <div className="my-1 h-px bg-slate-100" />
+
+                  <Link
+                    href={profileHref}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-slate-50"
+                  >
+                      <UserCog className="h-4 w-4 text-primary" />
+                      Hồ sơ cá nhân
+                  </Link>
+
+                  {quickActions.map((action) => {
+                    const Icon = action.icon;
+                    return (
+                      <Link
+                        key={action.href}
+                        href={action.href}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-slate-50"
+                      >
+                        <Icon className="h-4 w-4 text-slate-500" />
+                        {action.label}
+                      </Link>
+                    );
+                  })}
+
+                  <div className="my-1 h-px bg-slate-100" />
+
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-50"
+                    onClick={() => router.refresh()}
+                  >
+                    <RefreshCw className="h-4 w-4 text-slate-500" />
+                    Làm mới dữ liệu
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={logoutMutation.isPending}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
+                  </button>
+                </PopoverContent>
+              </Popover>
 
               <button
                 type="button"
                 disabled={logoutMutation.isPending}
                 onClick={handleLogout}
                 className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/70 px-3 text-sm font-semibold transition hover:bg-accent lg:hidden"
-                aria-label="Sign out"
+                aria-label="Đăng xuất"
               >
                 <ArrowRightFromLine className="h-4 w-4" />
               </button>
@@ -222,6 +311,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         </header>
 
         <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
+        {requiredRole === "STAFF" ? <StaffNotificationListener /> : null}
 
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 px-2 py-2 backdrop-blur-xl lg:hidden">
           <ul className="grid grid-cols-4 gap-1">
@@ -252,7 +342,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           <button
             type="button"
             className="absolute inset-0 bg-black/40"
-            aria-label="Close navigation menu"
+            aria-label="Đóng menu điều hướng"
             onClick={() => setMobileMenuOpen(false)}
           />
           <aside className="absolute left-0 top-0 flex h-full w-[min(100%,20rem)] flex-col bg-card shadow-2xl">
@@ -260,7 +350,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
               collapsed={false}
               theme={theme}
               onToggle={() => setMobileMenuOpen(false)}
-              closeLabel="Close"
+              closeLabel="Đóng"
             />
             <nav className="flex-1 overflow-y-auto px-3 py-4">
               <ul className="space-y-1">
@@ -293,6 +383,31 @@ function WorkspaceGate({ message }: { message: string }) {
   );
 }
 
+function getProfileQuickActions(role: UserRole) {
+  if (role === "STAFF") {
+    return [
+      { href: "/staff/dashboard", label: "Tổng quan ca làm", icon: LayoutDashboard },
+      { href: "/staff/operations", label: "Bảng vận hành", icon: ClipboardList },
+      { href: "/staff/check-in", label: "Duyệt check-in", icon: Wrench },
+      { href: "/staff/sessions/history", label: "Lịch sử phiên rửa", icon: History },
+    ];
+  }
+
+  if (role === "ADMIN") {
+    return [
+      { href: "/admin/dashboard", label: "Tổng quan quản trị", icon: LayoutDashboard },
+      { href: "/admin/accounts", label: "Quản lý tài khoản", icon: UserCog },
+      { href: "/admin/settings", label: "Cài đặt hệ thống", icon: Settings2 },
+    ];
+  }
+
+  return [
+    { href: "/customer/home", label: "Trang khách hàng", icon: LayoutDashboard },
+    { href: "/customer/bookings", label: "Lịch đặt của tôi", icon: ClipboardList },
+    { href: "/customer/settings", label: "Cài đặt tài khoản", icon: Settings2 },
+  ];
+}
+
 function SidebarBrand({
   collapsed,
   theme,
@@ -304,6 +419,23 @@ function SidebarBrand({
   onToggle: () => void;
   closeLabel?: string;
 }) {
+  if (collapsed) {
+    return (
+      <div className="border-b border-border/70 px-2.5 py-4">
+        <div className="mx-auto flex h-11 w-full items-center justify-center">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/15 bg-white text-primary shadow-[0_12px_30px_rgba(124,58,237,0.16)] transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_16px_36px_rgba(124,58,237,0.22)]"
+            aria-label="Mở rộng thanh bên"
+          >
+            <PanelLeftOpen className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="border-b border-border/70 px-4 py-5">
       <div className="flex items-center justify-between gap-2">
@@ -324,7 +456,7 @@ function SidebarBrand({
           type="button"
           onClick={onToggle}
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition hover:bg-accent"
-          aria-label={closeLabel ?? (collapsed ? "Expand sidebar" : "Collapse sidebar")}
+          aria-label={closeLabel ?? (collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên")}
         >
           {closeLabel ? (
             <X className="h-4 w-4" />
@@ -363,7 +495,7 @@ function SidebarNavLink({
         title={collapsed ? item.label : undefined}
         className={cn(
           "group flex items-center rounded-xl text-sm font-medium transition-all",
-          collapsed ? "mx-auto h-11 w-11 justify-center" : "gap-3 px-3 py-2.5",
+          collapsed ? "mx-auto h-12 w-12 justify-center rounded-2xl" : "gap-3 px-3 py-2.5",
           active ? activeClassName : "text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
       >
@@ -380,3 +512,4 @@ function isNavActive(pathname: string, item: WorkspaceNavItem) {
   }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
+

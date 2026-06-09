@@ -59,6 +59,18 @@ export type BookingCombo = {
   upgradePriceFrom: number;
 };
 
+export type CustomerCombo = {
+  customerComboId: string;
+  comboId: string;
+  comboName: string;
+  status: string;
+  totalUsages: number;
+  remainingUsages: number;
+  activatedAt: string;
+  expiresAt: string;
+  lastUsedAt: string | null;
+};
+
 export type VoucherValidationRequest = {
   voucherCode: string;
   packageId?: string;
@@ -112,6 +124,9 @@ export type CreateBookingResponse = {
   status: BookingStatus;
   createdAt: string;
   confirmationNumber: string;
+  comboId: string | null;
+  customerComboId: string | null;
+  comboPurchased: boolean;
 };
 
 export type BookingListItem = {
@@ -146,6 +161,8 @@ export type BookingDetail = {
     subtotal: number;
     voucherCode: string | null;
     voucherDiscount: number;
+    pointsRedeemed: number;
+    pointsDiscount: number;
     finalAmount: number;
     currency: string;
   };
@@ -180,6 +197,73 @@ export type BookingListFilters = {
   dateTo?: string;
   page?: number;
   limit?: number;
+};
+
+export type ApplyBookingPointsRequest = {
+  pointsToApply: number;
+};
+
+export type ApplyBookingPointsResponse = {
+  bookingId: string;
+  pointsApplied: number;
+  discountAmount: number;
+  finalAmount: number;
+  loyaltyBalance: number;
+  currency: string;
+};
+
+export type CancelBookingResponse = {
+  bookingId: string;
+  status: string;
+  cancelledAt: string;
+  refundAmount: number;
+  refundStatus: string;
+  refundMessage: string;
+};
+
+export type PurchaseCustomerComboRequest = {
+  comboId: string;
+  paymentMethod: PaymentMethod;
+};
+
+export type PurchaseCustomerComboResponse = {
+  customerComboId: string;
+  comboId: string;
+  comboName: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: string;
+  totalUsages: number;
+  remainingUsages: number;
+  activatedAt: string;
+  expiresAt: string;
+  purchasedAt: string;
+};
+
+export type WashTrackingSession = {
+  washSessionId: string;
+  bookingId: string;
+  status: "PENDING" | "QUEUED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED";
+  customerName: string;
+  customerPhone: string;
+  vehiclePlate: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  packageId: string | null;
+  serviceName: string | null;
+  bookingDate: string;
+  bookingTime: string;
+  assignedStaffName: string | null;
+  feeAmount: number | null;
+  feeCurrency: string | null;
+  projectedLoyaltyPoints: number | null;
+  awardedLoyaltyPoints: number | null;
+  notes: string | null;
+  createdAt: string;
+  queuedAt: string | null;
+  checkedInAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
 };
 
 export type BookingDraft = {

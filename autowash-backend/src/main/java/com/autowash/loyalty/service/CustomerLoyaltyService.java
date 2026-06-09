@@ -49,18 +49,14 @@ public class CustomerLoyaltyService {
     @Transactional(readOnly = true)
     public LoyaltyAccountResponse getAccount() {
         AuthUser user = currentUserService.getCurrentUser();
-        List<WashSession> completedSessions = loadCompletedSessions(user);
-        int totalEarnedPoints = completedSessions.stream()
-                .mapToInt(session -> session.getAwardedLoyaltyPoints() == null ? 0 : session.getAwardedLoyaltyPoints())
-                .sum();
         LoyaltyAccountResponse account = loyaltyService.getAccount(user.getId());
 
         return new LoyaltyAccountResponse(
                 user.getId().toString(),
                 account.tier(),
                 account.currentPoints(),
-                totalEarnedPoints,
-                completedSessions.size(),
+                account.totalEarnedPoints(),
+                account.completedWashCount(),
                 account.updatedAt()
         );
     }
@@ -102,9 +98,7 @@ public class CustomerLoyaltyService {
 
     @Transactional(readOnly = true)
     public int getCurrentBalance(AuthUser user) {
-        return loadCompletedSessions(user).stream()
-                .mapToInt(session -> session.getAwardedLoyaltyPoints() == null ? 0 : session.getAwardedLoyaltyPoints())
-                .sum();
+        return loyaltyService.getAccount(user.getId()).currentPoints();
     }
 
     private List<WashSession> loadCompletedSessions(AuthUser user) {

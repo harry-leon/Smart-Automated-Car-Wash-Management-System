@@ -2,21 +2,34 @@ package com.autowash.auth;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
+import com.autowash.auth.entity.AuthUser;
+import com.autowash.auth.entity.OtpPurpose;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.autowash.auth.dto.GoogleOAuthUserInfo;
+import com.autowash.auth.entity.GoogleAuthTicket;
+import com.autowash.auth.repository.AuthUserRepository;
+import com.autowash.auth.repository.GoogleAuthTicketRepository;
+import com.autowash.auth.repository.OtpRecordRepository;
+import java.time.Instant;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(properties = "autowash.auth.otp.max-attempts=5")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class AuthControllerIntegrationTest {
@@ -27,6 +40,18 @@ class AuthControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private GoogleAuthTicketRepository googleAuthTicketRepository;
+
+    @Autowired
+    private AuthUserRepository authUserRepository;
+
+    @Autowired
+    private OtpRecordRepository otpRecordRepository;
+
+    @MockBean
+    private com.autowash.auth.service.GoogleOAuthClient googleOAuthClient;
+
     @Test
     void registerCreatesPendingCustomerWithDefaultMemberTier() throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
@@ -35,7 +60,7 @@ class AuthControllerIntegrationTest {
                                 {
                                   "fullName": "Nguyen Van A",
                                   "phone": "0901234568",
-                                  "email": "a@example.com",
+                                  "email": "pending@example.com",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
@@ -43,7 +68,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.phone").value("0901234568"))
-                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.status").value("PENDING_VERIFY"))
                 .andExpect(jsonPath("$.data.requiresOtpVerification").value(true));
     }
 
@@ -55,7 +80,7 @@ class AuthControllerIntegrationTest {
                                 {
                                   "fullName": "Nguyen Van A",
                                   "phone": "0901234567",
-                                  "email": "a@example.com",
+                                  "email": "duplicate-phone@example.com",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
@@ -91,6 +116,75 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.phone").value("0901234569"))
                 .andExpect(jsonPath("$.data.otpExpiresIn").value(300))
                 .andExpect(jsonPath("$.data.devOtp").isString());
+    }
+
+    @Test
+    void registrationOtpIsSentToEmailAndStoredHashed() throws Exception {
+        registerCustomer("0901234590");
+        String email = "0901234590@example.com";
+        String otp = sendOtpByEmailAndExtractDevOtp(email);
+
+        AuthUser user = authUserRepository.findByEmailIgnoreCase(email).orElseThrow();
+        String storedCode = otpRecordRepository.findFirstByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNullOrderByCreatedAtDesc(
+                        user,
+                        OtpPurpose.EMAIL_REGISTRATION
+                )
+                .orElseThrow()
+                .getCode();
+
+        Assertions.assertNotEquals(otp, storedCode);
+        Assertions.assertTrue(storedCode.length() > 6);
+    }
+
+    @Test
+    void resendOtpIsLimitedToThreeTimesPerEmailWindow() throws Exception {
+        registerCustomer("0901234591");
+        String email = "0901234591@example.com";
+
+        sendOtpByEmailAndExtractDevOtp(email);
+        sendOtpByEmailAndExtractDevOtp(email);
+        sendOtpByEmailAndExtractDevOtp(email);
+
+        mockMvc.perform(post("/api/v1/auth/otp/send")
+                        .contentType("application/json")
+                        .content("""
+                                { "email": "%s" }
+                                """.formatted(email)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.errorCode").value("RATE_LIMIT_EXCEEDED"));
+    }
+
+    @Test
+    void failedOtpAttemptsLockCurrentOtpButAllowNewOtp() throws Exception {
+        registerCustomer("0901234592");
+        String email = "0901234592@example.com";
+        sendOtpByEmailAndExtractDevOtp(email);
+
+        for (int attempt = 1; attempt <= 4; attempt++) {
+            mockMvc.perform(post("/api/v1/auth/otp/verify")
+                            .contentType("application/json")
+                            .content("""
+                                    {
+                                      "email": "%s",
+                                      "otp": "000000"
+                                    }
+                                    """.formatted(email)))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_OTP"));
+        }
+
+        mockMvc.perform(post("/api/v1/auth/otp/verify")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "otp": "000000"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("RATE_LIMIT_EXCEEDED"));
+
+        sendOtpByEmailAndExtractDevOtp(email);
     }
 
     @Test
@@ -269,6 +363,72 @@ class AuthControllerIntegrationTest {
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"));
     }
 
+    @Test
+    void googleCallbackWithoutCodeRedirectsToFrontendErrorPage() throws Exception {
+        MvcResult callbackResult = mockMvc.perform(get("/api/v1/auth/google/callback")
+                        .param("state", "missing-ticket")
+                        .param("iss", "https://accounts.google.com"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        String location = callbackResult.getResponse().getHeader("Location");
+        org.junit.jupiter.api.Assertions.assertNotNull(location);
+        org.junit.jupiter.api.Assertions.assertTrue(location.startsWith("http://localhost:3000/auth/google/callback"));
+        org.junit.jupiter.api.Assertions.assertTrue(location.contains("status=error"));
+        org.junit.jupiter.api.Assertions.assertTrue(location.contains("Google%20login%20session%20expired"));
+    }
+
+    @Test
+    void googleCallbackExchangeFailureRedirectsToFrontendErrorPage() throws Exception {
+        GoogleAuthTicket ticket = new GoogleAuthTicket(
+                "exchange-failure-state",
+                "http://localhost:3000/auth/google/callback",
+                Instant.now().plusSeconds(300)
+        );
+        googleAuthTicketRepository.save(ticket);
+        when(googleOAuthClient.exchangeCode(anyString())).thenThrow(new IllegalStateException("invalid_grant"));
+
+        MvcResult callbackResult = mockMvc.perform(get("/api/v1/auth/google/callback")
+                        .param("state", "exchange-failure-state")
+                        .param("code", "bad-code"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        String location = callbackResult.getResponse().getHeader("Location");
+        org.junit.jupiter.api.Assertions.assertNotNull(location);
+        org.junit.jupiter.api.Assertions.assertTrue(location.startsWith("http://localhost:3000/auth/google/callback"));
+        org.junit.jupiter.api.Assertions.assertTrue(location.contains("status=error"));
+        org.junit.jupiter.api.Assertions.assertTrue(location.contains("Google%20login%20failed.%20Please%20try%20again."));
+    }
+
+    @Test
+    void googleCallbackFirstTimeSignupRedirectsReadyInsteadOfFailingAtCommit() throws Exception {
+        GoogleAuthTicket ticket = new GoogleAuthTicket(
+                "new-google-user-state",
+                "http://localhost:3000/auth/google/callback",
+                Instant.now().plusSeconds(300)
+        );
+        googleAuthTicketRepository.save(ticket);
+        when(googleOAuthClient.exchangeCode("fresh-code")).thenReturn(new GoogleOAuthUserInfo(
+                "google-sub-001",
+                "fresh-google@example.com",
+                "Fresh Google User",
+                "https://example.com/avatar.png",
+                true
+        ));
+
+        MvcResult callbackResult = mockMvc.perform(get("/api/v1/auth/google/callback")
+                        .param("state", "new-google-user-state")
+                        .param("code", "fresh-code"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        String location = callbackResult.getResponse().getHeader("Location");
+        org.junit.jupiter.api.Assertions.assertNotNull(location);
+        org.junit.jupiter.api.Assertions.assertTrue(location.contains("status=ready"));
+        org.junit.jupiter.api.Assertions.assertTrue(location.contains("state=new-google-user-state"));
+    }
+
     private void registerCustomer(String phone) throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
@@ -290,6 +450,17 @@ class AuthControllerIntegrationTest {
                         .content("""
                                 { "phone": "%s" }
                                 """.formatted(phone)))
+                .andExpect(status().isOk())
+                .andReturn();
+        return readJson(result).path("data").path("devOtp").asText();
+    }
+
+    private String sendOtpByEmailAndExtractDevOtp(String email) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/otp/send")
+                        .contentType("application/json")
+                        .content("""
+                                { "email": "%s" }
+                                """.formatted(email)))
                 .andExpect(status().isOk())
                 .andReturn();
         return readJson(result).path("data").path("devOtp").asText();

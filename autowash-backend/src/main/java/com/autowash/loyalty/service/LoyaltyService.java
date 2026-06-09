@@ -4,6 +4,9 @@ import com.autowash.auth.entity.AuthUser;
 import com.autowash.auth.entity.LoyaltyTier;
 import com.autowash.auth.entity.UserRole;
 import com.autowash.auth.repository.AuthUserRepository;
+import com.autowash.catalog.entity.DiscountType;
+import com.autowash.catalog.entity.Voucher;
+import com.autowash.catalog.repository.VoucherRepository;
 import com.autowash.loyalty.dto.EarnPointsResponse;
 import com.autowash.loyalty.dto.LoyaltyAccountResponse;
 import com.autowash.loyalty.dto.PointTransactionResponse;
@@ -41,17 +44,20 @@ public class LoyaltyService {
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final PointTransactionRepository pointTransactionRepository;
+    private final VoucherRepository voucherRepository;
 
     public LoyaltyService(
             AuthUserRepository authUserRepository,
             WashSessionRepository washSessionRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
-            PointTransactionRepository pointTransactionRepository
+            PointTransactionRepository pointTransactionRepository,
+            VoucherRepository voucherRepository
     ) {
         this.authUserRepository = authUserRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.pointTransactionRepository = pointTransactionRepository;
+        this.voucherRepository = voucherRepository;
     }
 
     @Transactional
@@ -135,16 +141,38 @@ public class LoyaltyService {
             );
         }
 
+        String voucherCode = generateVoucherCode();
+        long voucherValue = (long) pointsToRedeem * LoyaltyRules.VND_PER_POINT;
+        Instant expiresAt = Instant.now().plusSeconds(30L * 24 * 60 * 60);
+        Voucher voucher = voucherRepository.save(new Voucher(
+                voucherCode,
+                DiscountType.FIXED,
+                Math.toIntExact(voucherValue),
+                0,
+                expiresAt,
+                true,
+                false,
+                account.getTier().name()
+        ));
+
         account.redeemPoints(pointsToRedeem);
         PointTransaction transaction = pointTransactionRepository.save(new PointTransaction(
                 customer,
                 PointTransactionType.REDEEM,
                 -pointsToRedeem,
                 account.getCurrentPoints(),
-                "Points redeemed",
-                referenceId
+                "Voucher redemption: " + voucher.getCode(),
+                voucher.getCode()
         ));
-        return new RedeemPointsResponse(transaction.getId(), pointsToRedeem, account.getCurrentPoints());
+        return new RedeemPointsResponse(
+                transaction.getId(),
+                pointsToRedeem,
+                account.getCurrentPoints(),
+                voucher.getCode(),
+                voucherValue,
+                voucher.getExpiresAt(),
+                "SUCCESS"
+        );
     }
 
     @Transactional(readOnly = true)
@@ -179,7 +207,7 @@ public class LoyaltyService {
     }
 
     void evaluateTierUpgrade(LoyaltyAccount account) {
-        LoyaltyTier targetTier = LoyaltyRules.tierForPoints(account.getCurrentPoints());
+        LoyaltyTier targetTier = LoyaltyRules.tierForPoints(lifetimeEarnedPoints(account.getCustomer()));
         if (targetTier.ordinal() <= account.getTier().ordinal()) {
             return;
         }
@@ -263,10 +291,22 @@ public class LoyaltyService {
                 account.getCustomer().getId().toString(),
                 account.getTier().name(),
                 account.getCurrentPoints(),
-                account.getCurrentPoints(),
-                0,
+                lifetimeEarnedPoints(account.getCustomer()),
+                (int) washSessionRepository.countByBookingCustomerAndStatus(account.getCustomer(), WashSessionStatus.COMPLETED),
                 account.getUpdatedAt()
         );
+    }
+
+    private int lifetimeEarnedPoints(AuthUser customer) {
+        return Math.toIntExact(Math.max(0, pointTransactionRepository.sumPointsByCustomerAndType(customer, PointTransactionType.EARN)));
+    }
+
+    private String generateVoucherCode() {
+        String code;
+        do {
+            code = "LOY-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+        } while (voucherRepository.existsById(code));
+        return code;
     }
 
     private EarnPointsResponse toEarnResponse(PointTransaction transaction, LoyaltyAccount account) {

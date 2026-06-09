@@ -9,9 +9,16 @@ import type {
   BookingListItem,
   BookingListPage,
   BookingPackage,
+  CustomerCombo,
+  ApplyBookingPointsRequest,
+  ApplyBookingPointsResponse,
   CreateBookingResponse,
+  CancelBookingResponse,
+  PurchaseCustomerComboRequest,
+  PurchaseCustomerComboResponse,
   VoucherValidationRequest,
   VoucherValidationResult,
+  WashTrackingSession,
 } from "@/types/booking.types";
 import { buildCreateBookingPayload } from "@/lib/booking-format";
 
@@ -33,6 +40,11 @@ export async function listBookingCombos(): Promise<BookingCombo[]> {
   return response.data.data as BookingCombo[];
 }
 
+export async function listActiveCustomerCombos(): Promise<CustomerCombo[]> {
+  const response = await apiClient.get("/customers/combos/active");
+  return response.data.data as CustomerCombo[];
+}
+
 export function validateBookingVoucher(payload: VoucherValidationRequest) {
   return apiRequest<VoucherValidationResult, VoucherValidationRequest>({
     method: "POST",
@@ -47,6 +59,28 @@ export function createCustomerBooking(draft: BookingDraft) {
     url: "/customers/bookings",
     data: buildCreateBookingPayload(draft),
   });
+}
+
+export async function purchaseCustomerCombo(payload: PurchaseCustomerComboRequest) {
+  try {
+    return await apiRequest<PurchaseCustomerComboResponse, PurchaseCustomerComboRequest>({
+      method: "POST",
+      url: `/customers/combos/${payload.comboId}/activate`,
+      data: payload,
+    });
+  } catch (error) {
+    const statusCode = typeof error === "object" && error !== null && "statusCode" in error ? error.statusCode : null;
+
+    if (statusCode !== 404) {
+      throw error;
+    }
+
+    return apiRequest<PurchaseCustomerComboResponse, PurchaseCustomerComboRequest>({
+      method: "POST",
+      url: `/customers/combos/${payload.comboId}/purchase`,
+      data: payload,
+    });
+  }
 }
 
 export async function listCustomerBookings(filters: BookingListFilters = {}): Promise<BookingListPage> {
@@ -70,5 +104,35 @@ export function getCustomerBookingDetail(bookingId: string) {
   return apiRequest<BookingDetail>({
     method: "GET",
     url: `/customers/bookings/${bookingId}`,
+  });
+}
+
+export function applyBookingPoints(bookingId: string, payload: ApplyBookingPointsRequest) {
+  return apiRequest<ApplyBookingPointsResponse, ApplyBookingPointsRequest>({
+    method: "POST",
+    url: `/bookings/${bookingId}/apply-points`,
+    data: payload,
+  });
+}
+
+export function cancelCustomerBooking(bookingId: string, reason?: string) {
+  return apiRequest<CancelBookingResponse, { reason?: string }>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/cancel`,
+    data: reason ? { reason } : undefined,
+  });
+}
+
+export function getActiveWashTracking() {
+  return apiRequest<WashTrackingSession | null>({
+    method: "GET",
+    url: "/customers/wash-tracking/active",
+  });
+}
+
+export function getWashTrackingDetail(washSessionId: string) {
+  return apiRequest<WashTrackingSession>({
+    method: "GET",
+    url: `/customers/wash-tracking/${washSessionId}`,
   });
 }

@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildLoyaltySummary,
+  canRedeemTierOffer,
+  formatLoyaltyPoints,
   formatLoyaltyTransactionType,
   formatPromotionType,
   formatTierLabel,
   getTierProgress,
+  TIER_VOUCHER_OFFERS,
 } from "./customer-loyalty.ts";
 
 test("computes loyalty tier progress against the next threshold", () => {
@@ -32,5 +36,30 @@ test("caps loyalty progress at 100 percent for the highest tier", () => {
 test("formats tier, transaction, and promotion labels for customer pages", () => {
   assert.equal(formatTierLabel("GOLD"), "Gold");
   assert.equal(formatLoyaltyTransactionType("EARN"), "Points earned");
+  assert.equal(formatLoyaltyTransactionType("TIER_UPGRADE"), "Tier upgraded");
   assert.equal(formatPromotionType("SELECTED_TIERS"), "Selected tiers");
+  assert.equal(formatLoyaltyPoints(27), "+27 pts");
+  assert.equal(formatLoyaltyPoints(-50), "-50 pts");
+});
+
+test("limits voucher offers by current loyalty tier", () => {
+  const platinumOffer = TIER_VOUCHER_OFFERS.find((offer) => offer.minTier === "PLATINUM");
+  assert.ok(platinumOffer);
+  assert.equal(canRedeemTierOffer("GOLD", platinumOffer), false);
+  assert.equal(canRedeemTierOffer("PLATINUM", platinumOffer), true);
+});
+
+test("uses lifetime points for tier progress and available points for redemption affordability", () => {
+  const summary = buildLoyaltySummary({
+    customerId: "customer-1",
+    tier: "SILVER",
+    currentPoints: 40,
+    totalEarnedPoints: 520,
+    availablePoints: 40,
+    lifetimePoints: 520,
+    completedWashCount: 6,
+  });
+
+  assert.equal(summary.progress.currentPoints, 520);
+  assert.equal(summary.voucherOffers.find((offer) => offer.id === "member-50")?.affordable, false);
 });

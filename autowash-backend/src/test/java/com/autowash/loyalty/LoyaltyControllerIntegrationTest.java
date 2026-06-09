@@ -95,7 +95,24 @@ class LoyaltyControllerIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
-                .andExpect(jsonPath("$.data.newBalance").value(10));
+                .andExpect(jsonPath("$.data.newBalance").value(10))
+                .andExpect(jsonPath("$.data.voucherCode").isString())
+                .andExpect(jsonPath("$.data.voucherValue").value(50000))
+                .andExpect(jsonPath("$.data.expiresAt").exists())
+                .andExpect(jsonPath("$.data.status").value("SUCCESS"));
+
+        mockMvc.perform(get("/api/v1/loyalty/account")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentPoints").value(10))
+                .andExpect(jsonPath("$.data.totalEarnedPoints").value(60));
+
+        mockMvc.perform(get("/api/v1/loyalty/history")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .param("type", "REDEEM"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].type").value("REDEEM"))
+                .andExpect(jsonPath("$.data[0].reason").value(org.hamcrest.Matchers.startsWith("Voucher redemption:")));
 
         mockMvc.perform(post("/api/v1/loyalty/redeem")
                         .header("Authorization", "Bearer " + accessToken)
@@ -174,7 +191,7 @@ class LoyaltyControllerIntegrationTest {
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {
-        mockMvc.perform(post("/api/v1/auth/register")
+        MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
@@ -185,17 +202,9 @@ class LoyaltyControllerIntegrationTest {
                                   "passwordConfirm": "SecurePass1!"
                                 }
                                 """.formatted(phone, phone)))
-                .andExpect(status().isCreated());
-
-        MvcResult sendOtpResult = mockMvc.perform(post("/api/v1/auth/otp/send")
-                        .contentType("application/json")
-                        .content("""
-                                { "phone": "%s" }
-                                """.formatted(phone)))
-                .andExpect(status().isOk())
                 .andReturn();
 
-        String otp = readJson(sendOtpResult).path("data").path("devOtp").asText();
+        String otp = readJson(registerResult).path("data").path("devOtp").asText();
 
         MvcResult verifyOtpResult = mockMvc.perform(post("/api/v1/auth/otp/verify")
                         .contentType("application/json")

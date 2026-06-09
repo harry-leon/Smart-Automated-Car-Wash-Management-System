@@ -60,8 +60,12 @@ public class UserProfileService {
         if (authUserRepository.existsByPhoneAndIdNot(request.phone(), user.getId())) {
             throw new ApiException(HttpStatus.CONFLICT, "Phone number already in use", "DUPLICATE_PHONE");
         }
+        if (request.email() != null && authUserRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), user.getId())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Email already in use", "DUPLICATE_EMAIL");
+        }
 
         user.updateProfile(request.fullName(), request.email(), request.phone());
+        user.markNotNewCustomer();
 
         return new UpdateUserProfileResponse(
                 user.getId().toString(),

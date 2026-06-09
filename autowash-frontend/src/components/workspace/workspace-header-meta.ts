@@ -49,6 +49,14 @@ const ROUTE_META: Array<{
     },
   },
   {
+    match: (pathname) => pathname.startsWith("/customer/wash-tracking"),
+    meta: {
+      title: "Wash Tracking",
+      subtitle: "Track live wash progress and current session status",
+      workspace: "CUSTOMER",
+    },
+  },
+  {
     match: (pathname) => pathname.startsWith("/customer/history"),
     meta: {
       title: "Wash History",
@@ -109,6 +117,14 @@ const ROUTE_META: Array<{
     },
   },
   {
+    match: (pathname) => pathname.startsWith("/staff/sessions/history"),
+    meta: {
+      title: "Wash Session History",
+      subtitle: "Review completed sessions by day, month, or year",
+      workspace: "STAFF",
+    },
+  },
+  {
     match: (pathname) => pathname.startsWith("/staff/sessions"),
     meta: {
       title: "Wash Session",
@@ -133,10 +149,13 @@ const ROUTE_META: Array<{
     },
   },
   {
-    match: (pathname) => pathname.startsWith("/admin/customers"),
+    match: (pathname) =>
+      pathname.startsWith("/admin/accounts") ||
+      pathname.startsWith("/admin/customers") ||
+      pathname.startsWith("/admin/staff"),
     meta: {
-      title: "Customer Accounts",
-      subtitle: "Profiles, vehicles, bookings, and loyalty history",
+      title: "Accounts",
+      subtitle: "Customer, staff, and admin account directory",
       workspace: "ADMIN",
     },
   },
@@ -180,12 +199,10 @@ const ROUTE_META: Array<{
     },
   },
   {
-    match: (pathname) =>
-      pathname.startsWith("/admin/staff") ||
-      pathname.startsWith("/admin/settings"),
+    match: (pathname) => pathname.startsWith("/admin/settings"),
     meta: {
       title: "Admin Workspace",
-      subtitle: "Manage staff access and workspace settings",
+      subtitle: "Configure services, promotions, staff, and workspace settings",
       workspace: "ADMIN",
     },
   },
@@ -193,9 +210,7 @@ const ROUTE_META: Array<{
 
 export function getWorkspaceHeaderMeta(pathname: string): WorkspaceHeaderMeta {
   const routeMeta = ROUTE_META.find((entry) => entry.match(pathname));
-  if (routeMeta) {
-    return routeMeta.meta;
-  }
+  if (routeMeta) return routeMeta.meta;
 
   const workspace = resolveWorkspaceFromPath(pathname);
   return {
@@ -206,11 +221,7 @@ export function getWorkspaceHeaderMeta(pathname: string): WorkspaceHeaderMeta {
 }
 
 function resolveWorkspaceFromPath(pathname: string): WorkspaceRole {
-  if (pathname.startsWith("/staff")) {
-    return "STAFF";
-  }
-  if (pathname.startsWith("/admin")) {
-    return "ADMIN";
-  }
+  if (pathname.startsWith("/staff")) return "STAFF";
+  if (pathname.startsWith("/admin")) return "ADMIN";
   return "CUSTOMER";
 }

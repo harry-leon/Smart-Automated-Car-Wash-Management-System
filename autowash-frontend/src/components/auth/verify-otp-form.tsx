@@ -14,31 +14,37 @@ import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getDisplayErrorMessage, getFieldErrorMessage } from "@/lib/api-errors";
 import { useSendCustomerOtp, useVerifyCustomerOtp } from "@/hooks/use-auth";
-import { otpPattern, phonePattern } from "@/lib/validators";
+import { emailPattern, otpPattern } from "@/lib/validators";
 import { cn } from "@/lib/utils";
 
 const OTP_LENGTH = 6;
 
 export function VerifyOtpForm({
   autoSend,
+  initialEmail,
   initialPhone,
+  initialExpiresIn,
 }: {
   autoSend: boolean;
+  initialEmail: string;
   initialPhone: string;
+  initialExpiresIn: number;
 }) {
-  const [phone, setPhone] = useState(initialPhone);
+  const [email, setEmail] = useState(initialEmail);
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
-  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(initialEmail ? initialExpiresIn : 0);
   const [verifying, setVerifying] = useState(false);
-  const [lastOtpExpiry, setLastOtpExpiry] = useState<number | null>(null);
+  const [lastOtpExpiry, setLastOtpExpiry] = useState<number | null>(
+    initialEmail ? Date.now() + initialExpiresIn * 1000 : null,
+  );
   const hasAutoSentRef = useRef(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const sendOtpMutation = useSendCustomerOtp();
   const verifyOtpMutation = useVerifyCustomerOtp();
 
   useEffect(() => {
-    setPhone(initialPhone);
-  }, [initialPhone]);
+    setEmail(initialEmail);
+  }, [initialEmail]);
 
   useEffect(() => {
     if (!lastOtpExpiry) {
@@ -57,12 +63,11 @@ export function VerifyOtpForm({
 
   const otp = digits.join("");
   const expired = secondsLeft === 0 && lastOtpExpiry !== null;
-  const ready = otpPattern.test(otp) && phonePattern.test(phone) && !expired;
+  const ready = otpPattern.test(otp) && emailPattern.test(email) && !expired;
 
-  const phoneError =
-    (phone.length > 0 && !phonePattern.test(phone)
-      ? "Phone must use Vietnamese format 0XXXXXXXXX."
-      : null) ?? getFieldErrorMessage(sendOtpMutation.error?.fieldErrors, "phone");
+  const emailError =
+    (email.length > 0 && !emailPattern.test(email) ? "Email không hợp lệ." : null) ??
+    getFieldErrorMessage(sendOtpMutation.error?.fieldErrors, "email");
   const otpError =
     (otp.length > 0 && !otpPattern.test(otp) ? "OTP must be exactly 6 digits." : null) ??
     getFieldErrorMessage(verifyOtpMutation.error?.fieldErrors, "otp");
@@ -115,24 +120,24 @@ export function VerifyOtpForm({
   };
 
   const handleSendOtp = useCallback(async () => {
-    if (!phonePattern.test(phone)) {
+    if (!emailPattern.test(email)) {
       return;
     }
 
-    const response = await sendOtpMutation.mutateAsync({ phone });
+    const response = await sendOtpMutation.mutateAsync({ email });
     setLastOtpExpiry(Date.now() + response.otpExpiresIn * 1000);
     setDigits(Array(OTP_LENGTH).fill(""));
     inputRefs.current[0]?.focus();
-  }, [phone, sendOtpMutation]);
+  }, [email, sendOtpMutation]);
 
   useEffect(() => {
-    if (!autoSend || hasAutoSentRef.current || !phonePattern.test(phone)) {
+    if (!autoSend || hasAutoSentRef.current || !emailPattern.test(email)) {
       return;
     }
 
     hasAutoSentRef.current = true;
     handleSendOtp().catch(() => undefined);
-  }, [autoSend, handleSendOtp, phone]);
+  }, [autoSend, handleSendOtp, email]);
 
   const handleVerify = async () => {
     if (!ready) {
@@ -141,45 +146,45 @@ export function VerifyOtpForm({
 
     setVerifying(true);
     try {
-      await verifyOtpMutation.mutateAsync({ phone, otp });
+      await verifyOtpMutation.mutateAsync({ email, otp });
     } finally {
       setVerifying(false);
     }
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 shadow-sm">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 shadow-[0_10px_30px_rgba(59,130,246,0.1)] ring-1 ring-sky-100">
           <ShieldCheck className="h-7 w-7" />
         </div>
       </div>
 
       <div className="space-y-2 text-center">
-        <h3 className="text-2xl font-black tracking-tight text-slate-900">Verify OTP</h3>
+        <h3 className="text-xl font-bold tracking-tight text-slate-900">Enter OTP Code</h3>
         <p className="text-sm leading-6 text-slate-600">
-          Enter the 6-digit OTP sent to <span className="font-semibold text-slate-900">{phone || "your phone"}</span> to activate the account.
+          Enter the 6-digit OTP sent to <span className="font-semibold text-slate-900">{email || "your email"}</span> to activate the account.
         </p>
       </div>
 
-      <div className="grid gap-2">
-        <label htmlFor="phone" className="text-sm font-semibold text-slate-700">
-          Phone
+      <div className="space-y-2">
+        <label htmlFor="email" className="text-sm font-bold tracking-wide text-slate-700">
+          Email
         </label>
         <input
-          id="phone"
-          autoComplete="tel"
-          inputMode="tel"
-          value={phone}
-          onChange={(event) => setPhone(event.target.value.replace(/\s/g, ""))}
-          className="h-12 rounded-xl border border-slate-200 bg-slate-50/70 px-4 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-100"
-          placeholder="0901234567"
+          id="email"
+          autoComplete="email"
+          inputMode="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value.trim())}
+          className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 px-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+          placeholder="name@example.com"
         />
-        {phoneError ? <p className="text-sm text-rose-600">{phoneError}</p> : null}
+        {emailError ? <p className="text-xs font-semibold text-rose-600 pl-1">{emailError}</p> : null}
       </div>
 
-      <div className="grid gap-2">
-        <label className="text-sm font-semibold text-slate-700">OTP</label>
+      <div className="space-y-2">
+        <label className="text-sm font-bold tracking-wide text-slate-700">6-Digit Code</label>
         <div className="flex justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
           {digits.map((digit, index) => (
             <input
@@ -193,17 +198,17 @@ export function VerifyOtpForm({
               inputMode="numeric"
               maxLength={1}
               className={cn(
-                "h-12 w-10 rounded-xl border bg-white text-center text-xl font-semibold shadow-sm transition sm:h-14 sm:w-12",
-                "focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100",
-                digit ? "border-sky-300 bg-sky-50 text-slate-900" : "border-slate-200",
+                "h-12 w-10 rounded-xl border text-center text-xl font-semibold shadow-sm transition sm:h-14 sm:w-12 duration-300",
+                "focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-500/10",
+                digit ? "border-sky-300 bg-sky-50 text-slate-900" : "border-sky-100 bg-white/70",
               )}
             />
           ))}
         </div>
-        {otpError ? <p className="text-center text-sm text-rose-600">{otpError}</p> : null}
+        {otpError ? <p className="text-center text-xs font-semibold text-rose-600 mt-1">{otpError}</p> : null}
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-white/60 p-4 text-sm">
         <div className="text-slate-600">
           {secondsLeft > 0 ? (
             <>
@@ -216,8 +221,8 @@ export function VerifyOtpForm({
         <button
           type="button"
           onClick={() => void handleSendOtp()}
-          disabled={sendOtpMutation.isPending || !phonePattern.test(phone)}
-          className="font-semibold text-sky-700 hover:text-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={sendOtpMutation.isPending || !emailPattern.test(email)}
+          className="font-semibold text-sky-700 hover:text-sky-800 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
         >
           {sendOtpMutation.isPending ? "Sending..." : "Resend code"}
         </button>
@@ -228,12 +233,12 @@ export function VerifyOtpForm({
           type="button"
           variant="outline"
           size="lg"
-          className="h-12 rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          className="h-12 rounded-full border-sky-100 bg-white/70 text-slate-700 hover:bg-sky-50 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
           asChild
         >
           <Link href="/register" className="inline-flex items-center justify-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to registration
+            Back
           </Link>
         </Button>
 
@@ -242,7 +247,7 @@ export function VerifyOtpForm({
           size="lg"
           disabled={!ready || verifying}
           onClick={handleVerify}
-          className="h-12 rounded-xl bg-slate-900 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-0.5 hover:bg-slate-800 disabled:translate-y-0 disabled:shadow-none"
+          className="h-12 rounded-full text-base font-bold shadow-[0_12px_32px_rgba(37,99,235,0.24)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
         >
           {verifying ? (
             <>
@@ -255,8 +260,16 @@ export function VerifyOtpForm({
         </Button>
       </div>
 
-      {sendErrorMessage ? <p className="text-sm text-rose-600">{sendErrorMessage}</p> : null}
-      {verifyErrorMessage ? <p className="text-sm text-rose-600">{verifyErrorMessage}</p> : null}
+      {sendErrorMessage ? (
+        <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 text-center text-xs font-bold text-rose-600">
+          {sendErrorMessage}
+        </div>
+      ) : null}
+      {verifyErrorMessage ? (
+        <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 text-center text-xs font-bold text-rose-600">
+          {verifyErrorMessage}
+        </div>
+      ) : null}
     </div>
   );
 }

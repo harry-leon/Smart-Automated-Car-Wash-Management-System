@@ -35,6 +35,10 @@ public class CustomerBooking {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private CustomerVehicle vehicle;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_staff_id")
+    private AuthUser assignedStaff;
+
     @Column(name = "package_id", length = 50)
     private String packageId;
 
@@ -70,6 +74,12 @@ public class CustomerBooking {
 
     @Column(name = "voucher_discount", nullable = false)
     private long voucherDiscount;
+
+    @Column(name = "points_redeemed", nullable = false)
+    private int pointsRedeemed;
+
+    @Column(name = "points_discount", nullable = false)
+    private long pointsDiscount;
 
     @Column(name = "final_amount", nullable = false)
     private long finalAmount;
@@ -129,6 +139,8 @@ public class CustomerBooking {
         this.basePrice = basePrice;
         this.addonsTotal = addonsTotal;
         this.voucherDiscount = voucherDiscount;
+        this.pointsRedeemed = 0;
+        this.pointsDiscount = 0;
         this.finalAmount = finalAmount;
         this.estimatedDurationMinutes = estimatedDurationMinutes;
         this.createdAt = Instant.now();
@@ -137,6 +149,7 @@ public class CustomerBooking {
     public String getId() { return id; }
     public AuthUser getCustomer() { return customer; }
     public CustomerVehicle getVehicle() { return vehicle; }
+    public AuthUser getAssignedStaff() { return assignedStaff; }
     public String getPackageId() { return packageId; }
     public String getComboId() { return comboId; }
     public String getVoucherCode() { return voucherCode; }
@@ -148,6 +161,8 @@ public class CustomerBooking {
     public long getBasePrice() { return basePrice; }
     public long getAddonsTotal() { return addonsTotal; }
     public long getVoucherDiscount() { return voucherDiscount; }
+    public int getPointsRedeemed() { return pointsRedeemed; }
+    public long getPointsDiscount() { return pointsDiscount; }
     public long getFinalAmount() { return finalAmount; }
     public int getEstimatedDurationMinutes() { return estimatedDurationMinutes; }
     public Instant getCreatedAt() { return createdAt; }
@@ -171,5 +186,15 @@ public class CustomerBooking {
 
     public void updateStatus(BookingStatus status) {
         this.status = status;
+    }
+
+    public void assignStaff(AuthUser assignedStaff) {
+        this.assignedStaff = assignedStaff;
+    }
+
+    public void applyPoints(int points, long discountAmount) {
+        this.pointsRedeemed = points;
+        this.pointsDiscount = discountAmount;
+        this.finalAmount = Math.max(0, finalAmount - discountAmount);
     }
 }

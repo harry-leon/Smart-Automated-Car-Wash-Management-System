@@ -36,6 +36,7 @@ export type OperationsQueueSession = {
   checkedInAt?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
+  notes?: string | null;
 };
 
 export type OperationsQueueColumn = {
@@ -48,6 +49,43 @@ export type OperationsQueue = {
   summary: OperationsQueueSummary;
   columns: OperationsQueueColumn[];
   generatedAt: string;
+};
+
+export type StaffDashboardSummary = {
+  staffId: string;
+  staffName: string;
+  assignedActiveBookings: number;
+  pendingBookings: number;
+  activeSessions: number;
+  completedSessions: number;
+  completedRevenue: number;
+  kpiTargetRevenue: number;
+  kpiProgressPercent: number;
+};
+
+export type StaffOption = {
+  staffId: string;
+  staffName: string;
+};
+
+export type EligibleSessionBooking = {
+  bookingId: string;
+  customerName: string;
+  customerPhone: string;
+  vehiclePlate: string;
+  packageId: string | null;
+  comboId: string | null;
+  bookingDate: string;
+  bookingTime: string;
+  finalAmount: number;
+  estimatedDurationMinutes: number;
+};
+
+export type CreateWashSessionResponse = {
+  sessionId: string;
+  status: WashSessionStatus;
+  bookingId: string;
+  createdAt: string;
 };
 
 export type QueueWashSessionResponse = {
@@ -78,4 +116,16 @@ export type CompleteWashSessionResponse = {
   status: WashSessionStatus;
   completedAt: string;
   awardedLoyaltyPoints: number;
+};
+
+export type TransferWashSessionResponse = {
+  auditId: string;
+  sessionId: string;
+  bookingId: string;
+  fromStaffId: string | null;
+  fromStaffName: string | null;
+  toStaffId: string;
+  toStaffName: string;
+  reason: string | null;
+  transferredAt: string;
 };

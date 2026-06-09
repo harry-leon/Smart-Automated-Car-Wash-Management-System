@@ -23,7 +23,7 @@ export function WorkspacePage({ children, className, compact }: WorkspacePagePro
   );
 }
 
-export function WorkspaceLoadingState({ message = "Loading workspace..." }: { message?: string }) {
+export function WorkspaceLoadingState({ message = "Đang tải khu vực làm việc..." }: { message?: string }) {
   return (
     <WorkspacePage>
       <Card className="flex min-h-[260px] items-center justify-center border-dashed border-border/70 bg-card/80 p-8">

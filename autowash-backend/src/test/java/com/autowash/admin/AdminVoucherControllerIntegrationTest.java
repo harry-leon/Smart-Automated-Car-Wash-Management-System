@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.autowash.auth.entity.AuthUser;
+import com.autowash.auth.entity.UserRole;
 import com.autowash.auth.repository.AuthUserRepository;
 import com.autowash.booking.entity.CustomerBooking;
 import com.autowash.booking.entity.PaymentMethod;
@@ -28,6 +29,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -64,10 +66,11 @@ class AdminVoucherControllerIntegrationTest {
     void adminCanInspectVoucherRedemptionHistory() throws Exception {
         String voucherCode = "ADMINVOUCHER50";
         AuthUser customer = createActiveCustomer("0901999001");
-        CustomerBooking booking = createConfirmedBooking(customer, "ADMIN_VOUCHER_BK_001", "30H-999001", LocalDate.of(2026, 6, 14), 600000);
-        completeSession(booking.getId());
+        AuthUser staff = createActiveStaff("Staff Voucher Admin");
+        CustomerBooking booking = createConfirmedBooking(customer, staff, "ADMIN_VOUCHER_BK_001", "30H-999001", LocalDate.of(2026, 6, 14), 600000);
+        completeSession(booking.getId(), staff);
 
-        mockMvc.perform(post("/api/v1/loyalty/redeem")
+        MvcResult redeemResult = mockMvc.perform(post("/api/v1/loyalty/redeem")
                         .with(authenticatedCustomer(customer))
                         .contentType("application/json")
                         .content("""
@@ -76,40 +79,43 @@ class AdminVoucherControllerIntegrationTest {
                                   "referenceId": "%s"
                                 }
                                 """.formatted(voucherCode)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String issuedVoucherCode = readJson(redeemResult).path("data").path("voucherCode").asText();
 
         mockMvc.perform(get("/api/v1/admin/vouchers/redemptions")
                         .with(user("admin").roles("ADMIN"))
-                        .param("searchQuery", voucherCode))
+                        .param("searchQuery", issuedVoucherCode))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()", greaterThan(0)))
                 .andExpect(jsonPath("$.data[0].customerId").value(customer.getId().toString()))
                 .andExpect(jsonPath("$.data[0].customerName").value("Nguyen Van A"))
-                .andExpect(jsonPath("$.data[0].voucherCode").value(voucherCode))
+                .andExpect(jsonPath("$.data[0].voucherCode").value(issuedVoucherCode))
                 .andExpect(jsonPath("$.data[0].pointsRedeemed").value(50))
                 .andExpect(jsonPath("$.data[0].balanceAfter").value(10));
     }
 
-    private String completeSession(String bookingId) throws Exception {
-        String sessionId = createSession(bookingId);
+    private String completeSession(String bookingId, AuthUser staff) throws Exception {
+        String sessionId = createSession(bookingId, staff);
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/complete", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedUser(staff)))
                 .andExpect(status().isOk());
         return sessionId;
     }
 
-    private String createSession(String bookingId) throws Exception {
+    private String createSession(String bookingId, AuthUser staff) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(user("staff").roles("STAFF"))
+                        .with(authenticatedUser(staff))
                         .contentType("application/json")
                         .content("""
                                 {
@@ -122,7 +128,14 @@ class AdminVoucherControllerIntegrationTest {
         return readJson(result).path("data").path("sessionId").asText();
     }
 
-    private CustomerBooking createConfirmedBooking(AuthUser customer, String bookingId, String plate, LocalDate bookingDate, long finalAmount) {
+    private CustomerBooking createConfirmedBooking(
+            AuthUser customer,
+            AuthUser assignedStaff,
+            String bookingId,
+            String plate,
+            LocalDate bookingDate,
+            long finalAmount
+    ) {
         CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
                 customer,
                 plate,
@@ -133,7 +146,7 @@ class AdminVoucherControllerIntegrationTest {
                 "Silver",
                 true
         ));
-        return customerBookingRepository.saveAndFlush(new CustomerBooking(
+        CustomerBooking booking = new CustomerBooking(
                 bookingId,
                 customer,
                 vehicle,
@@ -148,7 +161,9 @@ class AdminVoucherControllerIntegrationTest {
                 0,
                 finalAmount,
                 30
-        ));
+        );
+        booking.assignStaff(assignedStaff);
+        return customerBookingRepository.saveAndFlush(booking);
     }
 
     private AuthUser createActiveCustomer(String phone) {
@@ -157,11 +172,34 @@ class AdminVoucherControllerIntegrationTest {
         return authUserRepository.saveAndFlush(user);
     }
 
-    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(AuthUser user) {
+    private AuthUser createActiveStaff(String fullName) {
+        AuthUser staff = new AuthUser(fullName, uniquePhone("0918"), "staff-" + plateSafe(fullName) + "@example.com", "hash");
+        staff.activate();
+        ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
+        return authUserRepository.saveAndFlush(staff);
+    }
+
+    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedUser(AuthUser user) {
         AuthUserPrincipal principal = new AuthUserPrincipal(user);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);
+    }
+
+    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(AuthUser user) {
+        return authenticatedUser(user);
+    }
+
+    private String uniquePhone(String prefix) {
+        String digits = java.util.UUID.randomUUID().toString().replaceAll("\\D", "");
+        while (digits.length() < 6) {
+            digits += "0";
+        }
+        return prefix + digits.substring(0, 6);
+    }
+
+    private String plateSafe(String value) {
+        return value.toLowerCase().replaceAll("[^a-z0-9]+", "-");
     }
 
     private JsonNode readJson(MvcResult result) throws Exception {

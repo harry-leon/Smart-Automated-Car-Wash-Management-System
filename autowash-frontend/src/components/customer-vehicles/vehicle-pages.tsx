@@ -531,7 +531,7 @@ function VehiclePageErrorState({
         <CardContent>
           <Button type="button" onClick={onRetry} variant="outline" className="rounded-xl">
             <RefreshCcw className="mr-2 h-4 w-4" />
-            Retry
+            Thử lại
           </Button>
         </CardContent>
       </Card>

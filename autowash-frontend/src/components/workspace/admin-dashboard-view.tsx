@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  AlertCircle, BarChart3, CalendarDays, Droplets, Loader2,
-  TrendingUp, Users, Briefcase, Package, Ticket, BadgePercent, DollarSign
+import {
+  AlertCircle,
+  BarChart3,
+  CalendarDays,
+  Droplets,
+  Loader2,
+  TrendingUp,
+  Users,
+  Package,
+  Ticket,
+  BadgePercent,
+  DollarSign,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { Card } from "@/components/ui/card";
@@ -16,8 +25,7 @@ import { cn } from "@/lib/utils";
 const QUICK_LINKS = [
   { href: "/admin/operations", label: "Operations", icon: Droplets, color: "text-blue-600 bg-blue-50" },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarDays, color: "text-indigo-600 bg-indigo-50" },
-  { href: "/admin/customers", label: "Customers", icon: Users, color: "text-emerald-600 bg-emerald-50" },
-  { href: "/admin/staff", label: "Staff Team", icon: Briefcase, color: "text-amber-600 bg-amber-50" },
+  { href: "/admin/accounts", label: "Accounts", icon: Users, color: "text-emerald-600 bg-emerald-50" },
   { href: "/admin/services", label: "Services", icon: Package, color: "text-rose-600 bg-rose-50" },
   { href: "/admin/offers?tab=promotions", label: "Promotions", icon: BadgePercent, color: "text-purple-600 bg-purple-50" },
   { href: "/admin/offers?tab=vouchers", label: "Vouchers", icon: Ticket, color: "text-pink-600 bg-pink-50" },
@@ -54,30 +62,30 @@ export function AdminDashboardView() {
 
   const kpiCards = [
     {
-      label: "Tổng bookings",
+      label: "Total bookings",
       value: `${metrics?.totalBookings ?? 0}`,
-      delta: "Toàn bộ lượt đặt xe",
+      delta: "All booking requests",
       icon: CalendarDays,
       tone: "text-sky-700 bg-sky-50",
     },
     {
-      label: "Doanh thu (VND)",
+      label: "Revenue (VND)",
       value: `${formatRevenue(metrics?.totalRevenue ?? 0)}`,
-      delta: "Bookings đã thanh toán",
+      delta: "Paid bookings",
       icon: DollarSign,
       tone: "text-emerald-700 bg-emerald-50",
     },
     {
-      label: "Khách hàng",
+      label: "Customers",
       value: `${metrics?.totalCustomers ?? 0}`,
-      delta: "Tổng tài khoản khách hàng",
+      delta: "Total customer accounts",
       icon: Users,
       tone: "text-violet-700 bg-violet-50",
     },
     {
-      label: "Promotion active",
+      label: "Active promotions",
       value: `${metrics?.activePromotions ?? 0}`,
-      delta: "Khuyến mãi đang chạy",
+      delta: "Currently running campaigns",
       icon: BadgePercent,
       tone: "text-orange-700 bg-orange-50",
     },
@@ -85,14 +93,14 @@ export function AdminDashboardView() {
 
   const liveCards = [
     {
-      label: "Queue hiện tại",
+      label: "Current queue",
       value: `${summary.pending + summary.checkedIn + summary.inProgress}`,
-      delta: "Đang xử lý live",
+      delta: "Live sessions in progress",
       icon: Droplets,
       tone: "text-blue-700 bg-blue-50",
     },
     {
-      label: "Hoàn thành hôm nay",
+      label: "Completed today",
       value: `${summary.completed}`,
       delta: "Live wash sessions",
       icon: TrendingUp,
@@ -102,16 +110,15 @@ export function AdminDashboardView() {
 
   return (
     <WorkspacePage className="space-y-8">
-      {/* Metrics từ API */}
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Chỉ số tổng quan
+            Overview metrics
           </h2>
           {metricsQuery.isError && (
             <span className="flex items-center gap-1 text-xs text-rose-600">
               <AlertCircle className="h-3.5 w-3.5" />
-              Không tải được metrics
+              Failed to load metrics
             </span>
           )}
         </div>
@@ -122,11 +129,10 @@ export function AdminDashboardView() {
         </div>
       </section>
 
-      {/* Live operations */}
       <section>
         <div className="mb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Vận hành live
+            Live operations
           </h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -136,7 +142,6 @@ export function AdminDashboardView() {
         </div>
       </section>
 
-      {/* Quick links */}
       <section>
         <Card className="border-border/70 bg-card/95 p-8 shadow-sm">
           <div className="text-center sm:text-left">
@@ -145,13 +150,13 @@ export function AdminDashboardView() {
               Jump into the most common admin workflows without changing the existing routes.
             </p>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
             {QUICK_LINKS.map((link) => {
               const Icon = link.icon;
               return (
-                <Link 
-                  key={link.href} 
-                  href={link.href} 
+                <Link
+                  key={link.href}
+                  href={link.href}
                   className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition-all hover:-translate-y-1 hover:border-slate-300 hover:shadow-md"
                 >
                   <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", link.color)}>

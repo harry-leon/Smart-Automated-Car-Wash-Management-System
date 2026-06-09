@@ -188,7 +188,7 @@ export function AdminBookingsPageContent() {
           </Card>
         ) : !bookingsQuery.data || bookingsQuery.data.items.length === 0 ? (
           <Card className="border-border/50 bg-card/60 p-10 text-center text-sm text-muted-foreground backdrop-blur-xl">
-            Không có dữ liệu.
+            No booking data found.
           </Card>
         ) : (
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm border border-slate-100">

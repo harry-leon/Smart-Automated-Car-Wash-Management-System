@@ -2,11 +2,14 @@ package com.autowash.booking.service;
 
 import com.autowash.auth.entity.AuthUser;
 import com.autowash.booking.dto.AddonSelectionResponse;
+import com.autowash.booking.dto.ApplyPointsRequest;
+import com.autowash.booking.dto.ApplyPointsResponse;
 import com.autowash.booking.dto.BookingDetailResponse;
 import com.autowash.booking.dto.BookingListItemResponse;
 import com.autowash.booking.dto.CancelBookingResponse;
 import com.autowash.booking.dto.CreateBookingRequest;
 import com.autowash.booking.dto.CreateBookingResponse;
+import com.autowash.booking.entity.CustomerCombo;
 import com.autowash.booking.entity.BookingAddon;
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.entity.CustomerBooking;
@@ -18,10 +21,14 @@ import com.autowash.catalog.entity.Voucher;
 import com.autowash.catalog.repository.ServiceComboRepository;
 import com.autowash.catalog.repository.ServicePackageRepository;
 import com.autowash.catalog.service.CatalogService;
+import com.autowash.loyalty.dto.RedeemPointsResponse;
+import com.autowash.loyalty.service.LoyaltyRules;
+import com.autowash.loyalty.service.LoyaltyService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.user.service.CurrentUserService;
 import com.autowash.operation.repository.WashSessionRepository;
+import com.autowash.operation.service.StaffAssignmentService;
 import com.autowash.vehicle.entity.CustomerVehicle;
 import com.autowash.vehicle.entity.VehicleStatus;
 import com.autowash.vehicle.repository.CustomerVehicleRepository;
@@ -57,6 +64,9 @@ public class BookingService {
     private final ServicePackageRepository servicePackageRepository;
     private final ServiceComboRepository serviceComboRepository;
     private final WashSessionRepository washSessionRepository;
+    private final LoyaltyService loyaltyService;
+    private final StaffAssignmentService staffAssignmentService;
+    private final CustomerComboService customerComboService;
 
     public BookingService(
             CurrentUserService currentUserService,
@@ -65,7 +75,10 @@ public class BookingService {
             CatalogService catalogService,
             ServicePackageRepository servicePackageRepository,
             ServiceComboRepository serviceComboRepository,
-            WashSessionRepository washSessionRepository
+            WashSessionRepository washSessionRepository,
+            LoyaltyService loyaltyService,
+            StaffAssignmentService staffAssignmentService,
+            CustomerComboService customerComboService
     ) {
         this.currentUserService = currentUserService;
         this.customerVehicleRepository = customerVehicleRepository;
@@ -74,6 +87,9 @@ public class BookingService {
         this.servicePackageRepository = servicePackageRepository;
         this.serviceComboRepository = serviceComboRepository;
         this.washSessionRepository = washSessionRepository;
+        this.loyaltyService = loyaltyService;
+        this.staffAssignmentService = staffAssignmentService;
+        this.customerComboService = customerComboService;
     }
 
     @Transactional
@@ -93,10 +109,13 @@ public class BookingService {
         List<ServiceAddon> addons = catalogService.requireActiveAddons(request.addons());
         ServicePackage servicePackage = null;
         ServiceCombo serviceCombo = null;
+        CustomerCombo ownedCombo = null;
         long basePrice;
         int baseDuration;
         String responsePackageId = null;
         String responsePackageName;
+        String customerComboId = null;
+        boolean comboPurchased = false;
 
         if (request.packageId() != null && !request.packageId().isBlank()) {
             servicePackage = catalogService.requireActivePackage(request.packageId());
@@ -106,9 +125,23 @@ public class BookingService {
             responsePackageName = servicePackage.getName();
         } else {
             serviceCombo = catalogService.requireActiveCombo(request.comboId());
-            basePrice = serviceCombo.getBasePrice();
+            ownedCombo = customerComboService.findActiveOwnedCombo(user, serviceCombo.getId());
             baseDuration = 0;
             responsePackageName = serviceCombo.getName();
+            if (ownedCombo != null) {
+                if (ownedCombo.isExpired()) {
+                    customerComboService.markExpired(ownedCombo);
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is expired", "BUSINESS_RULE_VIOLATION");
+                }
+                if (!ownedCombo.hasRemainingUsages()) {
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo has no remaining usages", "BUSINESS_RULE_VIOLATION");
+                }
+                basePrice = 0;
+                customerComboId = ownedCombo.getId();
+            } else {
+                basePrice = serviceCombo.getBasePrice();
+                comboPurchased = true;
+            }
         }
 
         long addonsTotal = addons.stream().mapToLong(ServiceAddon::getPrice).sum();
@@ -136,8 +169,17 @@ public class BookingService {
                 subtotal - voucherDiscount,
                 baseDuration + addons.stream().mapToInt(ServiceAddon::getDurationMinutes).sum()
         );
+        booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
         addons.forEach(addon -> booking.addAddon(new BookingAddon(booking, addon.getId(), addon.getName(), addon.getPrice())));
         customerBookingRepository.save(booking);
+
+        if (serviceCombo != null) {
+            if (ownedCombo == null) {
+                ownedCombo = customerComboService.createOwnedCombo(user, serviceCombo.getId(), booking.getId());
+                customerComboId = ownedCombo.getId();
+            }
+            customerComboService.recordUsage(ownedCombo, booking.getId(), request.bookingDate());
+        }
 
         return new CreateBookingResponse(
                 booking.getId(),
@@ -158,7 +200,10 @@ public class BookingService {
                 booking.getPaymentStatus().name(),
                 booking.getStatus().name(),
                 booking.getCreatedAt(),
-                booking.getId()
+                booking.getId(),
+                serviceCombo == null ? null : serviceCombo.getId(),
+                customerComboId,
+                comboPurchased
         );
     }
 
@@ -216,6 +261,43 @@ public class BookingService {
                 booking.getRefundAmount(),
                 booking.getRefundStatus(),
                 "Refund will be processed within 3-5 business days"
+        );
+    }
+
+    @Transactional
+    public ApplyPointsResponse applyPoints(String bookingId, ApplyPointsRequest request) {
+        AuthUser user = currentUserService.getCurrentUser();
+        CustomerBooking booking = findOwnedBooking(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Points can only be applied before check-in",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
+        if (booking.getPointsRedeemed() > 0) {
+            throw new ApiException(HttpStatus.CONFLICT, "Points already applied to this booking", "POINTS_ALREADY_APPLIED");
+        }
+
+        int pointsToApply = request.pointsToApply();
+        long discountAmount = (long) pointsToApply * LoyaltyRules.VND_PER_POINT;
+        if (discountAmount > booking.getFinalAmount()) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Points discount exceeds booking amount",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
+
+        RedeemPointsResponse redemption = loyaltyService.redeemPoints(user.getId(), pointsToApply, booking.getId());
+        booking.applyPoints(pointsToApply, discountAmount);
+        return new ApplyPointsResponse(
+                booking.getId(),
+                pointsToApply,
+                discountAmount,
+                booking.getFinalAmount(),
+                redemption.newBalance(),
+                "VND"
         );
     }
 
@@ -278,6 +360,8 @@ public class BookingService {
                         booking.getBasePrice() + booking.getAddonsTotal(),
                         booking.getVoucherCode(),
                         booking.getVoucherDiscount(),
+                        booking.getPointsRedeemed(),
+                        booking.getPointsDiscount(),
                         booking.getFinalAmount(),
                         "VND"
                 ),
@@ -295,11 +379,18 @@ public class BookingService {
                 ),
                 booking.getStatus().name(),
                 washSession == null ? null : washSession.getId().toString(),
-                null,
+                resolveAssignedStaffName(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt()
         );
+    }
+
+    private String resolveAssignedStaffName(CustomerBooking booking, com.autowash.operation.entity.WashSession washSession) {
+        if (washSession != null && washSession.getAssignedStaff() != null) {
+            return washSession.getAssignedStaff().getFullName();
+        }
+        return booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName();
     }
 
     private String resolvePackageName(CustomerBooking booking) {
