@@ -59,6 +59,18 @@ export type BookingCombo = {
   upgradePriceFrom: number;
 };
 
+export type CustomerCombo = {
+  customerComboId: string;
+  comboId: string;
+  comboName: string;
+  status: string;
+  totalUsages: number;
+  remainingUsages: number;
+  activatedAt: string;
+  expiresAt: string;
+  lastUsedAt: string | null;
+};
+
 export type VoucherValidationRequest = {
   voucherCode: string;
   packageId?: string;
@@ -112,6 +124,9 @@ export type CreateBookingResponse = {
   status: BookingStatus;
   createdAt: string;
   confirmationNumber: string;
+  comboId: string | null;
+  customerComboId: string | null;
+  comboPurchased: boolean;
 };
 
 export type BookingListItem = {
@@ -195,6 +210,34 @@ export type ApplyBookingPointsResponse = {
   finalAmount: number;
   loyaltyBalance: number;
   currency: string;
+};
+
+export type CancelBookingResponse = {
+  bookingId: string;
+  status: string;
+  cancelledAt: string;
+  refundAmount: number;
+  refundStatus: string;
+  refundMessage: string;
+};
+
+export type PurchaseCustomerComboRequest = {
+  comboId: string;
+  paymentMethod: PaymentMethod;
+};
+
+export type PurchaseCustomerComboResponse = {
+  customerComboId: string;
+  comboId: string;
+  comboName: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: string;
+  totalUsages: number;
+  remainingUsages: number;
+  activatedAt: string;
+  expiresAt: string;
+  purchasedAt: string;
 };
 
 export type WashTrackingSession = {
