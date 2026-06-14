@@ -7,17 +7,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.auth.entity.AuthUser;
-import com.autowash.auth.entity.UserRole;
-import com.autowash.auth.repository.AuthUserRepository;
-import com.autowash.booking.entity.BookingOtpAuditEvent;
-import com.autowash.booking.entity.BookingOtpChallengeStatus;
-import com.autowash.booking.entity.BookingStatus;
-import com.autowash.booking.repository.BookingOtpAuditLogRepository;
-import com.autowash.booking.repository.BookingOtpChallengeRepository;
-import com.autowash.booking.repository.CustomerBookingRepository;
-import com.autowash.loyalty.entity.LoyaltyAccount;
-import com.autowash.loyalty.repository.LoyaltyAccountRepository;
+import com.autowash.entity.AuthUser;
+import com.autowash.entity.UserRole;
+import com.autowash.repository.AuthUserRepository;
+import com.autowash.entity.BookingOtpAuditEvent;
+import com.autowash.entity.BookingOtpChallengeStatus;
+import com.autowash.entity.BookingStatus;
+import com.autowash.repository.BookingOtpAuditLogRepository;
+import com.autowash.repository.BookingOtpChallengeRepository;
+import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.entity.LoyaltyAccount;
+import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -737,5 +737,9 @@ class BookingControllerIntegrationTest {
 
     private JsonNode readJson(MvcResult result) throws Exception {
         return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private String futureBookingDate() {
+        return LocalDate.now().plusDays(1).toString();
     }
 }

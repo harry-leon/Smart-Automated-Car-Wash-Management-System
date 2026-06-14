@@ -1,4 +1,4 @@
-import { AdminBusinessHealthPage } from "@/components/admin-reports/admin-business-health-page";
+import { AdminBusinessHealthPage } from "@/features/admin/reports/components/admin-business-health-page";
 
 export default function AdminReportsPage() {
   return <AdminBusinessHealthPage />;

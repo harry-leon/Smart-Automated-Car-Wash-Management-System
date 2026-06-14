@@ -59,64 +59,44 @@ Important prototype facts to preserve during backend design:
 
 ---
 
-## 2. Backend Modules
+## 2. Backend Structure
 
-### 2.1 Module Structure (Modular Monolith)
+### 2.1 Package Structure (Package by Layer)
 
-```
+```text
 com.autowash
-├── auth                          # Authentication & Authorization
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── user                          # User Profile Management
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── vehicle                       # Vehicle Management
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── booking                       # Booking Core (Customer Flow)
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── operation                     # Operations & Staff Workflow
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── loyalty                       # Loyalty & Points System
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── promotion                     # Promotions, Vouchers & Combos
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── admin                         # Admin Accounts Management & Reporting
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── notification                  # Notifications, Reminders & In-app alerts
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── support                       # Customer support chat threads/messages
-│   ├── domain
-│   ├── application
-│   └── infrastructure
-├── shared                        # Cross-cutting Concerns
-│   ├── exception
-│   ├── validator
-│   ├── constant
-│   ├── dto
-│   └── util
-└── integration                   # External Service Adapters
-    ├── payment
-    ├── sms
-    ├── email
-    └── notification
+|-- controller                    # REST controllers
+|-- service                       # Business/application services
+|-- repository                    # Spring Data JPA repositories
+|-- entity                        # JPA entities and domain enums
+|-- dto                           # Request/response DTOs
+`-- shared                        # Cross-cutting config, security, exception, shared dto
 ```
+
+Backend source code is organized by technical layer, not by feature package. Do not add
+new packages such as `com.autowash.booking.service`, `com.autowash.auth.entity`,
+`com.autowash.vehicle.repository`, or other `feature.layer` packages.
+
+Business domains remain important, but they are represented by class names, endpoint
+prefixes, database ownership, and service responsibilities:
+
+- Authentication & Authorization: `AuthController`, `AuthService`, `JwtService`, `OtpService`, `AuthUserRepository`
+- Customer Profile: `UserProfileController`, `UserProfileService`, `CurrentUserService`
+- Vehicle Management: `VehicleController`, `VehicleService`, `CustomerVehicleRepository`
+- Booking & Combos: `BookingController`, `BookingService`, `BookingOtpService`, `CustomerComboService`
+- Catalog, Promotions, Vouchers: `CatalogController`, `AdminPromotionController`, `CatalogService`, `PromotionService`, `AdminVoucherService`
+- Operations & Staff Workflow: `OperationsController`, `OperationsService`, `StaffAssignmentService`, `WashSessionLifecycle`
+- Loyalty & Points: `LoyaltyController`, `CustomerLoyaltyController`, `LoyaltyService`
+- Admin Reporting/Management: `AdminReportingController`, `AdminReportingService`, `AdminDashboardMetricsService`
+
+Layer conventions for new backend code:
+
+- Put REST endpoints in `src/main/java/com/autowash/controller`.
+- Put business logic in `src/main/java/com/autowash/service`.
+- Put JPA repositories in `src/main/java/com/autowash/repository`.
+- Put entities and enums in `src/main/java/com/autowash/entity`.
+- Put request/response DTOs in `src/main/java/com/autowash/dto`.
+- Keep `src/main/java/com/autowash/shared` for config, security, exception handling, and shared response wrappers.
 
 ### 2.2 Database Schema Outline
 

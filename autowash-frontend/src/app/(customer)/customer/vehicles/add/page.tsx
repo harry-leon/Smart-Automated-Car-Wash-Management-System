@@ -1,4 +1,4 @@
-import { CustomerVehicleCreateClientPage } from "@/components/customer-vehicles/vehicle-pages";
+import { CustomerVehicleCreateClientPage } from "@/features/customer/vehicles/components/vehicle-pages";
 
 export default function AddVehiclePage() {
   return <CustomerVehicleCreateClientPage />;

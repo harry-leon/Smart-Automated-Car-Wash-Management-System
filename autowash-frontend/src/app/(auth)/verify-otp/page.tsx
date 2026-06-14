@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { VerifyOtpForm } from "@/components/auth/verify-otp-form";
-import { PublicAuthShell } from "@/components/auth/public-auth-shell";
+import { VerifyOtpForm } from "@/features/auth/components/verify-otp-form";
+import { PublicAuthShell } from "@/features/auth/components/public-auth-shell";
 
 export default function VerifyOtpPage({
   searchParams,

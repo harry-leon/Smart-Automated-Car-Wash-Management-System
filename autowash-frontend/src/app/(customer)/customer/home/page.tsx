@@ -14,16 +14,16 @@ import {
   CarFront,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/store/auth.store";
-import { cn } from "@/lib/utils";
-import { formatBookingCurrency } from "@/lib/booking-format";
-import { useCustomerProfile } from "@/hooks/use-customer-profile";
-import { useActiveCustomerCombos, useBookingCombos, useCustomerBookings } from "@/hooks/use-bookings";
-import { useCustomerVehicles } from "@/hooks/use-customer-vehicles";
-import type { BookingCombo, CustomerCombo } from "@/types/booking.types";
+import { Card } from "@/shared/components/ui/card";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import { cn } from "@/shared/lib/utils";
+import { formatBookingCurrency } from "@/features/customer/bookings/lib/booking-format";
+import { useCustomerProfile } from "@/features/customer/profile/hooks/use-customer-profile";
+import { useActiveCustomerCombos, useBookingCombos, useCustomerBookings } from "@/features/customer/bookings/hooks/use-bookings";
+import { useCustomerVehicles } from "@/features/customer/vehicles/hooks/use-customer-vehicles";
+import type { BookingCombo, CustomerCombo } from "@/features/customer/bookings/booking.types";
 
 type ActiveCustomerComboSummary = CustomerCombo & {
   combo: BookingCombo;

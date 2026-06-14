@@ -1,6 +1,6 @@
 package com.autowash.shared.security;
 
-import com.autowash.auth.service.JwtService;
+import com.autowash.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

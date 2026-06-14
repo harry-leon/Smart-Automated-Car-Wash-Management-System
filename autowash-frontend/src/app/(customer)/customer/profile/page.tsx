@@ -3,21 +3,21 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { Loader2, RefreshCcw, Save, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { getDisplayErrorMessage } from "@/lib/api-errors";
-import { buildUpdateUserProfileRequest } from "@/lib/profile-update-payload";
-import { emailPattern, phonePattern } from "@/lib/validators";
+} from "@/shared/components/ui/card";
+import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { buildUpdateUserProfileRequest } from "@/features/customer/profile/lib/profile-update-payload";
+import { emailPattern, phonePattern } from "@/shared/lib/validators";
 import {
   useCustomerProfile,
   useUpdateCustomerProfile,
-} from "@/hooks/use-customer-profile";
+} from "@/features/customer/profile/hooks/use-customer-profile";
 
 type ProfileFormState = {
   fullName: string;

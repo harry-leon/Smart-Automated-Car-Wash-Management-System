@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowRight, Code2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { WorkspacePage } from "@/components/workspace/workspace-page";
-import { cn } from "@/lib/utils";
+import { Card } from "@/shared/components/ui/card";
+import { WorkspacePage } from "@/shared/components/workspace/workspace-page";
+import { cn } from "@/shared/lib/utils";
 
 type WorkspacePlaceholderProps = {
   workspace: "Customer" | "Staff" | "Admin" | "Auth";

@@ -9,16 +9,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.auth.entity.AuthUser;
-import com.autowash.auth.entity.UserRole;
-import com.autowash.auth.repository.AuthUserRepository;
-import com.autowash.booking.entity.CustomerBooking;
-import com.autowash.booking.entity.PaymentMethod;
-import com.autowash.booking.repository.CustomerBookingRepository;
+import com.autowash.entity.AuthUser;
+import com.autowash.entity.UserRole;
+import com.autowash.repository.AuthUserRepository;
+import com.autowash.entity.CustomerBooking;
+import com.autowash.entity.PaymentMethod;
+import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
-import com.autowash.vehicle.entity.CustomerVehicle;
-import com.autowash.vehicle.entity.VehicleType;
-import com.autowash.vehicle.repository.CustomerVehicleRepository;
+import com.autowash.entity.CustomerVehicle;
+import com.autowash.entity.VehicleType;
+import com.autowash.repository.CustomerVehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -56,7 +56,7 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void adminBookingListSupportsFiltersAndPagination() throws Exception {
-        CustomerBooking matching = createConfirmedBooking("ADMIN_BK_001", "0901777401", "30H-774401", LocalDate.of(2026, 6, 10), 270000);
+        CustomerBooking matching = createConfirmedBooking("ADMIN_BK_001", "0901777401", "30H-774401", LocalDate.now().plusDays(1), 270000);
         createConfirmedBooking("ADMIN_BK_002", "0901777402", "30H-774402", LocalDate.of(2026, 7, 10), 150000);
 
         mockMvc.perform(get("/api/v1/admin/bookings")

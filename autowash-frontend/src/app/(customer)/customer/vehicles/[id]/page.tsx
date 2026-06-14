@@ -1,4 +1,4 @@
-import { CustomerVehicleDetailClientPage } from "@/components/customer-vehicles/vehicle-pages";
+import { CustomerVehicleDetailClientPage } from "@/features/customer/vehicles/components/vehicle-pages";
 
 export default function VehicleDetailPage({ params }: { params: { id: string } }) {
   return <CustomerVehicleDetailClientPage vehicleId={params.id} />;

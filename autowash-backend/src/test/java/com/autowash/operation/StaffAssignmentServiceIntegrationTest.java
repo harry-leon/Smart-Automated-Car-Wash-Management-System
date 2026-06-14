@@ -2,16 +2,16 @@ package com.autowash.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.autowash.auth.entity.AuthUser;
-import com.autowash.auth.entity.UserRole;
-import com.autowash.auth.repository.AuthUserRepository;
-import com.autowash.booking.entity.CustomerBooking;
-import com.autowash.booking.entity.PaymentMethod;
-import com.autowash.booking.repository.CustomerBookingRepository;
-import com.autowash.operation.service.StaffAssignmentService;
-import com.autowash.vehicle.entity.CustomerVehicle;
-import com.autowash.vehicle.entity.VehicleType;
-import com.autowash.vehicle.repository.CustomerVehicleRepository;
+import com.autowash.entity.AuthUser;
+import com.autowash.entity.UserRole;
+import com.autowash.repository.AuthUserRepository;
+import com.autowash.entity.CustomerBooking;
+import com.autowash.entity.PaymentMethod;
+import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.service.StaffAssignmentService;
+import com.autowash.entity.CustomerVehicle;
+import com.autowash.entity.VehicleType;
+import com.autowash.repository.CustomerVehicleRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -77,7 +77,7 @@ class StaffAssignmentServiceIntegrationTest {
                 "pkg_001",
                 null,
                 null,
-                LocalDate.of(2026, 6, 10),
+                LocalDate.now().plusDays(1),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 150000,

@@ -47,8 +47,8 @@ Theo `README-final.md`, repository hiện tại là **frontend prototype** mô p
 
 Prototype hiện có hai state model:
 
-- `src/lib/carwash-store.tsx`: shared portal store cho auth, staff/admin operations, settings, transactions, notifications, support chat, reminders và phần lớn logic portal.
-- `src/modules/customer-booking/routes.tsx`: module-local customer booking store cho `/customer/home`, `/customer/vehicles`, `/customer/bookings`, `/customer/history`, `/customer/loyalty` và mock vehicles/packages/combos/vouchers/bookings.
+- `src/shared/store/carwash-store.tsx`: shared portal store cho auth, staff/admin operations, settings, transactions, notifications, support chat, reminders và phần lớn logic portal.
+- `src/features/customer/bookings`: customer booking feature cho `/customer/home`, `/customer/vehicles`, `/customer/bookings`, `/customer/history`, `/customer/loyalty` và mock vehicles/packages/combos/vouchers/bookings.
 
 Hệ quả: customer booking, admin và staff chưa đồng bộ hoàn toàn vào một source of truth. Khi code tiếp, phải xác định rõ đang bám theo **prototype hiện tại** hay **backend/API production target**.
 
@@ -106,11 +106,31 @@ Những yêu cầu trên là **mandatory-first scope**. Các phần khác như s
 
 ### 2.1 Frontend — Cây thư mục
 
+Frontend hiện được chuẩn hóa theo hướng **feature-first + shared layer**:
+
+- `src/app`: chỉ giữ Next.js routes, layouts, middleware-facing entrypoints.
+- `src/features`: chứa code theo nghiệp vụ/role (`auth`, `customer`, `staff`, `admin`, `public`, `support`).
+- `src/shared`: chứa phần dùng chung giữa nhiều feature (`components`, `lib`, `store`, `types`, `legacy`).
+- Không tạo mới code runtime dưới `src/components`, `src/hooks`, `src/lib`, `src/store`, `src/types`; các import mới phải dùng `@/features/...` hoặc `@/shared/...`.
+
 ```
 autowash-frontend/
 │
 ├── src/
 │   ├── app/                            # Next.js App Router
+│   ├── features/                       # Package by feature/domain
+│   │   ├── auth/                       # Login, register, OTP, auth session
+│   │   ├── customer/                   # Booking, history, loyalty, profile, vehicles, wash tracking
+│   │   ├── staff/                      # Dashboard, operations, profile
+│   │   ├── admin/                      # Accounts, bookings, customers, reports, promotions, vouchers
+│   │   ├── public/                     # Public landing/auth popup components
+│   │   └── support/                    # Support chat components
+│   ├── shared/                         # Package by layer cho code dùng chung
+│   │   ├── components/                 # UI primitives, providers, workspace shell
+│   │   ├── lib/                        # API client, validators, constants, query client
+│   │   ├── store/                      # Zustand/global client state
+│   │   ├── types/                      # Shared TypeScript declarations
+│   │   └── legacy/                     # Code giữ để đối chiếu, không thuộc runtime chính
 │   │   ├── layout.tsx                  # Root layout: font, theme, QueryClient, AuthProvider
 │   │   ├── page.tsx                    # Landing page công khai (GUEST)
 │   │   │
@@ -216,23 +236,31 @@ autowash-frontend/
 ├── next.config.ts · tailwind.config.ts · tsconfig.json
 ```
 
-### 2.2 Backend — Module structure (Spring Boot)
+### 2.2 Backend — Package structure (Spring Boot)
 
 ```
 com.autowash
-├── auth          # Đăng ký, OTP, login, JWT, RBAC
-├── user          # Profile, preferences, status
-├── vehicle       # Quản lý xe của khách hàng
-├── booking       # Checkout flow, booking lifecycle, payment mock
-├── operation     # Wash session, staff queue, check-in flow
-├── loyalty       # Points ledger, tier, redemption, expiry
-├── promotion     # Packages, add-ons, combos, vouchers, promotions
-├── admin         # Dashboard metrics, reports, accounts management
-├── notification  # Templates, reminders, in-app notifications, support reply notifications
-├── support       # Customer support chat threads/messages (có thể gộp notification ở giai đoạn prototype)
-├── shared        # Exception, validator, constant, dto, util
-└── integration   # Adapters: payment, sms, email (mock hiện tại)
+|-- controller    # REST controllers cho auth, customer, booking, operation, admin...
+|-- service       # Business logic/application services
+|-- repository    # Spring Data JPA repositories
+|-- entity        # JPA entities và domain enums
+|-- dto           # Request/response DTOs
+`-- shared        # Cross-cutting: config, security, exception, shared dto
 ```
+
+Backend hiện tại dùng **package by layer**. Không tạo package theo feature như
+`com.autowash.booking.service` hoặc `com.autowash.auth.entity` nữa. Ranh giới nghiệp vụ
+vẫn giữ qua tên class, endpoint prefix và service ownership, ví dụ
+`BookingService`, `AuthController`, `CustomerVehicleRepository`.
+
+Quy ước khi thêm code backend:
+
+- Controller mới đặt trong `com.autowash.controller`.
+- Service mới đặt trong `com.autowash.service`.
+- Repository mới đặt trong `com.autowash.repository`.
+- Entity/enums mới đặt trong `com.autowash.entity`.
+- Request/response DTO mới đặt trong `com.autowash.dto`.
+- Config/security/exception dùng chung tiếp tục đặt dưới `com.autowash.shared`.
 
 ---
 
