@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { formatBookingCurrency } from "@/lib/booking-format";
-import { useBookingCombos } from "@/hooks/use-bookings";
-import type { BookingCombo } from "@/types/booking.types";
+import { Button } from "@/shared/components/ui/button";
+import { formatBookingCurrency } from "@/features/customer/bookings/lib/booking-format";
+import { useBookingCombos } from "@/features/customer/bookings/hooks/use-bookings";
+import type { BookingCombo } from "@/features/customer/bookings/booking.types";
 
 function ComboCard({ combo }: { combo: BookingCombo }) {
   return (

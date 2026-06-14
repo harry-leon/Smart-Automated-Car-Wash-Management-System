@@ -9,15 +9,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import com.autowash.auth.entity.AuthUser;
-import com.autowash.auth.entity.OtpPurpose;
+import com.autowash.entity.AuthUser;
+import com.autowash.entity.OtpPurpose;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.autowash.auth.dto.GoogleOAuthUserInfo;
-import com.autowash.auth.entity.GoogleAuthTicket;
-import com.autowash.auth.repository.AuthUserRepository;
-import com.autowash.auth.repository.GoogleAuthTicketRepository;
-import com.autowash.auth.repository.OtpRecordRepository;
+import com.autowash.dto.GoogleOAuthUserInfo;
+import com.autowash.entity.GoogleAuthTicket;
+import com.autowash.repository.AuthUserRepository;
+import com.autowash.repository.GoogleAuthTicketRepository;
+import com.autowash.repository.OtpRecordRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ class AuthControllerIntegrationTest {
     private OtpRecordRepository otpRecordRepository;
 
     @MockBean
-    private com.autowash.auth.service.GoogleOAuthClient googleOAuthClient;
+    private com.autowash.service.GoogleOAuthClient googleOAuthClient;
 
     @Test
     void registerCreatesPendingCustomerWithDefaultMemberTier() throws Exception {

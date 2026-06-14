@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { QueryProvider } from "@/components/providers/query-provider";
-import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/shared/components/providers/query-provider";
+import { Toaster } from "@/shared/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {

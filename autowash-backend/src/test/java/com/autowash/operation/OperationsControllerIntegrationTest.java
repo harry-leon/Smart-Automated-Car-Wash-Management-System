@@ -8,18 +8,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.auth.entity.AuthUser;
-import com.autowash.auth.entity.UserRole;
-import com.autowash.auth.repository.AuthUserRepository;
-import com.autowash.booking.entity.CustomerBooking;
-import com.autowash.booking.entity.PaymentMethod;
-import com.autowash.booking.repository.CustomerBookingRepository;
-import com.autowash.operation.entity.WashSession;
-import com.autowash.operation.repository.WashSessionRepository;
+import com.autowash.entity.AuthUser;
+import com.autowash.entity.UserRole;
+import com.autowash.repository.AuthUserRepository;
+import com.autowash.entity.CustomerBooking;
+import com.autowash.entity.PaymentMethod;
+import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.entity.WashSession;
+import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
-import com.autowash.vehicle.entity.CustomerVehicle;
-import com.autowash.vehicle.entity.VehicleType;
-import com.autowash.vehicle.repository.CustomerVehicleRepository;
+import com.autowash.entity.CustomerVehicle;
+import com.autowash.entity.VehicleType;
+import com.autowash.repository.CustomerVehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
@@ -373,7 +373,7 @@ class OperationsControllerIntegrationTest {
                 "pkg_001",
                 null,
                 null,
-                LocalDate.of(2026, 6, 10),
+                LocalDate.now().plusDays(1),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -395,7 +395,7 @@ class OperationsControllerIntegrationTest {
         session.start(now.minusSeconds(1200));
         session.complete(now, points);
         washSessionRepository.saveAndFlush(session);
-        booking.updateStatus(com.autowash.booking.entity.BookingStatus.COMPLETED);
+        booking.updateStatus(com.autowash.entity.BookingStatus.COMPLETED);
         customerBookingRepository.saveAndFlush(booking);
     }
 

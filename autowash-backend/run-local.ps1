@@ -15,7 +15,7 @@ if (Test-Path $envFile) {
     }
     $name = $line.Substring(0, $separatorIndex).Trim()
     $value = $line.Substring($separatorIndex + 1).Trim()
-    [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
+    Set-Item -Path "Env:$name" -Value $value
   }
 }
 

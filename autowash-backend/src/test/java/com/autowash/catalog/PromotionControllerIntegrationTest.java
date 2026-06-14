@@ -11,9 +11,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.auth.entity.AuthUser;
-import com.autowash.auth.entity.LoyaltyTier;
-import com.autowash.auth.repository.AuthUserRepository;
+import com.autowash.entity.AuthUser;
+import com.autowash.entity.LoyaltyTier;
+import com.autowash.repository.AuthUserRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

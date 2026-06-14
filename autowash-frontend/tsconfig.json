@@ -2,15 +2,8 @@
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
-    "src/app/**/*",
-    "src/components/providers/**/*",
-    "src/hooks/use-auth.ts",
-    "src/lib/api.ts",
-    "src/lib/api-errors.ts",
-    "src/lib/auth-service.ts",
-    "src/lib/query-client.ts",
-    "src/store/auth.store.ts",
-    "src/types/**/*.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "src/middleware.ts",
     "eslint.config.js"
   ],
@@ -55,7 +48,7 @@
     "node_modules",
     "prototype-src",
     "src/app/modules",
-    "src/components/ui",
+    "src/shared/legacy",
     "src/pages",
     "src/scripts"
   ]

@@ -3,16 +3,16 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { buildAuthSession, getAuthRedirectPath } from "@/lib/auth-session";
+import { Button } from "@/shared/components/ui/button";
+import { buildAuthSession, getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import {
   confirmGoogleAuthLink,
   exchangeGoogleAuthTicket,
   getGoogleAuthTicket,
-} from "@/lib/auth-service";
-import { getDisplayErrorMessage } from "@/lib/api-errors";
-import { setAuthSession } from "@/store/auth.store";
-import type { GoogleAuthTicketResponse } from "@/types/auth.types";
+} from "@/features/auth/lib/auth-service";
+import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { setAuthSession } from "@/features/auth/store/auth.store";
+import type { GoogleAuthTicketResponse } from "@/features/auth/auth.types";
 
 export default function GoogleAuthCallbackPage() {
   return (

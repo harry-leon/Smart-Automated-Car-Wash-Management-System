@@ -1,28 +1,28 @@
-package com.autowash.loyalty.service;
+package com.autowash.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.autowash.auth.entity.AuthUser;
-import com.autowash.auth.entity.LoyaltyTier;
-import com.autowash.auth.repository.AuthUserRepository;
-import com.autowash.booking.entity.CustomerBooking;
-import com.autowash.booking.entity.PaymentMethod;
-import com.autowash.booking.repository.CustomerBookingRepository;
-import com.autowash.catalog.repository.VoucherRepository;
-import com.autowash.loyalty.dto.EarnPointsResponse;
-import com.autowash.loyalty.dto.RedeemPointsResponse;
-import com.autowash.loyalty.entity.LoyaltyAccount;
-import com.autowash.loyalty.entity.PointTransaction;
-import com.autowash.loyalty.entity.PointTransactionType;
-import com.autowash.loyalty.repository.LoyaltyAccountRepository;
-import com.autowash.loyalty.repository.PointTransactionRepository;
-import com.autowash.operation.entity.WashSession;
-import com.autowash.operation.repository.WashSessionRepository;
+import com.autowash.entity.AuthUser;
+import com.autowash.entity.LoyaltyTier;
+import com.autowash.repository.AuthUserRepository;
+import com.autowash.entity.CustomerBooking;
+import com.autowash.entity.PaymentMethod;
+import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.repository.VoucherRepository;
+import com.autowash.dto.EarnPointsResponse;
+import com.autowash.dto.RedeemPointsResponse;
+import com.autowash.entity.LoyaltyAccount;
+import com.autowash.entity.PointTransaction;
+import com.autowash.entity.PointTransactionType;
+import com.autowash.repository.LoyaltyAccountRepository;
+import com.autowash.repository.PointTransactionRepository;
+import com.autowash.entity.WashSession;
+import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.exception.ApiException;
-import com.autowash.vehicle.entity.CustomerVehicle;
-import com.autowash.vehicle.entity.VehicleType;
-import com.autowash.vehicle.repository.CustomerVehicleRepository;
+import com.autowash.entity.CustomerVehicle;
+import com.autowash.entity.VehicleType;
+import com.autowash.repository.CustomerVehicleRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -187,7 +187,7 @@ class LoyaltyServiceTest {
                 "pkg_001",
                 null,
                 null,
-                LocalDate.of(2026, 6, 10),
+                LocalDate.now().plusDays(1),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,

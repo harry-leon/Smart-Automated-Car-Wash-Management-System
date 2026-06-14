@@ -1,6 +1,6 @@
 package com.autowash.shared.security;
 
-import com.autowash.auth.repository.AuthUserRepository;
+import com.autowash.repository.AuthUserRepository;
 import java.util.UUID;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

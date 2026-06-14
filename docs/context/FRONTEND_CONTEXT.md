@@ -471,6 +471,15 @@ Frontend production dùng Next.js 14 App Router. Không dùng Vite/TanStack Rout
 | Date | date-fns hoặc dayjs |
 | Charts (Admin) | Recharts hoặc Chart.js |
 
+### 19.1 Frontend Source Structure
+
+Frontend runtime hiện dùng cấu trúc **feature-first + shared layer**:
+
+- `src/app`: Next.js App Router routes/layouts only.
+- `src/features`: code theo nghiệp vụ/role (`auth`, `customer`, `staff`, `admin`, `public`, `support`).
+- `src/shared`: code dùng chung (`components`, `lib`, `store`, `types`, `legacy`).
+- Import mới phải đi qua `@/features/...` hoặc `@/shared/...`; không tạo mới runtime code dưới `src/components`, `src/hooks`, `src/lib`, `src/store`, `src/types`.
+
 ---
 
 ## 20. Checklist Trước Khi Bắt Đầu Mỗi Task

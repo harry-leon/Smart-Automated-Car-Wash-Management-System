@@ -1,4 +1,4 @@
-import { AdminCustomerDetailPageContent } from "@/components/admin-customers/admin-customer-detail-page";
+import { AdminCustomerDetailPageContent } from "@/features/admin/customers/components/admin-customer-detail-page";
 
 export default function AdminAccountDetailPage({ params }: { params: { id: string } }) {
   return <AdminCustomerDetailPageContent customerId={params.id} />;

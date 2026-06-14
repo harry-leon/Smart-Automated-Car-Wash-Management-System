@@ -1,4 +1,4 @@
-import { CustomerBookingForm } from "@/components/customer-booking-form";
+import { CustomerBookingForm } from "@/features/customer/bookings/components/customer-booking-form";
 
 export default function NewBookingPage() {
   return <CustomerBookingForm />;

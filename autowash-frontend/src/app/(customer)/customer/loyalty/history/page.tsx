@@ -1,4 +1,4 @@
-import { CustomerLoyaltyHistoryPageContent } from "@/components/customer-loyalty/customer-loyalty-history-page";
+import { CustomerLoyaltyHistoryPageContent } from "@/features/customer/loyalty/components/customer-loyalty-history-page";
 
 export default function LoyaltyHistoryPage() {
   return <CustomerLoyaltyHistoryPageContent />;

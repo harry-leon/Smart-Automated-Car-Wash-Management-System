@@ -78,12 +78,12 @@ Observable behavior comes from:
 
 This prototype currently uses two different state models:
 
-1. `src/lib/carwash-store.tsx`
+1. `src/shared/store/carwash-store.tsx`
    - shared portal store
    - powers authentication, staff operations, admin pages, reminders, settings, transactions, and most portal-level business logic
    - persists to `localStorage`
 
-2. `src/modules/customer-booking/routes.tsx`
+2. `src/features/customer/bookings`
    - module-local customer booking store
    - powers `/customer/home`, `/customer/vehicles`, `/customer/bookings/new`, customer booking history tabs, and `/customer/loyalty`
    - keeps its own mock vehicles, packages, combos, vouchers, and bookings
