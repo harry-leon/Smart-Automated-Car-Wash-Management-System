@@ -738,8 +738,4 @@ class BookingControllerIntegrationTest {
     private JsonNode readJson(MvcResult result) throws Exception {
         return objectMapper.readTree(result.getResponse().getContentAsString());
     }
-
-    private String futureBookingDate() {
-        return LocalDate.now().plusDays(1).toString();
-    }
 }
