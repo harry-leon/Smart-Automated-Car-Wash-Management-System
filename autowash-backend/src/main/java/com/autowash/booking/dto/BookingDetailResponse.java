@@ -21,6 +21,8 @@ public record BookingDetailResponse(
         Scheduling scheduling,
         Payment payment,
         String status,
+        String confirmationStatus,
+        Instant confirmationExpiresAt,
         String washSessionId,
         String staffName,
         String washStatus,

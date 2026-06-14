@@ -283,23 +283,23 @@ class AdminReportingControllerIntegrationTest {
     private String completeSession(String bookingId) throws Exception {
         String sessionId = createSession(bookingId);
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedAdmin()))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedAdmin()))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedAdmin()))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/complete", sessionId)
-                        .with(user("staff").roles("STAFF")))
+                        .with(authenticatedAdmin()))
                 .andExpect(status().isOk());
         return sessionId;
     }
 
     private String createSession(String bookingId) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
-                        .with(authenticatedStaff())
+                        .with(authenticatedAdmin())
                         .contentType("application/json")
                         .content("""
                                 {
@@ -312,12 +312,12 @@ class AdminReportingControllerIntegrationTest {
         return readJson(result).path("data").path("sessionId").asText();
     }
 
-    private RequestPostProcessor authenticatedStaff() {
-        AuthUser staff = new AuthUser("Reporting Staff", uniquePhone("0917"), "reporting-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
-        staff.activate();
-        ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        authUserRepository.saveAndFlush(staff);
-        AuthUserPrincipal principal = new AuthUserPrincipal(staff);
+    private RequestPostProcessor authenticatedAdmin() {
+        AuthUser admin = new AuthUser("Reporting Admin", uniquePhone("0987"), "reporting-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        admin.activate();
+        ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
+        authUserRepository.saveAndFlush(admin);
+        AuthUserPrincipal principal = new AuthUserPrincipal(admin);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);
@@ -351,7 +351,7 @@ class AdminReportingControllerIntegrationTest {
     }
 
     private CustomerBooking createConfirmedBookingForVehicle(AuthUser user, CustomerVehicle vehicle, String bookingId, LocalDate bookingDate, long finalAmount) {
-        return customerBookingRepository.saveAndFlush(new CustomerBooking(
+        CustomerBooking booking = new CustomerBooking(
                 bookingId,
                 user,
                 vehicle,
@@ -366,7 +366,9 @@ class AdminReportingControllerIntegrationTest {
                 0,
                 finalAmount,
                 30
-        ));
+        );
+        booking.confirmByOtp();
+        return customerBookingRepository.saveAndFlush(booking);
     }
 
     private AuthUser createActiveCustomer(String phone) {

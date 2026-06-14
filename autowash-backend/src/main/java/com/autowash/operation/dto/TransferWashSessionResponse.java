@@ -1,0 +1,17 @@
+package com.autowash.operation.dto;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record TransferWashSessionResponse(
+        UUID auditId,
+        UUID sessionId,
+        String bookingId,
+        UUID fromStaffId,
+        String fromStaffName,
+        UUID toStaffId,
+        String toStaffName,
+        String reason,
+        Instant transferredAt
+) {
+}

@@ -22,7 +22,13 @@ public record CreateBookingResponse(
         String paymentMethod,
         String paymentStatus,
         String status,
+        String confirmationStatus,
+        int otpExpiresIn,
+        Instant otpExpiresAt,
         Instant createdAt,
-        String confirmationNumber
+        String confirmationNumber,
+        String comboId,
+        String customerComboId,
+        boolean comboPurchased
 ) {
 }

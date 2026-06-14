@@ -180,7 +180,7 @@ class LoyaltyServiceTest {
                 true
         ));
 
-        CustomerBooking booking = customerBookingRepository.save(new CustomerBooking(
+        CustomerBooking booking = new CustomerBooking(
                 bookingId,
                 user,
                 vehicle,
@@ -195,7 +195,9 @@ class LoyaltyServiceTest {
                 0,
                 finalAmount,
                 30
-        ));
+        );
+        booking.confirmByOtp();
+        customerBookingRepository.save(booking);
         WashSession session = washSessionRepository.saveAndFlush(new WashSession(booking, "Loyalty service test"));
         return new TestData(user, booking, session);
     }

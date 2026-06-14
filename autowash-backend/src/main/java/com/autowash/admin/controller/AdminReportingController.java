@@ -1,6 +1,7 @@
 package com.autowash.admin.controller;
 
 import com.autowash.admin.dto.AdminBookingResponse;
+import com.autowash.admin.dto.AdminBusinessHealthReportResponse;
 import com.autowash.admin.dto.AdminAccountResponse;
 import com.autowash.admin.dto.AdminCustomerDetailResponse;
 import com.autowash.admin.dto.AdminCustomerVehicleResponse;
@@ -11,6 +12,7 @@ import com.autowash.admin.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.admin.service.AdminReportingService;
 import com.autowash.loyalty.dto.PointTransactionResponse;
 import com.autowash.loyalty.service.LoyaltyService;
+import com.autowash.operation.dto.BookingStaffTransferAuditResponse;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -47,6 +49,20 @@ public class AdminReportingController {
         this.adminReportingService = adminReportingService;
     }
 
+    @GetMapping("/reports/business-health")
+    @Operation(summary = "Get executive business health report")
+    public ApiResponse<AdminBusinessHealthReportResponse> getBusinessHealthReport(
+            @RequestParam(defaultValue = "LAST_30_DAYS") String range,
+            @RequestParam(defaultValue = "revenue") String analysisGroup,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo
+    ) {
+        return ApiResponse.ok(
+                "Business health report retrieved",
+                adminReportingService.getBusinessHealthReport(range, analysisGroup, dateFrom, dateTo)
+        );
+    }
+
     @GetMapping("/accounts")
     @Operation(summary = "List user accounts for admin with filters")
     public ApiResponse<List<AdminAccountResponse>> listAccounts(
@@ -81,6 +97,16 @@ public class AdminReportingController {
         AdminReportingService.BookingPage bookingPage =
                 adminReportingService.listBookings(status, dateFrom, dateTo, customerId, searchQuery, page, limit);
         return ApiResponse.ok("Bookings retrieved", bookingPage.items(), bookingPage.pagination());
+    }
+
+    @GetMapping("/operations/transfer-audits")
+    @Operation(summary = "List staff booking transfer audit logs")
+    public ApiResponse<List<BookingStaffTransferAuditResponse>> listTransferAudits(
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        AdminReportingService.TransferAuditPage auditPage = adminReportingService.listTransferAudits(page, limit);
+        return ApiResponse.ok("Transfer audits retrieved", auditPage.items(), auditPage.pagination());
     }
 
     @GetMapping("/bookings/{bookingId}")

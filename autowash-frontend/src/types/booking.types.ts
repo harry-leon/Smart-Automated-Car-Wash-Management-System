@@ -10,11 +10,14 @@ export type BookingStatus =
   | "NO_SHOW";
 
 export type BookingListFilterStatus =
+  | "PENDING"
   | "CONFIRMED"
   | "CHECKED_IN"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "CANCELLED";
+
+export type BookingConfirmationStatus = "PENDING" | "VERIFIED" | "EXPIRED" | "CANCELLED";
 
 export type PaymentMethod = "BANK_TRANSFER" | "E_WALLET" | "CASH_AT_COUNTER";
 
@@ -57,6 +60,18 @@ export type BookingCombo = {
   isActive: boolean;
   canUpgrade: boolean;
   upgradePriceFrom: number;
+};
+
+export type CustomerCombo = {
+  customerComboId: string;
+  comboId: string;
+  comboName: string;
+  status: string;
+  totalUsages: number;
+  remainingUsages: number;
+  activatedAt: string;
+  expiresAt: string;
+  lastUsedAt: string | null;
 };
 
 export type VoucherValidationRequest = {
@@ -110,8 +125,24 @@ export type CreateBookingResponse = {
   paymentMethod: PaymentMethod;
   paymentStatus: string;
   status: BookingStatus;
+  confirmationStatus: BookingConfirmationStatus;
+  otpExpiresIn: number;
+  otpExpiresAt: string;
   createdAt: string;
   confirmationNumber: string;
+  comboId: string | null;
+  customerComboId: string | null;
+  comboPurchased: boolean;
+};
+
+export type BookingOtpResponse = {
+  bookingId: string;
+  status: BookingStatus;
+  confirmationStatus: BookingConfirmationStatus;
+  otpExpiresIn: number;
+  expiresAt: string;
+  message: string;
+  devOtp?: string;
 };
 
 export type BookingListItem = {
@@ -164,6 +195,8 @@ export type BookingDetail = {
     paidAt: string | null;
   };
   status: BookingStatus;
+  confirmationStatus: BookingConfirmationStatus;
+  confirmationExpiresAt: string | null;
   washSessionId: string | null;
   staffName: string | null;
   washStatus: string | null;
@@ -195,6 +228,34 @@ export type ApplyBookingPointsResponse = {
   finalAmount: number;
   loyaltyBalance: number;
   currency: string;
+};
+
+export type CancelBookingResponse = {
+  bookingId: string;
+  status: string;
+  cancelledAt: string;
+  refundAmount: number;
+  refundStatus: string;
+  refundMessage: string;
+};
+
+export type PurchaseCustomerComboRequest = {
+  comboId: string;
+  paymentMethod: PaymentMethod;
+};
+
+export type PurchaseCustomerComboResponse = {
+  customerComboId: string;
+  comboId: string;
+  comboName: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: string;
+  totalUsages: number;
+  remainingUsages: number;
+  activatedAt: string;
+  expiresAt: string;
+  purchasedAt: string;
 };
 
 export type WashTrackingSession = {

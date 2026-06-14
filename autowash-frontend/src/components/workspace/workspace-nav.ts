@@ -8,6 +8,7 @@ import {
   Gift,
   History,
   LayoutDashboard,
+  Layers3,
   Package,
   Radar,
   Settings2,
@@ -85,11 +86,8 @@ const ADMIN_NAV: WorkspaceNavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
   { href: "/admin/accounts", label: "Accounts", icon: Users },
-  { href: "/admin/packages", label: "Packages", icon: Droplets },
-  { href: "/admin/add-ons", label: "Add-ons", icon: Package },
-  { href: "/admin/combos", label: "Combos", icon: Sparkles },
-  { href: "/admin/promotions", label: "Promotions", icon: Tag },
-  { href: "/admin/vouchers", label: "Vouchers", icon: Ticket },
+  { href: "/admin/services", label: "Service Management", icon: Layers3 },
+  { href: "/admin/offers", label: "Offers Management", icon: Gift },
   { href: "/admin/operations", label: "Operations", icon: Wrench },
   { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/settings", label: "Settings", icon: Settings2 },
@@ -113,6 +111,8 @@ export function mobileNavForRole(role: UserRole): WorkspaceNavItem[] {
     );
   }
   return CUSTOMER_NAV.filter((item) =>
-    ["/customer/home", "/customer/bookings", "/customer/wash-tracking", "/customer/loyalty"].includes(item.href),
+    ["/customer/home", "/customer/bookings", "/customer/wash-tracking", "/customer/loyalty"].includes(
+      item.href,
+    ),
   );
 }

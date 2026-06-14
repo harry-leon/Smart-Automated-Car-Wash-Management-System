@@ -14,10 +14,17 @@ import com.autowash.operation.dto.EligibleSessionBookingResponse;
 import com.autowash.operation.dto.OperationsQueueResponse;
 import com.autowash.operation.dto.QueueWashSessionResponse;
 import com.autowash.operation.dto.StartWashSessionResponse;
+import com.autowash.operation.dto.StaffDashboardSummaryResponse;
+import com.autowash.operation.dto.StaffOptionResponse;
+import com.autowash.operation.dto.TransferWashSessionRequest;
+import com.autowash.operation.dto.TransferWashSessionResponse;
+import com.autowash.operation.entity.BookingStaffTransferAudit;
 import com.autowash.operation.entity.WashSession;
 import com.autowash.operation.entity.WashSessionStatus;
+import com.autowash.operation.repository.BookingStaffTransferAuditRepository;
 import com.autowash.operation.repository.WashSessionRepository;
 import com.autowash.auth.entity.AuthUser;
+import com.autowash.auth.entity.UserRole;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.user.service.CurrentUserService;
 import java.time.Instant;
@@ -47,23 +54,29 @@ public class OperationsService {
     private final BookingService bookingService;
     private final CustomerBookingRepository customerBookingRepository;
     private final WashSessionRepository washSessionRepository;
+    private final BookingStaffTransferAuditRepository transferAuditRepository;
     private final LoyaltyService loyaltyService;
     private final CurrentUserService currentUserService;
+    private final StaffAssignmentService staffAssignmentService;
     private final String currency;
 
     public OperationsService(
             BookingService bookingService,
             CustomerBookingRepository customerBookingRepository,
             WashSessionRepository washSessionRepository,
+            BookingStaffTransferAuditRepository transferAuditRepository,
             LoyaltyService loyaltyService,
             CurrentUserService currentUserService,
+            StaffAssignmentService staffAssignmentService,
             @Value("${autowash.currency}") String currency
     ) {
         this.bookingService = bookingService;
         this.customerBookingRepository = customerBookingRepository;
         this.washSessionRepository = washSessionRepository;
+        this.transferAuditRepository = transferAuditRepository;
         this.loyaltyService = loyaltyService;
         this.currentUserService = currentUserService;
+        this.staffAssignmentService = staffAssignmentService;
         this.currency = currency;
     }
 
@@ -85,8 +98,9 @@ public class OperationsService {
             );
         }
 
-        AuthUser approvingStaff = currentUserService.getCurrentUser();
-        WashSession session = washSessionRepository.save(new WashSession(booking, request.notes(), approvingStaff));
+        AuthUser actor = currentUserService.getCurrentUser();
+        AuthUser assignedStaff = resolveSessionAssigneeForCreate(booking, actor);
+        WashSession session = washSessionRepository.save(new WashSession(booking, request.notes(), assignedStaff));
         return new CreateWashSessionResponse(
                 session.getId(),
                 session.getStatus().name(),
@@ -97,7 +111,10 @@ public class OperationsService {
 
     @Transactional(readOnly = true)
     public OperationsQueueResponse getQueue() {
-        List<WashSession> sessions = washSessionRepository.findAllByOrderByCreatedAtDesc();
+        AuthUser currentUser = currentUserService.getCurrentUser();
+        List<WashSession> sessions = currentUser.getRole() == UserRole.STAFF
+                ? washSessionRepository.findByAssignedStaffOrderByCreatedAtDesc(currentUser)
+                : washSessionRepository.findAllByOrderByCreatedAtDesc();
         Map<WashSessionStatus, List<OperationsQueueResponse.WashSessionCard>> cardsByStatus = sessions.stream()
                 .map(this::toQueueCard)
                 .collect(Collectors.groupingBy(
@@ -130,11 +147,18 @@ public class OperationsService {
     @Transactional(readOnly = true)
     public List<EligibleSessionBookingResponse> listEligibleSessionBookings(int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 50));
-        return customerBookingRepository.findEligibleForOperationsSession(
+        AuthUser currentUser = currentUserService.getCurrentUser();
+        List<CustomerBooking> bookings = currentUser.getRole() == UserRole.STAFF
+                ? customerBookingRepository.findEligibleForAssignedStaffOperationsSession(
+                        currentUser,
                         BookingStatus.CONFIRMED,
                         ACTIVE_SESSION_STATUSES,
-                        PageRequest.of(0, safeLimit)
-                )
+                        PageRequest.of(0, safeLimit))
+                : customerBookingRepository.findEligibleForOperationsSession(
+                        BookingStatus.CONFIRMED,
+                        ACTIVE_SESSION_STATUSES,
+                        PageRequest.of(0, safeLimit));
+        return bookings
                 .stream()
                 .map(this::toEligibleBooking)
                 .toList();
@@ -142,7 +166,7 @@ public class OperationsService {
 
     @Transactional
     public QueueWashSessionResponse queueSession(UUID sessionId) {
-        WashSession session = requireSession(sessionId);
+        WashSession session = requireSessionForCurrentUser(sessionId);
         Instant queuedAt = Instant.now();
         session.queue(queuedAt);
         return new QueueWashSessionResponse(session.getId(), session.getStatus().name(), session.getQueuedAt());
@@ -150,7 +174,7 @@ public class OperationsService {
 
     @Transactional
     public CheckInWashSessionResponse checkInSession(UUID sessionId) {
-        WashSession session = requireSession(sessionId);
+        WashSession session = requireSessionForCurrentUser(sessionId);
         CustomerBooking booking = session.getBooking();
         int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
@@ -168,7 +192,7 @@ public class OperationsService {
 
     @Transactional
     public StartWashSessionResponse startSession(UUID sessionId) {
-        WashSession session = requireSession(sessionId);
+        WashSession session = requireSessionForCurrentUser(sessionId);
         Instant startedAt = Instant.now();
         session.start(startedAt);
         bookingService.updateStatus(session.getBooking(), BookingStatus.IN_PROGRESS);
@@ -177,7 +201,7 @@ public class OperationsService {
 
     @Transactional
     public CompleteWashSessionResponse completeSession(UUID sessionId) {
-        WashSession session = requireSession(sessionId);
+        WashSession session = requireSessionForCurrentUser(sessionId);
         int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
         Instant completedAt = Instant.now();
@@ -196,6 +220,68 @@ public class OperationsService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public StaffDashboardSummaryResponse getStaffSummary() {
+        AuthUser staff = currentUserService.getCurrentUser();
+        if (staff.getRole() != UserRole.STAFF) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Staff role required", "FORBIDDEN");
+        }
+        long completedRevenue = customerBookingRepository.sumFinalAmountByAssignedStaffAndStatus(staff, BookingStatus.COMPLETED);
+        long kpiTargetRevenue = 5_000_000L;
+        int progress = kpiTargetRevenue == 0 ? 100 : (int) Math.min(100, Math.round(completedRevenue * 100.0 / kpiTargetRevenue));
+        return new StaffDashboardSummaryResponse(
+                staff.getId().toString(),
+                staff.getFullName(),
+                customerBookingRepository.countByAssignedStaffAndStatusIn(staff, Set.of(
+                        BookingStatus.CONFIRMED,
+                        BookingStatus.CHECKED_IN,
+                        BookingStatus.IN_PROGRESS
+                )),
+                customerBookingRepository.countByAssignedStaffAndStatus(staff, BookingStatus.CONFIRMED),
+                washSessionRepository.countByAssignedStaffAndStatusIn(staff, Set.of(
+                        WashSessionStatus.PENDING,
+                        WashSessionStatus.QUEUED,
+                        WashSessionStatus.CHECKED_IN,
+                        WashSessionStatus.IN_PROGRESS
+                )),
+                washSessionRepository.countByAssignedStaffAndStatus(staff, WashSessionStatus.COMPLETED),
+                completedRevenue,
+                kpiTargetRevenue,
+                progress
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<StaffOptionResponse> listActiveStaff() {
+        return staffAssignmentService.listActiveStaff().stream()
+                .map(staff -> new StaffOptionResponse(staff.getId(), staff.getFullName()))
+                .toList();
+    }
+
+    @Transactional
+    public TransferWashSessionResponse transferSession(UUID sessionId, TransferWashSessionRequest request) {
+        WashSession session = requireSessionForCurrentUser(sessionId);
+        AuthUser actor = currentUserService.getCurrentUser();
+        AuthUser fromStaff = session.getAssignedStaff();
+        AuthUser toStaff = staffAssignmentService.requireActiveStaff(request.toStaffId());
+        if (fromStaff != null && fromStaff.getId().equals(toStaff.getId())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Session is already assigned to this staff", "DUPLICATE_ASSIGNMENT");
+        }
+
+        CustomerBooking booking = session.getBooking();
+        booking.assignStaff(toStaff);
+        session.assignStaff(toStaff);
+        BookingStaffTransferAudit audit = transferAuditRepository.save(new BookingStaffTransferAudit(
+                booking,
+                session,
+                fromStaff,
+                toStaff,
+                actor,
+                request.reason()
+        ));
+        return toTransferResponse(audit);
+    }
+
     private void markCustomerAsNotNew(AuthUser customer) {
         if (customer.isNewCustomer()) {
             customer.markNotNewCustomer();
@@ -205,6 +291,50 @@ public class OperationsService {
     private WashSession requireSession(UUID sessionId) {
         return washSessionRepository.findWithBookingById(sessionId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
+    }
+
+    private WashSession requireSessionForCurrentUser(UUID sessionId) {
+        WashSession session = requireSession(sessionId);
+        AuthUser currentUser = currentUserService.getCurrentUser();
+        if (currentUser.getRole() != UserRole.STAFF) {
+            return session;
+        }
+        AuthUser assignedStaff = session.getAssignedStaff();
+        if (assignedStaff == null || !assignedStaff.getId().equals(currentUser.getId())) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND");
+        }
+        return session;
+    }
+
+    private AuthUser resolveSessionAssigneeForCreate(CustomerBooking booking, AuthUser actor) {
+        AuthUser assignedStaff = booking.getAssignedStaff();
+        if (actor.getRole() == UserRole.STAFF) {
+            if (assignedStaff == null || !assignedStaff.getId().equals(actor.getId())) {
+                throw new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND");
+            }
+            return actor;
+        }
+        if (assignedStaff == null) {
+            assignedStaff = staffAssignmentService.pickLeastLoadedActiveStaff();
+            booking.assignStaff(assignedStaff);
+        }
+        return assignedStaff;
+    }
+
+    private TransferWashSessionResponse toTransferResponse(BookingStaffTransferAudit audit) {
+        AuthUser fromStaff = audit.getFromStaff();
+        AuthUser toStaff = audit.getToStaff();
+        return new TransferWashSessionResponse(
+                audit.getId(),
+                audit.getWashSession() == null ? null : audit.getWashSession().getId(),
+                audit.getBooking().getId(),
+                fromStaff == null ? null : fromStaff.getId(),
+                fromStaff == null ? null : fromStaff.getFullName(),
+                toStaff.getId(),
+                toStaff.getFullName(),
+                audit.getReason(),
+                audit.getCreatedAt()
+        );
     }
 
     private OperationsQueueResponse.QueueColumn column(

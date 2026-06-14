@@ -7,6 +7,7 @@ import type {
   AdminBooking,
   AdminBookingsFilters,
   AdminBookingsPage,
+  AdminBusinessHealthReport,
   AdminCustomerDetail,
   AdminCustomerVehicle,
   AdminCustomerVehiclesPage,
@@ -16,6 +17,8 @@ import type {
   AdminTierHistoryPage,
   AdminWashHistoryItem,
   AdminWashHistoryPage,
+  ReportAnalysisGroup,
+  ReportRangeKey,
   UpdateAdminCustomerRolePayload,
   UpdateAdminCustomerRoleResult,
   UpdateAdminCustomerStatusPayload,
@@ -66,8 +69,21 @@ export async function getAdminBookingDetail(id: string): Promise<BookingDetail> 
   return response.data.data;
 }
 
+export async function getAdminBusinessHealthReport(params: {
+  range: ReportRangeKey;
+  analysisGroup: ReportAnalysisGroup;
+}): Promise<AdminBusinessHealthReport> {
+  const response = await apiClient.get<ApiSuccessResponse<AdminBusinessHealthReport>>(
+    "/admin/reports/business-health",
+    {
+      params,
+    },
+  );
+  return response.data.data;
+}
+
 export async function getAdminCustomerDetail(customerId: string): Promise<AdminCustomerDetail> {
-  const response = await apiClient.get(`/admin/customers/${customerId}`);
+  const response = await apiClient.get<ApiSuccessResponse<AdminCustomerDetail>>(`/admin/customers/${customerId}`);
   return response.data.data;
 }
 

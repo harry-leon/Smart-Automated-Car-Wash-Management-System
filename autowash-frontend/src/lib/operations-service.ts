@@ -6,7 +6,10 @@ import type {
   EligibleSessionBooking,
   OperationsQueue,
   QueueWashSessionResponse,
+  StaffDashboardSummary,
+  StaffOption,
   StartWashSessionResponse,
+  TransferWashSessionResponse,
 } from "@/types/operation.types";
 
 const SESSION_BASE_URL = "/operations/sessions";
@@ -23,6 +26,20 @@ export function getOperationsQueue() {
   return apiRequest<OperationsQueue>({
     method: "GET",
     url: "/operations/queue",
+  });
+}
+
+export function getStaffDashboardSummary() {
+  return apiRequest<StaffDashboardSummary>({
+    method: "GET",
+    url: "/operations/staff/summary",
+  });
+}
+
+export function getActiveStaffOptions() {
+  return apiRequest<StaffOption[]>({
+    method: "GET",
+    url: "/operations/staff/active",
   });
 }
 
@@ -59,5 +76,13 @@ export function completeWashSession(sessionId: string) {
   return apiRequest<CompleteWashSessionResponse>({
     method: "POST",
     url: `${SESSION_BASE_URL}/${sessionId}/complete`,
+  });
+}
+
+export function transferWashSession(sessionId: string, toStaffId: string, reason?: string) {
+  return apiRequest<TransferWashSessionResponse, { toStaffId: string; reason?: string }>({
+    method: "POST",
+    url: `${SESSION_BASE_URL}/${sessionId}/transfer`,
+    data: { toStaffId, reason },
   });
 }

@@ -6,9 +6,11 @@ import com.autowash.booking.dto.ApplyPointsRequest;
 import com.autowash.booking.dto.ApplyPointsResponse;
 import com.autowash.booking.dto.BookingDetailResponse;
 import com.autowash.booking.dto.BookingListItemResponse;
+import com.autowash.booking.dto.BookingOtpResponse;
 import com.autowash.booking.dto.CancelBookingResponse;
 import com.autowash.booking.dto.CreateBookingRequest;
 import com.autowash.booking.dto.CreateBookingResponse;
+import com.autowash.booking.entity.CustomerCombo;
 import com.autowash.booking.entity.BookingAddon;
 import com.autowash.booking.entity.BookingStatus;
 import com.autowash.booking.entity.CustomerBooking;
@@ -27,6 +29,7 @@ import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.user.service.CurrentUserService;
 import com.autowash.operation.repository.WashSessionRepository;
+import com.autowash.operation.service.StaffAssignmentService;
 import com.autowash.vehicle.entity.CustomerVehicle;
 import com.autowash.vehicle.entity.VehicleStatus;
 import com.autowash.vehicle.repository.CustomerVehicleRepository;
@@ -63,6 +66,9 @@ public class BookingService {
     private final ServiceComboRepository serviceComboRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyService loyaltyService;
+    private final StaffAssignmentService staffAssignmentService;
+    private final BookingOtpService bookingOtpService;
+    private final CustomerComboService customerComboService;
 
     public BookingService(
             CurrentUserService currentUserService,
@@ -72,7 +78,10 @@ public class BookingService {
             ServicePackageRepository servicePackageRepository,
             ServiceComboRepository serviceComboRepository,
             WashSessionRepository washSessionRepository,
-            LoyaltyService loyaltyService
+            LoyaltyService loyaltyService,
+            StaffAssignmentService staffAssignmentService,
+            BookingOtpService bookingOtpService,
+            CustomerComboService customerComboService
     ) {
         this.currentUserService = currentUserService;
         this.customerVehicleRepository = customerVehicleRepository;
@@ -82,10 +91,13 @@ public class BookingService {
         this.serviceComboRepository = serviceComboRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyService = loyaltyService;
+        this.staffAssignmentService = staffAssignmentService;
+        this.bookingOtpService = bookingOtpService;
+        this.customerComboService = customerComboService;
     }
 
     @Transactional
-    public CreateBookingResponse createBooking(CreateBookingRequest request) {
+    public CreateBookingResponse createBooking(CreateBookingRequest request, BookingOtpService.RequestMetadata metadata) {
         AuthUser user = currentUserService.getCurrentUser();
         if (customerBookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
@@ -101,10 +113,13 @@ public class BookingService {
         List<ServiceAddon> addons = catalogService.requireActiveAddons(request.addons());
         ServicePackage servicePackage = null;
         ServiceCombo serviceCombo = null;
+        CustomerCombo ownedCombo = null;
         long basePrice;
         int baseDuration;
         String responsePackageId = null;
         String responsePackageName;
+        String customerComboId = null;
+        boolean comboPurchased = false;
 
         if (request.packageId() != null && !request.packageId().isBlank()) {
             servicePackage = catalogService.requireActivePackage(request.packageId());
@@ -114,9 +129,23 @@ public class BookingService {
             responsePackageName = servicePackage.getName();
         } else {
             serviceCombo = catalogService.requireActiveCombo(request.comboId());
-            basePrice = serviceCombo.getBasePrice();
+            ownedCombo = customerComboService.findActiveOwnedCombo(user, serviceCombo.getId());
             baseDuration = 0;
             responsePackageName = serviceCombo.getName();
+            if (ownedCombo != null) {
+                if (ownedCombo.isExpired()) {
+                    customerComboService.markExpired(ownedCombo);
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is expired", "BUSINESS_RULE_VIOLATION");
+                }
+                if (!ownedCombo.hasRemainingUsages()) {
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo has no remaining usages", "BUSINESS_RULE_VIOLATION");
+                }
+                basePrice = 0;
+                customerComboId = ownedCombo.getId();
+            } else {
+                basePrice = serviceCombo.getBasePrice();
+                comboPurchased = true;
+            }
         }
 
         long addonsTotal = addons.stream().mapToLong(ServiceAddon::getPrice).sum();
@@ -144,8 +173,18 @@ public class BookingService {
                 subtotal - voucherDiscount,
                 baseDuration + addons.stream().mapToInt(ServiceAddon::getDurationMinutes).sum()
         );
+        booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
         addons.forEach(addon -> booking.addAddon(new BookingAddon(booking, addon.getId(), addon.getName(), addon.getPrice())));
         customerBookingRepository.save(booking);
+        var otpResponse = bookingOtpService.issueInitialOtp(booking, metadata);
+
+        if (serviceCombo != null) {
+            if (ownedCombo == null) {
+                ownedCombo = customerComboService.createOwnedCombo(user, serviceCombo.getId(), booking.getId());
+                customerComboId = ownedCombo.getId();
+            }
+            customerComboService.recordUsage(ownedCombo, booking.getId(), request.bookingDate());
+        }
 
         return new CreateBookingResponse(
                 booking.getId(),
@@ -165,8 +204,14 @@ public class BookingService {
                 booking.getPaymentMethod().name(),
                 booking.getPaymentStatus().name(),
                 booking.getStatus().name(),
+                booking.getConfirmationStatus().name(),
+                otpResponse.otpExpiresIn(),
+                otpResponse.expiresAt(),
                 booking.getCreatedAt(),
-                booking.getId()
+                booking.getId(),
+                serviceCombo == null ? null : serviceCombo.getId(),
+                customerComboId,
+                comboPurchased
         );
     }
 
@@ -225,6 +270,16 @@ public class BookingService {
                 booking.getRefundStatus(),
                 "Refund will be processed within 3-5 business days"
         );
+    }
+
+    @Transactional
+    public BookingOtpResponse resendBookingOtp(String bookingId, BookingOtpService.RequestMetadata metadata) {
+        return bookingOtpService.resendOtp(findOwnedBooking(bookingId), metadata);
+    }
+
+    @Transactional(noRollbackFor = ApiException.class)
+    public BookingOtpResponse verifyBookingOtp(String bookingId, String otp, BookingOtpService.RequestMetadata metadata) {
+        return bookingOtpService.verifyOtp(findOwnedBooking(bookingId), otp, metadata);
     }
 
     @Transactional
@@ -341,14 +396,21 @@ public class BookingService {
                         booking.getCreatedAt()
                 ),
                 booking.getStatus().name(),
+                booking.getConfirmationStatus().name(),
+                booking.getConfirmationExpiresAt(),
                 washSession == null ? null : washSession.getId().toString(),
-                washSession == null || washSession.getAssignedStaff() == null
-                        ? null
-                        : washSession.getAssignedStaff().getFullName(),
+                resolveAssignedStaffName(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt()
         );
+    }
+
+    private String resolveAssignedStaffName(CustomerBooking booking, com.autowash.operation.entity.WashSession washSession) {
+        if (washSession != null && washSession.getAssignedStaff() != null) {
+            return washSession.getAssignedStaff().getFullName();
+        }
+        return booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName();
     }
 
     private String resolvePackageName(CustomerBooking booking) {

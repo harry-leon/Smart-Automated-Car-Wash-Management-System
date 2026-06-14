@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { redirect } from "next/navigation";
 
 export default function AdminAddOnsPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Admin"
-      title="Add-ons"
-      description="Add-on service management shell."
-      endpoints={["GET /admin/add-ons", "POST /admin/add-ons"]}
-    />
-  );
+  redirect("/admin/services?tab=add-ons");
 }

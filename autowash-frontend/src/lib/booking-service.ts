@@ -8,10 +8,15 @@ import type {
   BookingListFilters,
   BookingListItem,
   BookingListPage,
+  BookingOtpResponse,
   BookingPackage,
+  CustomerCombo,
   ApplyBookingPointsRequest,
   ApplyBookingPointsResponse,
   CreateBookingResponse,
+  CancelBookingResponse,
+  PurchaseCustomerComboRequest,
+  PurchaseCustomerComboResponse,
   VoucherValidationRequest,
   VoucherValidationResult,
   WashTrackingSession,
@@ -36,6 +41,11 @@ export async function listBookingCombos(): Promise<BookingCombo[]> {
   return response.data.data as BookingCombo[];
 }
 
+export async function listActiveCustomerCombos(): Promise<CustomerCombo[]> {
+  const response = await apiClient.get("/customers/combos/active");
+  return response.data.data as CustomerCombo[];
+}
+
 export function validateBookingVoucher(payload: VoucherValidationRequest) {
   return apiRequest<VoucherValidationResult, VoucherValidationRequest>({
     method: "POST",
@@ -50,6 +60,43 @@ export function createCustomerBooking(draft: BookingDraft) {
     url: "/customers/bookings",
     data: buildCreateBookingPayload(draft),
   });
+}
+
+export function resendBookingOtp(bookingId: string) {
+  return apiRequest<BookingOtpResponse>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/otp/resend`,
+  });
+}
+
+export function verifyBookingOtp(bookingId: string, otp: string) {
+  return apiRequest<BookingOtpResponse, { otp: string }>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/otp/verify`,
+    data: { otp },
+  });
+}
+
+export async function purchaseCustomerCombo(payload: PurchaseCustomerComboRequest) {
+  try {
+    return await apiRequest<PurchaseCustomerComboResponse, PurchaseCustomerComboRequest>({
+      method: "POST",
+      url: `/customers/combos/${payload.comboId}/activate`,
+      data: payload,
+    });
+  } catch (error) {
+    const statusCode = typeof error === "object" && error !== null && "statusCode" in error ? error.statusCode : null;
+
+    if (statusCode !== 404) {
+      throw error;
+    }
+
+    return apiRequest<PurchaseCustomerComboResponse, PurchaseCustomerComboRequest>({
+      method: "POST",
+      url: `/customers/combos/${payload.comboId}/purchase`,
+      data: payload,
+    });
+  }
 }
 
 export async function listCustomerBookings(filters: BookingListFilters = {}): Promise<BookingListPage> {
@@ -81,6 +128,14 @@ export function applyBookingPoints(bookingId: string, payload: ApplyBookingPoint
     method: "POST",
     url: `/bookings/${bookingId}/apply-points`,
     data: payload,
+  });
+}
+
+export function cancelCustomerBooking(bookingId: string, reason?: string) {
+  return apiRequest<CancelBookingResponse, { reason?: string }>({
+    method: "POST",
+    url: `/customers/bookings/${bookingId}/cancel`,
+    data: reason ? { reason } : undefined,
   });
 }
 
