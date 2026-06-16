@@ -1,71 +1,71 @@
 package com.autowash.entity;
 
+import com.autowash.enums.DiscountType;
+import com.autowash.enums.PromotionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "vouchers")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Voucher {
 
     @Id
+    private UUID id;
+
+    @Column(nullable = false, unique = true, length = 50)
     private String code;
+
+    @Column(nullable = false, length = 120)
+    private String name;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "discount_type", nullable = false, length = 20)
     private DiscountType discountType;
 
     @Column(name = "discount_value", nullable = false)
-    private int discountValue;
+    private long discountValue;
 
-    @Column(name = "min_amount", nullable = false)
-    private long minAmount;
+    @Column(name = "min_order_amount", nullable = false)
+    private long minOrderAmount;
 
-    @Column(name = "expires_at", nullable = false)
-    private Instant expiresAt;
+    @Column(name = "max_discount_amount")
+    private Long maxDiscountAmount;
 
-    @Column(nullable = false)
-    private boolean active;
+    @Column(name = "usage_limit")
+    private Integer usageLimit;
+
+    @Column(name = "used_count", nullable = false)
+    private int usedCount;
 
     @Column(name = "new_customer_only", nullable = false)
     private boolean newCustomerOnly;
 
-    @Column(name = "target_tiers_csv", length = 100)
-    private String targetTiersCsv;
+    @Column(name = "start_at", nullable = false)
+    private Instant startAt;
 
-    protected Voucher() {
+    @Column(name = "end_at", nullable = false)
+    private Instant endAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PromotionStatus status;
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
     }
-
-    public Voucher(
-            String code,
-            DiscountType discountType,
-            int discountValue,
-            long minAmount,
-            Instant expiresAt,
-            boolean active,
-            boolean newCustomerOnly,
-            String targetTiersCsv
-    ) {
-        this.code = code;
-        this.discountType = discountType;
-        this.discountValue = discountValue;
-        this.minAmount = minAmount;
-        this.expiresAt = expiresAt;
-        this.active = active;
-        this.newCustomerOnly = newCustomerOnly;
-        this.targetTiersCsv = targetTiersCsv;
-    }
-
-    public String getCode() { return code; }
-    public DiscountType getDiscountType() { return discountType; }
-    public int getDiscountValue() { return discountValue; }
-    public long getMinAmount() { return minAmount; }
-    public Instant getExpiresAt() { return expiresAt; }
-    public boolean isActive() { return active; }
-    public boolean isNewCustomerOnly() { return newCustomerOnly; }
-    public String getTargetTiersCsv() { return targetTiersCsv; }
 }

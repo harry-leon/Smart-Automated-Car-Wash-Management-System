@@ -1,5 +1,7 @@
 package com.autowash.entity;
 
+import com.autowash.enums.OtpPurpose;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,9 +13,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "otp_records")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OtpRecord {
 
     @Id
@@ -51,9 +58,6 @@ public class OtpRecord {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    protected OtpRecord() {
-    }
-
     public OtpRecord(AuthUser user, OtpPurpose purpose, String codeHash, String deliveryAddress, Instant expiresAt) {
         this.id = UUID.randomUUID();
         this.user = user;
@@ -64,46 +68,6 @@ public class OtpRecord {
         this.attempts = 0;
         this.verified = false;
         this.createdAt = Instant.now();
-    }
-
-    public AuthUser getUser() {
-        return user;
-    }
-
-    public OtpPurpose getPurpose() {
-        return purpose;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public String getDeliveryAddress() {
-        return deliveryAddress;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
-
-    public int getAttempts() {
-        return attempts;
-    }
-
-    public boolean isVerified() {
-        return verified;
-    }
-
-    public Instant getInvalidatedAt() {
-        return invalidatedAt;
-    }
-
-    public Instant getLockedAt() {
-        return lockedAt;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
     }
 
     public boolean isLocked() {

@@ -9,9 +9,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "refresh_tokens")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RefreshToken {
 
     @Id
@@ -33,31 +38,12 @@ public class RefreshToken {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    protected RefreshToken() {
-    }
-
     public RefreshToken(AuthUser user, String token, Instant expiresAt) {
         this.id = UUID.randomUUID();
         this.user = user;
         this.token = token;
         this.expiresAt = expiresAt;
         this.createdAt = Instant.now();
-    }
-
-    public AuthUser getUser() {
-        return user;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public Instant getExpiresAt() {
-        return expiresAt;
-    }
-
-    public Instant getRevokedAt() {
-        return revokedAt;
     }
 
     public boolean isRevoked() {

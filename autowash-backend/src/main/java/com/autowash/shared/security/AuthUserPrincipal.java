@@ -1,7 +1,7 @@
 package com.autowash.shared.security;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserStatus;
+import com.autowash.enums.UserStatus;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;

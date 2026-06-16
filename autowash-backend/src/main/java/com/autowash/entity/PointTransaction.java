@@ -1,6 +1,6 @@
 package com.autowash.entity;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.enums.PointTransactionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,18 +11,26 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "point_transactions")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PointTransaction {
 
     @Id
-    private UUID id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private AuthUser customer;
+    @JoinColumn(name = "loyalty_account_id", nullable = false)
+    private LoyaltyAccount loyaltyAccount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id")
+    private CustomerBooking booking;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -37,39 +45,6 @@ public class PointTransaction {
     @Column(nullable = false, length = 255)
     private String reason;
 
-    @Column(name = "reference_id", length = 100)
-    private String referenceId;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-
-    protected PointTransaction() {
-    }
-
-    public PointTransaction(
-            AuthUser customer,
-            PointTransactionType type,
-            int points,
-            int balanceAfter,
-            String reason,
-            String referenceId
-    ) {
-        this.id = UUID.randomUUID();
-        this.customer = customer;
-        this.type = type;
-        this.points = points;
-        this.balanceAfter = balanceAfter;
-        this.reason = reason;
-        this.referenceId = referenceId;
-        this.createdAt = Instant.now();
-    }
-
-    public UUID getId() { return id; }
-    public AuthUser getCustomer() { return customer; }
-    public PointTransactionType getType() { return type; }
-    public int getPoints() { return points; }
-    public int getBalanceAfter() { return balanceAfter; }
-    public String getReason() { return reason; }
-    public String getReferenceId() { return referenceId; }
-    public Instant getCreatedAt() { return createdAt; }
 }

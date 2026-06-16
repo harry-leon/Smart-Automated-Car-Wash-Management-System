@@ -1,5 +1,8 @@
 package com.autowash.dto;
 
+import com.autowash.enums.PaymentMethod;
+import com.autowash.enums.PaymentStatus;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;

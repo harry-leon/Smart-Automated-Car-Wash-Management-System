@@ -1,5 +1,7 @@
 package com.autowash.dto;
 
+import com.autowash.enums.DiscountType;
+
 import java.time.Instant;
 import java.util.List;
 

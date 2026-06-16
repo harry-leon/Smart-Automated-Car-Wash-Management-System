@@ -1,5 +1,7 @@
 package com.autowash.dto;
 
+import com.autowash.enums.Popularity;
+
 import java.util.List;
 
 public record PackageResponse(

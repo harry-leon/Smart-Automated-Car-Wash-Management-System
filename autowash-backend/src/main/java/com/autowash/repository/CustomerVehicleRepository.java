@@ -2,7 +2,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.enums.VehicleStatus;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

@@ -2,7 +2,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.enums.WashSessionStatus;
 import com.autowash.entity.CustomerVehicle;
 import java.time.Instant;
 import java.util.Collection;
@@ -19,6 +19,10 @@ import org.springframework.data.repository.query.Param;
 public interface WashSessionRepository extends JpaRepository<WashSession, UUID> {
 
     boolean existsByBookingIdAndStatusIn(String bookingId, Collection<WashSessionStatus> statuses);
+
+    default boolean existsByBookingIdAndStatusIn(UUID bookingId, Collection<WashSessionStatus> statuses) {
+        return existsByBookingIdAndStatusIn(bookingId == null ? null : bookingId.toString(), statuses);
+    }
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "assignedStaff"})
     Optional<WashSession> findWithBookingById(UUID id);
@@ -48,6 +52,10 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     @EntityGraph(attributePaths = {"booking", "assignedStaff"})
     Optional<WashSession> findFirstByBookingIdOrderByCompletedAtDesc(String bookingId);
 
+    default Optional<WashSession> findFirstByBookingIdOrderByCompletedAtDesc(UUID bookingId) {
+        return findFirstByBookingIdOrderByCompletedAtDesc(bookingId == null ? null : bookingId.toString());
+    }
+
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     java.util.List<WashSession> findAllByOrderByCreatedAtDesc();
 
@@ -60,6 +68,10 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
 
     @EntityGraph(attributePaths = {"booking"})
     List<WashSession> findByBookingIdIn(Collection<String> bookingIds);
+
+    default List<WashSession> findByBookingIdInUuid(Collection<UUID> bookingIds) {
+        return findByBookingIdIn(bookingIds.stream().map(UUID::toString).toList());
+    }
 
     long countByBookingCustomerAndStatus(AuthUser customer, WashSessionStatus status);
 

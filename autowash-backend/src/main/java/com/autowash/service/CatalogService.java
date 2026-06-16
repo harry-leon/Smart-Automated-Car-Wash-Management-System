@@ -4,8 +4,8 @@ import com.autowash.dto.AddonResponse;
 import com.autowash.dto.ComboResponse;
 import com.autowash.dto.PackageResponse;
 import com.autowash.dto.ValidateVoucherResponse;
-import com.autowash.entity.DiscountType;
-import com.autowash.entity.PackageStatus;
+import com.autowash.enums.DiscountType;
+import com.autowash.enums.PackageStatus;
 import com.autowash.entity.ServiceAddon;
 import com.autowash.entity.ServiceCombo;
 import com.autowash.entity.ServicePackage;
@@ -92,7 +92,7 @@ public class CatalogService {
                 voucher.getCode(),
                 true,
                 voucher.getDiscountType().name(),
-                voucher.getDiscountValue(),
+                Math.toIntExact(voucher.getDiscountValue()),
                 discountAmount,
                 Math.max(amount - discountAmount, 0),
                 voucher.getExpiresAt()

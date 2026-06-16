@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.BookingStatus;
+import com.autowash.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.service.BookingService;
@@ -20,11 +20,11 @@ import com.autowash.dto.TransferWashSessionRequest;
 import com.autowash.dto.TransferWashSessionResponse;
 import com.autowash.entity.BookingStaffTransferAudit;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.enums.WashSessionStatus;
 import com.autowash.repository.BookingStaffTransferAuditRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
+import com.autowash.enums.UserRole;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import java.time.Instant;
@@ -46,7 +46,6 @@ public class OperationsService {
 
     private static final Set<WashSessionStatus> ACTIVE_SESSION_STATUSES = Set.of(
             WashSessionStatus.PENDING,
-            WashSessionStatus.QUEUED,
             WashSessionStatus.CHECKED_IN,
             WashSessionStatus.IN_PROGRESS
     );
@@ -124,8 +123,7 @@ public class OperationsService {
                 ));
 
         List<OperationsQueueResponse.QueueColumn> columns = List.of(
-                // QUEUED -> Pending (pre-assignment state, treated as not yet actionable)
-                column("PENDING", "Pending", cardsByStatus, WashSessionStatus.PENDING, WashSessionStatus.QUEUED),
+                column("PENDING", "Pending", cardsByStatus, WashSessionStatus.PENDING),
                 column(WashSessionStatus.CHECKED_IN, "Checked-In", cardsByStatus),
                 column(WashSessionStatus.IN_PROGRESS, "In Progress", cardsByStatus),
                 column(WashSessionStatus.COMPLETED, "Completed", cardsByStatus)
@@ -134,7 +132,7 @@ public class OperationsService {
         return new OperationsQueueResponse(
                 new OperationsQueueResponse.QueueSummary(
                         sessions.size(),
-                        count(sessions, WashSessionStatus.PENDING) + count(sessions, WashSessionStatus.QUEUED),
+                        count(sessions, WashSessionStatus.PENDING),
                         count(sessions, WashSessionStatus.CHECKED_IN),
                         count(sessions, WashSessionStatus.IN_PROGRESS),
                         count(sessions, WashSessionStatus.COMPLETED)
@@ -240,7 +238,6 @@ public class OperationsService {
                 customerBookingRepository.countByAssignedStaffAndStatus(staff, BookingStatus.CONFIRMED),
                 washSessionRepository.countByAssignedStaffAndStatusIn(staff, Set.of(
                         WashSessionStatus.PENDING,
-                        WashSessionStatus.QUEUED,
                         WashSessionStatus.CHECKED_IN,
                         WashSessionStatus.IN_PROGRESS
                 )),
