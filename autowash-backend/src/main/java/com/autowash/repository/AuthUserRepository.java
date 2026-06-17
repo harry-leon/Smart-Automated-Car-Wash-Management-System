@@ -1,7 +1,7 @@
 package com.autowash.repository;
 
-import com.autowash.entity.UserRole;
-import com.autowash.entity.UserStatus;
+import com.autowash.enums.UserRole;
+import com.autowash.enums.UserStatus;
 import com.autowash.entity.AuthUser;
 import java.util.List;
 import java.util.Optional;
@@ -13,23 +13,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
-
     boolean existsByPhone(String phone);
-
     boolean existsByPhoneAndIdNot(String phone, UUID id);
-
     Optional<AuthUser> findByPhone(String phone);
-
     Optional<AuthUser> findByEmailIgnoreCase(String email);
-
     Optional<AuthUser> findByOauthSubject(String oauthSubject);
-
     boolean existsByOauthSubject(String oauthSubject);
-
     boolean existsByEmailIgnoreCase(String email);
-
     boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
-
     long countByRole(UserRole role);
 
     List<AuthUser> findByRoleAndStatusOrderByFullNameAsc(UserRole role, UserStatus status);

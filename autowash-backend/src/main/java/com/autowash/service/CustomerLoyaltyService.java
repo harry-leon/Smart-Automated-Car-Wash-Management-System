@@ -11,7 +11,7 @@ import com.autowash.dto.LoyaltyTransactionResponse;
 import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.WashHistoryItemResponse;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.service.CurrentUserService;

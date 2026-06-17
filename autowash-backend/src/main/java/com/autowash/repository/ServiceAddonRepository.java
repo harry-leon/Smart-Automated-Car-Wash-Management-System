@@ -1,6 +1,6 @@
 package com.autowash.repository;
 
-import com.autowash.entity.PackageStatus;
+import com.autowash.enums.PackageStatus;
 import com.autowash.entity.ServiceAddon;
 import java.util.List;
 import java.util.Optional;

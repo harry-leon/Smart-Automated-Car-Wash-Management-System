@@ -9,30 +9,30 @@ import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
 import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
-import com.autowash.entity.UserStatus;
+import com.autowash.enums.UserRole;
+import com.autowash.enums.UserStatus;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.BookingStatus;
+import com.autowash.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.repository.ServiceComboRepository;
 import com.autowash.repository.ServicePackageRepository;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.PointTransactionResponse;
-import com.autowash.entity.PointTransactionType;
+import com.autowash.enums.PointTransactionType;
 import com.autowash.entity.PointTransaction;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.service.LoyaltyService;
 import com.autowash.dto.BookingStaffTransferAuditResponse;
 import com.autowash.entity.BookingStaffTransferAudit;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.enums.WashSessionStatus;
 import com.autowash.repository.BookingStaffTransferAuditRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -530,11 +530,13 @@ public class AdminReportingService {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
+        List<UUID> packageIdValues = packageIds.stream().map(UUID::fromString).toList();
+        List<UUID> comboIdValues = comboIds.stream().map(UUID::fromString).toList();
 
         Map<String, String> names = new HashMap<>();
-        servicePackageRepository.findAllById(packageIds)
+        servicePackageRepository.findAllById(packageIdValues)
                 .forEach(pkg -> names.put(pkg.getId(), pkg.getName()));
-        serviceComboRepository.findAllById(comboIds)
+        serviceComboRepository.findAllById(comboIdValues)
                 .forEach(combo -> names.put(combo.getId(), combo.getName()));
         return names;
     }

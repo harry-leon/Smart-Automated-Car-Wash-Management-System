@@ -1,9 +1,9 @@
 package com.autowash.dto;
 
-import com.autowash.entity.LoyaltyTier;
-import com.autowash.entity.DiscountType;
-import com.autowash.entity.PromotionStatus;
-import com.autowash.entity.PromotionTargetingMode;
+import com.autowash.enums.LoyaltyTier;
+import com.autowash.enums.DiscountType;
+import com.autowash.enums.PromotionStatus;
+import com.autowash.enums.PromotionTargetingMode;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

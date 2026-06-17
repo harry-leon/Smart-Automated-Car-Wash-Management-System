@@ -1,16 +1,26 @@
 package com.autowash.entity;
 
+import com.autowash.enums.PackageStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
+import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "service_combos")
+@Table(name = "combos")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ServiceCombo {
 
     @Id
-    private String id;
+    private UUID id;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -18,42 +28,31 @@ public class ServiceCombo {
     @Column(length = 500)
     private String description;
 
-    @Column(name = "base_price", nullable = false)
-    private long basePrice;
+    @Column(nullable = false)
+    private long price;
 
-    @Column(name = "duration_days", nullable = false)
-    private int durationDays;
+    @Column(name = "original_price")
+    private Long originalPrice;
 
-    @Column(name = "max_services", nullable = false)
-    private int maxServices;
+    @Column(name = "duration_minutes", nullable = false)
+    private int durationMinutes;
 
-    @Column(name = "benefits_csv", length = 1000)
-    private String benefitsCsv;
+    @Column(name = "duration_days")
+    private Integer durationDays;
 
-    @Column(name = "image_url", length = 255)
+    @Column(name = "max_usages")
+    private Integer maxUsages;
+
+    @Column(name = "image_url", length = 500)
     private String imageUrl;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean active;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PackageStatus status;
 
-    @Column(name = "can_upgrade", nullable = false)
-    private boolean canUpgrade;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(name = "upgrade_price_from", nullable = false)
-    private long upgradePriceFrom;
-
-    protected ServiceCombo() {
-    }
-
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public long getBasePrice() { return basePrice; }
-    public int getDurationDays() { return durationDays; }
-    public int getMaxServices() { return maxServices; }
-    public String getBenefitsCsv() { return benefitsCsv; }
-    public String getImageUrl() { return imageUrl; }
-    public boolean isActive() { return active; }
-    public boolean isCanUpgrade() { return canUpgrade; }
-    public long getUpgradePriceFrom() { return upgradePriceFrom; }
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 }

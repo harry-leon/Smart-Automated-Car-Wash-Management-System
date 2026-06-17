@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.LoyaltyTier;
+import com.autowash.enums.LoyaltyTier;
 import java.util.List;
 
 public final class LoyaltyRules {

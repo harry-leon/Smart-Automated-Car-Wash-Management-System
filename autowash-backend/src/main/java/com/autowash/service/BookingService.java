@@ -1,5 +1,7 @@
 package com.autowash.service;
 
+import com.autowash.enums.PaymentMethod;
+
 import com.autowash.entity.AuthUser;
 import com.autowash.dto.AddonSelectionResponse;
 import com.autowash.dto.ApplyPointsRequest;
@@ -12,10 +14,10 @@ import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.BookingAddon;
-import com.autowash.entity.BookingStatus;
+import com.autowash.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.entity.BookingOtpChallenge;
-import com.autowash.entity.BookingOtpChallengeStatus;
+import com.autowash.enums.BookingOtpChallengeStatus;
 import com.autowash.repository.BookingOtpChallengeRepository;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.entity.ServiceAddon;
@@ -34,7 +36,7 @@ import com.autowash.service.CurrentUserService;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -118,6 +120,7 @@ public class BookingService {
 
         List<ServiceAddon> addons = catalogService.requireActiveAddons(request.addons());
         ServicePackage servicePackage = null;
+
         ServiceCombo serviceCombo = null;
         CustomerCombo ownedCombo = null;
         long basePrice;
@@ -129,6 +132,7 @@ public class BookingService {
 
         if (request.packageId() != null && !request.packageId().isBlank()) {
             servicePackage = catalogService.requireActivePackage(request.packageId());
+
             basePrice = servicePackage.getBasePrice();
             baseDuration = servicePackage.getDurationMinutes();
             responsePackageId = servicePackage.getId();
@@ -179,6 +183,7 @@ public class BookingService {
                 subtotal - voucherDiscount,
                 baseDuration + addons.stream().mapToInt(ServiceAddon::getDurationMinutes).sum()
         );
+
         booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
         addons.forEach(addon -> booking.addAddon(new BookingAddon(booking, addon.getId(), addon.getName(), addon.getPrice())));
         customerBookingRepository.save(booking);

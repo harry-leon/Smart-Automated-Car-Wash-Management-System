@@ -1,9 +1,9 @@
 package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.BookingStatus;
+import com.autowash.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.enums.WashSessionStatus;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
