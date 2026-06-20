@@ -41,6 +41,9 @@ class PromotionControllerIntegrationTest {
     @Autowired
     private UserRepository UserRepository;
 
+    @Autowired
+    private com.autowash.repository.LoyaltyAccountRepository loyaltyAccountRepository;
+
     @Test
     void adminCanCreateReadUpdateAndDeletePromotion() throws Exception {
         String promotionId = createPromotion("ADMIN_SPRING_SALE", "SELECTED_TIERS", """
@@ -211,8 +214,11 @@ class PromotionControllerIntegrationTest {
     private User createActiveCustomer(String phone, LoyaltyTier tier) {
         User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        user.updateTier(tier);
-        return UserRepository.saveAndFlush(user);
+        user = UserRepository.saveAndFlush(user);
+        com.autowash.entity.LoyaltyAccount account = new com.autowash.entity.LoyaltyAccount(user);
+        account.updateTier(tier);
+        loyaltyAccountRepository.saveAndFlush(account);
+        return user;
     }
 
     private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(User user) {

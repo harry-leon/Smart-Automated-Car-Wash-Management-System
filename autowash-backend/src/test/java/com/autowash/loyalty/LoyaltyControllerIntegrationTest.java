@@ -1,4 +1,5 @@
-package com.autowash.loyalty;
+package com.autowash.loyalty; 
+import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -166,13 +167,13 @@ class LoyaltyControllerIntegrationTest {
         ));
 
         Booking booking = new Booking(
-                bookingId,
+                UUID.randomUUID(),
                 customer,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -183,7 +184,7 @@ class LoyaltyControllerIntegrationTest {
         );
         booking.confirmByOtp();
         BookingRepository.save(booking);
-        WashSession session = new WashSession(booking, "Loyalty controller test");
+        WashSession session = WashSession.create(booking, "Loyalty controller test", null);
         Instant now = Instant.now();
         session.queue(now);
         session.checkIn(now, finalAmount, "VND", 0);

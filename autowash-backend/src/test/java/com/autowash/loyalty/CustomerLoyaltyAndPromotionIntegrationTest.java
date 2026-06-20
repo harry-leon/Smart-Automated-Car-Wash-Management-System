@@ -1,4 +1,6 @@
-package com.autowash.loyalty;
+package com.autowash.loyalty;  
+import java.time.Instant;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -174,7 +176,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.CustomerPromotionResponse.properties.promotionCode.type").value("string"));
     }
 
-    private String createCompletedSession(String bookingId) throws Exception {
+    private String createCompletedSession(UUID bookingId) throws Exception {
         User staff = createActiveStaff("Loyalty Staff");
         Booking booking = BookingRepository.findById(bookingId).orElseThrow();
         booking.assignStaff(staff);
@@ -247,13 +249,13 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
         ));
 
         Booking booking = new Booking(
-                bookingId,
+                UUID.randomUUID(),
                 user,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,

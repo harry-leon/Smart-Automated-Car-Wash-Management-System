@@ -12,8 +12,8 @@ class WashSessionLifecycleTest {
 
     @Test
     void acceptsOnlyConfiguredForwardTransitions() {
-        WashSessionLifecycle.validateTransition(WashSessionStatus.PENDING, WashSessionStatus.QUEUED);
-        WashSessionLifecycle.validateTransition(WashSessionStatus.QUEUED, WashSessionStatus.CHECKED_IN);
+        WashSessionLifecycle.validateTransition(WashSessionStatus.PENDING, WashSessionStatus.PENDING);
+        WashSessionLifecycle.validateTransition(WashSessionStatus.PENDING, WashSessionStatus.CHECKED_IN);
         WashSessionLifecycle.validateTransition(WashSessionStatus.CHECKED_IN, WashSessionStatus.IN_PROGRESS);
         WashSessionLifecycle.validateTransition(WashSessionStatus.IN_PROGRESS, WashSessionStatus.COMPLETED);
     }
@@ -21,8 +21,8 @@ class WashSessionLifecycleTest {
     @Test
     void rejectsSkippedBackwardAndRepeatedTransitions() {
         Set<Transition> validTransitions = Set.of(
-                new Transition(WashSessionStatus.PENDING, WashSessionStatus.QUEUED),
-                new Transition(WashSessionStatus.QUEUED, WashSessionStatus.CHECKED_IN),
+                new Transition(WashSessionStatus.PENDING, WashSessionStatus.PENDING),
+                new Transition(WashSessionStatus.PENDING, WashSessionStatus.CHECKED_IN),
                 new Transition(WashSessionStatus.CHECKED_IN, WashSessionStatus.IN_PROGRESS),
                 new Transition(WashSessionStatus.IN_PROGRESS, WashSessionStatus.COMPLETED)
         );

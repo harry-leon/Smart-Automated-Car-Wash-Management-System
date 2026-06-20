@@ -148,7 +148,7 @@ public class LoyaltyService {
         Voucher voucher = voucherRepository.save(new Voucher(
                 voucherCode,
                 "Voucher redemption: " + voucherCode,
-                DiscountType.FIXED,
+                DiscountType.FIXED_AMOUNT,
                 voucherValue,
                 0L,
                 null,
@@ -221,7 +221,7 @@ public class LoyaltyService {
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 null,
-                PointTransactionType.TIER_UPGRADE,
+                PointTransactionType.ADJUST,
                 0,
                 account.getCurrentPoints(),
                 "Tier upgraded from " + oldTier + " to " + targetTier

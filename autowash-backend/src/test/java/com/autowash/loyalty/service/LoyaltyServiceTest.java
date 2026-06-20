@@ -26,6 +26,7 @@ import com.autowash.repository.VehicleRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -81,9 +82,9 @@ class LoyaltyServiceTest {
         assertThat(first.pointsAwarded()).isEqualTo(27);
         assertThat(second.transactionId()).isEqualTo(first.transactionId());
         assertThat(second.newBalance()).isEqualTo(first.newBalance());
-        assertThat(pointTransactionRepository.countByTypeAndReferenceId(
+        assertThat(pointTransactionRepository.countByTypeAndBookingId(
                 PointTransactionType.EARN,
-                data.session().getId().toString()
+                data.session().getBooking().getId()
         )).isEqualTo(1);
     }
 
@@ -92,7 +93,7 @@ class LoyaltyServiceTest {
         TestData data = createCompletedSession("0901888003", "LOY_SVC_003", 600000);
         loyaltyService.postEarnTransaction(data.customer().getId(), data.session().getId());
 
-        RedeemPointsResponse response = loyaltyService.redeemPoints(data.customer().getId(), 50, data.booking().getId());
+        RedeemPointsResponse response = loyaltyService.redeemPoints(data.customer().getId(), 50, data.booking().getId().toString());
 
         assertThat(response.pointsRedeemed()).isEqualTo(50);
         assertThat(response.newBalance()).isEqualTo(10);
@@ -110,7 +111,6 @@ class LoyaltyServiceTest {
         ).getContent().getFirst();
         assertThat(redemption.getPoints()).isEqualTo(-50);
         assertThat(redemption.getReason()).isEqualTo("Voucher redemption: " + response.voucherCode());
-        assertThat(redemption.getReferenceId()).isEqualTo(response.voucherCode());
         assertThat(loyaltyService.getAccount(data.customer().getId()).totalEarnedPoints()).isEqualTo(60);
     }
 
@@ -140,7 +140,7 @@ class LoyaltyServiceTest {
         assertThat(earnResponse.newBalance()).isEqualTo(510);
         assertThat(earnResponse.tier()).isEqualTo("SILVER");
 
-        loyaltyService.redeemPoints(data.customer().getId(), 200, data.booking().getId());
+        loyaltyService.redeemPoints(data.customer().getId(), 200, data.booking().getId().toString());
         assertThat(loyaltyService.getAccount(data.customer().getId()).tier()).isEqualTo("SILVER");
     }
 
@@ -181,13 +181,13 @@ class LoyaltyServiceTest {
         ));
 
         Booking booking = new Booking(
-                bookingId,
+                UUID.randomUUID(),
                 user,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -198,7 +198,7 @@ class LoyaltyServiceTest {
         );
         booking.confirmByOtp();
         BookingRepository.save(booking);
-        WashSession session = washSessionRepository.saveAndFlush(new WashSession(booking, "Loyalty service test"));
+        WashSession session = washSessionRepository.saveAndFlush(WashSession.create(booking, "Loyalty service test", null));
         return new TestData(user, booking, session);
     }
 

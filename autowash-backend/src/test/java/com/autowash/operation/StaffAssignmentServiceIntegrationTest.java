@@ -1,4 +1,5 @@
-package com.autowash.operation;
+package com.autowash.operation; 
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,13 +72,13 @@ class StaffAssignmentServiceIntegrationTest {
                 true
         ));
         Booking booking = new Booking(
-                bookingId,
+                UUID.randomUUID(),
                 customer,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 150000,

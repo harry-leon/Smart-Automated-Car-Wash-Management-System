@@ -1,4 +1,5 @@
-package com.autowash.admin;
+package com.autowash.admin; 
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
@@ -96,7 +97,7 @@ class AdminVoucherControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].balanceAfter").value(10));
     }
 
-    private String completeSession(String bookingId, User staff) throws Exception {
+    private String completeSession(UUID bookingId, User staff) throws Exception {
         String sessionId = createSession(bookingId, staff);
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
                         .with(authenticatedUser(staff)))
@@ -113,7 +114,7 @@ class AdminVoucherControllerIntegrationTest {
         return sessionId;
     }
 
-    private String createSession(String bookingId, User staff) throws Exception {
+    private String createSession(UUID bookingId, User staff) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
                         .with(authenticatedUser(staff))
                         .contentType("application/json")
@@ -147,13 +148,13 @@ class AdminVoucherControllerIntegrationTest {
                 true
         ));
         Booking booking = new Booking(
-                bookingId,
+                UUID.randomUUID(),
                 customer,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                bookingDate,
+                bookingDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,

@@ -120,9 +120,9 @@ public class PromotionService {
         if (request.discountType() == DiscountType.PERCENT && request.discountValue() > 100) {
             throw validationError("discountValue", "Percent discount must be between 1 and 100");
         }
-        if (request.targetingMode() == PromotionTargetingMode.SELECTED_TIERS) {
+        if (request.targetingMode() == PromotionTargetingMode.SPECIFIC_TIERS) {
             if (request.applicableTiers() == null || request.applicableTiers().isEmpty()) {
-                throw validationError("applicableTiers", "At least one tier is required for SELECTED_TIERS");
+                throw validationError("applicableTiers", "At least one tier is required for SPECIFIC_TIERS");
             }
             String tiers = request.applicableTiers().stream()
                     .distinct()

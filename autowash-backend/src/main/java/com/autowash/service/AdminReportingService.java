@@ -559,7 +559,7 @@ public class AdminReportingService {
         User customer = requireCustomer(customerId);
         Page<PointTransaction> transactions = pointTransactionRepository.search(
                 customer,
-                PointTransactionType.TIER_UPGRADE,
+                PointTransactionType.ADJUST,
                 null,
                 null,
                 PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())

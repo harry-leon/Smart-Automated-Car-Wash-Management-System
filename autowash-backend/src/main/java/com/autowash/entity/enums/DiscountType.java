@@ -2,6 +2,6 @@ package com.autowash.entity.enums;
 
 public enum DiscountType {
     PERCENT,
-    FIXED
+    FIXED_AMOUNT
 }
 

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -280,7 +281,7 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.AdminWashHistoryResponse.properties.sessionId.type").value("string"));
     }
 
-    private String completeSession(String bookingId) throws Exception {
+    private String completeSession(UUID bookingId) throws Exception {
         String sessionId = createSession(bookingId);
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
                         .with(authenticatedAdmin()))
@@ -297,7 +298,7 @@ class AdminReportingControllerIntegrationTest {
         return sessionId;
     }
 
-    private String createSession(String bookingId) throws Exception {
+    private String createSession(UUID bookingId) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
                         .with(authenticatedAdmin())
                         .contentType("application/json")
@@ -352,13 +353,13 @@ class AdminReportingControllerIntegrationTest {
 
     private Booking createConfirmedBookingForVehicle(User user, Vehicle vehicle, String bookingId, LocalDate bookingDate, long finalAmount) {
         Booking booking = new Booking(
-                bookingId,
+                UUID.randomUUID(),
                 user,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                bookingDate,
+                bookingDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,

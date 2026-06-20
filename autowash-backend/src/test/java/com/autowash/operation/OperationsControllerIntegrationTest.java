@@ -297,11 +297,11 @@ class OperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.CompleteWashSessionResponse.properties.awardedLoyaltyPoints.type").value("integer"));
     }
 
-    private String createSession(String bookingId) throws Exception {
+    private String createSession(UUID bookingId) throws Exception {
         return createSession(bookingId, defaultStaff());
     }
 
-    private String createSession(String bookingId, User staff) throws Exception {
+    private String createSession(UUID bookingId, User staff) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
                         .with(authenticatedUser(staff))
                         .contentType("application/json")
@@ -368,13 +368,13 @@ class OperationsControllerIntegrationTest {
         ));
 
         Booking booking = new Booking(
-                bookingId,
+                UUID.randomUUID(),
                 user,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -389,7 +389,7 @@ class OperationsControllerIntegrationTest {
     }
 
     private void completeDirectly(Booking booking, User staff, int points) {
-        WashSession session = new WashSession(booking, "Completed for KPI", staff);
+        WashSession session = WashSession.create(booking, "Completed for KPI", staff);
         Instant now = Instant.now();
         session.queue(now.minusSeconds(1800));
         session.checkIn(now.minusSeconds(1500), booking.getFinalAmount(), "VND", points);
@@ -400,18 +400,18 @@ class OperationsControllerIntegrationTest {
         BookingRepository.saveAndFlush(booking);
     }
 
-    private void assertBookingStatus(String bookingId, String status) {
+    private void assertBookingStatus(UUID bookingId, String status) {
         BookingRepository.flush();
         Booking booking = BookingRepository.findById(bookingId).orElseThrow();
         assertThat(booking.getStatus().name()).isEqualTo(status);
     }
 
-    private void assertQueueContains(MvcResult result, String sessionId, String bookingId) throws Exception {
+    private void assertQueueContains(MvcResult result, String sessionId, UUID bookingId) throws Exception {
         JsonNode sessions = readJson(result).path("data").path("columns").path(0).path("sessions");
         boolean found = false;
         for (JsonNode session : sessions) {
             if (sessionId.equals(session.path("sessionId").asText())
-                    && bookingId.equals(session.path("bookingId").asText())) {
+                    && bookingId.toString().equals(session.path("bookingId").asText())) {
                 found = true;
                 break;
             }
@@ -428,18 +428,18 @@ class OperationsControllerIntegrationTest {
         }
     }
 
-    private void assertEligibleBookingContains(MvcResult result, String bookingId) throws Exception {
+    private void assertEligibleBookingContains(MvcResult result, UUID bookingId) throws Exception {
         assertThat(eligibleBookingExists(result, bookingId)).isTrue();
     }
 
-    private void assertEligibleBookingMissing(MvcResult result, String bookingId) throws Exception {
+    private void assertEligibleBookingMissing(MvcResult result, UUID bookingId) throws Exception {
         assertThat(eligibleBookingExists(result, bookingId)).isFalse();
     }
 
-    private boolean eligibleBookingExists(MvcResult result, String bookingId) throws Exception {
+    private boolean eligibleBookingExists(MvcResult result, UUID bookingId) throws Exception {
         JsonNode bookings = readJson(result).path("data");
         for (JsonNode booking : bookings) {
-            if (bookingId.equals(booking.path("bookingId").asText())) {
+            if (bookingId.toString().equals(booking.path("bookingId").asText())) {
                 return true;
             }
         }
