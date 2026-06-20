@@ -2,7 +2,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.entity.enums.VehicleStatus;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -23,3 +23,4 @@ public interface CustomerVehicleRepository extends JpaRepository<CustomerVehicle
 
     Page<CustomerVehicle> findByOwnerAndStatusOrderByCreatedAtAsc(AuthUser owner, VehicleStatus status, Pageable pageable);
 }
+

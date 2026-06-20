@@ -1,5 +1,7 @@
 package com.autowash.controller;
 
+import com.autowash.entity.enums.PaymentMethod;
+
 import com.autowash.entity.AuthUser;
 import com.autowash.dto.CustomerComboResponse;
 import com.autowash.dto.PurchaseCustomerComboRequest;
@@ -78,3 +80,4 @@ public class CustomerComboController {
         );
     }
 }
+

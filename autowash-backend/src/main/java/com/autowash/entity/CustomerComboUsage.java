@@ -5,40 +5,32 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "customer_combo_usages")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomerComboUsage {
 
     @Id
-    private UUID id;
+    private Long id;
 
-    @Column(name = "customer_combo_id", nullable = false, length = 50)
-    private String customerComboId;
+    @Column(name = "customer_combo_id", nullable = false)
+    private UUID customerComboId;
 
-    @Column(name = "booking_id", nullable = false, length = 50)
-    private String bookingId;
+    @Column(name = "booking_id", nullable = false, unique = true)
+    private UUID bookingId;
 
     @Column(name = "used_at", nullable = false)
     private Instant usedAt;
 
-    @Column(name = "service_date", nullable = false)
-    private LocalDate serviceDate;
-
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
-
-    protected CustomerComboUsage() {
-    }
-
-    public CustomerComboUsage(String customerComboId, String bookingId, LocalDate serviceDate) {
-        this.id = UUID.randomUUID();
+    public CustomerComboUsage(UUID customerComboId, UUID bookingId) {
         this.customerComboId = customerComboId;
         this.bookingId = bookingId;
-        this.serviceDate = serviceDate;
         this.usedAt = Instant.now();
-        this.createdAt = this.usedAt;
     }
 }

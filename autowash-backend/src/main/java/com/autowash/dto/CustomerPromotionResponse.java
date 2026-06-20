@@ -1,5 +1,7 @@
 package com.autowash.dto;
 
+import com.autowash.entity.enums.DiscountType;
+
 import java.time.Instant;
 import java.util.List;
 
@@ -15,3 +17,4 @@ public record CustomerPromotionResponse(
         Instant expiresAt
 ) {
 }
+

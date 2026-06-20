@@ -1,5 +1,8 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.VehicleStatus;
+import com.autowash.entity.enums.VehicleType;
+
 import com.autowash.entity.AuthUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,16 +15,21 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "customer_vehicles")
+@Table(name = "vehicles")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomerVehicle {
 
     @Id
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_user_id", nullable = false)
+    @JoinColumn(name = "customer_id", nullable = false)
     private AuthUser owner;
 
     @Column(nullable = false, length = 20)
@@ -56,12 +64,6 @@ public class CustomerVehicle {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Column(name = "deleted_at")
-    private Instant deletedAt;
-
-    protected CustomerVehicle() {
-    }
-
     public CustomerVehicle(
             AuthUser owner,
             String plate,
@@ -87,57 +89,18 @@ public class CustomerVehicle {
         this.updatedAt = now;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public AuthUser getOwner() {
-        return owner;
-    }
-
-    public String getPlate() {
-        return plate;
-    }
-
-    public VehicleType getType() {
-        return type;
-    }
-
-    public String getBrand() {
-        return brand;
-    }
-
-    public String getModel() {
-        return model;
-    }
-
-    public int getYear() {
-        return year;
-    }
-
-    public String getColor() {
-        return color;
-    }
-
-    public VehicleStatus getStatus() {
-        return status;
-    }
-
-    public boolean isPrimary() {
-        return primary;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public Instant getDeletedAt() {
-        return deletedAt;
-    }
+    public UUID getId() { return id; }
+    public AuthUser getOwner() { return owner; }
+    public String getPlate() { return plate; }
+    public VehicleType getType() { return type; }
+    public String getBrand() { return brand; }
+    public String getModel() { return model; }
+    public int getYear() { return year; }
+    public String getColor() { return color; }
+    public VehicleStatus getStatus() { return status; }
+    public boolean isPrimary() { return primary; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
 
     public void updateDetails(String brand, String model, int year, String color) {
         this.brand = brand;
@@ -153,9 +116,9 @@ public class CustomerVehicle {
     }
 
     public void softDelete() {
-        this.status = VehicleStatus.INACTIVE;
+        this.status = VehicleStatus.DELETED;
         this.primary = false;
-        this.deletedAt = Instant.now();
-        this.updatedAt = deletedAt;
+        this.updatedAt = Instant.now();
     }
 }
+

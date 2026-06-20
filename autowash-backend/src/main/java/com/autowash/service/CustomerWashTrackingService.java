@@ -8,7 +8,7 @@ import com.autowash.repository.ServiceComboRepository;
 import com.autowash.repository.ServicePackageRepository;
 import com.autowash.dto.CustomerWashTrackingResponse;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
@@ -23,7 +23,6 @@ public class CustomerWashTrackingService {
 
     private static final Set<WashSessionStatus> ACTIVE_STATUSES = Set.of(
             WashSessionStatus.PENDING,
-            WashSessionStatus.QUEUED,
             WashSessionStatus.CHECKED_IN,
             WashSessionStatus.IN_PROGRESS
     );
@@ -63,31 +62,29 @@ public class CustomerWashTrackingService {
 
     private CustomerWashTrackingResponse toResponse(WashSession session) {
         CustomerBooking booking = session.getBooking();
-        return new CustomerWashTrackingResponse(
-                session.getId().toString(),
-                booking.getId(),
-                session.getStatus().name(),
-                booking.getCustomer().getFullName(),
-                booking.getCustomer().getPhone(),
-                booking.getVehicle().getPlate(),
-                booking.getVehicle().getBrand(),
-                booking.getVehicle().getModel(),
-                booking.getPackageId(),
-                resolveServiceName(booking),
-                booking.getBookingDate(),
-                booking.getBookingTime().toString(),
-                session.getAssignedStaff() == null ? null : session.getAssignedStaff().getFullName(),
-                session.getFeeAmount(),
-                session.getFeeCurrency(),
-                session.getProjectedLoyaltyPoints(),
-                session.getAwardedLoyaltyPoints(),
-                session.getNotes(),
-                session.getCreatedAt(),
-                session.getQueuedAt(),
-                session.getCheckedInAt(),
-                session.getStartedAt(),
-                session.getCompletedAt()
-        );
+        return CustomerWashTrackingResponse.builder()
+                .washSessionId(session.getId().toString())
+                .bookingId(booking.getId())
+                .status(session.getStatus().name())
+                .customerName(booking.getCustomer().getFullName())
+                .customerPhone(booking.getCustomer().getPhone())
+                .vehiclePlate(booking.getVehicle().getPlate())
+                .vehicleBrand(booking.getVehicle().getBrand())
+                .vehicleModel(booking.getVehicle().getModel())
+                .packageId(booking.getPackageId())
+                .serviceName(resolveServiceName(booking))
+                .bookingDate(booking.getBookingDate())
+                .bookingTime(booking.getBookingTime().toString())
+                .assignedStaffName(session.getAssignedStaff() == null ? null : session.getAssignedStaff().getFullName())
+                .feeAmount(session.getFeeAmount())
+                .projectedLoyaltyPoints(session.getProjectedLoyaltyPoints())
+                .awardedLoyaltyPoints(session.getAwardedLoyaltyPoints())
+                .notes(session.getNotes())
+                .createdAt(session.getCreatedAt())
+                .checkedInAt(session.getCheckedInAt())
+                .startedAt(session.getStartedAt())
+                .completedAt(session.getCompletedAt())
+                .build();
     }
 
     private String resolveServiceName(CustomerBooking booking) {
@@ -104,3 +101,4 @@ public class CustomerWashTrackingService {
         return null;
     }
 }
+

@@ -7,18 +7,15 @@ import com.autowash.dto.RegisterRequest;
 import com.autowash.dto.RegisterResponse;
 import com.autowash.dto.SendOtpResponse;
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.OtpAuditEvent;
-import com.autowash.entity.OtpPurpose;
+import com.autowash.entity.enums.OtpPurpose;
 import com.autowash.entity.OtpRecord;
 import com.autowash.entity.RefreshToken;
-import com.autowash.entity.UserStatus;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.repository.OtpAuditLogRepository;
 import com.autowash.repository.OtpRecordRepository;
 import com.autowash.repository.RefreshTokenRepository;
 import com.autowash.shared.exception.ApiException;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -32,7 +29,6 @@ public class AuthService {
 
     private final AuthUserRepository authUserRepository;
     private final OtpRecordRepository otpRecordRepository;
-    private final OtpAuditLogRepository otpAuditLogRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpService otpService;
@@ -46,7 +42,6 @@ public class AuthService {
     public AuthService(
             AuthUserRepository authUserRepository,
             OtpRecordRepository otpRecordRepository,
-            OtpAuditLogRepository otpAuditLogRepository,
             RefreshTokenRepository refreshTokenRepository,
             PasswordEncoder passwordEncoder,
             OtpService otpService,
@@ -59,7 +54,6 @@ public class AuthService {
     ) {
         this.authUserRepository = authUserRepository;
         this.otpRecordRepository = otpRecordRepository;
-        this.otpAuditLogRepository = otpAuditLogRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.otpService = otpService;
@@ -106,7 +100,7 @@ public class AuthService {
         AuthUser user = resolveOtpUser(email, phone)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         requirePendingUser(user);
-        enforceResendLimit(user, metadata);
+        enforceResendLimit(user);
 
         return issueRegistrationOtp(user, metadata, true);
     }
@@ -122,12 +116,9 @@ public class AuthService {
                 Instant.now().plusSeconds(otpExpirationSeconds)
         );
         otpRecordRepository.save(otpRecord);
-        audit(user, resend ? OtpAuditEvent.RESEND : OtpAuditEvent.GENERATE, 0, metadata, "Registration OTP generated");
         try {
             emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
-            audit(user, OtpAuditEvent.SEND_SUCCESS, 0, metadata, "Registration OTP email sent");
         } catch (RuntimeException exception) {
-            audit(user, OtpAuditEvent.SEND_FAILED, 0, metadata, exception.getMessage());
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to send OTP email", "OTP_SEND_FAILED");
         }
         return new SendOtpResponse(
@@ -152,13 +143,11 @@ public class AuthService {
 
         if (otpRecord.getExpiresAt().isBefore(Instant.now())) {
             otpRecord.invalidate();
-            audit(user, OtpAuditEvent.EXPIRED, otpRecord.getAttempts(), metadata, "Registration OTP expired");
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP has expired", "OTP_EXPIRED");
         }
 
         if (otpRecord.isLocked() || otpRecord.getAttempts() >= otpMaxAttempts) {
             otpRecord.lock();
-            audit(user, OtpAuditEvent.LOCKED, otpRecord.getAttempts(), metadata, "Registration OTP locked");
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
         }
 
@@ -166,16 +155,13 @@ public class AuthService {
             otpRecord.incrementAttempts();
             if (otpRecord.getAttempts() >= otpMaxAttempts) {
                 otpRecord.lock();
-                audit(user, OtpAuditEvent.LOCKED, otpRecord.getAttempts(), metadata, "Registration OTP locked");
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
             }
-            audit(user, OtpAuditEvent.VERIFY_FAIL, otpRecord.getAttempts(), metadata, "Registration OTP verification failed");
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP");
         }
 
         otpRecord.markVerified();
         user.activate();
-        audit(user, OtpAuditEvent.VERIFY_SUCCESS, otpRecord.getAttempts(), metadata, "Registration OTP verified");
 
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = createRefreshToken(user).getToken();
@@ -296,54 +282,11 @@ public class AuthService {
                 .forEach(OtpRecord::invalidate);
     }
 
-    private void enforceResendLimit(AuthUser user, RequestMetadata metadata) {
+    private void enforceResendLimit(AuthUser user) {
         Instant windowStart = Instant.now().minusSeconds(3600);
-        List<OtpAuditEvent> resendEvents = List.of(OtpAuditEvent.RESEND);
-        if (otpAuditLogRepository.countByPurposeAndEventTypeInAndDeliveryAddressIgnoreCaseAndCreatedAtAfter(
-                OtpPurpose.EMAIL_REGISTRATION,
-                resendEvents,
-                user.getEmail(),
-                windowStart
-        ) >= 3) {
+        if (otpRecordRepository.countByUserAndPurposeAndCreatedAtAfter(user, OtpPurpose.EMAIL_REGISTRATION, windowStart) >= 3) {
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", "RATE_LIMIT_EXCEEDED");
         }
-        if (metadata.requestIp() != null && otpAuditLogRepository.countByPurposeAndEventTypeInAndRequestIpAndCreatedAtAfter(
-                OtpPurpose.EMAIL_REGISTRATION,
-                resendEvents,
-                metadata.requestIp(),
-                windowStart
-        ) >= 30) {
-            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", "RATE_LIMIT_EXCEEDED");
-        }
-        if (metadata.deviceFingerprint() != null && otpAuditLogRepository.countByPurposeAndEventTypeInAndDeviceFingerprintAndCreatedAtAfter(
-                OtpPurpose.EMAIL_REGISTRATION,
-                resendEvents,
-                metadata.deviceFingerprint(),
-                windowStart
-        ) >= 3) {
-            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", "RATE_LIMIT_EXCEEDED");
-        }
-    }
-
-    private void audit(AuthUser user, OtpAuditEvent event, int attemptCount, RequestMetadata metadata, String message) {
-        otpAuditLogRepository.save(new com.autowash.entity.OtpAuditLog(
-                user,
-                OtpPurpose.EMAIL_REGISTRATION,
-                event,
-                user.getEmail(),
-                attemptCount,
-                metadata.requestIp(),
-                truncate(metadata.userAgent(), 500),
-                truncate(metadata.deviceFingerprint(), 255),
-                truncate(message, 500)
-        ));
-    }
-
-    private String truncate(String value, int maxLength) {
-        if (value == null || value.length() <= maxLength) {
-            return value;
-        }
-        return value.substring(0, maxLength);
     }
 
     private java.util.Optional<AuthUser> resolveLoginUser(String identifier) {
@@ -357,3 +300,4 @@ public class AuthService {
     public record RequestMetadata(String requestIp, String userAgent, String deviceFingerprint) {
     }
 }
+

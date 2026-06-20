@@ -4,10 +4,12 @@ import com.autowash.dto.CheckInWashSessionResponse;
 import com.autowash.dto.CompleteWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
+import com.autowash.dto.EligibleSessionBookingResponse;
+import com.autowash.dto.OperationsQueueResponse;
 import com.autowash.dto.QueueWashSessionResponse;
+import com.autowash.dto.StaffDashboardSummaryResponse;
+import com.autowash.dto.StaffOptionResponse;
 import com.autowash.dto.StartWashSessionResponse;
-import com.autowash.dto.TransferWashSessionRequest;
-import com.autowash.dto.TransferWashSessionResponse;
 import com.autowash.service.OperationsService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,10 +17,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -72,12 +76,28 @@ public class OperationsController {
         return ApiResponse.ok("Wash session completed", operationsService.completeSession(sessionId));
     }
 
-    @PostMapping("/{sessionId}/transfer")
-    @Operation(summary = "Transfer wash session to another staff member")
-    public ApiResponse<TransferWashSessionResponse> transferSession(
-            @PathVariable UUID sessionId,
-            @Valid @RequestBody TransferWashSessionRequest request
-    ) {
-        return ApiResponse.ok("Wash session transferred", operationsService.transferSession(sessionId, request));
+    @GetMapping("/queue")
+    @Operation(summary = "Get operations queue")
+    public ApiResponse<OperationsQueueResponse> getQueue() {
+        return ApiResponse.ok("Operations queue retrieved", operationsService.getOperationsQueue());
     }
+
+    @GetMapping("/staff/summary")
+    @Operation(summary = "Get current staff summary")
+    public ApiResponse<StaffDashboardSummaryResponse> getStaffSummary() {
+        return ApiResponse.ok("Staff summary retrieved", operationsService.getMyStaffSummary());
+    }
+
+    @GetMapping("/staff/active")
+    @Operation(summary = "List active staff")
+    public ApiResponse<List<StaffOptionResponse>> listActiveStaff() {
+        return ApiResponse.ok("Active staff retrieved", operationsService.listActiveStaff());
+    }
+
+    @GetMapping("/bookings/eligible-sessions")
+    @Operation(summary = "List eligible bookings for wash sessions")
+    public ApiResponse<List<EligibleSessionBookingResponse>> listEligibleSessions() {
+        return ApiResponse.ok("Eligible sessions retrieved", operationsService.getEligibleSessionBookings(20));
+    }
+
 }

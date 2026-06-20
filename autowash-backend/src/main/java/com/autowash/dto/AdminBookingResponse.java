@@ -1,5 +1,8 @@
 package com.autowash.dto;
 
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -26,3 +29,4 @@ public record AdminBookingResponse(
         String staffName
 ) {
 }
+

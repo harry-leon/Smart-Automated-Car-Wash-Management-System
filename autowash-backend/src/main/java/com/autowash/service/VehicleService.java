@@ -12,7 +12,7 @@ import com.autowash.dto.UpdateVehicleResponse;
 import com.autowash.dto.VehicleDetailResponse;
 import com.autowash.dto.VehicleListItemResponse;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.util.List;
 import java.util.UUID;
@@ -208,3 +208,4 @@ public class VehicleService {
     ) {
     }
 }
+

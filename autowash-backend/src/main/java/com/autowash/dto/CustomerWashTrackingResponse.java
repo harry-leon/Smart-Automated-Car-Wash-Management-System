@@ -2,7 +2,9 @@ package com.autowash.dto;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import lombok.Builder;
 
+@Builder
 public record CustomerWashTrackingResponse(
         String washSessionId,
         String bookingId,
@@ -18,12 +20,10 @@ public record CustomerWashTrackingResponse(
         String bookingTime,
         String assignedStaffName,
         Long feeAmount,
-        String feeCurrency,
         Integer projectedLoyaltyPoints,
         Integer awardedLoyaltyPoints,
         String notes,
         Instant createdAt,
-        Instant queuedAt,
         Instant checkedInAt,
         Instant startedAt,
         Instant completedAt

@@ -1,8 +1,10 @@
 package com.autowash.entity;
 
-import com.autowash.entity.AuthUser;
-import com.autowash.entity.CustomerVehicle;
-import jakarta.persistence.CascadeType;
+import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.enums.BookingType;
+import com.autowash.entity.enums.BookingConfirmationStatus;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,21 +13,25 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "customer_bookings")
+@Table(name = "bookings")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomerBooking {
 
     @Id
-    private String id;
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
@@ -35,61 +41,34 @@ public class CustomerBooking {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private CustomerVehicle vehicle;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_staff_id")
-    private AuthUser assignedStaff;
-
-    @Column(name = "package_id", length = 50)
-    private String packageId;
-
-    @Column(name = "combo_id", length = 50)
-    private String comboId;
-
-    @Column(name = "voucher_code", length = 50)
-    private String voucherCode;
-
-    @Column(name = "booking_date", nullable = false)
-    private LocalDate bookingDate;
-
-    @Column(name = "booking_time", nullable = false)
-    private LocalTime bookingTime;
-
     @Enumerated(EnumType.STRING)
-    @Column(name = "payment_method", nullable = false, length = 30)
-    private PaymentMethod paymentMethod;
+    @Column(name = "booking_type", nullable = false, length = 30)
+    private BookingType bookingType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", nullable = false, length = 30)
-    private PaymentStatus paymentStatus;
+    @Column(name = "package_id")
+    private UUID packageId;
+
+    @Column(name = "combo_id")
+    private UUID comboId;
+
+    @Column(name = "voucher_id")
+    private UUID voucherId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private BookingStatus status;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "confirmation_status", nullable = false, length = 30)
-    private BookingConfirmationStatus confirmationStatus;
+    @Column(name = "scheduled_at", nullable = false)
+    private Instant scheduledAt;
 
-    @Column(name = "confirmation_expires_at")
-    private Instant confirmationExpiresAt;
+    @Column(name = "base_amount", nullable = false)
+    private long baseAmount;
 
-    @Column(name = "confirmed_at")
-    private Instant confirmedAt;
+    @Column(name = "options_amount", nullable = false)
+    private long optionsAmount;
 
-    @Column(name = "base_price", nullable = false)
-    private long basePrice;
-
-    @Column(name = "addons_total", nullable = false)
-    private long addonsTotal;
-
-    @Column(name = "voucher_discount", nullable = false)
-    private long voucherDiscount;
-
-    @Column(name = "points_redeemed", nullable = false)
-    private int pointsRedeemed;
-
-    @Column(name = "points_discount", nullable = false)
-    private long pointsDiscount;
+    @Column(name = "discount_amount", nullable = false)
+    private long discountAmount;
 
     @Column(name = "final_amount", nullable = false)
     private long finalAmount;
@@ -97,137 +76,158 @@ public class CustomerBooking {
     @Column(name = "estimated_duration_minutes", nullable = false)
     private int estimatedDurationMinutes;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @Column(name = "points_redeemed", nullable = false)
+    private int pointsRedeemed;
 
-    @Column(name = "cancelled_at")
-    private Instant cancelledAt;
+    @Column(name = "points_discount", nullable = false)
+    private long pointsDiscount;
 
-    @Column(name = "refund_amount")
-    private Long refundAmount;
-
-    @Column(name = "refund_status", length = 30)
-    private String refundStatus;
+    @Column(name = "note")
+    private String note;
 
     @Column(name = "cancel_reason", length = 500)
     private String cancelReason;
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("addonId ASC")
-    private List<BookingAddon> addons = new ArrayList<>();
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    protected CustomerBooking() {
-    }
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
     public CustomerBooking(
-            String id,
+            UUID id,
             AuthUser customer,
             CustomerVehicle vehicle,
-            String packageId,
-            String comboId,
-            String voucherCode,
-            LocalDate bookingDate,
-            LocalTime bookingTime,
-            PaymentMethod paymentMethod,
-            long basePrice,
-            long addonsTotal,
-            long voucherDiscount,
+            UUID packageId,
+            UUID comboId,
+            UUID voucherId,
+            Instant scheduledAt,
+            java.time.LocalTime bookingTime,
+            com.autowash.entity.enums.PaymentMethod paymentMethod,
+            long baseAmount,
+            long optionsAmount,
+            long discountAmount,
             long finalAmount,
             int estimatedDurationMinutes
     ) {
+        Instant now = Instant.now();
         this.id = id;
         this.customer = customer;
         this.vehicle = vehicle;
+        this.bookingType = packageId != null ? BookingType.PACKAGE : BookingType.COMBO;
         this.packageId = packageId;
         this.comboId = comboId;
-        this.voucherCode = voucherCode;
-        this.bookingDate = bookingDate;
-        this.bookingTime = bookingTime;
-        this.paymentMethod = paymentMethod;
-        this.paymentStatus = PaymentStatus.CONFIRMED;
+        this.voucherId = voucherId;
         this.status = BookingStatus.PENDING;
-        this.confirmationStatus = BookingConfirmationStatus.PENDING;
-        this.basePrice = basePrice;
-        this.addonsTotal = addonsTotal;
-        this.voucherDiscount = voucherDiscount;
-        this.pointsRedeemed = 0;
-        this.pointsDiscount = 0;
+        this.scheduledAt = scheduledAt;
+        this.baseAmount = baseAmount;
+        this.optionsAmount = optionsAmount;
+        this.discountAmount = discountAmount;
         this.finalAmount = finalAmount;
         this.estimatedDurationMinutes = estimatedDurationMinutes;
-        this.createdAt = Instant.now();
+        this.pointsRedeemed = 0;
+        this.pointsDiscount = 0;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
-    public String getId() { return id; }
-    public AuthUser getCustomer() { return customer; }
-    public CustomerVehicle getVehicle() { return vehicle; }
-    public AuthUser getAssignedStaff() { return assignedStaff; }
-    public String getPackageId() { return packageId; }
-    public String getComboId() { return comboId; }
-    public String getVoucherCode() { return voucherCode; }
-    public LocalDate getBookingDate() { return bookingDate; }
-    public LocalTime getBookingTime() { return bookingTime; }
-    public PaymentMethod getPaymentMethod() { return paymentMethod; }
-    public PaymentStatus getPaymentStatus() { return paymentStatus; }
-    public BookingStatus getStatus() { return status; }
-    public BookingConfirmationStatus getConfirmationStatus() { return confirmationStatus; }
-    public Instant getConfirmationExpiresAt() { return confirmationExpiresAt; }
-    public Instant getConfirmedAt() { return confirmedAt; }
-    public long getBasePrice() { return basePrice; }
-    public long getAddonsTotal() { return addonsTotal; }
-    public long getVoucherDiscount() { return voucherDiscount; }
-    public int getPointsRedeemed() { return pointsRedeemed; }
-    public long getPointsDiscount() { return pointsDiscount; }
-    public long getFinalAmount() { return finalAmount; }
-    public int getEstimatedDurationMinutes() { return estimatedDurationMinutes; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getCancelledAt() { return cancelledAt; }
-    public Long getRefundAmount() { return refundAmount; }
-    public String getRefundStatus() { return refundStatus; }
-    public String getCancelReason() { return cancelReason; }
-    public List<BookingAddon> getAddons() { return addons; }
-
-    public void addAddon(BookingAddon addon) {
-        addons.add(addon);
+    @Transient
+    public BookingConfirmationStatus getConfirmationStatus() {
+        return switch (status) {
+            case PENDING -> BookingConfirmationStatus.PENDING;
+            case CONFIRMED, CHECKED_IN, IN_PROGRESS, COMPLETED -> BookingConfirmationStatus.VERIFIED;
+            case CANCELLED -> BookingConfirmationStatus.CANCELLED;
+            case NO_SHOW -> BookingConfirmationStatus.EXPIRED;
+        };
     }
 
-    public void cancel(String reason) {
-        this.status = BookingStatus.CANCELLED;
-        if (this.confirmationStatus != BookingConfirmationStatus.EXPIRED) {
-            this.confirmationStatus = BookingConfirmationStatus.CANCELLED;
-        }
-        this.cancelledAt = Instant.now();
-        this.refundAmount = finalAmount;
-        this.refundStatus = "INITIATED";
-        this.cancelReason = reason;
-    }
-
-    public void startOtpConfirmationWindow(Instant expiresAt) {
-        this.confirmationStatus = BookingConfirmationStatus.PENDING;
-        this.confirmationExpiresAt = expiresAt;
-    }
-
-    public void confirmByOtp() {
-        this.status = BookingStatus.CONFIRMED;
-        this.confirmationStatus = BookingConfirmationStatus.VERIFIED;
-        this.confirmedAt = Instant.now();
-    }
-
-    public void expireOtpConfirmation() {
-        this.confirmationStatus = BookingConfirmationStatus.EXPIRED;
-        cancel("Booking OTP verification expired");
+    @Transient
+    public Instant getConfirmationExpiresAt() {
+        return null;
     }
 
     public void updateStatus(BookingStatus status) {
         this.status = status;
+        this.updatedAt = Instant.now();
     }
 
-    public void assignStaff(AuthUser assignedStaff) {
-        this.assignedStaff = assignedStaff;
+    public void cancel(String reason) {
+        this.status = BookingStatus.CANCELLED;
+        this.cancelReason = reason;
+        this.updatedAt = Instant.now();
     }
 
-    public void applyPoints(int points, long discountAmount) {
-        this.pointsRedeemed = points;
-        this.pointsDiscount = discountAmount;
-        this.finalAmount = Math.max(0, finalAmount - discountAmount);
+    public void applyPoints(int pointsRedeemed, long pointsDiscount) {
+        this.pointsRedeemed = pointsRedeemed;
+        this.pointsDiscount = pointsDiscount;
+        this.updatedAt = Instant.now();
     }
+
+    public LocalDate getBookingDate() {
+        return scheduledAt == null ? null : scheduledAt.atZone(java.time.ZoneOffset.UTC).toLocalDate();
+    }
+
+    public LocalTime getBookingTime() {
+        return scheduledAt == null ? null : scheduledAt.atZone(java.time.ZoneOffset.UTC).toLocalTime();
+    }
+
+    public long getBasePrice() {
+        return baseAmount;
+    }
+
+    public long getAddonsTotal() {
+        return optionsAmount;
+    }
+
+    public long getVoucherDiscount() {
+        return discountAmount;
+    }
+
+    public long getFinalAmount() {
+        return finalAmount;
+    }
+
+    public int getEstimatedDurationMinutes() {
+        return estimatedDurationMinutes;
+    }
+
+    public int getPointsRedeemed() {
+        return pointsRedeemed;
+    }
+
+    public long getPointsDiscount() {
+        return pointsDiscount;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return PaymentMethod.CASH_AT_COUNTER;
+    }
+
+    public PaymentStatus getPaymentStatus() {
+        return PaymentStatus.UNPAID;
+    }
+
+    public AuthUser getAssignedStaff() {
+        return null;
+    }
+
+    public String getVoucherCode() {
+        return null;
+    }
+
+    public List<BookingOption> getAddons() {
+        return List.of();
+    }
+
+    public void assignStaff(AuthUser staff) {}
+
+    public void startOtpConfirmationWindow(Instant expiresAt) {}
+
+    public void confirmByOtp() {
+        this.status = BookingStatus.CONFIRMED;
+    }
+
+    public void expireOtpConfirmation() {}
+
+    public void addAddon(BookingOption option) {}
 }

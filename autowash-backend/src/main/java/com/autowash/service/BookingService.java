@@ -6,19 +6,13 @@ import com.autowash.dto.ApplyPointsRequest;
 import com.autowash.dto.ApplyPointsResponse;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
-import com.autowash.dto.BookingOtpResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
 import com.autowash.entity.CustomerCombo;
-import com.autowash.entity.BookingAddon;
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
-import com.autowash.entity.BookingOtpChallenge;
-import com.autowash.entity.BookingOtpChallengeStatus;
-import com.autowash.repository.BookingOtpChallengeRepository;
 import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.ServiceAddon;
 import com.autowash.entity.ServiceCombo;
 import com.autowash.entity.ServicePackage;
 import com.autowash.entity.Voucher;
@@ -34,8 +28,9 @@ import com.autowash.service.CurrentUserService;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -48,7 +43,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@org.springframework.stereotype.Service
 public class BookingService {
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
@@ -70,9 +65,7 @@ public class BookingService {
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyService loyaltyService;
     private final StaffAssignmentService staffAssignmentService;
-    private final BookingOtpService bookingOtpService;
     private final CustomerComboService customerComboService;
-    private final BookingOtpChallengeRepository challengeRepository;
 
     public BookingService(
             CurrentUserService currentUserService,
@@ -84,9 +77,7 @@ public class BookingService {
             WashSessionRepository washSessionRepository,
             LoyaltyService loyaltyService,
             StaffAssignmentService staffAssignmentService,
-            BookingOtpService bookingOtpService,
-            CustomerComboService customerComboService,
-            BookingOtpChallengeRepository challengeRepository
+            CustomerComboService customerComboService
     ) {
         this.currentUserService = currentUserService;
         this.customerVehicleRepository = customerVehicleRepository;
@@ -97,13 +88,11 @@ public class BookingService {
         this.washSessionRepository = washSessionRepository;
         this.loyaltyService = loyaltyService;
         this.staffAssignmentService = staffAssignmentService;
-        this.bookingOtpService = bookingOtpService;
         this.customerComboService = customerComboService;
-        this.challengeRepository = challengeRepository;
     }
 
     @Transactional
-    public CreateBookingResponse createBooking(CreateBookingRequest request, BookingOtpService.RequestMetadata metadata) {
+    public CreateBookingResponse createBooking(CreateBookingRequest request, Object metadata) {
         AuthUser user = currentUserService.getCurrentUser();
         if (customerBookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
@@ -116,7 +105,7 @@ public class BookingService {
                 )
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Vehicle not found or not owned", "RESOURCE_NOT_FOUND"));
 
-        List<ServiceAddon> addons = catalogService.requireActiveAddons(request.addons());
+        List<com.autowash.entity.Service> addons = catalogService.requireActiveAddons(request.addons());
         ServicePackage servicePackage = null;
         ServiceCombo serviceCombo = null;
         CustomerCombo ownedCombo = null;
@@ -131,7 +120,7 @@ public class BookingService {
             servicePackage = catalogService.requireActivePackage(request.packageId());
             basePrice = servicePackage.getBasePrice();
             baseDuration = servicePackage.getDurationMinutes();
-            responsePackageId = servicePackage.getId();
+            responsePackageId = servicePackage.getId().toString();
             responsePackageName = servicePackage.getName();
         } else {
             serviceCombo = catalogService.requireActiveCombo(request.comboId());
@@ -154,7 +143,7 @@ public class BookingService {
             }
         }
 
-        long addonsTotal = addons.stream().mapToLong(ServiceAddon::getPrice).sum();
+        long addonsTotal = addons.stream().mapToLong(com.autowash.entity.Service::getPrice).sum();
         long subtotal = basePrice + addonsTotal;
         Voucher voucher = null;
         long voucherDiscount = 0;
@@ -163,6 +152,7 @@ public class BookingService {
             voucherDiscount = catalogService.calculateDiscountAmount(voucher, basePrice);
         }
 
+        LocalDateTime scheduledAt = request.bookingDate().atTime(LocalTime.parse(request.bookingTime()));
         CustomerBooking booking = new CustomerBooking(
                 generateBookingId(),
                 user,
@@ -170,19 +160,16 @@ public class BookingService {
                 servicePackage == null ? null : servicePackage.getId(),
                 serviceCombo == null ? null : serviceCombo.getId(),
                 voucher == null ? null : voucher.getCode(),
-                request.bookingDate(),
+                scheduledAt.toInstant(java.time.ZoneOffset.UTC),
                 LocalTime.parse(request.bookingTime()),
                 request.paymentMethod(),
                 basePrice,
                 addonsTotal,
                 voucherDiscount,
                 subtotal - voucherDiscount,
-                baseDuration + addons.stream().mapToInt(ServiceAddon::getDurationMinutes).sum()
+                baseDuration + addons.stream().mapToInt(com.autowash.entity.Service::getDurationMinutes).sum()
         );
-        booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
-        addons.forEach(addon -> booking.addAddon(new BookingAddon(booking, addon.getId(), addon.getName(), addon.getPrice())));
         customerBookingRepository.save(booking);
-        var otpResponse = bookingOtpService.issueInitialOtp(booking, metadata);
 
         if (serviceCombo != null) {
             if (ownedCombo == null) {
@@ -211,14 +198,14 @@ public class BookingService {
                 booking.getPaymentStatus().name(),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),
-                otpResponse.otpExpiresIn(),
-                otpResponse.expiresAt(),
+                0,
+                null,
                 booking.getCreatedAt(),
                 booking.getId(),
                 serviceCombo == null ? null : serviceCombo.getId(),
                 customerComboId,
                 comboPurchased,
-                otpResponse.devOtp()
+                null
         );
     }
 
@@ -230,13 +217,6 @@ public class BookingService {
             bookings = customerBookingRepository.findByCustomerAndStatusOrderByCreatedAtDesc(
                     user,
                     BookingStatus.valueOf(status),
-                    PageRequest.of(Math.max(page - 1, 0), limit)
-            );
-        } else if (dateFrom != null && dateTo != null) {
-            bookings = customerBookingRepository.findByCustomerAndBookingDateBetweenOrderByCreatedAtDesc(
-                    user,
-                    dateFrom,
-                    dateTo,
                     PageRequest.of(Math.max(page - 1, 0), limit)
             );
         } else {
@@ -277,16 +257,6 @@ public class BookingService {
                 booking.getRefundStatus(),
                 "Refund will be processed within 3-5 business days"
         );
-    }
-
-    @Transactional
-    public BookingOtpResponse resendBookingOtp(String bookingId, BookingOtpService.RequestMetadata metadata) {
-        return bookingOtpService.resendOtp(findOwnedBooking(bookingId), metadata);
-    }
-
-    @Transactional(noRollbackFor = ApiException.class)
-    public BookingOtpResponse verifyBookingOtp(String bookingId, String otp, BookingOtpService.RequestMetadata metadata) {
-        return bookingOtpService.verifyOtp(findOwnedBooking(bookingId), otp, metadata);
     }
 
     @Transactional
@@ -366,9 +336,6 @@ public class BookingService {
         String packageName = resolvePackageName(booking);
         var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
-        String devOtp = challengeRepository.findFirstByBookingAndStatusOrderBySentAtDesc(booking, BookingOtpChallengeStatus.PENDING)
-                .map(BookingOtpChallenge::getDevOtp)
-                .orElse(null);
         return new BookingDetailResponse(
                 booking.getId(),
                 booking.getId(),
@@ -413,7 +380,7 @@ public class BookingService {
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt(),
-                devOtp
+                null
         );
     }
 
@@ -428,19 +395,19 @@ public class BookingService {
         if (booking.getPackageId() != null) {
             return servicePackageRepository.findById(booking.getPackageId())
                     .map(ServicePackage::getName)
-                    .orElse(booking.getPackageId());
+                    .orElse(booking.getPackageId().toString());
         }
         if (booking.getComboId() != null) {
             return serviceComboRepository.findById(booking.getComboId())
                     .map(ServiceCombo::getName)
-                    .orElse(booking.getComboId());
+                    .orElse(booking.getComboId().toString());
         }
         return null;
     }
 
-    private List<AddonSelectionResponse> toAddonSelections(List<BookingAddon> addons) {
+    private List<AddonSelectionResponse> toAddonSelections(List<com.autowash.entity.Service> addons) {
         return addons.stream()
-                .map(addon -> new AddonSelectionResponse(addon.getAddonId(), addon.getAddonName(), addon.getAddonPrice()))
+                .map(addon -> new AddonSelectionResponse(addon.getId().toString(), addon.getName(), addon.getPrice()))
                 .toList();
     }
 
@@ -451,3 +418,5 @@ public class BookingService {
     public record BookingPage(List<BookingListItemResponse> items, PaginationMeta pagination) {
     }
 }
+
+

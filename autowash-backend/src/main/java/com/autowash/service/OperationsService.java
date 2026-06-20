@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.service.BookingService;
@@ -16,15 +16,11 @@ import com.autowash.dto.QueueWashSessionResponse;
 import com.autowash.dto.StartWashSessionResponse;
 import com.autowash.dto.StaffDashboardSummaryResponse;
 import com.autowash.dto.StaffOptionResponse;
-import com.autowash.dto.TransferWashSessionRequest;
-import com.autowash.dto.TransferWashSessionResponse;
-import com.autowash.entity.BookingStaffTransferAudit;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
-import com.autowash.repository.BookingStaffTransferAuditRepository;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import java.time.Instant;
@@ -46,7 +42,6 @@ public class OperationsService {
 
     private static final Set<WashSessionStatus> ACTIVE_SESSION_STATUSES = Set.of(
             WashSessionStatus.PENDING,
-            WashSessionStatus.QUEUED,
             WashSessionStatus.CHECKED_IN,
             WashSessionStatus.IN_PROGRESS
     );
@@ -54,7 +49,6 @@ public class OperationsService {
     private final BookingService bookingService;
     private final CustomerBookingRepository customerBookingRepository;
     private final WashSessionRepository washSessionRepository;
-    private final BookingStaffTransferAuditRepository transferAuditRepository;
     private final LoyaltyService loyaltyService;
     private final CurrentUserService currentUserService;
     private final StaffAssignmentService staffAssignmentService;
@@ -64,7 +58,6 @@ public class OperationsService {
             BookingService bookingService,
             CustomerBookingRepository customerBookingRepository,
             WashSessionRepository washSessionRepository,
-            BookingStaffTransferAuditRepository transferAuditRepository,
             LoyaltyService loyaltyService,
             CurrentUserService currentUserService,
             StaffAssignmentService staffAssignmentService,
@@ -73,7 +66,6 @@ public class OperationsService {
         this.bookingService = bookingService;
         this.customerBookingRepository = customerBookingRepository;
         this.washSessionRepository = washSessionRepository;
-        this.transferAuditRepository = transferAuditRepository;
         this.loyaltyService = loyaltyService;
         this.currentUserService = currentUserService;
         this.staffAssignmentService = staffAssignmentService;
@@ -100,13 +92,13 @@ public class OperationsService {
 
         AuthUser actor = currentUserService.getCurrentUser();
         AuthUser assignedStaff = resolveSessionAssigneeForCreate(booking, actor);
-        WashSession session = washSessionRepository.save(new WashSession(booking, request.notes(), assignedStaff));
-        return new CreateWashSessionResponse(
-                session.getId(),
-                session.getStatus().name(),
-                booking.getId(),
-                session.getCreatedAt()
-        );
+        WashSession session = washSessionRepository.save(WashSession.create(booking, request.notes(), assignedStaff));
+        return CreateWashSessionResponse.builder()
+                .sessionId(session.getId())
+                .status(session.getStatus().name())
+                .bookingId(booking.getId())
+                .createdAt(session.getCreatedAt())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -124,24 +116,23 @@ public class OperationsService {
                 ));
 
         List<OperationsQueueResponse.QueueColumn> columns = List.of(
-                // QUEUED -> Pending (pre-assignment state, treated as not yet actionable)
-                column("PENDING", "Pending", cardsByStatus, WashSessionStatus.PENDING, WashSessionStatus.QUEUED),
+                column("PENDING", "Pending", cardsByStatus, WashSessionStatus.PENDING),
                 column(WashSessionStatus.CHECKED_IN, "Checked-In", cardsByStatus),
                 column(WashSessionStatus.IN_PROGRESS, "In Progress", cardsByStatus),
                 column(WashSessionStatus.COMPLETED, "Completed", cardsByStatus)
         );
 
-        return new OperationsQueueResponse(
-                new OperationsQueueResponse.QueueSummary(
-                        sessions.size(),
-                        count(sessions, WashSessionStatus.PENDING) + count(sessions, WashSessionStatus.QUEUED),
-                        count(sessions, WashSessionStatus.CHECKED_IN),
-                        count(sessions, WashSessionStatus.IN_PROGRESS),
-                        count(sessions, WashSessionStatus.COMPLETED)
-                ),
-                columns,
-                Instant.now()
-        );
+        return OperationsQueueResponse.builder()
+                .summary(OperationsQueueResponse.QueueSummary.builder()
+                        .total(sessions.size())
+                        .pending(count(sessions, WashSessionStatus.PENDING))
+                        .checkedIn(count(sessions, WashSessionStatus.CHECKED_IN))
+                        .inProgress(count(sessions, WashSessionStatus.IN_PROGRESS))
+                        .completed(count(sessions, WashSessionStatus.COMPLETED))
+                        .build())
+                .columns(columns)
+                .generatedAt(Instant.now())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -167,9 +158,11 @@ public class OperationsService {
     @Transactional
     public QueueWashSessionResponse queueSession(UUID sessionId) {
         WashSession session = requireSessionForCurrentUser(sessionId);
-        Instant queuedAt = Instant.now();
-        session.queue(queuedAt);
-        return new QueueWashSessionResponse(session.getId(), session.getStatus().name(), session.getQueuedAt());
+        session.queue(Instant.now());
+        return QueueWashSessionResponse.builder()
+                .sessionId(session.getId())
+                .status(session.getStatus().name())
+                .build();
     }
 
     @Transactional
@@ -181,13 +174,12 @@ public class OperationsService {
         Instant checkedInAt = Instant.now();
         session.checkIn(checkedInAt, booking.getFinalAmount(), currency, projectedPoints);
         bookingService.updateStatus(booking, BookingStatus.CHECKED_IN);
-        return new CheckInWashSessionResponse(
-                session.getId(),
-                session.getStatus().name(),
-                session.getCheckedInAt(),
-                new CheckInWashSessionResponse.Fee(session.getFeeAmount(), session.getFeeCurrency()),
-                session.getProjectedLoyaltyPoints()
-        );
+        return CheckInWashSessionResponse.builder()
+                .sessionId(session.getId())
+                .status(session.getStatus().name())
+                .checkedInAt(session.getCheckedInAt())
+                .projectedLoyaltyPoints(session.getProjectedLoyaltyPoints())
+                .build();
     }
 
     @Transactional
@@ -196,7 +188,11 @@ public class OperationsService {
         Instant startedAt = Instant.now();
         session.start(startedAt);
         bookingService.updateStatus(session.getBooking(), BookingStatus.IN_PROGRESS);
-        return new StartWashSessionResponse(session.getId(), session.getStatus().name(), session.getStartedAt());
+        return StartWashSessionResponse.builder()
+                .sessionId(session.getId())
+                .status(session.getStatus().name())
+                .startedAt(session.getStartedAt())
+                .build();
     }
 
     @Transactional
@@ -212,12 +208,12 @@ public class OperationsService {
         );
         bookingService.updateStatus(session.getBooking(), BookingStatus.COMPLETED);
         markCustomerAsNotNew(session.getBooking().getCustomer());
-        return new CompleteWashSessionResponse(
-                session.getId(),
-                session.getStatus().name(),
-                session.getCompletedAt(),
-                earnResult.pointsAwarded()
-        );
+        return CompleteWashSessionResponse.builder()
+                .sessionId(session.getId())
+                .status(session.getStatus().name())
+                .completedAt(session.getCompletedAt())
+                .awardedLoyaltyPoints(earnResult.pointsAwarded())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -240,7 +236,6 @@ public class OperationsService {
                 customerBookingRepository.countByAssignedStaffAndStatus(staff, BookingStatus.CONFIRMED),
                 washSessionRepository.countByAssignedStaffAndStatusIn(staff, Set.of(
                         WashSessionStatus.PENDING,
-                        WashSessionStatus.QUEUED,
                         WashSessionStatus.CHECKED_IN,
                         WashSessionStatus.IN_PROGRESS
                 )),
@@ -258,28 +253,19 @@ public class OperationsService {
                 .toList();
     }
 
-    @Transactional
-    public TransferWashSessionResponse transferSession(UUID sessionId, TransferWashSessionRequest request) {
-        WashSession session = requireSessionForCurrentUser(sessionId);
-        AuthUser actor = currentUserService.getCurrentUser();
-        AuthUser fromStaff = session.getAssignedStaff();
-        AuthUser toStaff = staffAssignmentService.requireActiveStaff(request.toStaffId());
-        if (fromStaff != null && fromStaff.getId().equals(toStaff.getId())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Session is already assigned to this staff", "DUPLICATE_ASSIGNMENT");
-        }
+    @Transactional(readOnly = true)
+    public OperationsQueueResponse getOperationsQueue() {
+        return getQueue();
+    }
 
-        CustomerBooking booking = session.getBooking();
-        booking.assignStaff(toStaff);
-        session.assignStaff(toStaff);
-        BookingStaffTransferAudit audit = transferAuditRepository.save(new BookingStaffTransferAudit(
-                booking,
-                session,
-                fromStaff,
-                toStaff,
-                actor,
-                request.reason()
-        ));
-        return toTransferResponse(audit);
+    @Transactional(readOnly = true)
+    public List<EligibleSessionBookingResponse> getEligibleSessionBookings(int limit) {
+        return listEligibleSessionBookings(limit);
+    }
+
+    @Transactional(readOnly = true)
+    public StaffDashboardSummaryResponse getMyStaffSummary() {
+        return getStaffSummary();
     }
 
     private void markCustomerAsNotNew(AuthUser customer) {
@@ -321,22 +307,6 @@ public class OperationsService {
         return assignedStaff;
     }
 
-    private TransferWashSessionResponse toTransferResponse(BookingStaffTransferAudit audit) {
-        AuthUser fromStaff = audit.getFromStaff();
-        AuthUser toStaff = audit.getToStaff();
-        return new TransferWashSessionResponse(
-                audit.getId(),
-                audit.getWashSession() == null ? null : audit.getWashSession().getId(),
-                audit.getBooking().getId(),
-                fromStaff == null ? null : fromStaff.getId(),
-                fromStaff == null ? null : fromStaff.getFullName(),
-                toStaff.getId(),
-                toStaff.getFullName(),
-                audit.getReason(),
-                audit.getCreatedAt()
-        );
-    }
-
     private OperationsQueueResponse.QueueColumn column(
             WashSessionStatus status,
             String label,
@@ -356,35 +326,37 @@ public class OperationsService {
                 .sorted(Comparator.comparing(OperationsQueueResponse.WashSessionCard::bookingDate)
                         .thenComparing(OperationsQueueResponse.WashSessionCard::bookingTime))
                 .toList();
-        return new OperationsQueueResponse.QueueColumn(status, label, sessions);
+        return OperationsQueueResponse.QueueColumn.builder()
+                .status(status)
+                .label(label)
+                .sessions(sessions)
+                .build();
     }
 
     private OperationsQueueResponse.WashSessionCard toQueueCard(WashSession session) {
         CustomerBooking booking = session.getBooking();
         AuthUser assignedStaff = session.getAssignedStaff();
-        return new OperationsQueueResponse.WashSessionCard(
-                session.getId(),
-                booking.getId(),
-                booking.getCustomer().getFullName(),
-                booking.getCustomer().getPhone(),
-                booking.getVehicle().getPlate(),
-                booking.getPackageId(),
-                assignedStaff == null ? null : assignedStaff.getId(),
-                assignedStaff == null ? null : assignedStaff.getFullName(),
-                session.getStatus().name(),
-                booking.getBookingDate(),
-                booking.getBookingTime(),
-                booking.getEstimatedDurationMinutes(),
-                session.getFeeAmount(),
-                session.getFeeCurrency(),
-                session.getProjectedLoyaltyPoints(),
-                session.getAwardedLoyaltyPoints(),
-                session.getQueuedAt(),
-                session.getCheckedInAt(),
-                session.getStartedAt(),
-                session.getCompletedAt(),
-                session.getNotes()
-        );
+        return OperationsQueueResponse.WashSessionCard.builder()
+                .sessionId(session.getId())
+                .bookingId(booking.getId())
+                .customerName(booking.getCustomer().getFullName())
+                .customerPhone(booking.getCustomer().getPhone())
+                .vehiclePlate(booking.getVehicle().getPlate())
+                .packageId(booking.getPackageId())
+                .assignedStaffId(assignedStaff == null ? null : assignedStaff.getId())
+                .assignedStaffName(assignedStaff == null ? null : assignedStaff.getFullName())
+                .status(session.getStatus().name())
+                .bookingDate(booking.getBookingDate())
+                .bookingTime(booking.getBookingTime())
+                .estimatedDurationMinutes(booking.getEstimatedDurationMinutes())
+                .feeAmount(session.getFeeAmount())
+                .projectedLoyaltyPoints(session.getProjectedLoyaltyPoints())
+                .awardedLoyaltyPoints(session.getAwardedLoyaltyPoints())
+                .checkedInAt(session.getCheckedInAt())
+                .startedAt(session.getStartedAt())
+                .completedAt(session.getCompletedAt())
+                .notes(session.getNotes())
+                .build();
     }
 
     private EligibleSessionBookingResponse toEligibleBooking(CustomerBooking booking) {
@@ -408,3 +380,4 @@ public class OperationsService {
                 .count();
     }
 }
+

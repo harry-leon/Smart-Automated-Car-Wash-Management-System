@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.shared.exception.ApiException;
 import org.springframework.http.HttpStatus;
 
@@ -21,11 +21,11 @@ public final class WashSessionLifecycle {
 
     public static boolean isValidTransition(WashSessionStatus current, WashSessionStatus next) {
         return switch (current) {
-            case PENDING -> next == WashSessionStatus.QUEUED;
-            case QUEUED -> next == WashSessionStatus.CHECKED_IN;
-            case CHECKED_IN -> next == WashSessionStatus.IN_PROGRESS;
-            case IN_PROGRESS -> next == WashSessionStatus.COMPLETED;
-            case COMPLETED -> false;
+            case PENDING -> next == WashSessionStatus.CHECKED_IN || next == WashSessionStatus.CANCELLED;
+            case CHECKED_IN -> next == WashSessionStatus.IN_PROGRESS || next == WashSessionStatus.CANCELLED;
+            case IN_PROGRESS -> next == WashSessionStatus.COMPLETED || next == WashSessionStatus.CANCELLED;
+            case COMPLETED, CANCELLED -> false;
         };
     }
 }
+

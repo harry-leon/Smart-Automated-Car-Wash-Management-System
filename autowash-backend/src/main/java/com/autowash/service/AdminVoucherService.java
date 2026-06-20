@@ -5,7 +5,7 @@ import com.autowash.dto.AdminVoucherResponse;
 import com.autowash.entity.Voucher;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.entity.PointTransaction;
-import com.autowash.entity.PointTransactionType;
+import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import java.time.Instant;
@@ -74,7 +74,7 @@ public class AdminVoucherService {
         return new AdminVoucherResponse(
                 voucher.getCode(),
                 voucher.getDiscountType().name(),
-                voucher.getDiscountValue(),
+                Math.toIntExact(voucher.getDiscountValue()),
                 voucher.getMinAmount(),
                 voucher.getExpiresAt(),
                 voucher.isActive(),
@@ -109,3 +109,4 @@ public class AdminVoucherService {
     public record RedemptionPage(List<AdminVoucherRedemptionResponse> items, PaginationMeta pagination) {
     }
 }
+

@@ -1,10 +1,11 @@
 package com.autowash.service;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.LoyaltyTier;
-import com.autowash.entity.UserRole;
+import com.autowash.entity.enums.LoyaltyTier;
+import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.DiscountType;
+import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.Voucher;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.dto.EarnPointsResponse;
@@ -13,11 +14,11 @@ import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.PointTransaction;
-import com.autowash.entity.PointTransactionType;
+import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
@@ -146,13 +147,16 @@ public class LoyaltyService {
         Instant expiresAt = Instant.now().plusSeconds(30L * 24 * 60 * 60);
         Voucher voucher = voucherRepository.save(new Voucher(
                 voucherCode,
+                "Voucher redemption: " + voucherCode,
                 DiscountType.FIXED,
                 Math.toIntExact(voucherValue),
                 0,
-                expiresAt,
-                true,
+                null,
+                1,
                 false,
-                account.getTier().name()
+                Instant.now(),
+                expiresAt,
+                PromotionStatus.ACTIVE
         ));
 
         account.redeemPoints(pointsToRedeem);
@@ -291,7 +295,7 @@ public class LoyaltyService {
                 account.getCustomer().getId().toString(),
                 account.getTier().name(),
                 account.getCurrentPoints(),
-                lifetimeEarnedPoints(account.getCustomer()),
+                account.getTotalEarnedPoints(),
                 (int) washSessionRepository.countByBookingCustomerAndStatus(account.getCustomer(), WashSessionStatus.COMPLETED),
                 account.getUpdatedAt()
         );
@@ -333,3 +337,4 @@ public class LoyaltyService {
     public record TransactionPage(List<PointTransactionResponse> items, PaginationMeta pagination) {
     }
 }
+

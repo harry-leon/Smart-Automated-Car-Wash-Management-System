@@ -1,11 +1,11 @@
 package com.autowash.service;
 
 import com.autowash.dto.DashboardMetricsDto;
-import com.autowash.entity.UserRole;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.PromotionStatus;
+import com.autowash.entity.enums.PromotionStatus;
 import com.autowash.repository.PromotionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,3 +45,4 @@ public class AdminDashboardMetricsService {
         );
     }
 }
+

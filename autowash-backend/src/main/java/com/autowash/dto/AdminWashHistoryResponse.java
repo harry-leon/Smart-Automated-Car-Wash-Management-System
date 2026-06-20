@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
+import lombok.Builder;
 
+@Builder
 public record AdminWashHistoryResponse(
         UUID sessionId,
         String bookingId,
@@ -19,9 +21,11 @@ public record AdminWashHistoryResponse(
         Integer pointsAwarded
 ) {
 
+    @Builder
     public record ServicePackageSummary(String id, String name) {
     }
 
-    public record Fee(Long amount, String currency) {
+    @Builder
+    public record Fee(Long amount) {
     }
 }

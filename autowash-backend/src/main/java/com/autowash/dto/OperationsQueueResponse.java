@@ -5,13 +5,16 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
+import lombok.Builder;
 
+@Builder
 public record OperationsQueueResponse(
         QueueSummary summary,
         List<QueueColumn> columns,
         Instant generatedAt
 ) {
 
+    @Builder
     public record QueueSummary(
             int total,
             int pending,
@@ -21,6 +24,7 @@ public record OperationsQueueResponse(
     ) {
     }
 
+    @Builder
     public record QueueColumn(
             String status,
             String label,
@@ -28,6 +32,7 @@ public record OperationsQueueResponse(
     ) {
     }
 
+    @Builder
     public record WashSessionCard(
             UUID sessionId,
             String bookingId,
@@ -42,10 +47,8 @@ public record OperationsQueueResponse(
             LocalTime bookingTime,
             Integer estimatedDurationMinutes,
             Long feeAmount,
-            String feeCurrency,
             Integer projectedLoyaltyPoints,
             Integer awardedLoyaltyPoints,
-            Instant queuedAt,
             Instant checkedInAt,
             Instant startedAt,
             Instant completedAt,

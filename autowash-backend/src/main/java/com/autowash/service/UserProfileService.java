@@ -1,7 +1,9 @@
 package com.autowash.service;
 
 import com.autowash.entity.AuthUser;
+import com.autowash.entity.UserPreference;
 import com.autowash.repository.AuthUserRepository;
+import com.autowash.repository.UserPreferenceRepository;
 import com.autowash.service.CustomerLoyaltyService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.dto.UpdateUserProfileRequest;
@@ -19,20 +21,24 @@ public class UserProfileService {
 
     private final CurrentUserService currentUserService;
     private final AuthUserRepository authUserRepository;
+    private final UserPreferenceRepository userPreferenceRepository;
     private final CustomerLoyaltyService customerLoyaltyService;
 
     public UserProfileService(
             CurrentUserService currentUserService,
             AuthUserRepository authUserRepository,
+            UserPreferenceRepository userPreferenceRepository,
             CustomerLoyaltyService customerLoyaltyService
     ) {
         this.currentUserService = currentUserService;
         this.authUserRepository = authUserRepository;
+        this.userPreferenceRepository = userPreferenceRepository;
         this.customerLoyaltyService = customerLoyaltyService;
     }
 
     public UserProfileResponse getCurrentUserProfile() {
         AuthUser user = currentUserService.getCurrentUser();
+        UserPreference preference = loadOrCreatePreference(user);
         return new UserProfileResponse(
                 user.getId().toString(),
                 user.getFullName(),
@@ -45,11 +51,11 @@ public class UserProfileService {
                 customerLoyaltyService.getCurrentBalance(user),
                 user.getCreatedAt(),
                 new UserPreferencesDto(
-                        user.getLanguage().name(),
-                        user.getTheme().name(),
-                        user.isNotificationsEnabled(),
-                        user.isEmailNotifications(),
-                        user.isSmsNotifications()
+                        preference.getLanguage().name(),
+                        preference.getTheme().name(),
+                        preference.isNotificationsEnabled(),
+                        preference.isEmailNotifications(),
+                        preference.isSmsNotifications()
                 )
         );
     }
@@ -78,19 +84,21 @@ public class UserProfileService {
 
     public UserPreferencesDto getCurrentUserPreferences() {
         AuthUser user = currentUserService.getCurrentUser();
+        UserPreference preference = loadOrCreatePreference(user);
         return new UserPreferencesDto(
-                user.getLanguage().name(),
-                user.getTheme().name(),
-                user.isNotificationsEnabled(),
-                user.isEmailNotifications(),
-                user.isSmsNotifications()
+                preference.getLanguage().name(),
+                preference.getTheme().name(),
+                preference.isNotificationsEnabled(),
+                preference.isEmailNotifications(),
+                preference.isSmsNotifications()
         );
     }
 
     @Transactional
     public UpdateUserPreferencesResponse updatePreferences(UpdateUserPreferencesRequest request) {
         AuthUser user = currentUserService.getCurrentUser();
-        user.updatePreferences(
+        UserPreference preference = loadOrCreatePreference(user);
+        preference.update(
                 request.language(),
                 request.theme(),
                 request.notificationsEnabled(),
@@ -99,10 +107,15 @@ public class UserProfileService {
         );
 
         return new UpdateUserPreferencesResponse(
-                user.getLanguage().name(),
-                user.getTheme().name(),
-                user.isNotificationsEnabled(),
+                preference.getLanguage().name(),
+                preference.getTheme().name(),
+                preference.isNotificationsEnabled(),
                 user.getUpdatedAt()
         );
+    }
+
+    private UserPreference loadOrCreatePreference(AuthUser user) {
+        return userPreferenceRepository.findById(user.getId())
+                .orElseGet(() -> userPreferenceRepository.save(new UserPreference(user)));
     }
 }

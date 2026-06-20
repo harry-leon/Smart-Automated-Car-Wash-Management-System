@@ -2,7 +2,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.entity.CustomerVehicle;
 import java.time.Instant;
 import java.util.Collection;
@@ -18,7 +18,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface WashSessionRepository extends JpaRepository<WashSession, UUID> {
 
-    boolean existsByBookingIdAndStatusIn(String bookingId, Collection<WashSessionStatus> statuses);
+    boolean existsByBooking_IdAndStatusIn(UUID bookingId, Collection<WashSessionStatus> statuses);
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "assignedStaff"})
     Optional<WashSession> findWithBookingById(UUID id);
@@ -46,7 +46,7 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     );
 
     @EntityGraph(attributePaths = {"booking", "assignedStaff"})
-    Optional<WashSession> findFirstByBookingIdOrderByCompletedAtDesc(String bookingId);
+    Optional<WashSession> findFirstByBooking_IdOrderByCompletedAtDesc(UUID bookingId);
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     java.util.List<WashSession> findAllByOrderByCreatedAtDesc();
@@ -59,7 +59,7 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     long countByAssignedStaffAndStatusIn(AuthUser assignedStaff, Collection<WashSessionStatus> statuses);
 
     @EntityGraph(attributePaths = {"booking"})
-    List<WashSession> findByBookingIdIn(Collection<String> bookingIds);
+    List<WashSession> findByBooking_IdIn(Collection<UUID> bookingIds);
 
     long countByBookingCustomerAndStatus(AuthUser customer, WashSessionStatus status);
 

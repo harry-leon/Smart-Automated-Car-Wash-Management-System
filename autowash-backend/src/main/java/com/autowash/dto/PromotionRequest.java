@@ -1,9 +1,9 @@
 package com.autowash.dto;
 
-import com.autowash.entity.LoyaltyTier;
-import com.autowash.entity.DiscountType;
-import com.autowash.entity.PromotionStatus;
-import com.autowash.entity.PromotionTargetingMode;
+import com.autowash.entity.enums.LoyaltyTier;
+import com.autowash.entity.enums.DiscountType;
+import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.PromotionTargetingMode;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,3 +31,4 @@ public record PromotionRequest(
         PromotionStatus status
 ) {
 }
+

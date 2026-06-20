@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.LoyaltyTier;
+import com.autowash.entity.enums.LoyaltyTier;
 import java.util.List;
 
 public final class LoyaltyRules {
@@ -42,3 +42,4 @@ public final class LoyaltyRules {
     public record TierThreshold(LoyaltyTier tier, int minPoints) {
     }
 }
+

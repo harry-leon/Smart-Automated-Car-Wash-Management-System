@@ -5,35 +5,38 @@ import com.autowash.dto.AdminBusinessHealthReportResponse;
 import com.autowash.dto.AdminAccountResponse;
 import com.autowash.dto.AdminCustomerDetailResponse;
 import com.autowash.dto.AdminCustomerVehicleResponse;
+import com.autowash.dto.AdminOperationsDashboardResponse;
+import com.autowash.dto.AdminStaffWorkloadResponse;
+import com.autowash.dto.CreateAdminStaffRequest;
+import com.autowash.dto.UpdateAdminStaffRequest;
 import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
+import com.autowash.dto.UpdateUserStatusRequest;
 import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
-import com.autowash.entity.UserStatus;
+import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.repository.ServiceComboRepository;
 import com.autowash.repository.ServicePackageRepository;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.PointTransactionResponse;
-import com.autowash.entity.PointTransactionType;
+import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.PointTransaction;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.service.LoyaltyService;
-import com.autowash.dto.BookingStaffTransferAuditResponse;
-import com.autowash.entity.BookingStaffTransferAudit;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
-import com.autowash.repository.BookingStaffTransferAuditRepository;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
@@ -75,7 +78,7 @@ public class AdminReportingService {
     private final LoyaltyService loyaltyService;
     private final PointTransactionRepository pointTransactionRepository;
     private final CustomerVehicleRepository customerVehicleRepository;
-    private final BookingStaffTransferAuditRepository transferAuditRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminReportingService(
             CustomerBookingRepository bookingRepository,
@@ -86,7 +89,7 @@ public class AdminReportingService {
             LoyaltyService loyaltyService,
             PointTransactionRepository pointTransactionRepository,
             CustomerVehicleRepository customerVehicleRepository,
-            BookingStaffTransferAuditRepository transferAuditRepository
+            PasswordEncoder passwordEncoder
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -96,7 +99,134 @@ public class AdminReportingService {
         this.loyaltyService = loyaltyService;
         this.pointTransactionRepository = pointTransactionRepository;
         this.customerVehicleRepository = customerVehicleRepository;
-        this.transferAuditRepository = transferAuditRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional
+    public AdminAccountResponse createStaff(CreateAdminStaffRequest request) {
+        if (authUserRepository.existsByPhone(request.phone())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", "DUPLICATE_PHONE");
+        }
+        if (authUserRepository.existsByEmailIgnoreCase(request.email())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
+        }
+        AuthUser staff = AuthUser.builder()
+                .id(UUID.randomUUID())
+                .fullName(request.fullName())
+                .phone(request.phone())
+                .email(request.email())
+                .passwordHash(passwordEncoder.encode(request.password()))
+                .role(UserRole.STAFF)
+                .status(UserStatus.ACTIVE)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        AuthUser saved = authUserRepository.save(staff);
+        return toAccountResponse(saved);
+    }
+
+    @Transactional
+    public AdminAccountResponse updateStaff(UUID staffId, UpdateAdminStaffRequest request) {
+        AuthUser staff = authUserRepository.findById(staffId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+        if (staff.getRole() != UserRole.STAFF) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", "BUSINESS_RULE_VIOLATION");
+        }
+
+        if (request.fullName() != null && !request.fullName().isBlank()) {
+            staff.setFullName(request.fullName().trim());
+        }
+        if (request.phone() != null && !request.phone().isBlank()) {
+            if (authUserRepository.existsByPhoneAndIdNot(request.phone(), staffId)) {
+                throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", "DUPLICATE_PHONE");
+            }
+            staff.setPhone(request.phone().trim());
+        }
+        if (request.email() != null && !request.email().isBlank()) {
+            if (authUserRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), staffId)) {
+                throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
+            }
+            staff.setEmail(request.email().trim());
+        }
+        if (request.password() != null && !request.password().isBlank()) {
+            staff.setPasswordHash(passwordEncoder.encode(request.password()));
+        }
+        staff.setUpdatedAt(Instant.now());
+        return toAccountResponse(authUserRepository.save(staff));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminAccountResponse> listStaff() {
+        return authUserRepository.findByRoleOrderByFullNameAsc(UserRole.STAFF).stream()
+                .map(this::toAccountResponse)
+                .toList();
+    }
+
+    @Transactional
+    public AdminAccountResponse updateStaffStatus(UUID staffId, String status) {
+        AuthUser staff = authUserRepository.findById(staffId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+        if (staff.getRole() != UserRole.STAFF) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", "BUSINESS_RULE_VIOLATION");
+        }
+        staff.updateStatus(UserStatus.valueOf(status.toUpperCase()));
+        return toAccountResponse(authUserRepository.save(staff));
+    }
+
+    @Transactional
+    public AdminAccountResponse deleteStaff(UUID staffId) {
+        AuthUser staff = authUserRepository.findById(staffId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+        if (staff.getRole() != UserRole.STAFF) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", "BUSINESS_RULE_VIOLATION");
+        }
+        staff.updateStatus(UserStatus.DELETED);
+        return toAccountResponse(authUserRepository.save(staff));
+    }
+
+    @Transactional(readOnly = true)
+    public AdminStaffWorkloadResponse getStaffWorkload(UUID staffId) {
+        AuthUser staff = authUserRepository.findById(staffId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
+        if (staff.getRole() != UserRole.STAFF) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND");
+        }
+        long activeBookings = bookingRepository.countByAssignedStaffAndStatusIn(staff, REVENUE_STATUSES);
+        long activeSessions = washSessionRepository.countByAssignedStaffAndStatusIn(staff, Set.of(
+                WashSessionStatus.PENDING,
+                WashSessionStatus.CHECKED_IN,
+                WashSessionStatus.IN_PROGRESS
+        ));
+        long completedSessions = washSessionRepository.countByAssignedStaffAndStatus(staff, WashSessionStatus.COMPLETED);
+        long completedRevenue = bookingRepository.sumFinalAmountByAssignedStaffAndStatus(staff, BookingStatus.COMPLETED);
+        return new AdminStaffWorkloadResponse(staff.getId(), staff.getFullName(), activeBookings, activeSessions, completedSessions, completedRevenue);
+    }
+
+    @Transactional
+    public AdminAccountResponse updateCustomerStatus(UUID customerId, String status) {
+        AuthUser customer = authUserRepository.findById(customerId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND"));
+        if (customer.getRole() != UserRole.CUSTOMER) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND");
+        }
+        customer.updateStatus(UserStatus.valueOf(status.toUpperCase()));
+        return toAccountResponse(authUserRepository.save(customer));
+    }
+
+    @Transactional(readOnly = true)
+    public AdminOperationsDashboardResponse getOperationsDashboard() {
+        long pending = washSessionRepository.countByStatus(WashSessionStatus.PENDING);
+        long checkedIn = washSessionRepository.countByStatus(WashSessionStatus.CHECKED_IN);
+        long inProgress = washSessionRepository.countByStatus(WashSessionStatus.IN_PROGRESS);
+        long completed = washSessionRepository.countByStatus(WashSessionStatus.COMPLETED);
+        return new AdminOperationsDashboardResponse(
+                pending + checkedIn + inProgress + completed,
+                pending,
+                checkedIn,
+                inProgress,
+                completed,
+                authUserRepository.countByRole(UserRole.STAFF)
+        );
     }
 
     @Transactional(readOnly = true)
@@ -157,28 +287,32 @@ public class AdminReportingService {
                 .mapToLong(CustomerBooking::getFinalAmount)
                 .sum();
 
-        AdminBusinessHealthReportResponse.Kpis kpis = new AdminBusinessHealthReportResponse.Kpis(
-                currentRevenue,
-                previousRevenue,
-                growthRate(currentRevenue, previousRevenue),
-                completedBookings,
-                growthRate(completedBookings, previousCompletedBookings),
-                averageBookingValue,
-                cancellationRate,
-                discountAssistedRevenue
-        );
+        AdminBusinessHealthReportResponse.Kpis kpis = AdminBusinessHealthReportResponse.Kpis.builder()
+                .revenueThisPeriod(currentRevenue)
+                .revenuePreviousPeriod(previousRevenue)
+                .revenueGrowthRate(growthRate(currentRevenue, previousRevenue))
+                .completedBookings(completedBookings)
+                .completedBookingsGrowthRate(growthRate(completedBookings, previousCompletedBookings))
+                .averageBookingValue(averageBookingValue)
+                .cancellationRate(cancellationRate)
+                .discountAssistedRevenue(discountAssistedRevenue)
+                .build();
 
-        AdminBusinessHealthReportResponse.Trends trends = new AdminBusinessHealthReportResponse.Trends(
-                buildRevenueTrend(currentBookings, previousBookings, window),
-                buildCompletedBookingsTrend(currentCompletedSessions, previousCompletedSessions, window)
-        );
+        AdminBusinessHealthReportResponse.Trends trends = AdminBusinessHealthReportResponse.Trends.builder()
+                .revenue(buildRevenueTrend(currentBookings, previousBookings, window))
+                .completedBookings(buildCompletedBookingsTrend(currentCompletedSessions, previousCompletedSessions, window))
+                .build();
 
-        AdminBusinessHealthReportResponse.Breakdowns breakdowns = new AdminBusinessHealthReportResponse.Breakdowns(
-                buildRevenueBreakdown(currentBookings, currentRevenue),
-                buildServiceBreakdown(currentBookings, currentRevenue, serviceNames),
-                buildPromotionBreakdown(currentBookings, currentRevenue),
-                new AdminBusinessHealthReportResponse.Breakdown(false, List.of(), "Channel data is unavailable in the current data model.")
-        );
+        AdminBusinessHealthReportResponse.Breakdowns breakdowns = AdminBusinessHealthReportResponse.Breakdowns.builder()
+                .revenue(buildRevenueBreakdown(currentBookings, currentRevenue))
+                .service(buildServiceBreakdown(currentBookings, currentRevenue, serviceNames))
+                .promotion(buildPromotionBreakdown(currentBookings, currentRevenue))
+                .channel(AdminBusinessHealthReportResponse.Breakdown.builder()
+                        .available(false)
+                        .items(List.of())
+                        .message("Channel data is unavailable in the current data model.")
+                        .build())
+                .build();
 
         List<AdminBusinessHealthReportResponse.Insight> insights = buildInsights(
                 currentBookings,
@@ -194,16 +328,31 @@ public class AdminReportingService {
                 .limit(5)
                 .toList();
 
-        return new AdminBusinessHealthReportResponse(
-                new AdminBusinessHealthReportResponse.Period(window.key(), window.label(), window.currentFrom().toString(), window.currentTo().toString()),
-                new AdminBusinessHealthReportResponse.Period("PREVIOUS", "Previous period", window.previousFrom().toString(), window.previousTo().toString()),
-                kpis,
-                trends,
-                breakdowns,
-                insights,
-                new AdminBusinessHealthReportResponse.TopItems(topServices),
-                new AdminBusinessHealthReportResponse.Capabilities(false, false)
-        );
+        return AdminBusinessHealthReportResponse.builder()
+                .period(AdminBusinessHealthReportResponse.Period.builder()
+                        .key(window.key())
+                        .label(window.label())
+                        .dateFrom(window.currentFrom().toString())
+                        .dateTo(window.currentTo().toString())
+                        .build())
+                .previousPeriod(AdminBusinessHealthReportResponse.Period.builder()
+                        .key("PREVIOUS")
+                        .label("Previous period")
+                        .dateFrom(window.previousFrom().toString())
+                        .dateTo(window.previousTo().toString())
+                        .build())
+                .kpis(kpis)
+                .trends(trends)
+                .breakdowns(breakdowns)
+                .insights(insights)
+                .topItems(AdminBusinessHealthReportResponse.TopItems.builder()
+                        .services(topServices)
+                        .build())
+                .capabilities(AdminBusinessHealthReportResponse.Capabilities.builder()
+                        .channelAvailable(false)
+                        .promotionAttributionExact(false)
+                        .build())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -236,17 +385,6 @@ public class AdminReportingService {
                 .map(booking -> toBookingResponse(booking, sessionsByBookingId.get(booking.getId()), serviceNames))
                 .toList();
         return new BookingPage(items, pagination(bookings));
-    }
-
-    @Transactional(readOnly = true)
-    public TransferAuditPage listTransferAudits(int page, int limit) {
-        Page<BookingStaffTransferAudit> audits = transferAuditRepository.findAllByOrderByCreatedAtDesc(
-                PageRequest.of(Math.max(page - 1, 0), limit)
-        );
-        return new TransferAuditPage(
-                audits.getContent().stream().map(this::toTransferAuditResponse).toList(),
-                pagination(audits)
-        );
     }
 
     @Transactional(readOnly = true)
@@ -530,11 +668,13 @@ public class AdminReportingService {
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
+        List<UUID> packageIdValues = packageIds.stream().map(UUID::fromString).toList();
+        List<UUID> comboIdValues = comboIds.stream().map(UUID::fromString).toList();
 
         Map<String, String> names = new HashMap<>();
-        servicePackageRepository.findAllById(packageIds)
+        servicePackageRepository.findAllById(packageIdValues)
                 .forEach(pkg -> names.put(pkg.getId(), pkg.getName()));
-        serviceComboRepository.findAllById(comboIds)
+        serviceComboRepository.findAllById(comboIdValues)
                 .forEach(combo -> names.put(combo.getId(), combo.getName()));
         return names;
     }
@@ -563,25 +703,6 @@ public class AdminReportingService {
         );
     }
 
-    private BookingStaffTransferAuditResponse toTransferAuditResponse(BookingStaffTransferAudit audit) {
-        AuthUser fromStaff = audit.getFromStaff();
-        AuthUser toStaff = audit.getToStaff();
-        AuthUser actor = audit.getActor();
-        return new BookingStaffTransferAuditResponse(
-                audit.getId(),
-                audit.getBooking().getId(),
-                audit.getWashSession() == null ? null : audit.getWashSession().getId(),
-                fromStaff == null ? null : fromStaff.getId(),
-                fromStaff == null ? null : fromStaff.getFullName(),
-                toStaff.getId(),
-                toStaff.getFullName(),
-                actor.getId(),
-                actor.getFullName(),
-                audit.getReason(),
-                audit.getCreatedAt()
-        );
-    }
-
     private AdminAccountResponse toAccountResponse(AuthUser user) {
         return new AdminAccountResponse(
                 user.getId(),
@@ -599,19 +720,22 @@ public class AdminReportingService {
     private AdminWashHistoryResponse toWashHistoryResponse(WashSession session, Map<String, String> serviceNames) {
         CustomerBooking booking = session.getBooking();
         String serviceId = serviceId(booking);
-        return new AdminWashHistoryResponse(
-                session.getId(),
-                booking.getId(),
-                booking.getVehicle().getPlate(),
-                new AdminWashHistoryResponse.ServicePackageSummary(serviceId, serviceNames.get(serviceId)),
-                session.getStatus().name(),
-                booking.getBookingDate(),
-                booking.getBookingTime(),
-                session.getStartedAt(),
-                session.getCompletedAt(),
-                new AdminWashHistoryResponse.Fee(session.getFeeAmount(), session.getFeeCurrency()),
-                session.getAwardedLoyaltyPoints()
-        );
+        return AdminWashHistoryResponse.builder()
+                .sessionId(session.getId())
+                .bookingId(booking.getId())
+                .vehiclePlate(booking.getVehicle().getPlate())
+                .servicePackage(AdminWashHistoryResponse.ServicePackageSummary.builder()
+                        .id(serviceId)
+                        .name(serviceNames.get(serviceId))
+                        .build())
+                .status(session.getStatus().name())
+                .bookingDate(booking.getBookingDate())
+                .bookingTime(booking.getBookingTime())
+                .startedAt(session.getStartedAt())
+                .completedAt(session.getCompletedAt())
+                .fee(AdminWashHistoryResponse.Fee.builder().amount(session.getFeeAmount()).build())
+                .pointsAwarded(session.getAwardedLoyaltyPoints())
+                .build();
     }
 
     private AdminCustomerVehicleResponse toCustomerVehicleResponse(CustomerVehicle vehicle) {
@@ -965,9 +1089,6 @@ public class AdminReportingService {
     public record BookingPage(List<AdminBookingResponse> items, PaginationMeta pagination) {
     }
 
-    public record TransferAuditPage(List<BookingStaffTransferAuditResponse> items, PaginationMeta pagination) {
-    }
-
     public record AccountPage(List<AdminAccountResponse> items, PaginationMeta pagination) {
     }
 
@@ -983,3 +1104,4 @@ public class AdminReportingService {
     private record TierChange(String fromTier, String toTier) {
     }
 }
+
