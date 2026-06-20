@@ -11,9 +11,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface OtpVerificationRepository extends JpaRepository<OtpVerification, UUID> {
 
-    Optional<OtpVerification> findFirstByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNullOrderByCreatedAtDesc(User user, OtpPurpose purpose);
+    Optional<OtpVerification> findFirstByUserAndPurposeAndVerifiedAtIsNullOrderByCreatedAtDesc(User user, OtpPurpose purpose);
 
-    List<OtpVerification> findByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNull(User user, OtpPurpose purpose);
+    List<OtpVerification> findByUserAndPurposeAndVerifiedAtIsNull(User user, OtpPurpose purpose);
 
     long countByUserAndPurposeAndCreatedAtAfter(User user, OtpPurpose purpose, Instant createdAt);
 }

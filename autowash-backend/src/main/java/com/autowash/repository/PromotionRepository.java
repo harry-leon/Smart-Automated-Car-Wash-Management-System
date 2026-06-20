@@ -19,13 +19,17 @@ public interface PromotionRepository extends JpaRepository<Promotion, String> {
     @Query("""
             select p from Promotion p
             where p.status = :status
-              and p.startDate <= :now
-              and p.endDate >= :now
+              and p.startAt <= :now
+              and p.endAt >= :now
               and (
                     p.targetingMode = :allTiers
-                    or concat(',', coalesce(p.applicableTiersCsv, ''), ',') like concat('%,', :tier, ',%')
+                    or exists (
+                        select 1 from PromotionTier pt
+                        where pt.promotionId = p.id
+                          and cast(pt.tier as string) = :tier
+                    )
               )
-            order by p.endDate asc, p.createdAt desc
+            order by p.endAt asc, p.createdAt desc
             """)
     Page<Promotion> findActiveForTier(
             @Param("now") Instant now,

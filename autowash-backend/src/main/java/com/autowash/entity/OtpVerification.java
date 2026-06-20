@@ -34,8 +34,8 @@ public class OtpVerification {
     @Column(nullable = false, length = 50)
     private OtpPurpose purpose;
 
-    @Column(nullable = false, length = 255)
-    private String code;
+    @Column(name = "code_hash", nullable = false, length = 255)
+    private String codeHash;
 
     @Column(name = "delivery_address", nullable = false, length = 255)
     private String deliveryAddress;
@@ -46,14 +46,8 @@ public class OtpVerification {
     @Column(nullable = false)
     private int attempts;
 
-    @Column(nullable = false)
-    private boolean verified;
-
-    @Column(name = "invalidated_at")
-    private Instant invalidatedAt;
-
-    @Column(name = "locked_at")
-    private Instant lockedAt;
+    @Column(name = "verified_at")
+    private Instant verifiedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -62,20 +56,15 @@ public class OtpVerification {
         this.id = UUID.randomUUID();
         this.user = user;
         this.purpose = purpose;
-        this.code = codeHash;
+        this.codeHash = codeHash;
         this.deliveryAddress = deliveryAddress;
         this.expiresAt = expiresAt;
         this.attempts = 0;
-        this.verified = false;
         this.createdAt = Instant.now();
     }
 
-    public boolean isLocked() {
-        return lockedAt != null;
-    }
-
-    public boolean isInvalidated() {
-        return invalidatedAt != null;
+    public boolean isVerified() {
+        return verifiedAt != null;
     }
 
     public void incrementAttempts() {
@@ -83,21 +72,7 @@ public class OtpVerification {
     }
 
     public void markVerified() {
-        this.verified = true;
-        this.invalidatedAt = Instant.now();
-    }
-
-    public void invalidate() {
-        if (this.invalidatedAt == null) {
-            this.invalidatedAt = Instant.now();
-        }
-    }
-
-    public void lock() {
-        if (this.lockedAt == null) {
-            this.lockedAt = Instant.now();
-            invalidate();
-        }
+        this.verifiedAt = Instant.now();
     }
 }
 

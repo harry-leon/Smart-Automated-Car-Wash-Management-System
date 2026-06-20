@@ -106,7 +106,6 @@ public class AuthService {
     }
 
     private SendOtpResponse issueRegistrationOtp(User user, RequestMetadata metadata, boolean resend) {
-        invalidateActiveRegistrationOtps(user);
         String code = otpService.generateOtp();
         OtpVerification OtpVerification = new OtpVerification(
                 user,
@@ -138,23 +137,20 @@ public class AuthService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         requirePendingUser(user);
 
-        OtpVerification OtpVerification = OtpVerificationRepository.findFirstByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNullOrderByCreatedAtDesc(user, OtpPurpose.EMAIL_REGISTRATION)
+        OtpVerification OtpVerification = OtpVerificationRepository.findFirstByUserAndPurposeAndVerifiedAtIsNullOrderByCreatedAtDesc(user, OtpPurpose.EMAIL_REGISTRATION)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP"));
 
         if (OtpVerification.getExpiresAt().isBefore(Instant.now())) {
-            OtpVerification.invalidate();
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP has expired", "OTP_EXPIRED");
         }
 
-        if (OtpVerification.isLocked() || OtpVerification.getAttempts() >= otpMaxAttempts) {
-            OtpVerification.lock();
+        if (OtpVerification.getAttempts() >= otpMaxAttempts) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
         }
 
-        if (!passwordEncoder.matches(otp, OtpVerification.getCode())) {
+        if (!passwordEncoder.matches(otp, OtpVerification.getCodeHash())) {
             OtpVerification.incrementAttempts();
             if (OtpVerification.getAttempts() >= otpMaxAttempts) {
-                OtpVerification.lock();
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
             }
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP");
@@ -278,8 +274,7 @@ public class AuthService {
     }
 
     private void invalidateActiveRegistrationOtps(User user) {
-        OtpVerificationRepository.findByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNull(user, OtpPurpose.EMAIL_REGISTRATION)
-                .forEach(OtpVerification::invalidate);
+        // Feature removed as invalidated_at column is removed
     }
 
     private void enforceResendLimit(User user) {
