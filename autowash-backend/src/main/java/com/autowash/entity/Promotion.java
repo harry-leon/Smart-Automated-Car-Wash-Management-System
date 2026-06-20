@@ -55,6 +55,16 @@ public class Promotion {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    public Promotion(String name, String description, BigDecimal pointMultiplier, Instant startAt, Instant endAt, PromotionTargetingMode targetingMode, ActiveStatus status) {
+        this.name = name;
+        this.description = description;
+        this.pointMultiplier = pointMultiplier;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.targetingMode = targetingMode;
+        this.status = status;
+    }
+
     @PrePersist
     void prePersist() {
         Instant now = Instant.now();
@@ -68,5 +78,16 @@ public class Promotion {
     @PreUpdate
     void preUpdate() {
         updatedAt = Instant.now();
+    }
+
+    public void update(String name, String description, BigDecimal pointMultiplier, Instant startAt, Instant endAt, PromotionTargetingMode targetingMode, ActiveStatus status) {
+        this.name = name;
+        this.description = description;
+        this.pointMultiplier = pointMultiplier;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.targetingMode = targetingMode;
+        this.status = status;
+        this.updatedAt = Instant.now();
     }
 }

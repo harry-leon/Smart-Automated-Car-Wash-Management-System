@@ -47,4 +47,14 @@ public class PointTransaction {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    public PointTransaction(LoyaltyAccount loyaltyAccount, Booking booking, PointTransactionType type, int points, int balanceAfter, String reason) {
+        this.loyaltyAccount = loyaltyAccount;
+        this.booking = booking;
+        this.type = type;
+        this.points = points;
+        this.balanceAfter = balanceAfter;
+        this.reason = reason;
+        this.createdAt = Instant.now();
+    }
 }

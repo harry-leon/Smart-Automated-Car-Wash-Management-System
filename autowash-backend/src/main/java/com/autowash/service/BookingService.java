@@ -124,7 +124,7 @@ public class BookingService {
             responsePackageName = Package.getName();
         } else {
             Combo = catalogService.requireActiveCombo(request.comboId());
-            ownedCombo = customerComboService.findActiveOwnedCombo(user, Combo.getId());
+            ownedCombo = customerComboService.findActiveOwnedCombo(user, Combo.getId().toString());
             baseDuration = 0;
             responsePackageName = Combo.getName();
             if (ownedCombo != null) {
@@ -136,9 +136,9 @@ public class BookingService {
                     throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo has no remaining usages", "BUSINESS_RULE_VIOLATION");
                 }
                 basePrice = 0;
-                customerComboId = ownedCombo.getId();
+                customerComboId = ownedCombo.getId().toString();
             } else {
-                basePrice = Combo.getBasePrice();
+                basePrice = Combo.getPrice();
                 comboPurchased = true;
             }
         }
@@ -154,12 +154,12 @@ public class BookingService {
 
         LocalDateTime scheduledAt = request.bookingDate().atTime(LocalTime.parse(request.bookingTime()));
         Booking booking = new Booking(
-                generateBookingId(),
+                UUID.randomUUID(),
                 user,
                 vehicle,
                 Package == null ? null : Package.getId(),
                 Combo == null ? null : Combo.getId(),
-                voucher == null ? null : voucher.getCode(),
+                voucher == null ? null : voucher.getId(),
                 scheduledAt.toInstant(java.time.ZoneOffset.UTC),
                 LocalTime.parse(request.bookingTime()),
                 request.paymentMethod(),
@@ -173,14 +173,14 @@ public class BookingService {
 
         if (Combo != null) {
             if (ownedCombo == null) {
-                ownedCombo = customerComboService.createOwnedCombo(user, Combo.getId(), booking.getId());
-                customerComboId = ownedCombo.getId();
+                ownedCombo = customerComboService.createOwnedCombo(user, Combo.getId().toString(), booking.getId().toString());
+                customerComboId = ownedCombo.getId().toString();
             }
-            customerComboService.recordUsage(ownedCombo, booking.getId(), request.bookingDate());
+            customerComboService.recordUsage(ownedCombo, booking.getId().toString(), request.bookingDate());
         }
 
         return new CreateBookingResponse(
-                booking.getId(),
+                booking.getId().toString(),
                 user.getId().toString(),
                 vehicle.getId().toString(),
                 vehicle.getPlate(),
@@ -201,8 +201,8 @@ public class BookingService {
                 0,
                 null,
                 booking.getCreatedAt(),
-                booking.getId(),
-                Combo == null ? null : Combo.getId(),
+                booking.getId().toString(),
+                Combo == null ? null : Combo.getId().toString(),
                 customerComboId,
                 comboPurchased,
                 null
@@ -250,11 +250,11 @@ public class BookingService {
         }
         booking.cancel(reason);
         return new CancelBookingResponse(
-                booking.getId(),
+                booking.getId().toString(),
                 booking.getStatus().name(),
-                booking.getCancelledAt(),
-                booking.getRefundAmount(),
-                booking.getRefundStatus(),
+                null,
+                0L,
+                "NONE",
                 "Refund will be processed within 3-5 business days"
         );
     }
@@ -284,10 +284,10 @@ public class BookingService {
             );
         }
 
-        RedeemPointsResponse redemption = loyaltyService.redeemPoints(user.getId(), pointsToApply, booking.getId());
+        RedeemPointsResponse redemption = loyaltyService.redeemPoints(user.getId(), pointsToApply, booking.getId().toString());
         booking.applyPoints(pointsToApply, discountAmount);
         return new ApplyPointsResponse(
-                booking.getId(),
+                booking.getId().toString(),
                 pointsToApply,
                 discountAmount,
                 booking.getFinalAmount(),
@@ -315,11 +315,11 @@ public class BookingService {
 
     private BookingListItemResponse toListItem(Booking booking) {
         String packageName = resolvePackageName(booking);
-        var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
+        var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
         String washStatus = washSession == null ? null : washSession.getStatus().name();
         return new BookingListItemResponse(
-                booking.getId(),
+                booking.getId().toString(),
                 booking.getVehicle().getPlate(),
                 packageName,
                 booking.getBookingDate(),
@@ -334,11 +334,11 @@ public class BookingService {
 
     public BookingDetailResponse toDetailResponse(Booking booking) {
         String packageName = resolvePackageName(booking);
-        var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
+        var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
         return new BookingDetailResponse(
-                booking.getId(),
-                booking.getId(),
+                booking.getId().toString(),
+                booking.getId().toString(),
                 booking.getCustomer().getId().toString(),
                 booking.getCustomer().getFullName(),
                 booking.getCustomer().getPhone(),
@@ -346,7 +346,7 @@ public class BookingService {
                 booking.getVehicle().getPlate(),
                 booking.getVehicle().getBrand(),
                 booking.getVehicle().getModel(),
-                booking.getPackageId(),
+                booking.getPackageId() != null ? booking.getPackageId().toString() : null,
                 packageName,
                 toAddonSelections(booking.getAddons()),
                 new BookingDetailResponse.Pricing(
@@ -405,9 +405,9 @@ public class BookingService {
         return null;
     }
 
-    private List<AddonSelectionResponse> toAddonSelections(List<com.autowash.entity.Service> addons) {
+    private List<AddonSelectionResponse> toAddonSelections(List<com.autowash.entity.BookingOption> addons) {
         return addons.stream()
-                .map(addon -> new AddonSelectionResponse(addon.getId().toString(), addon.getName(), addon.getPrice()))
+                .map(addon -> new AddonSelectionResponse(addon.getOptionId().toString(), addon.getOptionName(), addon.getOptionPrice()))
                 .toList();
     }
 

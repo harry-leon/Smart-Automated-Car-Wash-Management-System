@@ -64,14 +64,14 @@ public class CustomerWashTrackingService {
         Booking booking = session.getBooking();
         return CustomerWashTrackingResponse.builder()
                 .washSessionId(session.getId().toString())
-                .bookingId(booking.getId())
+                .bookingId(booking.getId().toString())
                 .status(session.getStatus().name())
                 .customerName(booking.getCustomer().getFullName())
                 .customerPhone(booking.getCustomer().getPhone())
                 .vehiclePlate(booking.getVehicle().getPlate())
                 .vehicleBrand(booking.getVehicle().getBrand())
                 .vehicleModel(booking.getVehicle().getModel())
-                .packageId(booking.getPackageId())
+                .packageId(booking.getPackageId() == null ? null : booking.getPackageId().toString())
                 .serviceName(resolveServiceName(booking))
                 .bookingDate(booking.getBookingDate())
                 .bookingTime(booking.getBookingTime().toString())
@@ -91,12 +91,12 @@ public class CustomerWashTrackingService {
         if (booking.getPackageId() != null) {
             return PackageRepository.findById(booking.getPackageId())
                     .map(Package::getName)
-                    .orElse(booking.getPackageId());
+                    .orElse(booking.getPackageId() == null ? null : booking.getPackageId().toString());
         }
         if (booking.getComboId() != null) {
             return ComboRepository.findById(booking.getComboId())
                     .map(Combo::getName)
-                    .orElse(booking.getComboId());
+                    .orElse(booking.getComboId() == null ? null : booking.getComboId().toString());
         }
         return null;
     }

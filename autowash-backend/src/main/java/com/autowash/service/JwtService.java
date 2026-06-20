@@ -32,7 +32,7 @@ public class JwtService {
                 .subject(user.getId().toString())
                 .claim("phone", user.getPhone())
                 .claim("role", user.getRole().name())
-                .claim("tier", user.getTier().name())
+                .claim("tier", "STANDARD")
                 .claim("status", user.getStatus().name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(accessTokenExpirationSeconds)))

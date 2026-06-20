@@ -82,7 +82,7 @@ public class OperationsService {
                     "BUSINESS_RULE_VIOLATION"
             );
         }
-        if (washSessionRepository.existsByBookingIdAndStatusIn(booking.getId(), ACTIVE_SESSION_STATUSES)) {
+        if (washSessionRepository.existsByBooking_IdAndStatusIn(booking.getId(), ACTIVE_SESSION_STATUSES)) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Booking already has an active wash session",
@@ -96,7 +96,7 @@ public class OperationsService {
         return CreateWashSessionResponse.builder()
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
-                .bookingId(booking.getId())
+                .bookingId(booking.getId().toString())
                 .createdAt(session.getCreatedAt())
                 .build();
     }
@@ -338,11 +338,11 @@ public class OperationsService {
         User assignedStaff = session.getAssignedStaff();
         return OperationsQueueResponse.WashSessionCard.builder()
                 .sessionId(session.getId())
-                .bookingId(booking.getId())
+                .bookingId(booking.getId().toString())
                 .customerName(booking.getCustomer().getFullName())
                 .customerPhone(booking.getCustomer().getPhone())
                 .vehiclePlate(booking.getVehicle().getPlate())
-                .packageId(booking.getPackageId())
+                .packageId(booking.getPackageId() == null ? null : booking.getPackageId().toString())
                 .assignedStaffId(assignedStaff == null ? null : assignedStaff.getId())
                 .assignedStaffName(assignedStaff == null ? null : assignedStaff.getFullName())
                 .status(session.getStatus().name())
@@ -361,12 +361,12 @@ public class OperationsService {
 
     private EligibleSessionBookingResponse toEligibleBooking(Booking booking) {
         return new EligibleSessionBookingResponse(
-                booking.getId(),
+                booking.getId().toString(),
                 booking.getCustomer().getFullName(),
                 booking.getCustomer().getPhone(),
                 booking.getVehicle().getPlate(),
-                booking.getPackageId(),
-                booking.getComboId(),
+                booking.getPackageId() == null ? null : booking.getPackageId().toString(),
+                booking.getComboId() == null ? null : booking.getComboId().toString(),
                 booking.getBookingDate(),
                 booking.getBookingTime(),
                 booking.getFinalAmount(),

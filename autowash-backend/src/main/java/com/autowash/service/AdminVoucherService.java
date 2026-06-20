@@ -75,11 +75,11 @@ public class AdminVoucherService {
                 voucher.getCode(),
                 voucher.getDiscountType().name(),
                 Math.toIntExact(voucher.getDiscountValue()),
-                voucher.getMinAmount(),
-                voucher.getExpiresAt(),
-                voucher.isActive(),
+                voucher.getMinOrderAmount(),
+                voucher.getEndAt(),
+                voucher.getStatus() == com.autowash.entity.enums.ActiveStatus.ACTIVE,
                 voucher.isNewCustomerOnly(),
-                parseTargetTiers(voucher.getTargetTiersCsv())
+                parseTargetTiers("")
         );
     }
 
@@ -94,12 +94,13 @@ public class AdminVoucherService {
     }
 
     private AdminVoucherRedemptionResponse toRedemptionResponse(PointTransaction transaction) {
+        com.autowash.entity.User customer = transaction.getLoyaltyAccount().getCustomer();
         return new AdminVoucherRedemptionResponse(
-                transaction.getId(),
-                transaction.getCustomer().getId(),
-                transaction.getCustomer().getFullName(),
-                transaction.getCustomer().getPhone(),
-                transaction.getReferenceId(),
+                transaction.getId().toString(),
+                customer.getId(),
+                customer.getFullName(),
+                customer.getPhone(),
+                transaction.getBooking() != null ? transaction.getBooking().getId().toString() : null,
                 Math.abs(transaction.getPoints()),
                 transaction.getBalanceAfter(),
                 transaction.getCreatedAt()

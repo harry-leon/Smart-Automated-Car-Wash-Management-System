@@ -17,8 +17,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByPhoneAndIdNot(String phone, UUID id);
     Optional<User> findByPhone(String phone);
     Optional<User> findByEmailIgnoreCase(String email);
-<<<<<<< HEAD
-=======
 
     @Query("select account from User account where :oauthSubject is not null and 1 = 0")
     Optional<User> findByOauthSubject(@Param("oauthSubject") String oauthSubject);
@@ -27,7 +25,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         return false;
     }
 
->>>>>>> origin/feature/backend2-schema-entity-alignment
     boolean existsByEmailIgnoreCase(String email);
     boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
     long countByRole(UserRole role);

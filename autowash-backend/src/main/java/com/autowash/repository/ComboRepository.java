@@ -19,7 +19,7 @@ public interface ComboRepository extends JpaRepository<Combo, UUID> {
     }
 
     default Optional<Combo> findByIdAndActiveTrue(String id) {
-        return findById(id).filter(Combo::isActive);
+        return findById(id).filter(c -> c.getStatus() == com.autowash.entity.enums.ActiveStatus.ACTIVE);
     }
 
     private static Optional<UUID> parseUuid(String id) {

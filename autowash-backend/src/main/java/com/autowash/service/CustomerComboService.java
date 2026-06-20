@@ -70,8 +70,8 @@ public class CustomerComboService {
         CustomerCombo combo = new CustomerCombo(
                 UUID.randomUUID(),
                 customer,
-                Combo.getIdValue(),
-                Math.max(Combo.getMaxServices(), 1),
+                Combo.getId(),
+                Math.max(Combo.getMaxUsages() == null ? 0 : Combo.getMaxUsages(), 1),
                 Instant.now(),
                 Instant.now().plusSeconds((long) Combo.getDurationDays() * 24 * 60 * 60)
         );
@@ -87,17 +87,17 @@ public class CustomerComboService {
         CustomerCombo combo = customerComboRepository.save(new CustomerCombo(
                 UUID.randomUUID(),
                 customer,
-                Combo.getIdValue(),
-                Math.max(Combo.getMaxServices(), 1),
+                Combo.getId(),
+                Math.max(Combo.getMaxUsages() == null ? 0 : Combo.getMaxUsages(), 1),
                 now,
                 now.plusSeconds((long) Combo.getDurationDays() * 24 * 60 * 60)
         ));
 
         return new PurchaseCustomerComboResponse(
-                combo.getId(),
-                Combo.getId(),
+                combo.getId().toString(),
+                Combo.getId().toString(),
                 Combo.getName(),
-                Combo.getBasePrice(),
+                Combo.getPrice(),
                 request.paymentMethod(),
                 "PENDING",
                 combo.getTotalUsages(),
@@ -111,7 +111,7 @@ public class CustomerComboService {
     @Transactional
     public void recordUsage(CustomerCombo combo, String bookingId, java.time.LocalDate serviceDate) {
         combo.consumeUsage();
-        customerComboUsageRepository.save(new CustomerComboUsage(combo.getIdValue(), UUID.fromString(bookingId)));
+        customerComboUsageRepository.save(new CustomerComboUsage(combo.getId(), UUID.fromString(bookingId)));
     }
 
     @Transactional
@@ -122,10 +122,10 @@ public class CustomerComboService {
     private CustomerComboResponse toResponse(CustomerCombo combo) {
         String comboName = ComboRepository.findById(combo.getComboId())
                 .map(Combo::getName)
-                .orElse(combo.getComboId());
+                .orElse(combo.getComboId().toString());
         return new CustomerComboResponse(
-                combo.getId(),
-                combo.getComboId(),
+                combo.getId().toString(),
+                combo.getComboId().toString(),
                 comboName,
                 combo.getStatus().name(),
                 combo.getTotalUsages(),

@@ -51,6 +51,32 @@ public class CustomerCombo {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    public CustomerCombo(UUID id, User customer, UUID comboId, int totalUsages, Instant activatedAt, Instant expiresAt) {
+        this.id = id;
+        this.customer = customer;
+        this.comboId = comboId;
+        this.totalUsages = totalUsages;
+        this.remainingUsages = totalUsages;
+        this.status = CustomerComboStatus.ACTIVE;
+        this.activatedAt = activatedAt;
+        this.expiresAt = expiresAt;
+        this.createdAt = Instant.now();
+    }
+
+    public void consumeUsage() {
+        if (remainingUsages > 0) {
+            remainingUsages--;
+        }
+    }
+
+    public void markExpired() {
+        this.status = CustomerComboStatus.EXPIRED;
+    }
+
+    public Instant getLastUsedAt() {
+        return null;
+    }
+
     public boolean isExpired() {
         return expiresAt != null && expiresAt.isBefore(Instant.now());
     }

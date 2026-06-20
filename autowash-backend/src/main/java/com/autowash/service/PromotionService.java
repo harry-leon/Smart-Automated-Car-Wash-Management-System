@@ -93,7 +93,7 @@ public class PromotionService {
         User user = currentUserService.getCurrentUser();
         Page<Promotion> promotions = promotionRepository.findActiveForTier(
                 Instant.now(),
-                user.getTier().name(),
+                "STANDARD",
                 ActiveStatus.ACTIVE,
                 PromotionTargetingMode.ALL_TIERS,
                 pageRequest(page, limit)
@@ -161,13 +161,13 @@ public class PromotionService {
 
     private PromotionResponse toResponse(Promotion promotion) {
         return new PromotionResponse(
-                promotion.getId(),
+                promotion.getId().toString(),
                 promotion.getName(),
                 promotion.getDescription(),
                 "POINT_MULTIPLIER",
-                promotion.getDiscountValue().movePointRight(2).intValue(),
-                promotion.getStartDate(),
-                promotion.getEndDate(),
+                promotion.getPointMultiplier().movePointRight(2).intValue(),
+                promotion.getStartAt(),
+                promotion.getEndAt(),
                 promotion.getTargetingMode().name(),
                 List.of(),
                 null,
@@ -195,13 +195,7 @@ public class PromotionService {
         if (promotion.getTargetingMode() == PromotionTargetingMode.ALL_TIERS) {
             return ALL_TIERS;
         }
-        if (promotion.getApplicableTiersCsv() == null || promotion.getApplicableTiersCsv().isBlank()) {
-            return List.of();
-        }
-        return Arrays.stream(promotion.getApplicableTiersCsv().split(","))
-                .map(String::trim)
-                .filter(value -> !value.isBlank())
-                .toList();
+        return List.of();
     }
 
     private record ValidatedPromotion(String applicableTiersCsv) {

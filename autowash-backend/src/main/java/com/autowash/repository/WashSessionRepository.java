@@ -104,4 +104,6 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
             @Param("dateTo") Instant dateTo,
             Pageable pageable
     );
+
+    long countByStatus(WashSessionStatus status);
 }

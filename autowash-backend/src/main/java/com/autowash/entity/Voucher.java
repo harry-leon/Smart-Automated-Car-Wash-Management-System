@@ -68,4 +68,19 @@ public class Voucher {
             id = UUID.randomUUID();
         }
     }
+
+    public Voucher(String code, String name, DiscountType discountType, long discountValue, long minOrderAmount, Long maxDiscountAmount, Integer usageLimit, boolean newCustomerOnly, Instant startAt, Instant endAt, ActiveStatus status) {
+        this.code = code;
+        this.name = name;
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.minOrderAmount = minOrderAmount;
+        this.maxDiscountAmount = maxDiscountAmount;
+        this.usageLimit = usageLimit;
+        this.newCustomerOnly = newCustomerOnly;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.status = status;
+        this.usedCount = 0;
+    }
 }

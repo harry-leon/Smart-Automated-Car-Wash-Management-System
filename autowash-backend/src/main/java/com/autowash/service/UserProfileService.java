@@ -46,7 +46,7 @@ public class UserProfileService {
                 user.getEmail(),
                 user.getStatus().name(),
                 user.getRole().name(),
-                user.getTier().name(),
+                "STANDARD",
                 user.isNewCustomer(),
                 customerLoyaltyService.getCurrentBalance(user),
                 user.getCreatedAt(),
@@ -70,7 +70,9 @@ public class UserProfileService {
             throw new ApiException(HttpStatus.CONFLICT, "Email already in use", "DUPLICATE_EMAIL");
         }
 
-        user.updateProfile(request.fullName(), request.email(), request.phone());
+        user.setFullName(request.fullName());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
         user.markNotNewCustomer();
 
         return new UpdateUserProfileResponse(

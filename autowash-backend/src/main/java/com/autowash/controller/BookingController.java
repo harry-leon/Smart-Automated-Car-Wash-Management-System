@@ -48,7 +48,7 @@ public class BookingController {
             @Valid @RequestBody CreateBookingRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.created("Booking created.", bookingService.createBooking(request)));
+                .body(ApiResponse.created("Booking created.", bookingService.createBooking(request, null)));
     }
 
     @GetMapping

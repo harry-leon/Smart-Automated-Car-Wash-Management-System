@@ -72,7 +72,7 @@ public class LoyaltyService {
         WashSession session = requireSession(sessionId);
         LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(session.getBooking().getCustomer().getId())
                 .orElse(null);
-        LoyaltyTier tier = account == null ? session.getBooking().getCustomer().getTier() : account.getTier();
+        LoyaltyTier tier = account == null ? LoyaltyTier.MEMBER : account.getTier();
         long finalAmount = session.getBooking().getFinalAmount();
         long basePoints = finalAmount / LoyaltyRules.EARN_POINTS_UNIT_AMOUNT;
         return (int) Math.floor(basePoints * LoyaltyRules.tierMultiplier(tier));
@@ -85,10 +85,10 @@ public class LoyaltyService {
                 .findByTypeAndReferenceId(PointTransactionType.EARN, sessionId.toString())
                 .orElse(null);
         if (existing != null) {
-            if (!existing.getCustomer().getId().equals(customer.getId())) {
+            if (!existing.getLoyaltyAccount().getCustomer().getId().equals(customer.getId())) {
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Wash session does not belong to customer", "BUSINESS_RULE_VIOLATION");
             }
-            return toEarnResponse(existing, getOrCreateAccount(existing.getCustomer()));
+            return toEarnResponse(existing, getOrCreateAccount(existing.getLoyaltyAccount().getCustomer()));
         }
 
         WashSession session = requireSession(sessionId);
@@ -107,12 +107,12 @@ public class LoyaltyService {
         int pointsAwarded = calculateEarnPoints(sessionId);
         account.addPoints(pointsAwarded);
         PointTransaction transaction = new PointTransaction(
-                customer,
+                account,
+                session.getBooking(),
                 PointTransactionType.EARN,
                 pointsAwarded,
                 account.getCurrentPoints(),
-                "Wash completed",
-                sessionId.toString()
+                "Wash completed"
         );
 
         try {
@@ -149,8 +149,8 @@ public class LoyaltyService {
                 voucherCode,
                 "Voucher redemption: " + voucherCode,
                 DiscountType.FIXED,
-                Math.toIntExact(voucherValue),
-                0,
+                voucherValue,
+                0L,
                 null,
                 1,
                 false,
@@ -161,12 +161,12 @@ public class LoyaltyService {
 
         account.redeemPoints(pointsToRedeem);
         PointTransaction transaction = pointTransactionRepository.save(new PointTransaction(
-                customer,
+                account,
+                null,
                 PointTransactionType.REDEEM,
                 -pointsToRedeem,
                 account.getCurrentPoints(),
-                "Voucher redemption: " + voucher.getCode(),
-                voucher.getCode()
+                "Voucher redemption: " + voucher.getCode()
         ));
         return new RedeemPointsResponse(
                 transaction.getId(),
@@ -174,7 +174,7 @@ public class LoyaltyService {
                 account.getCurrentPoints(),
                 voucher.getCode(),
                 voucherValue,
-                voucher.getExpiresAt(),
+                voucher.getEndAt(),
                 "SUCCESS"
         );
     }
@@ -218,14 +218,13 @@ public class LoyaltyService {
 
         LoyaltyTier oldTier = account.getTier();
         account.updateTier(targetTier);
-        account.getCustomer().updateTier(targetTier);
         pointTransactionRepository.save(new PointTransaction(
-                account.getCustomer(),
+                account,
+                null,
                 PointTransactionType.TIER_UPGRADE,
                 0,
                 account.getCurrentPoints(),
-                "Tier upgraded from " + oldTier + " to " + targetTier,
-                null
+                "Tier upgraded from " + oldTier + " to " + targetTier
         ));
         log.info("loyalty_tier_upgraded customerId={} oldTier={} newTier={}", account.getCustomer().getId(), oldTier, targetTier);
     }
@@ -309,7 +308,7 @@ public class LoyaltyService {
         String code;
         do {
             code = "LOY-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        } while (voucherRepository.existsById(code));
+        } while (voucherRepository.findByCode(code).isPresent());
         return code;
     }
 
@@ -329,7 +328,7 @@ public class LoyaltyService {
                 transaction.getPoints(),
                 transaction.getBalanceAfter(),
                 transaction.getReason(),
-                transaction.getReferenceId(),
+                transaction.getBooking() != null ? transaction.getBooking().getId().toString() : null,
                 transaction.getCreatedAt()
         );
     }

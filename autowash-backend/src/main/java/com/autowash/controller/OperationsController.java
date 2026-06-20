@@ -76,28 +76,6 @@ public class OperationsController {
         return ApiResponse.ok("Wash session completed", operationsService.completeSession(sessionId));
     }
 
-    @GetMapping("/queue")
-    @Operation(summary = "Get operations queue")
-    public ApiResponse<OperationsQueueResponse> getQueue() {
-        return ApiResponse.ok("Operations queue retrieved", operationsService.getOperationsQueue());
-    }
 
-    @GetMapping("/staff/summary")
-    @Operation(summary = "Get current staff summary")
-    public ApiResponse<StaffDashboardSummaryResponse> getStaffSummary() {
-        return ApiResponse.ok("Staff summary retrieved", operationsService.getMyStaffSummary());
-    }
-
-    @GetMapping("/staff/active")
-    @Operation(summary = "List active staff")
-    public ApiResponse<List<StaffOptionResponse>> listActiveStaff() {
-        return ApiResponse.ok("Active staff retrieved", operationsService.listActiveStaff());
-    }
-
-    @GetMapping("/bookings/eligible-sessions")
-    @Operation(summary = "List eligible bookings for wash sessions")
-    public ApiResponse<List<EligibleSessionBookingResponse>> listEligibleSessions() {
-        return ApiResponse.ok("Eligible sessions retrieved", operationsService.getEligibleSessionBookings(20));
-    }
 
 }

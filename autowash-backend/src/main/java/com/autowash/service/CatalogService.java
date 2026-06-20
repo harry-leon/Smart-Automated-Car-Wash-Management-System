@@ -9,7 +9,7 @@ import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.Combo;
 import com.autowash.entity.Package;
 import com.autowash.entity.Voucher;
-import com.autowash.repository.ServiceAddonRepository;
+import com.autowash.repository.ServiceRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.VoucherRepository;
@@ -31,20 +31,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class CatalogService {
 
     private final PackageRepository PackageRepository;
-    private final ServiceAddonRepository serviceAddonRepository;
+    private final ServiceRepository serviceRepository;
     private final ComboRepository ComboRepository;
     private final VoucherRepository voucherRepository;
     private final CurrentUserService currentUserService;
 
     public CatalogService(
             PackageRepository PackageRepository,
-            ServiceAddonRepository serviceAddonRepository,
+            ServiceRepository serviceRepository,
             ComboRepository ComboRepository,
             VoucherRepository voucherRepository,
             CurrentUserService currentUserService
     ) {
         this.PackageRepository = PackageRepository;
-        this.serviceAddonRepository = serviceAddonRepository;
+        this.serviceRepository = serviceRepository;
         this.ComboRepository = ComboRepository;
         this.voucherRepository = voucherRepository;
         this.currentUserService = currentUserService;
@@ -69,7 +69,7 @@ public class CatalogService {
 
     @Transactional(readOnly = true)
     public List<AddonResponse> getAddons() {
-        return serviceAddonRepository.findByStatusOrderByIdAsc(ActiveStatus.ACTIVE).stream()
+        return serviceRepository.findByStatusOrderByIdAsc(ActiveStatus.ACTIVE).stream()
                 .map(this::toAddonResponse)
                 .toList();
     }
@@ -117,7 +117,7 @@ public class CatalogService {
             return List.of();
         }
         return addonIds.stream()
-                .map(id -> serviceAddonRepository.findByIdAndStatus(java.util.UUID.fromString(id), ActiveStatus.ACTIVE)
+                .map(id -> serviceRepository.findByIdAndStatus(java.util.UUID.fromString(id), ActiveStatus.ACTIVE)
                         .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Add-on is not available", "BUSINESS_RULE_VIOLATION")))
                 .toList();
     }
@@ -163,7 +163,7 @@ public class CatalogService {
 
     private PackageResponse toPackageResponse(Package Package) {
         return new PackageResponse(
-                Package.getId(),
+                Package.getId().toString(),
                 Package.getName(),
                 Package.getDescription(),
                 Package.getBasePrice(),
@@ -178,7 +178,7 @@ public class CatalogService {
 
     private AddonResponse toAddonResponse(com.autowash.entity.Service addon) {
         return new AddonResponse(
-                addon.getId(),
+                addon.getId().toString(),
                 addon.getName(),
                 addon.getDescription(),
                 addon.getPrice(),
@@ -192,7 +192,7 @@ public class CatalogService {
 
     private ComboResponse toComboResponse(Combo combo) {
         return new ComboResponse(
-                combo.getId(),
+                combo.getId().toString(),
                 combo.getName(),
                 combo.getDescription(),
                 combo.getPrice(),

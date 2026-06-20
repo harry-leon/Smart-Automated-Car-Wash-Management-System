@@ -108,7 +108,7 @@ public class CustomerLoyaltyService {
     private LoyaltyTransactionResponse toTransaction(PointTransactionResponse transaction) {
         Optional<WashSession> session = findReferencedSession(transaction.referenceId());
         String sessionId = session.map(value -> value.getId().toString()).orElse(null);
-        String bookingId = session.map(value -> value.getBooking().getId()).orElse(transaction.referenceId());
+        String bookingId = session.map(value -> value.getBooking().getId().toString()).orElse(transaction.referenceId());
         return new LoyaltyTransactionResponse(
                 transaction.transactionId().toString(),
                 sessionId,
@@ -135,7 +135,7 @@ public class CustomerLoyaltyService {
         Booking booking = session.getBooking();
         return new WashHistoryItemResponse(
                 session.getId().toString(),
-                booking.getId(),
+                booking.getId().toString(),
                 booking.getVehicle().getPlate(),
                 resolvePackageName(booking),
                 booking.getBookingDate(),
@@ -151,12 +151,12 @@ public class CustomerLoyaltyService {
         if (booking.getPackageId() != null) {
             return PackageRepository.findById(booking.getPackageId())
                     .map(Package::getName)
-                    .orElse(booking.getPackageId());
+                    .orElse(booking.getPackageId() == null ? null : booking.getPackageId().toString());
         }
         if (booking.getComboId() != null) {
             return ComboRepository.findById(booking.getComboId())
                     .map(Combo::getName)
-                    .orElse(booking.getComboId());
+                    .orElse(booking.getComboId() == null ? null : booking.getComboId().toString());
         }
         return null;
     }

@@ -236,7 +236,7 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole().name(),
                 user.getStatus().name(),
-                user.getTier().name(),
+                "STANDARD",
                 0,
                 user.isNewCustomer(),
                 accessToken,
