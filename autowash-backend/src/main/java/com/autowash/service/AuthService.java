@@ -7,11 +7,11 @@ import com.autowash.dto.RegisterRequest;
 import com.autowash.dto.RegisterResponse;
 import com.autowash.dto.SendOtpResponse;
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.OtpAuditEvent;
-import com.autowash.entity.OtpPurpose;
+import com.autowash.entity.enums.OtpAuditEvent;
+import com.autowash.entity.enums.OtpPurpose;
 import com.autowash.entity.OtpRecord;
 import com.autowash.entity.RefreshToken;
-import com.autowash.entity.UserStatus;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.AuthUserRepository;
 import com.autowash.repository.OtpAuditLogRepository;
 import com.autowash.repository.OtpRecordRepository;
@@ -272,7 +272,7 @@ public class AuthService {
     }
 
     private void requirePendingUser(AuthUser user) {
-        if (user.getStatus() != UserStatus.PENDING_VERIFY && user.getStatus() != UserStatus.PENDING) {
+        if (user.getStatus() != UserStatus.INACTIVE) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Account is not pending OTP verification",

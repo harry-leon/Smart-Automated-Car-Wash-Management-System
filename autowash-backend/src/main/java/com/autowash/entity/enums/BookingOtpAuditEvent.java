@@ -1,4 +1,4 @@
-package com.autowash.entity;
+package com.autowash.entity.enums;
 
 public enum BookingOtpAuditEvent {
     SEND_SUCCESS,

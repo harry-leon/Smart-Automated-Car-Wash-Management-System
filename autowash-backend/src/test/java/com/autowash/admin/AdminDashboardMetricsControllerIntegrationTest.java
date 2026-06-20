@@ -5,11 +5,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.entity.UserRole;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.PromotionStatus;
+import com.autowash.entity.enums.PromotionStatus;
 import com.autowash.repository.PromotionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

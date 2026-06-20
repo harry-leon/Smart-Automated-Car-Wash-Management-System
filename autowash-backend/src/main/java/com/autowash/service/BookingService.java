@@ -1,5 +1,6 @@
 package com.autowash.service;
 
+import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.AuthUser;
 import com.autowash.dto.AddonSelectionResponse;
 import com.autowash.dto.ApplyPointsRequest;
@@ -12,10 +13,10 @@ import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.BookingAddon;
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.entity.BookingOtpChallenge;
-import com.autowash.entity.BookingOtpChallengeStatus;
+import com.autowash.entity.enums.BookingOtpChallengeStatus;
 import com.autowash.repository.BookingOtpChallengeRepository;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.entity.ServiceAddon;
@@ -34,7 +35,7 @@ import com.autowash.service.CurrentUserService;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;

@@ -1,5 +1,7 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.OtpAuditEvent;
+import com.autowash.entity.enums.OtpPurpose;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

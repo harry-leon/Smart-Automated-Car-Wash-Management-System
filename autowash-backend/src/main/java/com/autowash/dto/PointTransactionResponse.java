@@ -1,10 +1,8 @@
 package com.autowash.dto;
 
 import java.time.Instant;
-import java.util.UUID;
-
 public record PointTransactionResponse(
-        UUID transactionId,
+        Long transactionId,
         String type,
         int points,
         int balanceAfter,

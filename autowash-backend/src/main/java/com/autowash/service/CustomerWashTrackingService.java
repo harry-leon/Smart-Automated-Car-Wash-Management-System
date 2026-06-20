@@ -8,7 +8,7 @@ import com.autowash.repository.ServiceComboRepository;
 import com.autowash.repository.ServicePackageRepository;
 import com.autowash.dto.CustomerWashTrackingResponse;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;

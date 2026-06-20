@@ -1,5 +1,6 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.CustomerComboStatus;
 import com.autowash.entity.AuthUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,24 +10,27 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "customer_combos")
 public class CustomerCombo {
 
     @Id
-    private String id;
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private AuthUser customer;
 
-    @Column(name = "combo_id", nullable = false, length = 50)
-    private String comboId;
+    @Column(name = "combo_id", nullable = false)
+    private UUID comboId;
 
-    @Column(name = "purchase_booking_id", length = 50)
+    @Transient
     private String purchaseBookingId;
 
     @Enumerated(EnumType.STRING)
@@ -45,13 +49,13 @@ public class CustomerCombo {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
-    @Column(name = "last_used_at")
+    @Transient
     private Instant lastUsedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Transient
     private Instant updatedAt;
 
     protected CustomerCombo() {
@@ -66,9 +70,9 @@ public class CustomerCombo {
             Instant activatedAt,
             Instant expiresAt
     ) {
-        this.id = id;
+        this.id = parseUuidOrNew(id);
         this.customer = customer;
-        this.comboId = comboId;
+        this.comboId = UUID.fromString(comboId);
         this.purchaseBookingId = purchaseBookingId;
         this.status = CustomerComboStatus.ACTIVE;
         this.totalUsages = totalUsages;
@@ -79,9 +83,18 @@ public class CustomerCombo {
         this.updatedAt = this.createdAt;
     }
 
-    public String getId() { return id; }
+    @PrePersist
+    void prePersist() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
+    }
+
+    public String getId() { return id == null ? null : id.toString(); }
+    public UUID getIdValue() { return id; }
     public AuthUser getCustomer() { return customer; }
-    public String getComboId() { return comboId; }
+    public String getComboId() { return comboId == null ? null : comboId.toString(); }
+    public UUID getComboIdValue() { return comboId; }
     public String getPurchaseBookingId() { return purchaseBookingId; }
     public CustomerComboStatus getStatus() { return status; }
     public int getTotalUsages() { return totalUsages; }
@@ -112,12 +125,20 @@ public class CustomerCombo {
         lastUsedAt = Instant.now();
         updatedAt = lastUsedAt;
         if (remainingUsages == 0) {
-            status = CustomerComboStatus.EXHAUSTED;
+            status = CustomerComboStatus.USED_UP;
         }
     }
 
     public void markExpired() {
         status = CustomerComboStatus.EXPIRED;
         updatedAt = Instant.now();
+    }
+
+    private static UUID parseUuidOrNew(String id) {
+        try {
+            return id == null || id.isBlank() ? UUID.randomUUID() : UUID.fromString(id);
+        } catch (IllegalArgumentException exception) {
+            return UUID.randomUUID();
+        }
     }
 }

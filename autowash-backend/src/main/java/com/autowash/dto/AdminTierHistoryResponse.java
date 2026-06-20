@@ -1,10 +1,9 @@
 package com.autowash.dto;
 
 import java.time.Instant;
-import java.util.UUID;
 
 public record AdminTierHistoryResponse(
-        UUID id,
+        Long id,
         String fromTier,
         String toTier,
         String reason,

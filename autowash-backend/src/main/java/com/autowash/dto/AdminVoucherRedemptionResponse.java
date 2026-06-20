@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record AdminVoucherRedemptionResponse(
-        UUID transactionId,
+        Long transactionId,
         UUID customerId,
         String customerName,
         String customerPhone,

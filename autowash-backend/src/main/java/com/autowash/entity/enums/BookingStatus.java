@@ -1,4 +1,4 @@
-package com.autowash.entity;
+package com.autowash.entity.enums;
 
 public enum BookingStatus {
     PENDING,
@@ -6,5 +6,6 @@ public enum BookingStatus {
     CANCELLED,
     CHECKED_IN,
     IN_PROGRESS,
-    COMPLETED
+    COMPLETED,
+    NO_SHOW
 }

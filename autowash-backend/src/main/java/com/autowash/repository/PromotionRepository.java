@@ -1,8 +1,8 @@
 package com.autowash.repository;
 
 import com.autowash.entity.Promotion;
-import com.autowash.entity.PromotionStatus;
-import com.autowash.entity.PromotionTargetingMode;
+import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.PromotionTargetingMode;
 import java.time.Instant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

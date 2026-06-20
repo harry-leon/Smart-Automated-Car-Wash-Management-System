@@ -1,10 +1,10 @@
 package com.autowash.service;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.LoyaltyTier;
-import com.autowash.entity.UserRole;
+import com.autowash.entity.enums.LoyaltyTier;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.DiscountType;
+import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.Voucher;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.dto.EarnPointsResponse;
@@ -13,11 +13,11 @@ import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.PointTransaction;
-import com.autowash.entity.PointTransactionType;
+import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
@@ -80,8 +80,10 @@ public class LoyaltyService {
     @Transactional
     public EarnPointsResponse postEarnTransaction(UUID customerId, UUID sessionId) {
         AuthUser customer = requireCustomer(customerId);
+        WashSession session = requireSession(sessionId);
+        String bookingReference = session.getBooking().getId();
         PointTransaction existing = pointTransactionRepository
-                .findByTypeAndReferenceId(PointTransactionType.EARN, sessionId.toString())
+                .findByTypeAndReferenceId(PointTransactionType.EARN, bookingReference)
                 .orElse(null);
         if (existing != null) {
             if (!existing.getCustomer().getId().equals(customer.getId())) {
@@ -90,7 +92,6 @@ public class LoyaltyService {
             return toEarnResponse(existing, getOrCreateAccount(existing.getCustomer()));
         }
 
-        WashSession session = requireSession(sessionId);
         if (session.getStatus() != WashSessionStatus.COMPLETED) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
@@ -106,19 +107,19 @@ public class LoyaltyService {
         int pointsAwarded = calculateEarnPoints(sessionId);
         account.addPoints(pointsAwarded);
         PointTransaction transaction = new PointTransaction(
-                customer,
+                account,
                 PointTransactionType.EARN,
                 pointsAwarded,
                 account.getCurrentPoints(),
                 "Wash completed",
-                sessionId.toString()
+                session.getBooking()
         );
 
         try {
             pointTransactionRepository.save(transaction);
         } catch (DataIntegrityViolationException exception) {
             PointTransaction racedTransaction = pointTransactionRepository
-                    .findByTypeAndReferenceId(PointTransactionType.EARN, sessionId.toString())
+                    .findByTypeAndReferenceId(PointTransactionType.EARN, bookingReference)
                     .orElseThrow(() -> exception);
             return toEarnResponse(racedTransaction, account);
         }
@@ -146,7 +147,7 @@ public class LoyaltyService {
         Instant expiresAt = Instant.now().plusSeconds(30L * 24 * 60 * 60);
         Voucher voucher = voucherRepository.save(new Voucher(
                 voucherCode,
-                DiscountType.FIXED,
+                DiscountType.FIXED_AMOUNT,
                 Math.toIntExact(voucherValue),
                 0,
                 expiresAt,
@@ -157,12 +158,12 @@ public class LoyaltyService {
 
         account.redeemPoints(pointsToRedeem);
         PointTransaction transaction = pointTransactionRepository.save(new PointTransaction(
-                customer,
+                account,
                 PointTransactionType.REDEEM,
                 -pointsToRedeem,
                 account.getCurrentPoints(),
                 "Voucher redemption: " + voucher.getCode(),
-                voucher.getCode()
+                null
         ));
         return new RedeemPointsResponse(
                 transaction.getId(),
@@ -216,8 +217,8 @@ public class LoyaltyService {
         account.updateTier(targetTier);
         account.getCustomer().updateTier(targetTier);
         pointTransactionRepository.save(new PointTransaction(
-                account.getCustomer(),
-                PointTransactionType.TIER_UPGRADE,
+                account,
+                PointTransactionType.ADJUST,
                 0,
                 account.getCurrentPoints(),
                 "Tier upgraded from " + oldTier + " to " + targetTier,
@@ -305,7 +306,7 @@ public class LoyaltyService {
         String code;
         do {
             code = "LOY-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        } while (voucherRepository.existsById(code));
+        } while (voucherRepository.existsByCode(code));
         return code;
     }
 

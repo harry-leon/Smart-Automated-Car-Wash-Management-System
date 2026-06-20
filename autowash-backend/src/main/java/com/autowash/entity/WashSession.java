@@ -1,5 +1,6 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.entity.AuthUser;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.service.WashSessionLifecycle;

@@ -1,5 +1,6 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.BookingOtpChallengeStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

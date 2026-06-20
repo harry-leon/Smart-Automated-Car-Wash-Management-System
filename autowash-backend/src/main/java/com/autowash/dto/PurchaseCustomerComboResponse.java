@@ -1,6 +1,7 @@
 package com.autowash.dto;
 
-import com.autowash.entity.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
+import com.autowash.entity.enums.PaymentMethod;
 import java.time.Instant;
 
 public record PurchaseCustomerComboResponse(

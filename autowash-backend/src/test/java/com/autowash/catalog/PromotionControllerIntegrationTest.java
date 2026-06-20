@@ -1,5 +1,6 @@
 package com.autowash.catalog;
 
+import com.autowash.entity.enums.DiscountType;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -12,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.LoyaltyTier;
+import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.repository.AuthUserRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;

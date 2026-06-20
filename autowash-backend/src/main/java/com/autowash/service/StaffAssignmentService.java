@@ -1,10 +1,10 @@
 package com.autowash.service;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
-import com.autowash.entity.UserStatus;
+import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.shared.exception.ApiException;
 import java.util.Comparator;

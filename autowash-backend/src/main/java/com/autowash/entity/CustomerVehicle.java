@@ -1,5 +1,7 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.VehicleStatus;
+import com.autowash.entity.enums.VehicleType;
 import com.autowash.entity.AuthUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

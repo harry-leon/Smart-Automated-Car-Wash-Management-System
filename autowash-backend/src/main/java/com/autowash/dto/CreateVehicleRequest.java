@@ -1,6 +1,6 @@
 package com.autowash.dto;
 
-import com.autowash.entity.VehicleType;
+import com.autowash.entity.enums.VehicleType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

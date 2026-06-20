@@ -1,7 +1,7 @@
 package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.OtpPurpose;
+import com.autowash.entity.enums.OtpPurpose;
 import com.autowash.entity.OtpRecord;
 import java.time.Instant;
 import java.util.List;

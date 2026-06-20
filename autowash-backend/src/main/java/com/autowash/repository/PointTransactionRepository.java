@@ -2,7 +2,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
 import com.autowash.entity.PointTransaction;
-import com.autowash.entity.PointTransactionType;
+import com.autowash.entity.enums.PointTransactionType;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,17 +12,26 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface PointTransactionRepository extends JpaRepository<PointTransaction, UUID> {
+public interface PointTransactionRepository extends JpaRepository<PointTransaction, Long> {
 
-    Page<PointTransaction> findByCustomer(AuthUser customer, Pageable pageable);
+    @Query("select pt from PointTransaction pt where pt.loyaltyAccount.customer = :customer")
+    Page<PointTransaction> findByCustomer(@Param("customer") AuthUser customer, Pageable pageable);
 
-    Optional<PointTransaction> findByTypeAndReferenceId(PointTransactionType type, String referenceId);
+    Optional<PointTransaction> findByTypeAndBookingId(PointTransactionType type, UUID bookingId);
 
-    long countByTypeAndReferenceId(PointTransactionType type, String referenceId);
+    long countByTypeAndBookingId(PointTransactionType type, UUID bookingId);
+
+    default Optional<PointTransaction> findByTypeAndReferenceId(PointTransactionType type, String referenceId) {
+        return parseUuid(referenceId).flatMap(bookingId -> findByTypeAndBookingId(type, bookingId));
+    }
+
+    default long countByTypeAndReferenceId(PointTransactionType type, String referenceId) {
+        return parseUuid(referenceId).map(bookingId -> countByTypeAndBookingId(type, bookingId)).orElse(0L);
+    }
 
     @Query("""
             select pt from PointTransaction pt
-            where pt.customer = :customer
+            where pt.loyaltyAccount.customer = :customer
               and (:#{#type == null} = true or pt.type = :type)
               and (:#{#dateFrom == null} = true or pt.createdAt >= :dateFrom)
               and (:#{#dateTo == null} = true or pt.createdAt <= :dateTo)
@@ -35,16 +44,16 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
             Pageable pageable
     );
 
-    @Query("select coalesce(sum(pt.points), 0) from PointTransaction pt where pt.customer = :customer and pt.type = :type")
+    @Query("select coalesce(sum(pt.points), 0) from PointTransaction pt where pt.loyaltyAccount.customer = :customer and pt.type = :type")
     long sumPointsByCustomerAndType(@Param("customer") AuthUser customer, @Param("type") PointTransactionType type);
 
     @Query("""
             select pt from PointTransaction pt
             where pt.type = :type
-              and (:#{#searchQuery == null} = true or lower(pt.referenceId) like :searchQuery
-                   or lower(pt.customer.fullName) like :searchQuery
-                   or lower(pt.customer.phone) like :searchQuery
-                   or lower(pt.customer.email) like :searchQuery)
+              and (:#{#searchQuery == null} = true or lower(str(pt.booking.id)) like :searchQuery
+                   or lower(pt.loyaltyAccount.customer.fullName) like :searchQuery
+                   or lower(pt.loyaltyAccount.customer.phone) like :searchQuery
+                   or lower(pt.loyaltyAccount.customer.email) like :searchQuery)
               and (:#{#dateFrom == null} = true or pt.createdAt >= :dateFrom)
               and (:#{#dateTo == null} = true or pt.createdAt <= :dateTo)
             """)
@@ -55,4 +64,12 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
             @Param("dateTo") Instant dateTo,
             Pageable pageable
     );
+
+    private static Optional<UUID> parseUuid(String id) {
+        try {
+            return id == null || id.isBlank() ? Optional.empty() : Optional.of(UUID.fromString(id));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+    }
 }

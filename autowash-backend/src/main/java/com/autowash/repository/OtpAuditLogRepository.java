@@ -1,8 +1,8 @@
 package com.autowash.repository;
 
-import com.autowash.entity.OtpAuditEvent;
+import com.autowash.entity.enums.OtpAuditEvent;
 import com.autowash.entity.OtpAuditLog;
-import com.autowash.entity.OtpPurpose;
+import com.autowash.entity.enums.OtpPurpose;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.UUID;

@@ -1,6 +1,6 @@
 package com.autowash.dto;
 
-import com.autowash.entity.PaymentMethod;
+import com.autowash.entity.enums.PaymentMethod;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

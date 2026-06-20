@@ -5,7 +5,7 @@ import com.autowash.dto.AdminVoucherResponse;
 import com.autowash.entity.Voucher;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.entity.PointTransaction;
-import com.autowash.entity.PointTransactionType;
+import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import java.time.Instant;

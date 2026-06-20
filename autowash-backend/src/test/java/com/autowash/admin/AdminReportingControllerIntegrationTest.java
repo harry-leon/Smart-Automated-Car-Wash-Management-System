@@ -10,14 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
 import com.autowash.entity.CustomerBooking;
-import com.autowash.entity.PaymentMethod;
+import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleType;
+import com.autowash.entity.enums.VehicleType;
 import com.autowash.repository.CustomerVehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.shared.exception.ApiException;
 import org.springframework.http.HttpStatus;
 

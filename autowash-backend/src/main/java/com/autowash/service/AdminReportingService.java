@@ -9,30 +9,30 @@ import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
 import com.autowash.dto.UpdateAdminCustomerRoleResponse;
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
-import com.autowash.entity.UserStatus;
+import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.repository.ServiceComboRepository;
 import com.autowash.repository.ServicePackageRepository;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.PointTransactionResponse;
-import com.autowash.entity.PointTransactionType;
+import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.entity.PointTransaction;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.service.LoyaltyService;
 import com.autowash.dto.BookingStaffTransferAuditResponse;
 import com.autowash.entity.BookingStaffTransferAudit;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingStaffTransferAuditRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleStatus;
+import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -420,7 +420,7 @@ public class AdminReportingService {
         AuthUser customer = requireCustomer(customerId);
         Page<PointTransaction> transactions = pointTransactionRepository.search(
                 customer,
-                PointTransactionType.TIER_UPGRADE,
+                PointTransactionType.ADJUST,
                 null,
                 null,
                 PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending())
@@ -520,13 +520,13 @@ public class AdminReportingService {
     }
 
     private Map<String, String> serviceNames(Collection<CustomerBooking> bookings) {
-        List<String> packageIds = bookings.stream()
-                .map(CustomerBooking::getPackageId)
+        List<java.util.UUID> packageIds = bookings.stream()
+                .map(CustomerBooking::getPackageIdValue)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        List<String> comboIds = bookings.stream()
-                .map(CustomerBooking::getComboId)
+        List<java.util.UUID> comboIds = bookings.stream()
+                .map(CustomerBooking::getComboIdValue)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();

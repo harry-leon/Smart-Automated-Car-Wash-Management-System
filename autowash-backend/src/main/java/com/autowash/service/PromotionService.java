@@ -1,14 +1,14 @@
 package com.autowash.service;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.LoyaltyTier;
+import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.dto.CustomerPromotionResponse;
 import com.autowash.dto.PromotionRequest;
 import com.autowash.dto.PromotionResponse;
-import com.autowash.entity.DiscountType;
+import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.Promotion;
-import com.autowash.entity.PromotionStatus;
-import com.autowash.entity.PromotionTargetingMode;
+import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.PromotionTargetingMode;
 import com.autowash.repository.PromotionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;

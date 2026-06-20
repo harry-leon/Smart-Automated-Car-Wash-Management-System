@@ -1,11 +1,12 @@
 package com.autowash.service;
 
+import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.AuthUser;
 import com.autowash.dto.CustomerComboResponse;
 import com.autowash.dto.PurchaseCustomerComboRequest;
 import com.autowash.dto.PurchaseCustomerComboResponse;
 import com.autowash.entity.CustomerCombo;
-import com.autowash.entity.CustomerComboStatus;
+import com.autowash.entity.enums.CustomerComboStatus;
 import com.autowash.entity.CustomerComboUsage;
 import com.autowash.repository.CustomerComboRepository;
 import com.autowash.repository.CustomerComboUsageRepository;

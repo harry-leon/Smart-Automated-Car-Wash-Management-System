@@ -1,7 +1,7 @@
 package com.autowash.repository;
 
-import com.autowash.entity.UserRole;
-import com.autowash.entity.UserStatus;
+import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
 import com.autowash.entity.AuthUser;
 import java.util.List;
 import java.util.Optional;
@@ -22,9 +22,12 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
 
     Optional<AuthUser> findByEmailIgnoreCase(String email);
 
-    Optional<AuthUser> findByOauthSubject(String oauthSubject);
+    @Query("select account from AuthUser account where :oauthSubject is not null and 1 = 0")
+    Optional<AuthUser> findByOauthSubject(@Param("oauthSubject") String oauthSubject);
 
-    boolean existsByOauthSubject(String oauthSubject);
+    default boolean existsByOauthSubject(String oauthSubject) {
+        return false;
+    }
 
     boolean existsByEmailIgnoreCase(String email);
 

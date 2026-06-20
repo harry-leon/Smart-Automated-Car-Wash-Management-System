@@ -1,7 +1,7 @@
 package com.autowash.entity;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.LoyaltyTier;
+import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

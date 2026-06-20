@@ -1,40 +1,64 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.DiscountType;
+import com.autowash.entity.enums.PromotionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "vouchers")
 public class Voucher {
 
     @Id
+    private UUID id;
+
+    @Column(nullable = false, unique = true, length = 50)
     private String code;
+
+    @Column(nullable = false, length = 120)
+    private String name;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "discount_type", nullable = false, length = 20)
     private DiscountType discountType;
 
     @Column(name = "discount_value", nullable = false)
-    private int discountValue;
+    private long discountValue;
 
-    @Column(name = "min_amount", nullable = false)
-    private long minAmount;
+    @Column(name = "min_order_amount", nullable = false)
+    private long minOrderAmount;
 
-    @Column(name = "expires_at", nullable = false)
-    private Instant expiresAt;
+    @Column(name = "max_discount_amount")
+    private Long maxDiscountAmount;
 
-    @Column(nullable = false)
-    private boolean active;
+    @Column(name = "usage_limit")
+    private Integer usageLimit;
+
+    @Column(name = "used_count", nullable = false)
+    private int usedCount;
 
     @Column(name = "new_customer_only", nullable = false)
     private boolean newCustomerOnly;
 
-    @Column(name = "target_tiers_csv", length = 100)
+    @Column(name = "start_at", nullable = false)
+    private Instant startAt;
+
+    @Column(name = "end_at", nullable = false)
+    private Instant endAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PromotionStatus status;
+
+    @Transient
     private String targetTiersCsv;
 
     protected Voucher() {
@@ -50,22 +74,44 @@ public class Voucher {
             boolean newCustomerOnly,
             String targetTiersCsv
     ) {
+        this.id = UUID.randomUUID();
         this.code = code;
+        this.name = code;
         this.discountType = discountType;
         this.discountValue = discountValue;
-        this.minAmount = minAmount;
-        this.expiresAt = expiresAt;
-        this.active = active;
+        this.minOrderAmount = minAmount;
+        this.startAt = Instant.now();
+        this.endAt = expiresAt;
+        this.status = active ? PromotionStatus.ACTIVE : PromotionStatus.INACTIVE;
         this.newCustomerOnly = newCustomerOnly;
         this.targetTiersCsv = targetTiersCsv;
     }
 
+    @PrePersist
+    void prePersist() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
+        if (name == null || name.isBlank()) {
+            name = code;
+        }
+    }
+
+    public UUID getId() { return id; }
     public String getCode() { return code; }
+    public String getName() { return name; }
     public DiscountType getDiscountType() { return discountType; }
-    public int getDiscountValue() { return discountValue; }
-    public long getMinAmount() { return minAmount; }
-    public Instant getExpiresAt() { return expiresAt; }
-    public boolean isActive() { return active; }
+    public long getDiscountValue() { return discountValue; }
+    public long getMinAmount() { return minOrderAmount; }
+    public long getMinOrderAmount() { return minOrderAmount; }
+    public Long getMaxDiscountAmount() { return maxDiscountAmount; }
+    public Integer getUsageLimit() { return usageLimit; }
+    public int getUsedCount() { return usedCount; }
+    public Instant getStartAt() { return startAt; }
+    public Instant getEndAt() { return endAt; }
+    public Instant getExpiresAt() { return endAt; }
+    public PromotionStatus getStatus() { return status; }
+    public boolean isActive() { return status == PromotionStatus.ACTIVE; }
     public boolean isNewCustomerOnly() { return newCustomerOnly; }
     public String getTargetTiersCsv() { return targetTiersCsv; }
 }

@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.BookingStatus;
+import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.CustomerBooking;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.service.BookingService;
@@ -20,11 +20,11 @@ import com.autowash.dto.TransferWashSessionRequest;
 import com.autowash.dto.TransferWashSessionResponse;
 import com.autowash.entity.BookingStaffTransferAudit;
 import com.autowash.entity.WashSession;
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.BookingStaffTransferAuditRepository;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import java.time.Instant;

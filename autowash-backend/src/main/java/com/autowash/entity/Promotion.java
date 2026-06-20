@@ -1,5 +1,8 @@
 package com.autowash.entity;
 
+import com.autowash.entity.enums.DiscountType;
+import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.PromotionTargetingMode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

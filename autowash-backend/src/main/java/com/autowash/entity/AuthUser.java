@@ -1,18 +1,22 @@
 package com.autowash.entity;
 
-import com.autowash.entity.LanguagePreference;
-import com.autowash.entity.ThemePreference;
+import com.autowash.entity.enums.LoyaltyTier;
+import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
+import com.autowash.entity.enums.LanguagePreference;
+import com.autowash.entity.enums.ThemePreference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "auth_users")
+@Table(name = "users")
 public class AuthUser {
 
     @Id
@@ -30,13 +34,13 @@ public class AuthUser {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(name = "auth_provider", nullable = false, length = 20)
+    @Transient
     private String authProvider;
 
-    @Column(name = "oauth_subject", length = 255)
+    @Transient
     private String oauthSubject;
 
-    @Column(name = "email_verified", nullable = false)
+    @Transient
     private boolean emailVerified;
 
     @Column(name = "avatar_url", length = 500)
@@ -50,28 +54,25 @@ public class AuthUser {
     @Column(nullable = false, length = 20)
     private UserStatus status;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Transient
     private LoyaltyTier tier;
 
-    @Column(name = "is_new_customer", nullable = false)
+    @Transient
     private boolean isNewCustomer;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Transient
     private LanguagePreference language;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Transient
     private ThemePreference theme;
 
-    @Column(name = "notifications_enabled", nullable = false)
+    @Transient
     private boolean notificationsEnabled;
 
-    @Column(name = "email_notifications", nullable = false)
+    @Transient
     private boolean emailNotifications;
 
-    @Column(name = "sms_notifications", nullable = false)
+    @Transient
     private boolean smsNotifications;
 
     @Column(name = "created_at", nullable = false)
@@ -95,7 +96,7 @@ public class AuthUser {
         this.emailVerified = false;
         this.avatarUrl = null;
         this.role = UserRole.CUSTOMER;
-        this.status = UserStatus.PENDING_VERIFY;
+        this.status = UserStatus.INACTIVE;
         this.tier = LoyaltyTier.MEMBER;
         this.isNewCustomer = true;
         this.language = LanguagePreference.VI;
