@@ -1,6 +1,7 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+
+import com.autowash.entity.*;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
@@ -11,7 +12,7 @@ import com.autowash.dto.UpdateVehicleRequest;
 import com.autowash.dto.UpdateVehicleResponse;
 import com.autowash.dto.VehicleDetailResponse;
 import com.autowash.dto.VehicleListItemResponse;
-import com.autowash.entity.CustomerVehicle;
+
 import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.util.List;

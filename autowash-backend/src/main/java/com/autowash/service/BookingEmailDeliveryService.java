@@ -1,6 +1,7 @@
 package com.autowash.service;
+import com.autowash.entity.*;
 
-import com.autowash.entity.CustomerBooking;
+
 
 public interface BookingEmailDeliveryService {
 

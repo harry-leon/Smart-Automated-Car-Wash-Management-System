@@ -1,7 +1,8 @@
 package com.autowash.service;
 
+import com.autowash.entity.*;
 import com.autowash.dto.BookingDetailResponse;
-import com.autowash.entity.CustomerBooking;
+
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.service.BookingService;
 import com.autowash.shared.exception.ApiException;

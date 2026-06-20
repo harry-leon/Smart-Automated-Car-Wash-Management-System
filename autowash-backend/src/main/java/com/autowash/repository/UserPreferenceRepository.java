@@ -2,7 +2,8 @@ package com.autowash.repository;
 
 
 import com.autowash.entity.*;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CustomerComboUsageRepository extends JpaRepository<CustomerComboUsage, Long> {
+public interface UserPreferenceRepository extends JpaRepository<UserPreference, UUID> {
 }

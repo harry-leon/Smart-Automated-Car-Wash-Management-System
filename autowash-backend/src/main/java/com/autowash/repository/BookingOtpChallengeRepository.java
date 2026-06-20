@@ -1,8 +1,9 @@
 package com.autowash.repository;
 
-import com.autowash.entity.BookingOtpChallenge;
+
+import com.autowash.entity.*;
 import com.autowash.entity.enums.BookingOtpChallengeStatus;
-import com.autowash.entity.CustomerBooking;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

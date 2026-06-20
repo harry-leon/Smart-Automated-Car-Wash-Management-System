@@ -1,6 +1,7 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+
+import com.autowash.entity.*;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.AuthUserRepository;

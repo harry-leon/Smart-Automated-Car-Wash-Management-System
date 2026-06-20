@@ -1,5 +1,6 @@
 package com.autowash.admin;
 
+import com.autowash.entity.*;
 import static org.hamcrest.Matchers.contains;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -9,14 +10,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.entity.AuthUser;
+
 import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.CustomerBooking;
+
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
-import com.autowash.entity.CustomerVehicle;
+
 import com.autowash.entity.enums.VehicleType;
 import com.autowash.repository.CustomerVehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -1,6 +1,7 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+
+import com.autowash.entity.*;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

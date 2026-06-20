@@ -16,14 +16,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "customer_vehicles")
+@Table(name = "vehicles")
 public class CustomerVehicle {
 
     @Id
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_user_id", nullable = false)
+    @JoinColumn(name = "customer_id", nullable = false)
     private AuthUser owner;
 
     @Column(nullable = false, length = 20)

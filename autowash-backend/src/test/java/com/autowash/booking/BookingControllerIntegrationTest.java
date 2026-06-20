@@ -1,5 +1,6 @@
 package com.autowash.booking;
 
+import com.autowash.entity.*;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -9,7 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.entity.AuthUser;
+
 import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
 import com.autowash.entity.enums.BookingOtpAuditEvent;
@@ -18,7 +19,7 @@ import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingOtpAuditLogRepository;
 import com.autowash.repository.BookingOtpChallengeRepository;
 import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.LoyaltyAccount;
+
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.shared.security.AuthUserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;

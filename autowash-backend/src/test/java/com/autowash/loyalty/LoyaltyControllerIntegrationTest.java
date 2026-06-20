@@ -1,19 +1,20 @@
 package com.autowash.loyalty;
 
+import com.autowash.entity.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.entity.AuthUser;
+
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.CustomerBooking;
+
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.WashSession;
+
 import com.autowash.repository.WashSessionRepository;
-import com.autowash.entity.CustomerVehicle;
+
 import com.autowash.entity.enums.VehicleType;
 import com.autowash.repository.CustomerVehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -1,8 +1,9 @@
 package com.autowash.repository;
 
+import com.autowash.entity.*;
 import com.autowash.entity.enums.BookingOtpAuditEvent;
-import com.autowash.entity.BookingOtpAuditLog;
-import com.autowash.entity.CustomerBooking;
+
+
 import java.time.Instant;
 import java.util.Collection;
 import java.util.UUID;

@@ -1,7 +1,8 @@
 package com.autowash.repository;
 
+import com.autowash.entity.*;
 import com.autowash.entity.enums.PackageStatus;
-import com.autowash.entity.ServiceAddon;
+
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

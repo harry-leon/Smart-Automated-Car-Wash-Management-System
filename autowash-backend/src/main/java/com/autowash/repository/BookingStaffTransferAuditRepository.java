@@ -1,6 +1,7 @@
 package com.autowash.repository;
 
-import com.autowash.entity.BookingStaffTransferAudit;
+
+import com.autowash.entity.*;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

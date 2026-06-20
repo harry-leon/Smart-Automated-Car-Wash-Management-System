@@ -1,10 +1,11 @@
 package com.autowash.service;
 
+import com.autowash.entity.*;
 import com.autowash.dto.AdminVoucherRedemptionResponse;
 import com.autowash.dto.AdminVoucherResponse;
-import com.autowash.entity.Voucher;
+
 import com.autowash.repository.VoucherRepository;
-import com.autowash.entity.PointTransaction;
+
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.shared.dto.PaginationMeta;
@@ -74,7 +75,7 @@ public class AdminVoucherService {
         return new AdminVoucherResponse(
                 voucher.getCode(),
                 voucher.getDiscountType().name(),
-                voucher.getDiscountValue(),
+                Math.toIntExact(voucher.getDiscountValue()),
                 voucher.getMinAmount(),
                 voucher.getExpiresAt(),
                 voucher.isActive(),

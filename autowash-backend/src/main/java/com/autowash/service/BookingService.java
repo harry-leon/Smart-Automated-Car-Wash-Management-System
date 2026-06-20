@@ -1,7 +1,9 @@
 package com.autowash.service;
 
+import com.autowash.entity.*;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.entity.AuthUser;
+
+
 import com.autowash.dto.AddonSelectionResponse;
 import com.autowash.dto.ApplyPointsRequest;
 import com.autowash.dto.ApplyPointsResponse;
@@ -11,18 +13,18 @@ import com.autowash.dto.BookingOtpResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
-import com.autowash.entity.CustomerCombo;
-import com.autowash.entity.BookingAddon;
+
+
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.entity.CustomerBooking;
-import com.autowash.entity.BookingOtpChallenge;
+
+
 import com.autowash.entity.enums.BookingOtpChallengeStatus;
 import com.autowash.repository.BookingOtpChallengeRepository;
 import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.ServiceAddon;
-import com.autowash.entity.ServiceCombo;
-import com.autowash.entity.ServicePackage;
-import com.autowash.entity.Voucher;
+
+
+
+
 import com.autowash.repository.ServiceComboRepository;
 import com.autowash.repository.ServicePackageRepository;
 import com.autowash.service.CatalogService;
@@ -34,7 +36,7 @@ import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.StaffAssignmentService;
-import com.autowash.entity.CustomerVehicle;
+
 import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.time.LocalDate;
@@ -119,6 +121,7 @@ public class BookingService {
 
         List<ServiceAddon> addons = catalogService.requireActiveAddons(request.addons());
         ServicePackage servicePackage = null;
+
         ServiceCombo serviceCombo = null;
         CustomerCombo ownedCombo = null;
         long basePrice;
@@ -130,6 +133,7 @@ public class BookingService {
 
         if (request.packageId() != null && !request.packageId().isBlank()) {
             servicePackage = catalogService.requireActivePackage(request.packageId());
+
             basePrice = servicePackage.getBasePrice();
             baseDuration = servicePackage.getDurationMinutes();
             responsePackageId = servicePackage.getId();
@@ -180,6 +184,7 @@ public class BookingService {
                 subtotal - voucherDiscount,
                 baseDuration + addons.stream().mapToInt(ServiceAddon::getDurationMinutes).sum()
         );
+
         booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
         addons.forEach(addon -> booking.addAddon(new BookingAddon(booking, addon.getId(), addon.getName(), addon.getPrice())));
         customerBookingRepository.save(booking);

@@ -1,13 +1,15 @@
 package com.autowash.dto;
 
+import com.autowash.entity.*;
 import com.autowash.entity.enums.DiscountType;
+
 import java.time.Instant;
 import java.util.List;
 
 public record AdminVoucherResponse(
         String code,
         String discountType,
-        long discountValue,
+        int discountValue,
         long minAmount,
         Instant expiresAt,
         boolean active,

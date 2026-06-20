@@ -1,13 +1,14 @@
 package com.autowash.service;
 
+import com.autowash.entity.*;
 import com.autowash.service.OtpService;
 import com.autowash.dto.BookingOtpResponse;
 import com.autowash.entity.enums.BookingOtpAuditEvent;
-import com.autowash.entity.BookingOtpAuditLog;
-import com.autowash.entity.BookingOtpChallenge;
+
+
 import com.autowash.entity.enums.BookingOtpChallengeStatus;
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.entity.CustomerBooking;
+
 import com.autowash.repository.BookingOtpAuditLogRepository;
 import com.autowash.repository.BookingOtpChallengeRepository;
 import com.autowash.shared.exception.ApiException;

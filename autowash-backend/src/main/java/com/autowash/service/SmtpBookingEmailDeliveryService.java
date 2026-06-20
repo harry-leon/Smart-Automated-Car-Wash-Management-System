@@ -1,6 +1,7 @@
 package com.autowash.service;
 
-import com.autowash.entity.CustomerBooking;
+
+import com.autowash.entity.*;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;

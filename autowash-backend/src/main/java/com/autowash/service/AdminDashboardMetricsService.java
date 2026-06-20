@@ -1,5 +1,6 @@
 package com.autowash.service;
 
+import com.autowash.entity.*;
 import com.autowash.dto.DashboardMetricsDto;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;

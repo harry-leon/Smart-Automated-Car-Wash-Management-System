@@ -1,6 +1,7 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+
+import com.autowash.entity.*;
 import com.autowash.repository.AuthUserRepository;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.shared.security.AuthUserPrincipal;

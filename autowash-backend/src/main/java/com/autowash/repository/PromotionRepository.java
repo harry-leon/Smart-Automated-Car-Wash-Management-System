@@ -1,16 +1,18 @@
 package com.autowash.repository;
 
-import com.autowash.entity.Promotion;
+
+import com.autowash.entity.*;
 import com.autowash.entity.enums.PromotionStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import java.time.Instant;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface PromotionRepository extends JpaRepository<Promotion, String> {
+public interface PromotionRepository extends JpaRepository<Promotion, UUID> {
 
     Page<Promotion> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
@@ -34,4 +36,8 @@ public interface PromotionRepository extends JpaRepository<Promotion, String> {
             @Param("allTiers") PromotionTargetingMode allTiers,
             Pageable pageable
     );
+
+    default java.util.Optional<Promotion> findById(String id) {
+        return id == null || id.isBlank() ? java.util.Optional.empty() : findById(UUID.fromString(id));
+    }
 }

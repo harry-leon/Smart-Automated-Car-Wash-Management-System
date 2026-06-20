@@ -1,5 +1,6 @@
 package com.autowash.auth;
 
+import com.autowash.entity.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -9,12 +10,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import com.autowash.entity.AuthUser;
+
 import com.autowash.entity.enums.OtpPurpose;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.autowash.dto.GoogleOAuthUserInfo;
-import com.autowash.entity.GoogleAuthTicket;
+
 import com.autowash.repository.AuthUserRepository;
 import com.autowash.repository.GoogleAuthTicketRepository;
 import com.autowash.repository.OtpRecordRepository;

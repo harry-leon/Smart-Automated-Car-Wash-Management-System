@@ -1,26 +1,27 @@
 package com.autowash.service;
 
+import com.autowash.entity.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.autowash.entity.AuthUser;
+
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.CustomerBooking;
+
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.dto.EarnPointsResponse;
 import com.autowash.dto.RedeemPointsResponse;
-import com.autowash.entity.LoyaltyAccount;
-import com.autowash.entity.PointTransaction;
+
+
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
-import com.autowash.entity.WashSession;
+
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.exception.ApiException;
-import com.autowash.entity.CustomerVehicle;
+
 import com.autowash.entity.enums.VehicleType;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.time.Instant;

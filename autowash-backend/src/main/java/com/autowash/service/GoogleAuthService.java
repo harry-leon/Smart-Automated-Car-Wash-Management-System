@@ -1,12 +1,13 @@
 package com.autowash.service;
 
+import com.autowash.entity.*;
 import com.autowash.dto.GoogleAuthTicketResponse;
 import com.autowash.dto.GoogleOAuthUserInfo;
 import com.autowash.dto.LoginResponse;
-import com.autowash.entity.AuthUser;
-import com.autowash.entity.GoogleAuthTicket;
+
+
 import com.autowash.entity.enums.GoogleAuthTicketStatus;
-import com.autowash.entity.RefreshToken;
+
 import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.AuthUserRepository;
 import com.autowash.repository.GoogleAuthTicketRepository;

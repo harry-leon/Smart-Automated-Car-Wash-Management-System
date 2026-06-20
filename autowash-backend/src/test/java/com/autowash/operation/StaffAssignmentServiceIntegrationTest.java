@@ -1,15 +1,16 @@
 package com.autowash.operation;
 
+import com.autowash.entity.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.autowash.entity.AuthUser;
+
 import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.CustomerBooking;
+
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.service.StaffAssignmentService;
-import com.autowash.entity.CustomerVehicle;
+
 import com.autowash.entity.enums.VehicleType;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.time.LocalDate;
