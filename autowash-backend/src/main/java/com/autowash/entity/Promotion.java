@@ -1,6 +1,6 @@
 package com.autowash.entity;
 
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -47,7 +47,7 @@ public class Promotion {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PromotionStatus status;
+    private ActiveStatus status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

@@ -1,6 +1,6 @@
 package com.autowash.entity;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,7 +28,7 @@ public class LoyaltyAccount {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false, unique = true)
-    private AuthUser customer;
+    private User customer;
 
     @Column(name = "current_points", nullable = false)
     private int currentPoints;
@@ -46,7 +46,7 @@ public class LoyaltyAccount {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public LoyaltyAccount(AuthUser customer) {
+    public LoyaltyAccount(User customer) {
         Instant now = Instant.now();
         this.id = UUID.randomUUID();
         this.customer = customer;

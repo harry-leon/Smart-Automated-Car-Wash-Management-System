@@ -5,13 +5,13 @@ import com.autowash.dto.ComboResponse;
 import com.autowash.dto.PackageResponse;
 import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.entity.enums.DiscountType;
-import com.autowash.entity.enums.PackageStatus;
-import com.autowash.entity.ServiceCombo;
-import com.autowash.entity.ServicePackage;
+import com.autowash.entity.enums.ActiveStatus;
+import com.autowash.entity.Combo;
+import com.autowash.entity.Package;
 import com.autowash.entity.Voucher;
 import com.autowash.repository.ServiceAddonRepository;
-import com.autowash.repository.ServiceComboRepository;
-import com.autowash.repository.ServicePackageRepository;
+import com.autowash.repository.ComboRepository;
+import com.autowash.repository.PackageRepository;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
@@ -30,30 +30,30 @@ import org.springframework.transaction.annotation.Transactional;
 @org.springframework.stereotype.Service
 public class CatalogService {
 
-    private final ServicePackageRepository servicePackageRepository;
+    private final PackageRepository PackageRepository;
     private final ServiceAddonRepository serviceAddonRepository;
-    private final ServiceComboRepository serviceComboRepository;
+    private final ComboRepository ComboRepository;
     private final VoucherRepository voucherRepository;
     private final CurrentUserService currentUserService;
 
     public CatalogService(
-            ServicePackageRepository servicePackageRepository,
+            PackageRepository PackageRepository,
             ServiceAddonRepository serviceAddonRepository,
-            ServiceComboRepository serviceComboRepository,
+            ComboRepository ComboRepository,
             VoucherRepository voucherRepository,
             CurrentUserService currentUserService
     ) {
-        this.servicePackageRepository = servicePackageRepository;
+        this.PackageRepository = PackageRepository;
         this.serviceAddonRepository = serviceAddonRepository;
-        this.serviceComboRepository = serviceComboRepository;
+        this.ComboRepository = ComboRepository;
         this.voucherRepository = voucherRepository;
         this.currentUserService = currentUserService;
     }
 
     @Transactional(readOnly = true)
     public PackagePage getPackages(int page, int limit) {
-        Page<ServicePackage> packages = servicePackageRepository.findByStatusOrderByIdAsc(
-                PackageStatus.ACTIVE,
+        Page<Package> packages = PackageRepository.findByStatusOrderByIdAsc(
+                ActiveStatus.ACTIVE,
                 PageRequest.of(Math.max(page - 1, 0), limit)
         );
         List<PackageResponse> items = packages.getContent().stream().map(this::toPackageResponse).toList();
@@ -69,14 +69,14 @@ public class CatalogService {
 
     @Transactional(readOnly = true)
     public List<AddonResponse> getAddons() {
-        return serviceAddonRepository.findByStatusOrderByIdAsc(PackageStatus.ACTIVE).stream()
+        return serviceAddonRepository.findByStatusOrderByIdAsc(ActiveStatus.ACTIVE).stream()
                 .map(this::toAddonResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ComboResponse> getAvailableCombos() {
-        return serviceComboRepository.findByActiveTrueOrderByIdAsc().stream()
+        return ComboRepository.findByActiveTrueOrderByIdAsc().stream()
                 .map(this::toComboResponse)
                 .toList();
     }
@@ -99,15 +99,15 @@ public class CatalogService {
     }
 
     @Transactional(readOnly = true)
-    public ServicePackage requireActivePackage(String packageId) {
-        return servicePackageRepository.findById(java.util.UUID.fromString(packageId))
-                .filter(pkg -> pkg.getStatus() == PackageStatus.ACTIVE)
+    public Package requireActivePackage(String packageId) {
+        return PackageRepository.findById(java.util.UUID.fromString(packageId))
+                .filter(pkg -> pkg.getStatus() == ActiveStatus.ACTIVE)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Package is not available", "BUSINESS_RULE_VIOLATION"));
     }
 
     @Transactional(readOnly = true)
-    public ServiceCombo requireActiveCombo(String comboId) {
-        return serviceComboRepository.findByIdAndActiveTrue(comboId)
+    public Combo requireActiveCombo(String comboId) {
+        return ComboRepository.findByIdAndActiveTrue(comboId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Combo is not available", "BUSINESS_RULE_VIOLATION"));
     }
 
@@ -117,7 +117,7 @@ public class CatalogService {
             return List.of();
         }
         return addonIds.stream()
-                .map(id -> serviceAddonRepository.findByIdAndStatus(java.util.UUID.fromString(id), PackageStatus.ACTIVE)
+                .map(id -> serviceAddonRepository.findByIdAndStatus(java.util.UUID.fromString(id), ActiveStatus.ACTIVE)
                         .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Add-on is not available", "BUSINESS_RULE_VIOLATION")))
                 .toList();
     }
@@ -138,7 +138,7 @@ public class CatalogService {
     }
 
     private void validateVoucherOrThrow(Voucher voucher, long amount) {
-        if (voucher.getStatus() != com.autowash.entity.enums.PromotionStatus.ACTIVE) {
+        if (voucher.getStatus() != com.autowash.entity.enums.ActiveStatus.ACTIVE) {
             throw businessRule("VOUCHER_NOT_FOUND", "Voucher not found", "USE_DIFFERENT_VOUCHER");
         }
         if (voucher.getEndAt().isBefore(Instant.now())) {
@@ -161,17 +161,17 @@ public class CatalogService {
         );
     }
 
-    private PackageResponse toPackageResponse(ServicePackage servicePackage) {
+    private PackageResponse toPackageResponse(Package Package) {
         return new PackageResponse(
-                servicePackage.getId(),
-                servicePackage.getName(),
-                servicePackage.getDescription(),
-                servicePackage.getBasePrice(),
-                servicePackage.getDurationMinutes(),
+                Package.getId(),
+                Package.getName(),
+                Package.getDescription(),
+                Package.getBasePrice(),
+                Package.getDurationMinutes(),
                 null,
                 List.of(),
-                servicePackage.getImageUrl(),
-                servicePackage.getStatus().name(),
+                Package.getImageUrl(),
+                Package.getStatus().name(),
                 null
         );
     }
@@ -190,7 +190,7 @@ public class CatalogService {
         );
     }
 
-    private ComboResponse toComboResponse(ServiceCombo combo) {
+    private ComboResponse toComboResponse(Combo combo) {
         return new ComboResponse(
                 combo.getId(),
                 combo.getName(),
@@ -200,7 +200,7 @@ public class CatalogService {
                 combo.getMaxUsages() == null ? 0 : combo.getMaxUsages(),
                 List.of(),
                 combo.getImageUrl(),
-                combo.getStatus() == PackageStatus.ACTIVE,
+                combo.getStatus() == ActiveStatus.ACTIVE,
                 false,
                 0L
         );

@@ -24,7 +24,7 @@ public class RefreshToken {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private AuthUser user;
+    private User user;
 
     @Column(nullable = false, unique = true, length = 255)
     private String token;
@@ -38,7 +38,7 @@ public class RefreshToken {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public RefreshToken(AuthUser user, String token, Instant expiresAt) {
+    public RefreshToken(User user, String token, Instant expiresAt) {
         this.id = UUID.randomUUID();
         this.user = user;
         this.token = token;

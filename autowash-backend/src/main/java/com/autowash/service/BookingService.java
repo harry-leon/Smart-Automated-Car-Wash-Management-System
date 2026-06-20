@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.dto.AddonSelectionResponse;
 import com.autowash.dto.ApplyPointsRequest;
 import com.autowash.dto.ApplyPointsResponse;
@@ -11,13 +11,13 @@ import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.entity.CustomerBooking;
-import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.ServiceCombo;
-import com.autowash.entity.ServicePackage;
+import com.autowash.entity.Booking;
+import com.autowash.repository.BookingRepository;
+import com.autowash.entity.Combo;
+import com.autowash.entity.Package;
 import com.autowash.entity.Voucher;
-import com.autowash.repository.ServiceComboRepository;
-import com.autowash.repository.ServicePackageRepository;
+import com.autowash.repository.ComboRepository;
+import com.autowash.repository.PackageRepository;
 import com.autowash.service.CatalogService;
 import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.service.LoyaltyRules;
@@ -27,9 +27,9 @@ import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.service.StaffAssignmentService;
-import com.autowash.entity.CustomerVehicle;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleStatus;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -57,11 +57,11 @@ public class BookingService {
     );
 
     private final CurrentUserService currentUserService;
-    private final CustomerVehicleRepository customerVehicleRepository;
-    private final CustomerBookingRepository customerBookingRepository;
+    private final VehicleRepository VehicleRepository;
+    private final BookingRepository BookingRepository;
     private final CatalogService catalogService;
-    private final ServicePackageRepository servicePackageRepository;
-    private final ServiceComboRepository serviceComboRepository;
+    private final PackageRepository PackageRepository;
+    private final ComboRepository ComboRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyService loyaltyService;
     private final StaffAssignmentService staffAssignmentService;
@@ -69,22 +69,22 @@ public class BookingService {
 
     public BookingService(
             CurrentUserService currentUserService,
-            CustomerVehicleRepository customerVehicleRepository,
-            CustomerBookingRepository customerBookingRepository,
+            VehicleRepository VehicleRepository,
+            BookingRepository BookingRepository,
             CatalogService catalogService,
-            ServicePackageRepository servicePackageRepository,
-            ServiceComboRepository serviceComboRepository,
+            PackageRepository PackageRepository,
+            ComboRepository ComboRepository,
             WashSessionRepository washSessionRepository,
             LoyaltyService loyaltyService,
             StaffAssignmentService staffAssignmentService,
             CustomerComboService customerComboService
     ) {
         this.currentUserService = currentUserService;
-        this.customerVehicleRepository = customerVehicleRepository;
-        this.customerBookingRepository = customerBookingRepository;
+        this.VehicleRepository = VehicleRepository;
+        this.BookingRepository = BookingRepository;
         this.catalogService = catalogService;
-        this.servicePackageRepository = servicePackageRepository;
-        this.serviceComboRepository = serviceComboRepository;
+        this.PackageRepository = PackageRepository;
+        this.ComboRepository = ComboRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyService = loyaltyService;
         this.staffAssignmentService = staffAssignmentService;
@@ -93,12 +93,12 @@ public class BookingService {
 
     @Transactional
     public CreateBookingResponse createBooking(CreateBookingRequest request, Object metadata) {
-        AuthUser user = currentUserService.getCurrentUser();
-        if (customerBookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
+        User user = currentUserService.getCurrentUser();
+        if (BookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
         }
 
-        CustomerVehicle vehicle = customerVehicleRepository.findByOwnerAndIdAndStatus(
+        Vehicle vehicle = VehicleRepository.findByOwnerAndIdAndStatus(
                         user,
                         UUID.fromString(request.vehicleId()),
                         VehicleStatus.ACTIVE
@@ -106,8 +106,8 @@ public class BookingService {
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Vehicle not found or not owned", "RESOURCE_NOT_FOUND"));
 
         List<com.autowash.entity.Service> addons = catalogService.requireActiveAddons(request.addons());
-        ServicePackage servicePackage = null;
-        ServiceCombo serviceCombo = null;
+        Package Package = null;
+        Combo Combo = null;
         CustomerCombo ownedCombo = null;
         long basePrice;
         int baseDuration;
@@ -117,16 +117,16 @@ public class BookingService {
         boolean comboPurchased = false;
 
         if (request.packageId() != null && !request.packageId().isBlank()) {
-            servicePackage = catalogService.requireActivePackage(request.packageId());
-            basePrice = servicePackage.getBasePrice();
-            baseDuration = servicePackage.getDurationMinutes();
-            responsePackageId = servicePackage.getId().toString();
-            responsePackageName = servicePackage.getName();
+            Package = catalogService.requireActivePackage(request.packageId());
+            basePrice = Package.getBasePrice();
+            baseDuration = Package.getDurationMinutes();
+            responsePackageId = Package.getId().toString();
+            responsePackageName = Package.getName();
         } else {
-            serviceCombo = catalogService.requireActiveCombo(request.comboId());
-            ownedCombo = customerComboService.findActiveOwnedCombo(user, serviceCombo.getId());
+            Combo = catalogService.requireActiveCombo(request.comboId());
+            ownedCombo = customerComboService.findActiveOwnedCombo(user, Combo.getId());
             baseDuration = 0;
-            responsePackageName = serviceCombo.getName();
+            responsePackageName = Combo.getName();
             if (ownedCombo != null) {
                 if (ownedCombo.isExpired()) {
                     customerComboService.markExpired(ownedCombo);
@@ -138,7 +138,7 @@ public class BookingService {
                 basePrice = 0;
                 customerComboId = ownedCombo.getId();
             } else {
-                basePrice = serviceCombo.getBasePrice();
+                basePrice = Combo.getBasePrice();
                 comboPurchased = true;
             }
         }
@@ -153,12 +153,12 @@ public class BookingService {
         }
 
         LocalDateTime scheduledAt = request.bookingDate().atTime(LocalTime.parse(request.bookingTime()));
-        CustomerBooking booking = new CustomerBooking(
+        Booking booking = new Booking(
                 generateBookingId(),
                 user,
                 vehicle,
-                servicePackage == null ? null : servicePackage.getId(),
-                serviceCombo == null ? null : serviceCombo.getId(),
+                Package == null ? null : Package.getId(),
+                Combo == null ? null : Combo.getId(),
                 voucher == null ? null : voucher.getCode(),
                 scheduledAt.toInstant(java.time.ZoneOffset.UTC),
                 LocalTime.parse(request.bookingTime()),
@@ -169,11 +169,11 @@ public class BookingService {
                 subtotal - voucherDiscount,
                 baseDuration + addons.stream().mapToInt(com.autowash.entity.Service::getDurationMinutes).sum()
         );
-        customerBookingRepository.save(booking);
+        BookingRepository.save(booking);
 
-        if (serviceCombo != null) {
+        if (Combo != null) {
             if (ownedCombo == null) {
-                ownedCombo = customerComboService.createOwnedCombo(user, serviceCombo.getId(), booking.getId());
+                ownedCombo = customerComboService.createOwnedCombo(user, Combo.getId(), booking.getId());
                 customerComboId = ownedCombo.getId();
             }
             customerComboService.recordUsage(ownedCombo, booking.getId(), request.bookingDate());
@@ -202,7 +202,7 @@ public class BookingService {
                 null,
                 booking.getCreatedAt(),
                 booking.getId(),
-                serviceCombo == null ? null : serviceCombo.getId(),
+                Combo == null ? null : Combo.getId(),
                 customerComboId,
                 comboPurchased,
                 null
@@ -211,16 +211,16 @@ public class BookingService {
 
     @Transactional(readOnly = true)
     public BookingPage listBookings(String status, LocalDate dateFrom, LocalDate dateTo, int page, int limit) {
-        AuthUser user = currentUserService.getCurrentUser();
-        Page<CustomerBooking> bookings;
+        User user = currentUserService.getCurrentUser();
+        Page<Booking> bookings;
         if (status != null && !status.isBlank()) {
-            bookings = customerBookingRepository.findByCustomerAndStatusOrderByCreatedAtDesc(
+            bookings = BookingRepository.findByCustomerAndStatusOrderByCreatedAtDesc(
                     user,
                     BookingStatus.valueOf(status),
                     PageRequest.of(Math.max(page - 1, 0), limit)
             );
         } else {
-            bookings = customerBookingRepository.findByCustomerOrderByCreatedAtDesc(
+            bookings = BookingRepository.findByCustomerOrderByCreatedAtDesc(
                     user,
                     PageRequest.of(Math.max(page - 1, 0), limit)
             );
@@ -244,7 +244,7 @@ public class BookingService {
 
     @Transactional
     public CancelBookingResponse cancelBooking(String bookingId, String reason) {
-        CustomerBooking booking = findOwnedBooking(bookingId);
+        Booking booking = findOwnedBooking(bookingId);
         if (!CANCELLABLE_BOOKING_STATUSES.contains(booking.getStatus())) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", "RESOURCE_LOCKED");
         }
@@ -261,8 +261,8 @@ public class BookingService {
 
     @Transactional
     public ApplyPointsResponse applyPoints(String bookingId, ApplyPointsRequest request) {
-        AuthUser user = currentUserService.getCurrentUser();
-        CustomerBooking booking = findOwnedBooking(bookingId);
+        User user = currentUserService.getCurrentUser();
+        Booking booking = findOwnedBooking(bookingId);
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
@@ -297,23 +297,23 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public CustomerBooking requireBookingForOperations(String bookingId) {
-        return customerBookingRepository.findById(bookingId)
+    public Booking requireBookingForOperations(String bookingId) {
+        return BookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
     }
 
     @Transactional
-    public void updateStatus(CustomerBooking booking, BookingStatus status) {
+    public void updateStatus(Booking booking, BookingStatus status) {
         booking.updateStatus(status);
     }
 
-    private CustomerBooking findOwnedBooking(String bookingId) {
-        AuthUser user = currentUserService.getCurrentUser();
-        return customerBookingRepository.findByCustomerAndId(user, bookingId)
+    private Booking findOwnedBooking(String bookingId) {
+        User user = currentUserService.getCurrentUser();
+        return BookingRepository.findByCustomerAndId(user, bookingId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND"));
     }
 
-    private BookingListItemResponse toListItem(CustomerBooking booking) {
+    private BookingListItemResponse toListItem(Booking booking) {
         String packageName = resolvePackageName(booking);
         var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
@@ -332,7 +332,7 @@ public class BookingService {
         );
     }
 
-    public BookingDetailResponse toDetailResponse(CustomerBooking booking) {
+    public BookingDetailResponse toDetailResponse(Booking booking) {
         String packageName = resolvePackageName(booking);
         var washSession = washSessionRepository.findFirstByBookingIdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
@@ -384,22 +384,22 @@ public class BookingService {
         );
     }
 
-    private String resolveAssignedStaffName(CustomerBooking booking, com.autowash.entity.WashSession washSession) {
+    private String resolveAssignedStaffName(Booking booking, com.autowash.entity.WashSession washSession) {
         if (washSession != null && washSession.getAssignedStaff() != null) {
             return washSession.getAssignedStaff().getFullName();
         }
         return booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName();
     }
 
-    private String resolvePackageName(CustomerBooking booking) {
+    private String resolvePackageName(Booking booking) {
         if (booking.getPackageId() != null) {
-            return servicePackageRepository.findById(booking.getPackageId())
-                    .map(ServicePackage::getName)
+            return PackageRepository.findById(booking.getPackageId())
+                    .map(Package::getName)
                     .orElse(booking.getPackageId().toString());
         }
         if (booking.getComboId() != null) {
-            return serviceComboRepository.findById(booking.getComboId())
-                    .map(ServiceCombo::getName)
+            return ComboRepository.findById(booking.getComboId())
+                    .map(Combo::getName)
                     .orElse(booking.getComboId().toString());
         }
         return null;

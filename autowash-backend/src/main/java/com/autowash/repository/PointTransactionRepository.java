@@ -1,6 +1,6 @@
 package com.autowash.repository;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.enums.PointTransactionType;
 import java.time.Instant;
@@ -15,7 +15,7 @@ import org.springframework.data.repository.query.Param;
 public interface PointTransactionRepository extends JpaRepository<PointTransaction, Long> {
 
     @Query("select pt from PointTransaction pt where pt.loyaltyAccount.customer = :customer")
-    Page<PointTransaction> findByCustomer(@Param("customer") AuthUser customer, Pageable pageable);
+    Page<PointTransaction> findByCustomer(@Param("customer") User customer, Pageable pageable);
 
     Optional<PointTransaction> findByTypeAndBookingId(PointTransactionType type, UUID bookingId);
 
@@ -37,7 +37,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
               and (:#{#dateTo == null} = true or pt.createdAt <= :dateTo)
             """)
     Page<PointTransaction> search(
-            @Param("customer") AuthUser customer,
+            @Param("customer") User customer,
             @Param("type") PointTransactionType type,
             @Param("dateFrom") Instant dateFrom,
             @Param("dateTo") Instant dateTo,
@@ -45,7 +45,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
     );
 
     @Query("select coalesce(sum(pt.points), 0) from PointTransaction pt where pt.loyaltyAccount.customer = :customer and pt.type = :type")
-    long sumPointsByCustomerAndType(@Param("customer") AuthUser customer, @Param("type") PointTransactionType type);
+    long sumPointsByCustomerAndType(@Param("customer") User customer, @Param("type") PointTransactionType type);
 
     @Query("""
             select pt from PointTransaction pt

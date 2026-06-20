@@ -1,6 +1,6 @@
 package com.autowash.entity;
 
-import com.autowash.entity.enums.PackageStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -36,7 +36,7 @@ public class Service {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PackageStatus status;
+    private ActiveStatus status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

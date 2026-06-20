@@ -6,13 +6,13 @@ import com.autowash.dto.RefreshTokenResponse;
 import com.autowash.dto.RegisterRequest;
 import com.autowash.dto.RegisterResponse;
 import com.autowash.dto.SendOtpResponse;
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.OtpPurpose;
-import com.autowash.entity.OtpRecord;
+import com.autowash.entity.OtpVerification;
 import com.autowash.entity.RefreshToken;
 import com.autowash.entity.enums.UserStatus;
-import com.autowash.repository.AuthUserRepository;
-import com.autowash.repository.OtpRecordRepository;
+import com.autowash.repository.UserRepository;
+import com.autowash.repository.OtpVerificationRepository;
 import com.autowash.repository.RefreshTokenRepository;
 import com.autowash.shared.exception.ApiException;
 import java.time.Instant;
@@ -27,8 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
     private static final String PHONE_PATTERN = "^0[0-9]{9}$";
 
-    private final AuthUserRepository authUserRepository;
-    private final OtpRecordRepository otpRecordRepository;
+    private final UserRepository UserRepository;
+    private final OtpVerificationRepository OtpVerificationRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpService otpService;
@@ -40,8 +40,8 @@ public class AuthService {
     private final boolean otpExposeForDev;
 
     public AuthService(
-            AuthUserRepository authUserRepository,
-            OtpRecordRepository otpRecordRepository,
+            UserRepository UserRepository,
+            OtpVerificationRepository OtpVerificationRepository,
             RefreshTokenRepository refreshTokenRepository,
             PasswordEncoder passwordEncoder,
             OtpService otpService,
@@ -52,8 +52,8 @@ public class AuthService {
             @Value("${autowash.auth.jwt.refresh-token-expiration-seconds}") long refreshTokenExpirationSeconds,
             @Value("${autowash.auth.otp.expose-for-dev}") boolean otpExposeForDev
     ) {
-        this.authUserRepository = authUserRepository;
-        this.otpRecordRepository = otpRecordRepository;
+        this.UserRepository = UserRepository;
+        this.OtpVerificationRepository = OtpVerificationRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.otpService = otpService;
@@ -67,20 +67,20 @@ public class AuthService {
 
     @Transactional
     public RegisterResponse register(RegisterRequest request, RequestMetadata metadata) {
-        if (authUserRepository.existsByPhone(request.phone())) {
+        if (UserRepository.existsByPhone(request.phone())) {
             throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", "DUPLICATE_PHONE");
         }
-        if (authUserRepository.existsByEmailIgnoreCase(request.email())) {
+        if (UserRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
         }
 
-        AuthUser user = new AuthUser(
+        User user = new User(
                 request.fullName(),
                 request.phone(),
                 request.email(),
                 passwordEncoder.encode(request.password())
         );
-        authUserRepository.save(user);
+        UserRepository.save(user);
         SendOtpResponse otpResponse = issueRegistrationOtp(user, metadata, false);
 
         return new RegisterResponse(
@@ -97,7 +97,7 @@ public class AuthService {
 
     @Transactional
     public SendOtpResponse sendRegistrationOtp(String email, String phone, RequestMetadata metadata) {
-        AuthUser user = resolveOtpUser(email, phone)
+        User user = resolveOtpUser(email, phone)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         requirePendingUser(user);
         enforceResendLimit(user);
@@ -105,17 +105,17 @@ public class AuthService {
         return issueRegistrationOtp(user, metadata, true);
     }
 
-    private SendOtpResponse issueRegistrationOtp(AuthUser user, RequestMetadata metadata, boolean resend) {
+    private SendOtpResponse issueRegistrationOtp(User user, RequestMetadata metadata, boolean resend) {
         invalidateActiveRegistrationOtps(user);
         String code = otpService.generateOtp();
-        OtpRecord otpRecord = new OtpRecord(
+        OtpVerification OtpVerification = new OtpVerification(
                 user,
                 OtpPurpose.EMAIL_REGISTRATION,
                 passwordEncoder.encode(code),
                 user.getEmail(),
                 Instant.now().plusSeconds(otpExpirationSeconds)
         );
-        otpRecordRepository.save(otpRecord);
+        OtpVerificationRepository.save(OtpVerification);
         try {
             emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
         } catch (RuntimeException exception) {
@@ -134,33 +134,33 @@ public class AuthService {
 
     @Transactional(noRollbackFor = ApiException.class)
     public LoginResponse verifyRegistrationOtp(String email, String phone, String otp, RequestMetadata metadata) {
-        AuthUser user = resolveOtpUser(email, phone)
+        User user = resolveOtpUser(email, phone)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         requirePendingUser(user);
 
-        OtpRecord otpRecord = otpRecordRepository.findFirstByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNullOrderByCreatedAtDesc(user, OtpPurpose.EMAIL_REGISTRATION)
+        OtpVerification OtpVerification = OtpVerificationRepository.findFirstByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNullOrderByCreatedAtDesc(user, OtpPurpose.EMAIL_REGISTRATION)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP"));
 
-        if (otpRecord.getExpiresAt().isBefore(Instant.now())) {
-            otpRecord.invalidate();
+        if (OtpVerification.getExpiresAt().isBefore(Instant.now())) {
+            OtpVerification.invalidate();
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP has expired", "OTP_EXPIRED");
         }
 
-        if (otpRecord.isLocked() || otpRecord.getAttempts() >= otpMaxAttempts) {
-            otpRecord.lock();
+        if (OtpVerification.isLocked() || OtpVerification.getAttempts() >= otpMaxAttempts) {
+            OtpVerification.lock();
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
         }
 
-        if (!passwordEncoder.matches(otp, otpRecord.getCode())) {
-            otpRecord.incrementAttempts();
-            if (otpRecord.getAttempts() >= otpMaxAttempts) {
-                otpRecord.lock();
+        if (!passwordEncoder.matches(otp, OtpVerification.getCode())) {
+            OtpVerification.incrementAttempts();
+            if (OtpVerification.getAttempts() >= otpMaxAttempts) {
+                OtpVerification.lock();
                 throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
             }
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP");
         }
 
-        otpRecord.markVerified();
+        OtpVerification.markVerified();
         user.activate();
 
         String accessToken = jwtService.generateAccessToken(user);
@@ -171,7 +171,7 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        AuthUser user = resolveLoginUser(request.identifier())
+        User user = resolveLoginUser(request.identifier())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid credentials", "INVALID_CREDENTIALS"));
 
         if (user.getStatus() == UserStatus.BLOCKED) {
@@ -219,7 +219,7 @@ public class AuthService {
     }
 
     @Transactional
-    public RefreshToken createRefreshToken(AuthUser user) {
+    public RefreshToken createRefreshToken(User user) {
         RefreshToken refreshToken = new RefreshToken(
                 user,
                 UUID.randomUUID().toString(),
@@ -228,7 +228,7 @@ public class AuthService {
         return refreshTokenRepository.save(refreshToken);
     }
 
-    private LoginResponse toLoginResponse(AuthUser user, String accessToken, String refreshToken) {
+    private LoginResponse toLoginResponse(User user, String accessToken, String refreshToken) {
         return new LoginResponse(
                 user.getId().toString(),
                 user.getFullName(),
@@ -257,7 +257,7 @@ public class AuthService {
         return email.charAt(0) + "***" + email.substring(atIndex - 1);
     }
 
-    private void requirePendingUser(AuthUser user) {
+    private void requirePendingUser(User user) {
         if (user.getStatus() != UserStatus.PENDING_VERIFY && user.getStatus() != UserStatus.PENDING) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
@@ -267,34 +267,34 @@ public class AuthService {
         }
     }
 
-    private java.util.Optional<AuthUser> resolveOtpUser(String email, String phone) {
+    private java.util.Optional<User> resolveOtpUser(String email, String phone) {
         if (email != null && !email.isBlank()) {
-            return authUserRepository.findByEmailIgnoreCase(email.trim());
+            return UserRepository.findByEmailIgnoreCase(email.trim());
         }
         if (phone != null && !phone.isBlank()) {
-            return authUserRepository.findByPhone(phone.trim());
+            return UserRepository.findByPhone(phone.trim());
         }
         throw new ApiException(HttpStatus.BAD_REQUEST, "Email is required", "VALIDATION_ERROR");
     }
 
-    private void invalidateActiveRegistrationOtps(AuthUser user) {
-        otpRecordRepository.findByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNull(user, OtpPurpose.EMAIL_REGISTRATION)
-                .forEach(OtpRecord::invalidate);
+    private void invalidateActiveRegistrationOtps(User user) {
+        OtpVerificationRepository.findByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNull(user, OtpPurpose.EMAIL_REGISTRATION)
+                .forEach(OtpVerification::invalidate);
     }
 
-    private void enforceResendLimit(AuthUser user) {
+    private void enforceResendLimit(User user) {
         Instant windowStart = Instant.now().minusSeconds(3600);
-        if (otpRecordRepository.countByUserAndPurposeAndCreatedAtAfter(user, OtpPurpose.EMAIL_REGISTRATION, windowStart) >= 3) {
+        if (OtpVerificationRepository.countByUserAndPurposeAndCreatedAtAfter(user, OtpPurpose.EMAIL_REGISTRATION, windowStart) >= 3) {
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", "RATE_LIMIT_EXCEEDED");
         }
     }
 
-    private java.util.Optional<AuthUser> resolveLoginUser(String identifier) {
+    private java.util.Optional<User> resolveLoginUser(String identifier) {
         String normalizedIdentifier = identifier.trim();
         if (normalizedIdentifier.matches(PHONE_PATTERN)) {
-            return authUserRepository.findByPhone(normalizedIdentifier);
+            return UserRepository.findByPhone(normalizedIdentifier);
         }
-        return authUserRepository.findByEmailIgnoreCase(normalizedIdentifier);
+        return UserRepository.findByEmailIgnoreCase(normalizedIdentifier);
     }
 
     public record RequestMetadata(String requestIp, String userAgent, String deviceFingerprint) {

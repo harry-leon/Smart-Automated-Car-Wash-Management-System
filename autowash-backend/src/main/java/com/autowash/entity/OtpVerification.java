@@ -18,17 +18,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "otp_records")
+@Table(name = "otp_verifications")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OtpRecord {
+public class OtpVerification {
 
     @Id
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private AuthUser user;
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
@@ -58,7 +58,7 @@ public class OtpRecord {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public OtpRecord(AuthUser user, OtpPurpose purpose, String codeHash, String deliveryAddress, Instant expiresAt) {
+    public OtpVerification(User user, OtpPurpose purpose, String codeHash, String deliveryAddress, Instant expiresAt) {
         this.id = UUID.randomUUID();
         this.user = user;
         this.purpose = purpose;

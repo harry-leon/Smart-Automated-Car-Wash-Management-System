@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -26,7 +26,7 @@ public class JwtService {
         this.accessTokenExpirationSeconds = accessTokenExpirationSeconds;
     }
 
-    public String generateAccessToken(AuthUser user) {
+    public String generateAccessToken(User user) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(user.getId().toString())

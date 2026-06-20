@@ -29,7 +29,7 @@ public class UserPreference {
     @MapsId
     @OneToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private AuthUser user;
+    private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
@@ -48,7 +48,7 @@ public class UserPreference {
     @Column(name = "sms_notifications", nullable = false)
     private boolean smsNotifications;
 
-    public UserPreference(AuthUser user) {
+    public UserPreference(User user) {
         this.user = user;
         this.userId = user.getId();
         this.language = LanguagePreference.VI;

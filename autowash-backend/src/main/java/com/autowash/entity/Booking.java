@@ -28,18 +28,18 @@ import lombok.NoArgsConstructor;
 @Table(name = "bookings")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CustomerBooking {
+public class Booking {
 
     @Id
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
-    private AuthUser customer;
+    private User customer;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "vehicle_id", nullable = false)
-    private CustomerVehicle vehicle;
+    private Vehicle vehicle;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "booking_type", nullable = false, length = 30)
@@ -94,10 +94,10 @@ public class CustomerBooking {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public CustomerBooking(
+    public Booking(
             UUID id,
-            AuthUser customer,
-            CustomerVehicle vehicle,
+            User customer,
+            Vehicle vehicle,
             UUID packageId,
             UUID comboId,
             UUID voucherId,
@@ -207,7 +207,7 @@ public class CustomerBooking {
         return PaymentStatus.UNPAID;
     }
 
-    public AuthUser getAssignedStaff() {
+    public User getAssignedStaff() {
         return null;
     }
 
@@ -219,7 +219,7 @@ public class CustomerBooking {
         return List.of();
     }
 
-    public void assignStaff(AuthUser staff) {}
+    public void assignStaff(User staff) {}
 
     public void startOtpConfirmationWindow(Instant expiresAt) {}
 

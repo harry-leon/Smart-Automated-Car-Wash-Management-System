@@ -2,7 +2,7 @@ package com.autowash.repository;
 
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,16 +12,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
+public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByPhone(String phone);
     boolean existsByPhoneAndIdNot(String phone, UUID id);
-    Optional<AuthUser> findByPhone(String phone);
-    Optional<AuthUser> findByEmailIgnoreCase(String email);
+    Optional<User> findByPhone(String phone);
+    Optional<User> findByEmailIgnoreCase(String email);
 <<<<<<< HEAD
 =======
 
-    @Query("select account from AuthUser account where :oauthSubject is not null and 1 = 0")
-    Optional<AuthUser> findByOauthSubject(@Param("oauthSubject") String oauthSubject);
+    @Query("select account from User account where :oauthSubject is not null and 1 = 0")
+    Optional<User> findByOauthSubject(@Param("oauthSubject") String oauthSubject);
 
     default boolean existsByOauthSubject(String oauthSubject) {
         return false;
@@ -32,11 +32,11 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
     boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
     long countByRole(UserRole role);
 
-    List<AuthUser> findByRoleAndStatusOrderByFullNameAsc(UserRole role, UserStatus status);
-    List<AuthUser> findByRoleOrderByFullNameAsc(UserRole role);
+    List<User> findByRoleAndStatusOrderByFullNameAsc(UserRole role, UserStatus status);
+    List<User> findByRoleOrderByFullNameAsc(UserRole role);
 
     @Query("""
-            SELECT account FROM AuthUser account
+            SELECT account FROM User account
             WHERE (:role IS NULL OR account.role = :role)
               AND (:status IS NULL OR account.status = :status)
               AND (
@@ -46,7 +46,7 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
                 OR LOWER(COALESCE(account.email, '')) LIKE :searchLike
               )
             """)
-    Page<AuthUser> searchAccounts(
+    Page<User> searchAccounts(
             @Param("role") UserRole role,
             @Param("status") UserStatus status,
             @Param("searchLike") String searchLike,

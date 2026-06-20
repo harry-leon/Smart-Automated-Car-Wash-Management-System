@@ -1,7 +1,7 @@
 package com.autowash.service;
 
 import com.autowash.dto.NotificationResponse;
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.Notification;
 import com.autowash.repository.NotificationRepository;
 import com.autowash.shared.exception.ApiException;
@@ -25,7 +25,7 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public List<NotificationResponse> listMyNotifications(int limit) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         int safeLimit = Math.max(1, Math.min(limit, 100));
         return notificationRepository.findByUserOrderByCreatedAtDesc(user, PageRequest.of(0, safeLimit))
                 .stream()
@@ -35,7 +35,7 @@ public class NotificationService {
 
     @Transactional
     public NotificationResponse markAsRead(UUID notificationId) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Notification not found", "RESOURCE_NOT_FOUND"));
         if (!notification.getUser().getId().equals(user.getId())) {

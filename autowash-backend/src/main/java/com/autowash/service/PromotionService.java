@@ -1,13 +1,13 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.dto.CustomerPromotionResponse;
 import com.autowash.dto.PromotionRequest;
 import com.autowash.dto.PromotionResponse;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.Promotion;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import com.autowash.repository.PromotionRepository;
 import com.autowash.shared.dto.PaginationMeta;
@@ -90,11 +90,11 @@ public class PromotionService {
 
     @Transactional(readOnly = true)
     public PromotionPage listActiveForCurrentCustomer(int page, int limit) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         Page<Promotion> promotions = promotionRepository.findActiveForTier(
                 Instant.now(),
                 user.getTier().name(),
-                PromotionStatus.ACTIVE,
+                ActiveStatus.ACTIVE,
                 PromotionTargetingMode.ALL_TIERS,
                 pageRequest(page, limit)
         );

@@ -2,16 +2,16 @@ package com.autowash.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.CustomerBooking;
+import com.autowash.repository.UserRepository;
+import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.service.StaffAssignmentService;
-import com.autowash.entity.CustomerVehicle;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -29,38 +29,38 @@ class StaffAssignmentServiceIntegrationTest {
     private StaffAssignmentService staffAssignmentService;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private CustomerVehicleRepository customerVehicleRepository;
+    private VehicleRepository VehicleRepository;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Test
     void picksLeastLoadedActiveStaffForNewBookingAssignment() {
-        AuthUser busyStaff = createStaff("Busy Staff", "0913");
-        AuthUser availableStaff = createStaff("Available Staff", "0912");
+        User busyStaff = createStaff("Busy Staff", "0913");
+        User availableStaff = createStaff("Available Staff", "0912");
         createAssignedBooking("ASSIGN_BUSY_001", busyStaff, "0901777021");
         createAssignedBooking("ASSIGN_BUSY_002", busyStaff, "0901777022");
 
-        AuthUser selected = staffAssignmentService.pickLeastLoadedActiveStaff();
+        User selected = staffAssignmentService.pickLeastLoadedActiveStaff();
 
         assertThat(selected.getId()).isEqualTo(availableStaff.getId());
     }
 
-    private AuthUser createStaff(String fullName, String phonePrefix) {
-        AuthUser staff = new AuthUser(fullName, uniquePhone(phonePrefix), fullName.toLowerCase().replace(" ", ".") + "-" + UUID.randomUUID() + "@example.com", "hash");
+    private User createStaff(String fullName, String phonePrefix) {
+        User staff = new User(fullName, uniquePhone(phonePrefix), fullName.toLowerCase().replace(" ", ".") + "-" + UUID.randomUUID() + "@example.com", "hash");
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        return authUserRepository.saveAndFlush(staff);
+        return UserRepository.saveAndFlush(staff);
     }
 
-    private void createAssignedBooking(String bookingId, AuthUser staff, String customerPhone) {
-        AuthUser customer = new AuthUser("Assignment Customer", customerPhone, customerPhone + "@example.com", "hash");
+    private void createAssignedBooking(String bookingId, User staff, String customerPhone) {
+        User customer = new User("Assignment Customer", customerPhone, customerPhone + "@example.com", "hash");
         customer.activate();
-        authUserRepository.saveAndFlush(customer);
-        CustomerVehicle vehicle = customerVehicleRepository.saveAndFlush(new CustomerVehicle(
+        UserRepository.saveAndFlush(customer);
+        Vehicle vehicle = VehicleRepository.saveAndFlush(new Vehicle(
                 customer,
                 "30A-" + customerPhone.substring(customerPhone.length() - 6),
                 VehicleType.CAR,
@@ -70,7 +70,7 @@ class StaffAssignmentServiceIntegrationTest {
                 "Silver",
                 true
         ));
-        CustomerBooking booking = new CustomerBooking(
+        Booking booking = new Booking(
                 bookingId,
                 customer,
                 vehicle,
@@ -88,7 +88,7 @@ class StaffAssignmentServiceIntegrationTest {
         );
         booking.confirmByOtp();
         booking.assignStaff(staff);
-        customerBookingRepository.saveAndFlush(booking);
+        BookingRepository.saveAndFlush(booking);
     }
 
     private String uniquePhone(String prefix) {

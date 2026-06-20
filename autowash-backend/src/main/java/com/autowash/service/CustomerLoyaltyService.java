@@ -1,11 +1,11 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
-import com.autowash.entity.CustomerBooking;
-import com.autowash.entity.ServiceCombo;
-import com.autowash.entity.ServicePackage;
-import com.autowash.repository.ServiceComboRepository;
-import com.autowash.repository.ServicePackageRepository;
+import com.autowash.entity.User;
+import com.autowash.entity.Booking;
+import com.autowash.entity.Combo;
+import com.autowash.entity.Package;
+import com.autowash.repository.ComboRepository;
+import com.autowash.repository.PackageRepository;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.LoyaltyTransactionResponse;
 import com.autowash.dto.PointTransactionResponse;
@@ -28,27 +28,27 @@ public class CustomerLoyaltyService {
 
     private final CurrentUserService currentUserService;
     private final WashSessionRepository washSessionRepository;
-    private final ServicePackageRepository servicePackageRepository;
-    private final ServiceComboRepository serviceComboRepository;
+    private final PackageRepository PackageRepository;
+    private final ComboRepository ComboRepository;
     private final LoyaltyService loyaltyService;
 
     public CustomerLoyaltyService(
             CurrentUserService currentUserService,
             WashSessionRepository washSessionRepository,
-            ServicePackageRepository servicePackageRepository,
-            ServiceComboRepository serviceComboRepository,
+            PackageRepository PackageRepository,
+            ComboRepository ComboRepository,
             LoyaltyService loyaltyService
     ) {
         this.currentUserService = currentUserService;
         this.washSessionRepository = washSessionRepository;
-        this.servicePackageRepository = servicePackageRepository;
-        this.serviceComboRepository = serviceComboRepository;
+        this.PackageRepository = PackageRepository;
+        this.ComboRepository = ComboRepository;
         this.loyaltyService = loyaltyService;
     }
 
     @Transactional(readOnly = true)
     public LoyaltyAccountResponse getAccount() {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         LoyaltyAccountResponse account = loyaltyService.getAccount(user.getId());
 
         return new LoyaltyAccountResponse(
@@ -63,7 +63,7 @@ public class CustomerLoyaltyService {
 
     @Transactional(readOnly = true)
     public LoyaltyTransactionPage listTransactions(int page, int limit) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         LoyaltyService.TransactionPage transactionPage = loyaltyService.getTransactionHistory(
                 user.getId(),
                 null,
@@ -82,7 +82,7 @@ public class CustomerLoyaltyService {
 
     @Transactional(readOnly = true)
     public WashHistoryPage listWashHistory(int page, int limit) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         Page<WashSession> sessions = washSessionRepository.findByBookingCustomerAndStatusOrderByCompletedAtDesc(
                 user,
                 WashSessionStatus.COMPLETED,
@@ -97,11 +97,11 @@ public class CustomerLoyaltyService {
     }
 
     @Transactional(readOnly = true)
-    public int getCurrentBalance(AuthUser user) {
+    public int getCurrentBalance(User user) {
         return loyaltyService.getAccount(user.getId()).currentPoints();
     }
 
-    private List<WashSession> loadCompletedSessions(AuthUser user) {
+    private List<WashSession> loadCompletedSessions(User user) {
         return washSessionRepository.findByBookingCustomerAndStatusOrderByCompletedAtDesc(user, WashSessionStatus.COMPLETED);
     }
 
@@ -132,7 +132,7 @@ public class CustomerLoyaltyService {
     }
 
     private WashHistoryItemResponse toWashHistoryItem(WashSession session) {
-        CustomerBooking booking = session.getBooking();
+        Booking booking = session.getBooking();
         return new WashHistoryItemResponse(
                 session.getId().toString(),
                 booking.getId(),
@@ -147,15 +147,15 @@ public class CustomerLoyaltyService {
         );
     }
 
-    private String resolvePackageName(CustomerBooking booking) {
+    private String resolvePackageName(Booking booking) {
         if (booking.getPackageId() != null) {
-            return servicePackageRepository.findById(booking.getPackageId())
-                    .map(ServicePackage::getName)
+            return PackageRepository.findById(booking.getPackageId())
+                    .map(Package::getName)
                     .orElse(booking.getPackageId());
         }
         if (booking.getComboId() != null) {
-            return serviceComboRepository.findById(booking.getComboId())
-                    .map(ServiceCombo::getName)
+            return ComboRepository.findById(booking.getComboId())
+                    .map(Combo::getName)
                     .orElse(booking.getComboId());
         }
         return null;

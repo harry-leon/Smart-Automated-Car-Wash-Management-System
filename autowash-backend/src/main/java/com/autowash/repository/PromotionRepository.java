@@ -1,7 +1,7 @@
 package com.autowash.repository;
 
 import com.autowash.entity.Promotion;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import java.time.Instant;
 import org.springframework.data.domain.Page;
@@ -14,7 +14,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, String> {
 
     Page<Promotion> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    long countByStatus(PromotionStatus status);
+    long countByStatus(ActiveStatus status);
 
     @Query("""
             select p from Promotion p
@@ -30,7 +30,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, String> {
     Page<Promotion> findActiveForTier(
             @Param("now") Instant now,
             @Param("tier") String tier,
-            @Param("status") PromotionStatus status,
+            @Param("status") ActiveStatus status,
             @Param("allTiers") PromotionTargetingMode allTiers,
             Pageable pageable
     );

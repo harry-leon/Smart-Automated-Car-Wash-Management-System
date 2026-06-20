@@ -1,6 +1,6 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
@@ -11,9 +11,9 @@ import com.autowash.dto.UpdateVehicleRequest;
 import com.autowash.dto.UpdateVehicleResponse;
 import com.autowash.dto.VehicleDetailResponse;
 import com.autowash.dto.VehicleListItemResponse;
-import com.autowash.entity.CustomerVehicle;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleStatus;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -27,24 +27,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class VehicleService {
 
     private final CurrentUserService currentUserService;
-    private final CustomerVehicleRepository customerVehicleRepository;
+    private final VehicleRepository VehicleRepository;
 
-    public VehicleService(CurrentUserService currentUserService, CustomerVehicleRepository customerVehicleRepository) {
+    public VehicleService(CurrentUserService currentUserService, VehicleRepository VehicleRepository) {
         this.currentUserService = currentUserService;
-        this.customerVehicleRepository = customerVehicleRepository;
+        this.VehicleRepository = VehicleRepository;
     }
 
     @Transactional
     public CreateVehicleResponse createVehicle(CreateVehicleRequest request) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         String normalizedPlate = normalizePlate(request.plate());
 
-        if (customerVehicleRepository.existsByOwnerAndPlate(user, normalizedPlate)) {
+        if (VehicleRepository.existsByOwnerAndPlate(user, normalizedPlate)) {
             throw new ApiException(HttpStatus.CONFLICT, "Plate already exists for this customer", "DUPLICATE_PLATE");
         }
 
-        boolean shouldBePrimary = customerVehicleRepository.countByOwnerAndStatus(user, VehicleStatus.ACTIVE) == 0;
-        CustomerVehicle vehicle = new CustomerVehicle(
+        boolean shouldBePrimary = VehicleRepository.countByOwnerAndStatus(user, VehicleStatus.ACTIVE) == 0;
+        Vehicle vehicle = new Vehicle(
                 user,
                 normalizedPlate,
                 request.type(),
@@ -54,15 +54,15 @@ public class VehicleService {
                 trimToNull(request.color()),
                 shouldBePrimary
         );
-        customerVehicleRepository.save(vehicle);
+        VehicleRepository.save(vehicle);
         return toCreateResponse(vehicle);
     }
 
     @Transactional(readOnly = true)
     public VehiclePage listVehicles(int page, int limit) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), limit);
-        Page<CustomerVehicle> vehiclePage = customerVehicleRepository.findByOwnerAndStatusOrderByCreatedAtAsc(
+        Page<Vehicle> vehiclePage = VehicleRepository.findByOwnerAndStatusOrderByCreatedAtAsc(
                 user,
                 VehicleStatus.ACTIVE,
                 pageable
@@ -89,7 +89,7 @@ public class VehicleService {
 
     @Transactional
     public UpdateVehicleResponse updateVehicle(UUID vehicleId, UpdateVehicleRequest request) {
-        CustomerVehicle vehicle = findActiveOwnedVehicle(vehicleId);
+        Vehicle vehicle = findActiveOwnedVehicle(vehicleId);
         vehicle.updateDetails(
                 request.brand().trim(),
                 request.model().trim(),
@@ -109,10 +109,10 @@ public class VehicleService {
 
     @Transactional
     public SetPrimaryVehicleResponse setPrimaryVehicle(UUID vehicleId) {
-        AuthUser user = currentUserService.getCurrentUser();
-        CustomerVehicle targetVehicle = findActiveOwnedVehicle(vehicleId);
+        User user = currentUserService.getCurrentUser();
+        Vehicle targetVehicle = findActiveOwnedVehicle(vehicleId);
 
-        customerVehicleRepository.findFirstByOwnerAndStatusAndPrimaryTrue(user, VehicleStatus.ACTIVE)
+        VehicleRepository.findFirstByOwnerAndStatusAndPrimaryTrue(user, VehicleStatus.ACTIVE)
                 .filter(existingPrimary -> !existingPrimary.getId().equals(targetVehicle.getId()))
                 .ifPresent(existingPrimary -> existingPrimary.setPrimary(false));
 
@@ -128,24 +128,24 @@ public class VehicleService {
 
     @Transactional
     public void deleteVehicle(UUID vehicleId) {
-        AuthUser user = currentUserService.getCurrentUser();
-        CustomerVehicle vehicle = findActiveOwnedVehicle(vehicleId);
+        User user = currentUserService.getCurrentUser();
+        Vehicle vehicle = findActiveOwnedVehicle(vehicleId);
         boolean wasPrimary = vehicle.isPrimary();
         vehicle.softDelete();
 
         if (wasPrimary) {
-            customerVehicleRepository.findFirstByOwnerAndStatusOrderByCreatedAtAsc(user, VehicleStatus.ACTIVE)
+            VehicleRepository.findFirstByOwnerAndStatusOrderByCreatedAtAsc(user, VehicleStatus.ACTIVE)
                     .ifPresent(nextPrimary -> nextPrimary.setPrimary(true));
         }
     }
 
-    private CustomerVehicle findActiveOwnedVehicle(UUID vehicleId) {
-        AuthUser user = currentUserService.getCurrentUser();
-        return customerVehicleRepository.findByOwnerAndIdAndStatus(user, vehicleId, VehicleStatus.ACTIVE)
+    private Vehicle findActiveOwnedVehicle(UUID vehicleId) {
+        User user = currentUserService.getCurrentUser();
+        return VehicleRepository.findByOwnerAndIdAndStatus(user, vehicleId, VehicleStatus.ACTIVE)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Vehicle not found", "RESOURCE_NOT_FOUND"));
     }
 
-    private CreateVehicleResponse toCreateResponse(CustomerVehicle vehicle) {
+    private CreateVehicleResponse toCreateResponse(Vehicle vehicle) {
         return new CreateVehicleResponse(
                 vehicle.getId().toString(),
                 vehicle.getOwner().getId().toString(),
@@ -161,7 +161,7 @@ public class VehicleService {
         );
     }
 
-    private VehicleListItemResponse toListItemResponse(CustomerVehicle vehicle) {
+    private VehicleListItemResponse toListItemResponse(Vehicle vehicle) {
         return new VehicleListItemResponse(
                 vehicle.getId().toString(),
                 vehicle.getPlate(),
@@ -174,7 +174,7 @@ public class VehicleService {
         );
     }
 
-    private VehicleDetailResponse toDetailResponse(CustomerVehicle vehicle) {
+    private VehicleDetailResponse toDetailResponse(Vehicle vehicle) {
         return new VehicleDetailResponse(
                 vehicle.getId().toString(),
                 vehicle.getOwner().getId().toString(),

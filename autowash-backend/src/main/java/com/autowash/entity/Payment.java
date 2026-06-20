@@ -28,7 +28,7 @@ public class Payment {
 
     @OneToOne(optional = false)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
-    private CustomerBooking booking;
+    private Booking booking;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "method", nullable = false, length = 30)

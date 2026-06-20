@@ -1,10 +1,10 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
+import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.Voucher;
 import com.autowash.repository.VoucherRepository;
@@ -41,20 +41,20 @@ public class LoyaltyService {
 
     private static final Logger log = LoggerFactory.getLogger(LoyaltyService.class);
 
-    private final AuthUserRepository authUserRepository;
+    private final UserRepository UserRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final PointTransactionRepository pointTransactionRepository;
     private final VoucherRepository voucherRepository;
 
     public LoyaltyService(
-            AuthUserRepository authUserRepository,
+            UserRepository UserRepository,
             WashSessionRepository washSessionRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
             PointTransactionRepository pointTransactionRepository,
             VoucherRepository voucherRepository
     ) {
-        this.authUserRepository = authUserRepository;
+        this.UserRepository = UserRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.pointTransactionRepository = pointTransactionRepository;
@@ -80,7 +80,7 @@ public class LoyaltyService {
 
     @Transactional
     public EarnPointsResponse postEarnTransaction(UUID customerId, UUID sessionId) {
-        AuthUser customer = requireCustomer(customerId);
+        User customer = requireCustomer(customerId);
         PointTransaction existing = pointTransactionRepository
                 .findByTypeAndReferenceId(PointTransactionType.EARN, sessionId.toString())
                 .orElse(null);
@@ -130,7 +130,7 @@ public class LoyaltyService {
 
     @Transactional
     public RedeemPointsResponse redeemPoints(UUID customerId, int pointsToRedeem, String referenceId) {
-        AuthUser customer = requireCustomer(customerId);
+        User customer = requireCustomer(customerId);
         validateRedemptionAmount(pointsToRedeem);
 
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
@@ -156,7 +156,7 @@ public class LoyaltyService {
                 false,
                 Instant.now(),
                 expiresAt,
-                PromotionStatus.ACTIVE
+                ActiveStatus.ACTIVE
         ));
 
         account.redeemPoints(pointsToRedeem);
@@ -181,7 +181,7 @@ public class LoyaltyService {
 
     @Transactional(readOnly = true)
     public TransactionPage getTransactionHistory(UUID customerId, String type, Instant dateFrom, Instant dateTo, int page, int limit) {
-        AuthUser customer = requireCustomer(customerId);
+        User customer = requireCustomer(customerId);
         PointTransactionType transactionType = parseType(type);
         PageRequest pageRequest = PageRequest.of(Math.max(page - 1, 0), limit, Sort.by("createdAt").descending());
         Page<PointTransaction> transactions;
@@ -230,12 +230,12 @@ public class LoyaltyService {
         log.info("loyalty_tier_upgraded customerId={} oldTier={} newTier={}", account.getCustomer().getId(), oldTier, targetTier);
     }
 
-    private LoyaltyAccount getOrCreateAccount(AuthUser customer) {
+    private LoyaltyAccount getOrCreateAccount(User customer) {
         return loyaltyAccountRepository.findByCustomerId(customer.getId())
                 .orElseGet(() -> loyaltyAccountRepository.save(new LoyaltyAccount(customer)));
     }
 
-    private LoyaltyAccount getOrCreateAccountForUpdate(AuthUser customer) {
+    private LoyaltyAccount getOrCreateAccountForUpdate(User customer) {
         LoyaltyAccount account = loyaltyAccountRepository.findLockedByCustomerId(customer.getId()).orElse(null);
         if (account != null) {
             return account;
@@ -244,8 +244,8 @@ public class LoyaltyService {
         return loyaltyAccountRepository.findLockedByCustomerId(customer.getId()).orElse(created);
     }
 
-    private AuthUser requireCustomer(UUID customerId) {
-        AuthUser customer = authUserRepository.findById(customerId)
+    private User requireCustomer(UUID customerId) {
+        User customer = UserRepository.findById(customerId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND"));
         if (customer.getRole() != UserRole.CUSTOMER) {
             throw new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND");
@@ -301,7 +301,7 @@ public class LoyaltyService {
         );
     }
 
-    private int lifetimeEarnedPoints(AuthUser customer) {
+    private int lifetimeEarnedPoints(User customer) {
         return Math.toIntExact(Math.max(0, pointTransactionRepository.sumPointsByCustomerAndType(customer, PointTransactionType.EARN)));
     }
 

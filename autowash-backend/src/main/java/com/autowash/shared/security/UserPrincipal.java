@@ -1,6 +1,6 @@
 package com.autowash.shared.security;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.UserStatus;
 import java.util.Collection;
 import java.util.List;
@@ -9,7 +9,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-public class AuthUserPrincipal implements UserDetails {
+public class UserPrincipal implements UserDetails {
 
     private final UUID userId;
     private final String phone;
@@ -17,7 +17,7 @@ public class AuthUserPrincipal implements UserDetails {
     private final UserStatus status;
     private final List<GrantedAuthority> authorities;
 
-    public AuthUserPrincipal(AuthUser user) {
+    public UserPrincipal(User user) {
         this.userId = user.getId();
         this.phone = user.getPhone();
         this.passwordHash = user.getPasswordHash();

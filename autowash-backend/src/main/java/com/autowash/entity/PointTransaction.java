@@ -30,7 +30,7 @@ public class PointTransaction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id")
-    private CustomerBooking booking;
+    private Booking booking;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

@@ -26,7 +26,7 @@ public class BookingStatusHistory {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "booking_id", nullable = false)
-    private CustomerBooking booking;
+    private Booking booking;
 
     @Column(name = "old_status", length = 30)
     private String oldStatus;
@@ -36,7 +36,7 @@ public class BookingStatusHistory {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "changed_by")
-    private AuthUser changedBy;
+    private User changedBy;
 
     @Column(name = "reason")
     private String reason;

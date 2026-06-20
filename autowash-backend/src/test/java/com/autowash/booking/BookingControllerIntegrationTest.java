@@ -9,18 +9,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
+import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingOtpAuditEvent;
 import com.autowash.entity.enums.BookingOtpChallengeStatus;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingOtpAuditLogRepository;
 import com.autowash.repository.BookingOtpChallengeRepository;
-import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.repository.LoyaltyAccountRepository;
-import com.autowash.shared.security.AuthUserPrincipal;
+import com.autowash.shared.security.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +50,7 @@ class BookingControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Autowired
     private BookingOtpChallengeRepository bookingOtpChallengeRepository;
@@ -59,17 +59,17 @@ class BookingControllerIntegrationTest {
     private BookingOtpAuditLogRepository bookingOtpAuditLogRepository;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
     private LoyaltyAccountRepository loyaltyAccountRepository;
 
     @BeforeEach
     void ensureActiveStaffExists() {
-        AuthUser staff = new AuthUser("Booking Assignment Staff", uniquePhone("0914"), "booking-assignment-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        User staff = new User("Booking Assignment Staff", uniquePhone("0914"), "booking-assignment-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        authUserRepository.saveAndFlush(staff);
+        UserRepository.saveAndFlush(staff);
     }
 
     @Test
@@ -339,7 +339,7 @@ class BookingControllerIntegrationTest {
     void applyPointsRedeemsLoyaltyBalanceAndUpdatesBookingPricing() throws Exception {
         String phone = "0901234718";
         String accessToken = registerActivateAndLogin(phone);
-        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByPhone(phone).orElseThrow();
         LoyaltyAccount account = new LoyaltyAccount(customer);
         account.addPoints(120);
         loyaltyAccountRepository.saveAndFlush(account);
@@ -374,7 +374,7 @@ class BookingControllerIntegrationTest {
     void applyPointsRejectsDuplicateApplication() throws Exception {
         String phone = "0901234719";
         String accessToken = registerActivateAndLogin(phone);
-        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByPhone(phone).orElseThrow();
         LoyaltyAccount account = new LoyaltyAccount(customer);
         account.addPoints(160);
         loyaltyAccountRepository.saveAndFlush(account);
@@ -522,7 +522,7 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.errorCode").value("RATE_LIMIT_EXCEEDED"));
 
-        var booking = customerBookingRepository.findById(bookingId).orElseThrow();
+        var booking = BookingRepository.findById(bookingId).orElseThrow();
         var lockedChallenge = bookingOtpChallengeRepository
                 .findFirstByBookingAndStatusOrderBySentAtDesc(booking, BookingOtpChallengeStatus.PENDING)
                 .orElseThrow();
@@ -576,7 +576,7 @@ class BookingControllerIntegrationTest {
         String accessToken = registerActivateAndLogin("0901234732");
         String vehicleId = createVehicle(accessToken, "30H-223480");
         String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
-        var booking = customerBookingRepository.findById(bookingId).orElseThrow();
+        var booking = BookingRepository.findById(bookingId).orElseThrow();
         var challenge = bookingOtpChallengeRepository
                 .findFirstByBookingAndStatusOrderBySentAtDesc(booking, BookingOtpChallengeStatus.PENDING)
                 .orElseThrow();
@@ -660,11 +660,11 @@ class BookingControllerIntegrationTest {
     }
 
     private RequestPostProcessor authenticatedAdmin() {
-        AuthUser admin = new AuthUser("Booking Admin", uniquePhone("0986"), "booking-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        User admin = new User("Booking Admin", uniquePhone("0986"), "booking-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         admin.activate();
         ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
-        authUserRepository.saveAndFlush(admin);
-        AuthUserPrincipal principal = new AuthUserPrincipal(admin);
+        UserRepository.saveAndFlush(admin);
+        UserPrincipal principal = new UserPrincipal(admin);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);
@@ -702,9 +702,9 @@ class BookingControllerIntegrationTest {
     }
 
     private void setBookingStatus(String bookingId, BookingStatus status) {
-        var booking = customerBookingRepository.findById(bookingId).orElseThrow();
+        var booking = BookingRepository.findById(bookingId).orElseThrow();
         booking.updateStatus(status);
-        customerBookingRepository.saveAndFlush(booking);
+        BookingRepository.saveAndFlush(booking);
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {

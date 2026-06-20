@@ -3,7 +3,7 @@ package com.autowash.entity;
 import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.entity.enums.VehicleType;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,14 +23,14 @@ import lombok.NoArgsConstructor;
 @Table(name = "vehicles")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CustomerVehicle {
+public class Vehicle {
 
     @Id
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
-    private AuthUser owner;
+    private User owner;
 
     @Column(nullable = false, length = 20)
     private String plate;
@@ -64,8 +64,8 @@ public class CustomerVehicle {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public CustomerVehicle(
-            AuthUser owner,
+    public Vehicle(
+            User owner,
             String plate,
             VehicleType type,
             String brand,
@@ -90,7 +90,7 @@ public class CustomerVehicle {
     }
 
     public UUID getId() { return id; }
-    public AuthUser getOwner() { return owner; }
+    public User getOwner() { return owner; }
     public String getPlate() { return plate; }
     public VehicleType getType() { return type; }
     public String getBrand() { return brand; }

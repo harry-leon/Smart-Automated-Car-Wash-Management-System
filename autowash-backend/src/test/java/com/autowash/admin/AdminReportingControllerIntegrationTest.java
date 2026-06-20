@@ -9,16 +9,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.CustomerBooking;
+import com.autowash.repository.UserRepository;
+import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.shared.security.AuthUserPrincipal;
-import com.autowash.entity.CustomerVehicle;
+import com.autowash.repository.BookingRepository;
+import com.autowash.shared.security.UserPrincipal;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -46,17 +46,17 @@ class AdminReportingControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private CustomerVehicleRepository customerVehicleRepository;
+    private VehicleRepository VehicleRepository;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Test
     void adminBookingListSupportsFiltersAndPagination() throws Exception {
-        CustomerBooking matching = createConfirmedBooking("ADMIN_BK_001", "0901777401", "30H-774401", LocalDate.now().plusDays(1), 270000);
+        Booking matching = createConfirmedBooking("ADMIN_BK_001", "0901777401", "30H-774401", LocalDate.now().plusDays(1), 270000);
         createConfirmedBooking("ADMIN_BK_002", "0901777402", "30H-774402", LocalDate.of(2026, 7, 10), 150000);
 
         mockMvc.perform(get("/api/v1/admin/bookings")
@@ -91,7 +91,7 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void adminAccountListSupportsRoleStatusSearchAndPagination() throws Exception {
-        AuthUser staff = createActiveUser(UserRole.STAFF, uniquePhone("0918"), "Account Staff");
+        User staff = createActiveUser(UserRole.STAFF, uniquePhone("0918"), "Account Staff");
         createActiveUser(UserRole.ADMIN, uniquePhone("0988"), "Account Admin");
         createActiveUser(UserRole.CUSTOMER, uniquePhone("0908"), "Account Customer");
 
@@ -126,7 +126,7 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void adminAccountDetailReturnsAccountAndRejectsMissingAccount() throws Exception {
-        AuthUser account = createActiveUser(UserRole.STAFF, uniquePhone("0977"), "Account Detail Staff");
+        User account = createActiveUser(UserRole.STAFF, uniquePhone("0977"), "Account Detail Staff");
 
         mockMvc.perform(get("/api/v1/admin/accounts/{accountId}", account.getId())
                         .with(user("admin").roles("ADMIN")))
@@ -143,9 +143,9 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void customerDetailWashHistoryAndPointHistoryUseRealBookingOperationsAndLoyaltyData() throws Exception {
-        CustomerBooking booking = createConfirmedBooking("ADMIN_BK_003", "0901777403", "30H-774403", LocalDate.of(2026, 6, 12), 270000);
+        Booking booking = createConfirmedBooking("ADMIN_BK_003", "0901777403", "30H-774403", LocalDate.of(2026, 6, 12), 270000);
         String sessionId = completeSession(booking.getId());
-        CustomerBooking pendingBooking = createConfirmedBookingForVehicle(
+        Booking pendingBooking = createConfirmedBookingForVehicle(
                 booking.getCustomer(),
                 booking.getVehicle(),
                 "ADMIN_BK_004",
@@ -171,7 +171,7 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].bookingId".formatted(sessionId)).value(contains("ADMIN_BK_003")))
-                .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].servicePackage.name".formatted(sessionId)).value(contains("Basic Wash")))
+                .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].Package.name".formatted(sessionId)).value(contains("Basic Wash")))
                 .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].pointsAwarded".formatted(sessionId)).value(contains(27)))
                 .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].status".formatted(pendingSessionId)).value(contains("PENDING")));
 
@@ -199,7 +199,7 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void customerHistoryEmptyStateAndNotFoundAreHandled() throws Exception {
-        AuthUser customer = createActiveCustomer("0901777404");
+        User customer = createActiveCustomer("0901777404");
 
         mockMvc.perform(get("/api/v1/admin/customers/{customerId}/wash-sessions", customer.getId())
                         .with(user("admin").roles("ADMIN")))
@@ -215,7 +215,7 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void adminCanUpdateCustomerRoleAndCustomerDetailStopsResolvingAfterward() throws Exception {
-        AuthUser customer = createActiveCustomer("0901777405");
+        User customer = createActiveCustomer("0901777405");
 
         mockMvc.perform(put("/api/v1/admin/customers/{customerId}/role", customer.getId())
                         .with(user("admin").roles("ADMIN"))
@@ -237,7 +237,7 @@ class AdminReportingControllerIntegrationTest {
 
     @Test
     void updateCustomerRoleRejectsInvalidRoleAndNonAdminAccess() throws Exception {
-        AuthUser customer = createActiveCustomer("0901777406");
+        User customer = createActiveCustomer("0901777406");
 
         mockMvc.perform(put("/api/v1/admin/customers/{customerId}/role", customer.getId())
                         .with(user("admin").roles("ADMIN"))
@@ -313,11 +313,11 @@ class AdminReportingControllerIntegrationTest {
     }
 
     private RequestPostProcessor authenticatedAdmin() {
-        AuthUser admin = new AuthUser("Reporting Admin", uniquePhone("0987"), "reporting-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        User admin = new User("Reporting Admin", uniquePhone("0987"), "reporting-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         admin.activate();
         ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
-        authUserRepository.saveAndFlush(admin);
-        AuthUserPrincipal principal = new AuthUserPrincipal(admin);
+        UserRepository.saveAndFlush(admin);
+        UserPrincipal principal = new UserPrincipal(admin);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);
@@ -331,13 +331,13 @@ class AdminReportingControllerIntegrationTest {
         return prefix + digits.substring(0, 6);
     }
 
-    private CustomerBooking createConfirmedBooking(String bookingId, String phone, String plate, LocalDate bookingDate, long finalAmount) {
-        AuthUser user = createActiveCustomer(phone);
+    private Booking createConfirmedBooking(String bookingId, String phone, String plate, LocalDate bookingDate, long finalAmount) {
+        User user = createActiveCustomer(phone);
         return createConfirmedBookingForCustomer(user, bookingId, plate, bookingDate, finalAmount);
     }
 
-    private CustomerBooking createConfirmedBookingForCustomer(AuthUser user, String bookingId, String plate, LocalDate bookingDate, long finalAmount) {
-        CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
+    private Booking createConfirmedBookingForCustomer(User user, String bookingId, String plate, LocalDate bookingDate, long finalAmount) {
+        Vehicle vehicle = VehicleRepository.save(new Vehicle(
                 user,
                 plate,
                 VehicleType.CAR,
@@ -350,8 +350,8 @@ class AdminReportingControllerIntegrationTest {
         return createConfirmedBookingForVehicle(user, vehicle, bookingId, bookingDate, finalAmount);
     }
 
-    private CustomerBooking createConfirmedBookingForVehicle(AuthUser user, CustomerVehicle vehicle, String bookingId, LocalDate bookingDate, long finalAmount) {
-        CustomerBooking booking = new CustomerBooking(
+    private Booking createConfirmedBookingForVehicle(User user, Vehicle vehicle, String bookingId, LocalDate bookingDate, long finalAmount) {
+        Booking booking = new Booking(
                 bookingId,
                 user,
                 vehicle,
@@ -368,20 +368,20 @@ class AdminReportingControllerIntegrationTest {
                 30
         );
         booking.confirmByOtp();
-        return customerBookingRepository.saveAndFlush(booking);
+        return BookingRepository.saveAndFlush(booking);
     }
 
-    private AuthUser createActiveCustomer(String phone) {
-        AuthUser user = new AuthUser("Nguyen Van A", phone, phone + "@example.com", "hash");
+    private User createActiveCustomer(String phone) {
+        User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        return authUserRepository.saveAndFlush(user);
+        return UserRepository.saveAndFlush(user);
     }
 
-    private AuthUser createActiveUser(UserRole role, String phone, String fullName) {
-        AuthUser user = new AuthUser(fullName, phone, phone + "@example.com", "hash");
+    private User createActiveUser(UserRole role, String phone, String fullName) {
+        User user = new User(fullName, phone, phone + "@example.com", "hash");
         user.activate();
         ReflectionTestUtils.setField(user, "role", role);
-        return authUserRepository.saveAndFlush(user);
+        return UserRepository.saveAndFlush(user);
     }
 
     private JsonNode readJson(MvcResult result) throws Exception {

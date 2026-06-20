@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AuthUser {
+public class User {
     @Id
     private UUID id;
     @Column(name = "full_name", nullable = false, length = 100)
@@ -49,7 +49,7 @@ public class AuthUser {
     @Column(name = "is_new_customer")
     private boolean newCustomer;
 
-    public AuthUser(String fullName, String phone, String email, String passwordHash) {
+    public User(String fullName, String phone, String email, String passwordHash) {
         Instant now = Instant.now();
         this.id = UUID.randomUUID();
         this.fullName = fullName;

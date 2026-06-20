@@ -11,7 +11,7 @@ public record AdminWashHistoryResponse(
         UUID sessionId,
         String bookingId,
         String vehiclePlate,
-        ServicePackageSummary servicePackage,
+        ServicePackageSummary Package,
         String status,
         LocalDate bookingDate,
         LocalTime bookingTime,

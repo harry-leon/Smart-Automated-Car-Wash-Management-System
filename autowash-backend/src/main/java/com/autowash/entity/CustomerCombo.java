@@ -27,7 +27,7 @@ public class CustomerCombo {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
-    private AuthUser customer;
+    private User customer;
 
     @Column(name = "combo_id", nullable = false)
     private UUID comboId;

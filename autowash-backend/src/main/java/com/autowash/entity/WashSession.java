@@ -32,11 +32,11 @@ public class WashSession {
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
-    private CustomerBooking booking;
+    private Booking booking;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_staff_id")
-    private AuthUser assignedStaff;
+    private User assignedStaff;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -66,7 +66,7 @@ public class WashSession {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    public static WashSession create(CustomerBooking booking, String notes, AuthUser assignedStaff) {
+    public static WashSession create(Booking booking, String notes, User assignedStaff) {
         return WashSession.builder()
                 .id(UUID.randomUUID())
                 .booking(booking)
@@ -77,7 +77,7 @@ public class WashSession {
                 .build();
     }
 
-    public void assignStaff(AuthUser assignedStaff) {
+    public void assignStaff(User assignedStaff) {
         this.assignedStaff = assignedStaff;
     }
 

@@ -1,11 +1,11 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
-import com.autowash.repository.AuthUserRepository;
+import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.shared.exception.ApiException;
 import java.util.Comparator;
 import java.util.List;
@@ -23,25 +23,25 @@ public class StaffAssignmentService {
             BookingStatus.IN_PROGRESS
     );
 
-    private final AuthUserRepository authUserRepository;
-    private final CustomerBookingRepository bookingRepository;
+    private final UserRepository UserRepository;
+    private final BookingRepository bookingRepository;
 
     public StaffAssignmentService(
-            AuthUserRepository authUserRepository,
-            CustomerBookingRepository bookingRepository
+            UserRepository UserRepository,
+            BookingRepository bookingRepository
     ) {
-        this.authUserRepository = authUserRepository;
+        this.UserRepository = UserRepository;
         this.bookingRepository = bookingRepository;
     }
 
-    public AuthUser pickLeastLoadedActiveStaff() {
-        return authUserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
+    public User pickLeastLoadedActiveStaff() {
+        return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
                 .stream()
                 .min(Comparator
-                        .comparingLong((AuthUser staff) ->
+                        .comparingLong((User staff) ->
                                 bookingRepository.countByAssignedStaffAndStatusIn(staff, ACTIVE_ASSIGNMENT_STATUSES))
-                        .thenComparing(AuthUser::getFullName)
-                        .thenComparing(AuthUser::getId))
+                        .thenComparing(User::getFullName)
+                        .thenComparing(User::getId))
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.UNPROCESSABLE_ENTITY,
                         "No active staff available for booking assignment",
@@ -49,8 +49,8 @@ public class StaffAssignmentService {
                 ));
     }
 
-    public AuthUser requireActiveStaff(UUID staffId) {
-        AuthUser staff = authUserRepository.findById(staffId)
+    public User requireActiveStaff(UUID staffId) {
+        User staff = UserRepository.findById(staffId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
         if (staff.getRole() != UserRole.STAFF || staff.getStatus() != UserStatus.ACTIVE) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target staff must be active", "BUSINESS_RULE_VIOLATION");
@@ -58,8 +58,8 @@ public class StaffAssignmentService {
         return staff;
     }
 
-    public List<AuthUser> listActiveStaff() {
-        return authUserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE);
+    public List<User> listActiveStaff() {
+        return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE);
     }
 }
 

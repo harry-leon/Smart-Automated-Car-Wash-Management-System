@@ -24,7 +24,7 @@ public class BookingPromotion {
     @Id
     @ManyToOne(optional = false)
     @JoinColumn(name = "booking_id", nullable = false)
-    private CustomerBooking booking;
+    private Booking booking;
 
     @Id
     @Column(name = "promotion_id", nullable = false)

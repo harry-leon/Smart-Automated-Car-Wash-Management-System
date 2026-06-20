@@ -2,7 +2,7 @@ package com.autowash.controller;
 
 import com.autowash.entity.enums.PaymentMethod;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.dto.CustomerComboResponse;
 import com.autowash.dto.PurchaseCustomerComboRequest;
 import com.autowash.dto.PurchaseCustomerComboResponse;
@@ -40,7 +40,7 @@ public class CustomerComboController {
     @GetMapping("/active")
     @Operation(summary = "List active owned combos for customer")
     public ApiResponse<List<CustomerComboResponse>> listActiveCombos() {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         return ApiResponse.ok("Active combos retrieved", customerComboService.listActiveCustomerCombos(user));
     }
 
@@ -49,7 +49,7 @@ public class CustomerComboController {
     public ResponseEntity<ApiResponse<PurchaseCustomerComboResponse>> purchaseCombo(
             @Valid @RequestBody PurchaseCustomerComboRequest request
     ) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("Combo purchased successfully", customerComboService.purchaseCombo(user, request)));
     }
@@ -60,7 +60,7 @@ public class CustomerComboController {
             @PathVariable String comboId,
             @Valid @RequestBody PurchaseCustomerComboRequest request
     ) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         PurchaseCustomerComboRequest normalizedRequest = new PurchaseCustomerComboRequest(comboId, request.paymentMethod());
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.created("Combo activated successfully", customerComboService.purchaseCombo(user, normalizedRequest))
@@ -73,7 +73,7 @@ public class CustomerComboController {
             @PathVariable String comboId,
             @Valid @RequestBody PurchaseCustomerComboRequest request
     ) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         PurchaseCustomerComboRequest normalizedRequest = new PurchaseCustomerComboRequest(comboId, request.paymentMethod());
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.created("Combo purchased successfully", customerComboService.purchaseCombo(user, normalizedRequest))

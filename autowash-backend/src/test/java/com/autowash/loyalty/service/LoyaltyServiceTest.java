@@ -3,12 +3,12 @@ package com.autowash.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
-import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.CustomerBooking;
+import com.autowash.repository.UserRepository;
+import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.dto.EarnPointsResponse;
 import com.autowash.dto.RedeemPointsResponse;
@@ -20,9 +20,9 @@ import com.autowash.repository.PointTransactionRepository;
 import com.autowash.entity.WashSession;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.exception.ApiException;
-import com.autowash.entity.CustomerVehicle;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -39,13 +39,13 @@ class LoyaltyServiceTest {
     private LoyaltyService loyaltyService;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private CustomerVehicleRepository customerVehicleRepository;
+    private VehicleRepository VehicleRepository;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Autowired
     private WashSessionRepository washSessionRepository;
@@ -165,11 +165,11 @@ class LoyaltyServiceTest {
     }
 
     private TestData createPendingSession(String phone, String bookingId, long finalAmount) {
-        AuthUser user = new AuthUser("Nguyen Van A", phone, phone + "@example.com", "hash");
+        User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        authUserRepository.save(user);
+        UserRepository.save(user);
 
-        CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
+        Vehicle vehicle = VehicleRepository.save(new Vehicle(
                 user,
                 "30H-" + phone.substring(phone.length() - 6),
                 VehicleType.CAR,
@@ -180,7 +180,7 @@ class LoyaltyServiceTest {
                 true
         ));
 
-        CustomerBooking booking = new CustomerBooking(
+        Booking booking = new Booking(
                 bookingId,
                 user,
                 vehicle,
@@ -197,11 +197,11 @@ class LoyaltyServiceTest {
                 30
         );
         booking.confirmByOtp();
-        customerBookingRepository.save(booking);
+        BookingRepository.save(booking);
         WashSession session = washSessionRepository.saveAndFlush(new WashSession(booking, "Loyalty service test"));
         return new TestData(user, booking, session);
     }
 
-    private record TestData(AuthUser customer, CustomerBooking booking, WashSession session) {
+    private record TestData(User customer, Booking booking, WashSession session) {
     }
 }

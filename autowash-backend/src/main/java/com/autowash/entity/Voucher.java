@@ -1,7 +1,7 @@
 package com.autowash.entity;
 
 import com.autowash.entity.enums.DiscountType;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -60,7 +60,7 @@ public class Voucher {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PromotionStatus status;
+    private ActiveStatus status;
 
     @PrePersist
     void prePersist() {
