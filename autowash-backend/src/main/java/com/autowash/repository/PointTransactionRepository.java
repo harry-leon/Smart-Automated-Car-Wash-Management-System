@@ -1,11 +1,11 @@
 package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.CustomerBooking;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.enums.PointTransactionType;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,19 +17,17 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
     @Query("select pt from PointTransaction pt where pt.loyaltyAccount.customer = :customer")
     Page<PointTransaction> findByCustomer(@Param("customer") AuthUser customer, Pageable pageable);
 
-    @Query("""
-            select pt from PointTransaction pt
-            where pt.type = :type
-              and pt.booking = :booking
-            """)
-    Optional<PointTransaction> findByTypeAndBooking(@Param("type") PointTransactionType type, @Param("booking") CustomerBooking booking);
+    Optional<PointTransaction> findByTypeAndBookingId(PointTransactionType type, UUID bookingId);
 
-    @Query("""
-            select count(pt) from PointTransaction pt
-            where pt.type = :type
-              and pt.booking = :booking
-            """)
-    long countByTypeAndBooking(@Param("type") PointTransactionType type, @Param("booking") CustomerBooking booking);
+    long countByTypeAndBookingId(PointTransactionType type, UUID bookingId);
+
+    default Optional<PointTransaction> findByTypeAndReferenceId(PointTransactionType type, String referenceId) {
+        return parseUuid(referenceId).flatMap(bookingId -> findByTypeAndBookingId(type, bookingId));
+    }
+
+    default long countByTypeAndReferenceId(PointTransactionType type, String referenceId) {
+        return parseUuid(referenceId).map(bookingId -> countByTypeAndBookingId(type, bookingId)).orElse(0L);
+    }
 
     @Query("""
             select pt from PointTransaction pt
@@ -52,7 +50,7 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
     @Query("""
             select pt from PointTransaction pt
             where pt.type = :type
-              and (:#{#searchQuery == null} = true or lower(cast(pt.booking.id as string)) like :searchQuery
+              and (:#{#searchQuery == null} = true or lower(str(pt.booking.id)) like :searchQuery
                    or lower(pt.loyaltyAccount.customer.fullName) like :searchQuery
                    or lower(pt.loyaltyAccount.customer.phone) like :searchQuery
                    or lower(pt.loyaltyAccount.customer.email) like :searchQuery)
@@ -66,5 +64,12 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
             @Param("dateTo") Instant dateTo,
             Pageable pageable
     );
-}
 
+    private static Optional<UUID> parseUuid(String id) {
+        try {
+            return id == null || id.isBlank() ? Optional.empty() : Optional.of(UUID.fromString(id));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+    }
+}

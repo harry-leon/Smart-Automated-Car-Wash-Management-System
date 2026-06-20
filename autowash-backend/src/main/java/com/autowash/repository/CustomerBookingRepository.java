@@ -1,10 +1,12 @@
 package com.autowash.repository;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.CustomerBooking;
 import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.CustomerBooking;
 import com.autowash.entity.enums.WashSessionStatus;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -20,8 +22,43 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
 
     long countByCustomerAndStatusIn(AuthUser customer, Collection<BookingStatus> statuses);
 
+    @Query("""
+            select count(session.booking) from WashSession session
+            where session.assignedStaff = :assignedStaff
+              and session.booking.status in :statuses
+            """)
+    long countByAssignedStaffAndStatusIn(
+            @Param("assignedStaff") AuthUser assignedStaff,
+            @Param("statuses") Collection<BookingStatus> statuses
+    );
+
+    @Query("""
+            select count(session.booking) from WashSession session
+            where session.assignedStaff = :assignedStaff
+              and session.booking.status = :status
+            """)
+    long countByAssignedStaffAndStatus(
+            @Param("assignedStaff") AuthUser assignedStaff,
+            @Param("status") BookingStatus status
+    );
+
+    @Query("""
+            select coalesce(sum(session.booking.finalAmount), 0) from WashSession session
+            where session.assignedStaff = :staff
+              and session.booking.status = :status
+            """)
+    long sumFinalAmountByAssignedStaffAndStatus(@Param("staff") AuthUser staff, @Param("status") BookingStatus status);
+
     @EntityGraph(attributePaths = {"vehicle"})
     Optional<CustomerBooking> findByCustomerAndId(AuthUser customer, UUID id);
+
+    default Optional<CustomerBooking> findByCustomerAndId(AuthUser customer, String id) {
+        return parseUuid(id).flatMap(value -> findByCustomerAndId(customer, value));
+    }
+
+    default Optional<CustomerBooking> findById(String id) {
+        return parseUuid(id).flatMap(this::findById);
+    }
 
     @EntityGraph(attributePaths = {"vehicle"})
     Page<CustomerBooking> findByCustomerOrderByCreatedAtDesc(AuthUser customer, Pageable pageable);
@@ -32,10 +69,22 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
     @EntityGraph(attributePaths = {"vehicle"})
     Page<CustomerBooking> findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(
             AuthUser customer,
-            Instant dateFrom,
-            Instant dateTo,
+            Instant scheduledFrom,
+            Instant scheduledTo,
             Pageable pageable
     );
+
+    default Page<CustomerBooking> findByCustomerAndBookingDateBetweenOrderByCreatedAtDesc(
+            AuthUser customer,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            Pageable pageable
+    ) {
+        ZoneId zone = ZoneId.systemDefault();
+        Instant scheduledFrom = dateFrom.atStartOfDay(zone).toInstant();
+        Instant scheduledTo = dateTo.plusDays(1).atStartOfDay(zone).minusNanos(1).toInstant();
+        return findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(customer, scheduledFrom, scheduledTo, pageable);
+    }
 
     @EntityGraph(attributePaths = {"customer", "vehicle"})
     @Query("""
@@ -46,7 +95,7 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
               and (:dateTo is null or booking.scheduledAt <= :dateTo)
               and (
                     :searchLike is null
-                    or lower(cast(booking.id as string)) like :searchLike
+                    or lower(str(booking.id)) like :searchLike
                     or lower(booking.customer.fullName) like :searchLike
                     or lower(booking.customer.phone) like :searchLike
                     or lower(booking.vehicle.plate) like :searchLike
@@ -61,6 +110,54 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
             @Param("searchLike") String searchLike,
             Pageable pageable
     );
+
+    default Page<CustomerBooking> searchAdmin(
+            Collection<BookingStatus> statuses,
+            boolean statusFilter,
+            UUID customerId,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            String searchLike,
+            Pageable pageable
+    ) {
+        return searchAdmin(
+                statuses,
+                statusFilter,
+                customerId,
+                startOfDay(dateFrom),
+                endOfDay(dateTo),
+                searchLike,
+                pageable
+        );
+    }
+
+    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @Query("""
+            select session.booking from WashSession session
+            where session.assignedStaff = :staff
+              and (:statusFilter = false or session.booking.status in :statuses)
+              and (:dateFrom is null or session.booking.scheduledAt >= :dateFrom)
+              and (:dateTo is null or session.booking.scheduledAt <= :dateTo)
+            """)
+    Page<CustomerBooking> searchAssignedStaffBookings(
+            @Param("staff") AuthUser staff,
+            @Param("statuses") Collection<BookingStatus> statuses,
+            @Param("statusFilter") boolean statusFilter,
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            Pageable pageable
+    );
+
+    default Page<CustomerBooking> searchAssignedStaffBookings(
+            AuthUser staff,
+            Collection<BookingStatus> statuses,
+            boolean statusFilter,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            Pageable pageable
+    ) {
+        return searchAssignedStaffBookings(staff, statuses, statusFilter, startOfDay(dateFrom), endOfDay(dateTo), pageable);
+    }
 
     @Query("select count(booking) from CustomerBooking booking where booking.customer = :customer")
     long countByCustomer(@Param("customer") AuthUser customer);
@@ -94,5 +191,39 @@ public interface CustomerBookingRepository extends JpaRepository<CustomerBooking
             @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
             Pageable pageable
     );
-}
 
+    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @Query("""
+            select session.booking from WashSession session
+            where session.booking.status = :status
+              and session.assignedStaff = :staff
+              and not exists (
+                    select activeSession.id from WashSession activeSession
+                    where activeSession.booking = session.booking
+                      and activeSession.status in :activeStatuses
+              )
+            order by session.booking.scheduledAt asc, session.booking.createdAt desc
+            """)
+    List<CustomerBooking> findEligibleForAssignedStaffOperationsSession(
+            @Param("staff") AuthUser staff,
+            @Param("status") BookingStatus status,
+            @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            Pageable pageable
+    );
+
+    private static Optional<UUID> parseUuid(String id) {
+        try {
+            return id == null || id.isBlank() ? Optional.empty() : Optional.of(UUID.fromString(id));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+    }
+
+    private static Instant startOfDay(LocalDate date) {
+        return date == null ? null : date.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    }
+
+    private static Instant endOfDay(LocalDate date) {
+        return date == null ? null : date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1).toInstant();
+    }
+}

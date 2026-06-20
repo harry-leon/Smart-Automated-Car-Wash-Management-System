@@ -10,15 +10,31 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CustomerComboRepository extends JpaRepository<CustomerCombo, UUID> {
     Optional<CustomerCombo> findFirstByCustomer_IdAndComboIdAndStatusOrderByCreatedAtDesc(
-            java.util.UUID customerId,
-            java.util.UUID comboId,
+            UUID customerId,
+            UUID comboId,
             CustomerComboStatus status
     );
 
+    default Optional<CustomerCombo> findFirstByCustomer_IdAndComboIdAndStatusOrderByCreatedAtDesc(
+            UUID customerId,
+            String comboId,
+            CustomerComboStatus status
+    ) {
+        return parseUuid(comboId)
+                .flatMap(value -> findFirstByCustomer_IdAndComboIdAndStatusOrderByCreatedAtDesc(customerId, value, status));
+    }
+
     List<CustomerCombo> findByCustomer_IdAndStatusAndExpiresAtAfter(
-            java.util.UUID customerId,
+            UUID customerId,
             CustomerComboStatus status,
             Instant now
     );
-}
 
+    private static Optional<UUID> parseUuid(String id) {
+        try {
+            return id == null || id.isBlank() ? Optional.empty() : Optional.of(UUID.fromString(id));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+    }
+}

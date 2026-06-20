@@ -1,10 +1,9 @@
 package com.autowash.dto;
 
 import java.time.Instant;
-import java.util.UUID;
 
 public record RedeemPointsResponse(
-        UUID transactionId,
+        Long transactionId,
         int pointsRedeemed,
         int newBalance,
         String voucherCode,

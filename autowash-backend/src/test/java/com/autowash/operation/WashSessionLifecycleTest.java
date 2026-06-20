@@ -2,7 +2,7 @@ package com.autowash.operation;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.autowash.entity.WashSessionStatus;
+import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.service.WashSessionLifecycle;
 import com.autowash.shared.exception.ApiException;
 import java.util.Set;

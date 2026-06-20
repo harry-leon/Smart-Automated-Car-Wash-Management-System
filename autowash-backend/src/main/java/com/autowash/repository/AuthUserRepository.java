@@ -17,6 +17,17 @@ public interface AuthUserRepository extends JpaRepository<AuthUser, UUID> {
     boolean existsByPhoneAndIdNot(String phone, UUID id);
     Optional<AuthUser> findByPhone(String phone);
     Optional<AuthUser> findByEmailIgnoreCase(String email);
+<<<<<<< HEAD
+=======
+
+    @Query("select account from AuthUser account where :oauthSubject is not null and 1 = 0")
+    Optional<AuthUser> findByOauthSubject(@Param("oauthSubject") String oauthSubject);
+
+    default boolean existsByOauthSubject(String oauthSubject) {
+        return false;
+    }
+
+>>>>>>> origin/feature/backend2-schema-entity-alignment
     boolean existsByEmailIgnoreCase(String email);
     boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
     long countByRole(UserRole role);

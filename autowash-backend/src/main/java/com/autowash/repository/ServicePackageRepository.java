@@ -10,5 +10,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ServicePackageRepository extends JpaRepository<ServicePackage, UUID> {
     Page<ServicePackage> findByStatusOrderByIdAsc(PackageStatus status, Pageable pageable);
+
+    default Optional<ServicePackage> findById(String id) {
+        return parseUuid(id).flatMap(this::findById);
+    }
+
+    private static Optional<UUID> parseUuid(String id) {
+        try {
+            return id == null || id.isBlank() ? Optional.empty() : Optional.of(UUID.fromString(id));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+    }
 }
 

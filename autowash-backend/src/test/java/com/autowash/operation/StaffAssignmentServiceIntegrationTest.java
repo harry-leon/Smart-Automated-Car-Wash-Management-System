@@ -3,14 +3,14 @@ package com.autowash.operation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.autowash.entity.AuthUser;
-import com.autowash.entity.UserRole;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.AuthUserRepository;
 import com.autowash.entity.CustomerBooking;
-import com.autowash.entity.PaymentMethod;
+import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.CustomerBookingRepository;
 import com.autowash.service.StaffAssignmentService;
 import com.autowash.entity.CustomerVehicle;
-import com.autowash.entity.VehicleType;
+import com.autowash.entity.enums.VehicleType;
 import com.autowash.repository.CustomerVehicleRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
