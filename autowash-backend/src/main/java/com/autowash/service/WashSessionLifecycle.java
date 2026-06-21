@@ -21,7 +21,8 @@ public final class WashSessionLifecycle {
 
     public static boolean isValidTransition(WashSessionStatus current, WashSessionStatus next) {
         return switch (current) {
-            case PENDING -> next == WashSessionStatus.CHECKED_IN || next == WashSessionStatus.CANCELLED;
+            case PENDING -> next == WashSessionStatus.QUEUED || next == WashSessionStatus.CHECKED_IN || next == WashSessionStatus.CANCELLED;
+            case QUEUED -> next == WashSessionStatus.CHECKED_IN || next == WashSessionStatus.CANCELLED;
             case CHECKED_IN -> next == WashSessionStatus.IN_PROGRESS || next == WashSessionStatus.CANCELLED;
             case IN_PROGRESS -> next == WashSessionStatus.COMPLETED || next == WashSessionStatus.CANCELLED;
             case COMPLETED, CANCELLED -> false;

@@ -15,6 +15,8 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "customer_combos")
@@ -39,7 +41,8 @@ public class CustomerCombo {
     private int remainingUsages;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "customer_combo_status")
     private CustomerComboStatus status;
 
     @Column(name = "activated_at", nullable = false)
@@ -67,14 +70,13 @@ public class CustomerCombo {
         if (remainingUsages > 0) {
             remainingUsages--;
         }
+        if (remainingUsages <= 0) {
+            status = CustomerComboStatus.USED_UP;
+        }
     }
 
     public void markExpired() {
         this.status = CustomerComboStatus.EXPIRED;
-    }
-
-    public Instant getLastUsedAt() {
-        return null;
     }
 
     public boolean isExpired() {

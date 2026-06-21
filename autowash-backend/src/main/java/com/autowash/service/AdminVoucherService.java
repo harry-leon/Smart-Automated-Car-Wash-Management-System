@@ -3,7 +3,9 @@ package com.autowash.service;
 import com.autowash.dto.AdminVoucherRedemptionResponse;
 import com.autowash.dto.AdminVoucherResponse;
 import com.autowash.entity.Voucher;
+import com.autowash.entity.VoucherTier;
 import com.autowash.repository.VoucherRepository;
+import com.autowash.repository.VoucherTierRepository;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.PointTransactionRepository;
@@ -21,19 +23,22 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminVoucherService {
 
     private final VoucherRepository voucherRepository;
+    private final VoucherTierRepository voucherTierRepository;
     private final PointTransactionRepository pointTransactionRepository;
 
     public AdminVoucherService(
             VoucherRepository voucherRepository,
+            VoucherTierRepository voucherTierRepository,
             PointTransactionRepository pointTransactionRepository
     ) {
         this.voucherRepository = voucherRepository;
+        this.voucherTierRepository = voucherTierRepository;
         this.pointTransactionRepository = pointTransactionRepository;
     }
 
     @Transactional(readOnly = true)
     public List<AdminVoucherResponse> listVouchers() {
-        return voucherRepository.findAll(Sort.by(Sort.Order.desc("active"), Sort.Order.asc("expiresAt"))).stream()
+        return voucherRepository.findAll(Sort.by(Sort.Order.asc("status"), Sort.Order.asc("endAt"))).stream()
                 .map(this::toVoucherResponse)
                 .toList();
     }
@@ -79,18 +84,11 @@ public class AdminVoucherService {
                 voucher.getEndAt(),
                 voucher.getStatus() == com.autowash.entity.enums.ActiveStatus.ACTIVE,
                 voucher.isNewCustomerOnly(),
-                parseTargetTiers("")
+                voucherTierRepository.findByVoucherId(voucher.getId()).stream()
+                        .map(VoucherTier::getTier)
+                        .map(Enum::name)
+                        .toList()
         );
-    }
-
-    private List<String> parseTargetTiers(String targetTiersCsv) {
-        if (targetTiersCsv == null || targetTiersCsv.isBlank()) {
-            return List.of();
-        }
-        return Arrays.stream(targetTiersCsv.split(","))
-                .map(String::trim)
-                .filter(value -> !value.isBlank())
-                .toList();
     }
 
     private AdminVoucherRedemptionResponse toRedemptionResponse(PointTransaction transaction) {

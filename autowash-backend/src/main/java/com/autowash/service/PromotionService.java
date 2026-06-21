@@ -1,20 +1,23 @@
 package com.autowash.service;
 
-import com.autowash.entity.User;
-import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.dto.CustomerPromotionResponse;
 import com.autowash.dto.PromotionRequest;
 import com.autowash.dto.PromotionResponse;
-import com.autowash.entity.enums.DiscountType;
+import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.Promotion;
+import com.autowash.entity.PromotionTier;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.ActiveStatus;
+import com.autowash.entity.enums.DiscountType;
+import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.PromotionTargetingMode;
+import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PromotionRepository;
+import com.autowash.repository.PromotionTierRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
-import com.autowash.service.CurrentUserService;
-import java.time.Instant;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +34,19 @@ public class PromotionService {
     private static final List<String> ALL_TIERS = Arrays.stream(LoyaltyTier.values()).map(Enum::name).toList();
 
     private final PromotionRepository promotionRepository;
+    private final PromotionTierRepository promotionTierRepository;
+    private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final CurrentUserService currentUserService;
 
-    public PromotionService(PromotionRepository promotionRepository, CurrentUserService currentUserService) {
+    public PromotionService(
+            PromotionRepository promotionRepository,
+            PromotionTierRepository promotionTierRepository,
+            LoyaltyAccountRepository loyaltyAccountRepository,
+            CurrentUserService currentUserService
+    ) {
         this.promotionRepository = promotionRepository;
+        this.promotionTierRepository = promotionTierRepository;
+        this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.currentUserService = currentUserService;
     }
 
@@ -48,9 +60,11 @@ public class PromotionService {
                 request.startDate(),
                 request.endDate(),
                 request.targetingMode(),
-                request.status()
+                statusOrActive(request.status())
         );
-        return toResponse(promotionRepository.save(promotion));
+        Promotion saved = promotionRepository.saveAndFlush(promotion);
+        replacePromotionTiers(saved.getId(), validated.tiers());
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -75,8 +89,9 @@ public class PromotionService {
                 request.startDate(),
                 request.endDate(),
                 request.targetingMode(),
-                request.status()
+                statusOrActive(request.status())
         );
+        replacePromotionTiers(promotion.getId(), validated.tiers());
         return toResponse(promotion);
     }
 
@@ -84,6 +99,7 @@ public class PromotionService {
     public PromotionResponse delete(String promotionId) {
         Promotion promotion = requirePromotion(promotionId);
         PromotionResponse response = toResponse(promotion);
+        promotionTierRepository.deleteByPromotionId(promotion.getId());
         promotionRepository.delete(promotion);
         return response;
     }
@@ -93,12 +109,23 @@ public class PromotionService {
         User user = currentUserService.getCurrentUser();
         Page<Promotion> promotions = promotionRepository.findActiveForTier(
                 Instant.now(),
-                "STANDARD",
+                tierFor(user),
                 ActiveStatus.ACTIVE,
                 PromotionTargetingMode.ALL_TIERS,
                 pageRequest(page, limit)
         );
         return toPage(promotions);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Promotion> listActiveForCustomer(User customer) {
+        return promotionRepository.findActiveForTier(
+                Instant.now(),
+                tierFor(customer),
+                ActiveStatus.ACTIVE,
+                PromotionTargetingMode.ALL_TIERS,
+                pageRequest(1, 50)
+        ).getContent();
     }
 
     @Transactional(readOnly = true)
@@ -109,7 +136,7 @@ public class PromotionService {
     }
 
     private Promotion requirePromotion(String promotionId) {
-        return promotionRepository.findById(promotionId)
+        return promotionRepository.findById(parsePromotionId(promotionId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Promotion not found", "RESOURCE_NOT_FOUND"));
     }
 
@@ -124,14 +151,9 @@ public class PromotionService {
             if (request.applicableTiers() == null || request.applicableTiers().isEmpty()) {
                 throw validationError("applicableTiers", "At least one tier is required for SPECIFIC_TIERS");
             }
-            String tiers = request.applicableTiers().stream()
-                    .distinct()
-                    .map(Enum::name)
-                    .reduce((left, right) -> left + "," + right)
-                    .orElseThrow();
-            return new ValidatedPromotion(tiers);
+            return new ValidatedPromotion(request.applicableTiers().stream().distinct().toList());
         }
-        return new ValidatedPromotion(null);
+        return new ValidatedPromotion(List.of());
     }
 
     private ApiException validationError(String field, String message) {
@@ -169,7 +191,7 @@ public class PromotionService {
                 promotion.getStartAt(),
                 promotion.getEndAt(),
                 promotion.getTargetingMode().name(),
-                List.of(),
+                resolveApplicableTiers(promotion),
                 null,
                 promotion.getStatus().name(),
                 promotion.getCreatedAt(),
@@ -195,13 +217,41 @@ public class PromotionService {
         if (promotion.getTargetingMode() == PromotionTargetingMode.ALL_TIERS) {
             return ALL_TIERS;
         }
-        return List.of();
+        return promotionTierRepository.findByPromotionId(promotion.getId()).stream()
+                .map(tier -> tier.getTier().name())
+                .toList();
     }
 
-    private record ValidatedPromotion(String applicableTiersCsv) {
+    private void replacePromotionTiers(UUID promotionId, List<LoyaltyTier> tiers) {
+        promotionTierRepository.deleteByPromotionId(promotionId);
+        if (!tiers.isEmpty()) {
+            promotionTierRepository.saveAll(tiers.stream()
+                    .map(tier -> new PromotionTier(promotionId, tier))
+                    .toList());
+        }
+    }
+
+    private UUID parsePromotionId(String promotionId) {
+        try {
+            return UUID.fromString(promotionId);
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Promotion not found", "RESOURCE_NOT_FOUND");
+        }
+    }
+
+    private ActiveStatus statusOrActive(ActiveStatus status) {
+        return status == null ? ActiveStatus.ACTIVE : status;
+    }
+
+    private LoyaltyTier tierFor(User user) {
+        return loyaltyAccountRepository.findByCustomerId(user.getId())
+                .map(LoyaltyAccount::getTier)
+                .orElse(LoyaltyTier.MEMBER);
+    }
+
+    private record ValidatedPromotion(List<LoyaltyTier> tiers) {
     }
 
     public record PromotionPage(List<PromotionResponse> items, PaginationMeta pagination) {
     }
 }
-

@@ -201,6 +201,7 @@ public class AdminReportingService {
         long activeBookings = bookingRepository.countByAssignedStaffAndStatusIn(staff, REVENUE_STATUSES);
         long activeSessions = washSessionRepository.countByAssignedStaffAndStatusIn(staff, Set.of(
                 WashSessionStatus.PENDING,
+                WashSessionStatus.QUEUED,
                 WashSessionStatus.CHECKED_IN,
                 WashSessionStatus.IN_PROGRESS
         ));
@@ -222,7 +223,8 @@ public class AdminReportingService {
 
     @Transactional(readOnly = true)
     public AdminOperationsDashboardResponse getOperationsDashboard() {
-        long pending = washSessionRepository.countByStatus(WashSessionStatus.PENDING);
+        long pending = washSessionRepository.countByStatus(WashSessionStatus.PENDING)
+                + washSessionRepository.countByStatus(WashSessionStatus.QUEUED);
         long checkedIn = washSessionRepository.countByStatus(WashSessionStatus.CHECKED_IN);
         long inProgress = washSessionRepository.countByStatus(WashSessionStatus.IN_PROGRESS);
         long completed = washSessionRepository.countByStatus(WashSessionStatus.COMPLETED);

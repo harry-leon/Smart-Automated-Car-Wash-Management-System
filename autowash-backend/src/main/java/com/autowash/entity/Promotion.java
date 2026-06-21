@@ -21,6 +21,8 @@ import jakarta.persistence.FetchType;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "promotions")
@@ -41,7 +43,8 @@ public class Promotion {
     private BigDecimal pointMultiplier;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "targeting_mode", nullable = false, length = 30)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "targeting_mode", nullable = false, columnDefinition = "promotion_targeting_mode")
     private PromotionTargetingMode targetingMode;
 
     @Column(name = "start_at", nullable = false)
@@ -51,7 +54,8 @@ public class Promotion {
     private Instant endAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "active_status")
     private ActiveStatus status;
 
     @Column(name = "created_at", nullable = false)

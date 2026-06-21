@@ -13,6 +13,8 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "voucher_tiers")
@@ -26,8 +28,14 @@ public class VoucherTier {
 
     @Id
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(columnDefinition = "loyalty_tier")
     private LoyaltyTier tier;
+
+    public VoucherTier(UUID voucherId, LoyaltyTier tier) {
+        this.voucherId = voucherId;
+        this.tier = tier;
+    }
 
     @Getter
     @NoArgsConstructor
