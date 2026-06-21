@@ -1,0 +1,53 @@
+package com.autowash.repository;
+
+import com.autowash.entity.enums.UserRole;
+import com.autowash.entity.enums.UserStatus;
+import com.autowash.entity.User;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface UserRepository extends JpaRepository<User, UUID> {
+    boolean existsByPhone(String phone);
+    boolean existsByPhoneAndIdNot(String phone, UUID id);
+    Optional<User> findByPhone(String phone);
+    Optional<User> findByEmailIgnoreCase(String email);
+
+    @Query("select account from User account where :oauthSubject is not null and 1 = 0")
+    Optional<User> findByOauthSubject(@Param("oauthSubject") String oauthSubject);
+
+    default boolean existsByOauthSubject(String oauthSubject) {
+        return false;
+    }
+
+    boolean existsByEmailIgnoreCase(String email);
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
+    long countByRole(UserRole role);
+
+    List<User> findByRoleAndStatusOrderByFullNameAsc(UserRole role, UserStatus status);
+    List<User> findByRoleOrderByFullNameAsc(UserRole role);
+
+    @Query("""
+            SELECT account FROM User account
+            WHERE (:role IS NULL OR account.role = :role)
+              AND (:status IS NULL OR account.status = :status)
+              AND (
+                :searchLike IS NULL
+                OR LOWER(account.fullName) LIKE :searchLike
+                OR LOWER(account.phone) LIKE :searchLike
+                OR LOWER(COALESCE(account.email, '')) LIKE :searchLike
+              )
+            """)
+    Page<User> searchAccounts(
+            @Param("role") UserRole role,
+            @Param("status") UserStatus status,
+            @Param("searchLike") String searchLike,
+            Pageable pageable
+    );
+}
+

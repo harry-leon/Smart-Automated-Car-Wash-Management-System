@@ -3,6 +3,7 @@ package com.autowash.entity.enums;
 public enum PointTransactionType {
     EARN,
     REDEEM,
-    EXPIRE,
-    ADJUST
+    ADJUST,
+    EXPIRE
 }
+

@@ -1,9 +1,8 @@
 package com.autowash.service;
 
-
-
-import com.autowash.entity.*;
-import com.autowash.repository.AuthUserRepository;
+import com.autowash.entity.User;
+import com.autowash.entity.UserPreference;
+import com.autowash.repository.UserRepository;
 import com.autowash.repository.UserPreferenceRepository;
 import com.autowash.service.CustomerLoyaltyService;
 import com.autowash.shared.exception.ApiException;
@@ -21,24 +20,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserProfileService {
 
     private final CurrentUserService currentUserService;
-    private final AuthUserRepository authUserRepository;
+    private final UserRepository UserRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final CustomerLoyaltyService customerLoyaltyService;
 
     public UserProfileService(
             CurrentUserService currentUserService,
-            AuthUserRepository authUserRepository,
+            UserRepository UserRepository,
             UserPreferenceRepository userPreferenceRepository,
             CustomerLoyaltyService customerLoyaltyService
     ) {
         this.currentUserService = currentUserService;
-        this.authUserRepository = authUserRepository;
+        this.UserRepository = UserRepository;
         this.userPreferenceRepository = userPreferenceRepository;
         this.customerLoyaltyService = customerLoyaltyService;
     }
 
     public UserProfileResponse getCurrentUserProfile() {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         UserPreference preference = loadOrCreatePreference(user);
         return new UserProfileResponse(
                 user.getId().toString(),
@@ -47,7 +46,7 @@ public class UserProfileService {
                 user.getEmail(),
                 user.getStatus().name(),
                 user.getRole().name(),
-                user.getTier().name(),
+                "STANDARD",
                 user.isNewCustomer(),
                 customerLoyaltyService.getCurrentBalance(user),
                 user.getCreatedAt(),
@@ -63,15 +62,17 @@ public class UserProfileService {
 
     @Transactional
     public UpdateUserProfileResponse updateProfile(UpdateUserProfileRequest request) {
-        AuthUser user = currentUserService.getCurrentUser();
-        if (authUserRepository.existsByPhoneAndIdNot(request.phone(), user.getId())) {
+        User user = currentUserService.getCurrentUser();
+        if (UserRepository.existsByPhoneAndIdNot(request.phone(), user.getId())) {
             throw new ApiException(HttpStatus.CONFLICT, "Phone number already in use", "DUPLICATE_PHONE");
         }
-        if (request.email() != null && authUserRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), user.getId())) {
+        if (request.email() != null && UserRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), user.getId())) {
             throw new ApiException(HttpStatus.CONFLICT, "Email already in use", "DUPLICATE_EMAIL");
         }
 
-        user.updateProfile(request.fullName(), request.email(), request.phone());
+        user.setFullName(request.fullName());
+        user.setEmail(request.email());
+        user.setPhone(request.phone());
         user.markNotNewCustomer();
 
         return new UpdateUserProfileResponse(
@@ -84,7 +85,7 @@ public class UserProfileService {
     }
 
     public UserPreferencesDto getCurrentUserPreferences() {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         UserPreference preference = loadOrCreatePreference(user);
         return new UserPreferencesDto(
                 preference.getLanguage().name(),
@@ -97,7 +98,7 @@ public class UserProfileService {
 
     @Transactional
     public UpdateUserPreferencesResponse updatePreferences(UpdateUserPreferencesRequest request) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         UserPreference preference = loadOrCreatePreference(user);
         preference.update(
                 request.language(),
@@ -115,7 +116,7 @@ public class UserProfileService {
         );
     }
 
-    private UserPreference loadOrCreatePreference(AuthUser user) {
+    private UserPreference loadOrCreatePreference(User user) {
         return userPreferenceRepository.findById(user.getId())
                 .orElseGet(() -> userPreferenceRepository.save(new UserPreference(user)));
     }

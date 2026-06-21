@@ -3,7 +3,7 @@ package com.autowash.dto;
 import com.autowash.entity.*;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.DiscountType;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -29,6 +29,7 @@ public record PromotionRequest(
         @NotNull PromotionTargetingMode targetingMode,
         List<LoyaltyTier> applicableTiers,
         @Min(1) Integer maxUsagePerCustomer,
-        PromotionStatus status
+        ActiveStatus status
 ) {
 }
+

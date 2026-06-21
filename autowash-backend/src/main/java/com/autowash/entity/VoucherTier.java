@@ -5,6 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import java.io.Serializable;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -22,6 +25,8 @@ public class VoucherTier {
     private UUID voucherId;
 
     @Id
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "loyalty_tier")
     private LoyaltyTier tier;
 
     @Getter

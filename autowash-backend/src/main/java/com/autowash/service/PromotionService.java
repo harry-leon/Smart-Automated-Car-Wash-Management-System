@@ -1,22 +1,24 @@
 package com.autowash.service;
 
-import com.autowash.entity.AuthUser;
+import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.dto.CustomerPromotionResponse;
 import com.autowash.dto.PromotionRequest;
 import com.autowash.dto.PromotionResponse;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.Promotion;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import com.autowash.repository.PromotionRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -42,13 +44,10 @@ public class PromotionService {
         Promotion promotion = new Promotion(
                 request.name(),
                 request.description(),
-                request.discountType(),
-                request.discountValue(),
+                BigDecimal.valueOf(request.discountValue()).movePointLeft(2),
                 request.startDate(),
                 request.endDate(),
                 request.targetingMode(),
-                validated.applicableTiersCsv(),
-                request.maxUsagePerCustomer(),
                 request.status()
         );
         return toResponse(promotionRepository.save(promotion));
@@ -72,13 +71,10 @@ public class PromotionService {
         promotion.update(
                 request.name(),
                 request.description(),
-                request.discountType(),
-                request.discountValue(),
+                BigDecimal.valueOf(request.discountValue()).movePointLeft(2),
                 request.startDate(),
                 request.endDate(),
                 request.targetingMode(),
-                validated.applicableTiersCsv(),
-                request.maxUsagePerCustomer(),
                 request.status()
         );
         return toResponse(promotion);
@@ -94,11 +90,11 @@ public class PromotionService {
 
     @Transactional(readOnly = true)
     public PromotionPage listActiveForCurrentCustomer(int page, int limit) {
-        AuthUser user = currentUserService.getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         Page<Promotion> promotions = promotionRepository.findActiveForTier(
                 Instant.now(),
-                user.getTier().name(),
-                PromotionStatus.ACTIVE,
+                "STANDARD",
+                ActiveStatus.ACTIVE,
                 PromotionTargetingMode.ALL_TIERS,
                 pageRequest(page, limit)
         );
@@ -124,9 +120,9 @@ public class PromotionService {
         if (request.discountType() == DiscountType.PERCENT && request.discountValue() > 100) {
             throw validationError("discountValue", "Percent discount must be between 1 and 100");
         }
-        if (request.targetingMode() == PromotionTargetingMode.SELECTED_TIERS) {
+        if (request.targetingMode() == PromotionTargetingMode.SPECIFIC_TIERS) {
             if (request.applicableTiers() == null || request.applicableTiers().isEmpty()) {
-                throw validationError("applicableTiers", "At least one tier is required for SELECTED_TIERS");
+                throw validationError("applicableTiers", "At least one tier is required for SPECIFIC_TIERS");
             }
             String tiers = request.applicableTiers().stream()
                     .distinct()
@@ -165,16 +161,16 @@ public class PromotionService {
 
     private PromotionResponse toResponse(Promotion promotion) {
         return new PromotionResponse(
-                promotion.getId(),
+                promotion.getId().toString(),
                 promotion.getName(),
                 promotion.getDescription(),
-                promotion.getDiscountType().name(),
-                promotion.getDiscountValue(),
-                promotion.getStartDate(),
-                promotion.getEndDate(),
+                "POINT_MULTIPLIER",
+                promotion.getPointMultiplier().movePointRight(2).intValue(),
+                promotion.getStartAt(),
+                promotion.getEndAt(),
                 promotion.getTargetingMode().name(),
-                resolveApplicableTiers(promotion),
-                promotion.getMaxUsagePerCustomer(),
+                List.of(),
+                null,
                 promotion.getStatus().name(),
                 promotion.getCreatedAt(),
                 promotion.getUpdatedAt()
@@ -187,7 +183,7 @@ public class PromotionService {
                 promotion.name(),
                 promotion.targetingMode(),
                 promotion.applicableTiers(),
-                promotion.discountType(),
+                "POINT_MULTIPLIER",
                 promotion.discountValue(),
                 0,
                 false,
@@ -199,13 +195,7 @@ public class PromotionService {
         if (promotion.getTargetingMode() == PromotionTargetingMode.ALL_TIERS) {
             return ALL_TIERS;
         }
-        if (promotion.getApplicableTiersCsv() == null || promotion.getApplicableTiersCsv().isBlank()) {
-            return List.of();
-        }
-        return Arrays.stream(promotion.getApplicableTiersCsv().split(","))
-                .map(String::trim)
-                .filter(value -> !value.isBlank())
-                .toList();
+        return List.of();
     }
 
     private record ValidatedPromotion(String applicableTiersCsv) {
@@ -214,3 +204,4 @@ public class PromotionService {
     public record PromotionPage(List<PromotionResponse> items, PaginationMeta pagination) {
     }
 }
+

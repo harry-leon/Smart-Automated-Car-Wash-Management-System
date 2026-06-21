@@ -1,32 +1,32 @@
 package com.autowash.service;
 
-import com.autowash.entity.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-
+import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
-import com.autowash.repository.AuthUserRepository;
-
+import com.autowash.repository.UserRepository;
+import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.CustomerBookingRepository;
+import com.autowash.repository.BookingRepository;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.dto.EarnPointsResponse;
 import com.autowash.dto.RedeemPointsResponse;
-
-
+import com.autowash.entity.LoyaltyAccount;
+import com.autowash.entity.PointTransaction;
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
-
+import com.autowash.entity.WashSession;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.exception.ApiException;
-
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,13 +40,13 @@ class LoyaltyServiceTest {
     private LoyaltyService loyaltyService;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private CustomerVehicleRepository customerVehicleRepository;
+    private VehicleRepository VehicleRepository;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Autowired
     private WashSessionRepository washSessionRepository;
@@ -82,9 +82,9 @@ class LoyaltyServiceTest {
         assertThat(first.pointsAwarded()).isEqualTo(27);
         assertThat(second.transactionId()).isEqualTo(first.transactionId());
         assertThat(second.newBalance()).isEqualTo(first.newBalance());
-        assertThat(pointTransactionRepository.countByTypeAndReferenceId(
+        assertThat(pointTransactionRepository.countByTypeAndBookingId(
                 PointTransactionType.EARN,
-                data.session().getId().toString()
+                data.session().getBooking().getId()
         )).isEqualTo(1);
     }
 
@@ -93,7 +93,7 @@ class LoyaltyServiceTest {
         TestData data = createCompletedSession("0901888003", "LOY_SVC_003", 600000);
         loyaltyService.postEarnTransaction(data.customer().getId(), data.session().getId());
 
-        RedeemPointsResponse response = loyaltyService.redeemPoints(data.customer().getId(), 50, data.booking().getId());
+        RedeemPointsResponse response = loyaltyService.redeemPoints(data.customer().getId(), 50, data.booking().getId().toString());
 
         assertThat(response.pointsRedeemed()).isEqualTo(50);
         assertThat(response.newBalance()).isEqualTo(10);
@@ -111,7 +111,6 @@ class LoyaltyServiceTest {
         ).getContent().getFirst();
         assertThat(redemption.getPoints()).isEqualTo(-50);
         assertThat(redemption.getReason()).isEqualTo("Voucher redemption: " + response.voucherCode());
-        assertThat(redemption.getReferenceId()).isEqualTo(response.voucherCode());
         assertThat(loyaltyService.getAccount(data.customer().getId()).totalEarnedPoints()).isEqualTo(60);
     }
 
@@ -141,7 +140,7 @@ class LoyaltyServiceTest {
         assertThat(earnResponse.newBalance()).isEqualTo(510);
         assertThat(earnResponse.tier()).isEqualTo("SILVER");
 
-        loyaltyService.redeemPoints(data.customer().getId(), 200, data.booking().getId());
+        loyaltyService.redeemPoints(data.customer().getId(), 200, data.booking().getId().toString());
         assertThat(loyaltyService.getAccount(data.customer().getId()).tier()).isEqualTo("SILVER");
     }
 
@@ -166,11 +165,11 @@ class LoyaltyServiceTest {
     }
 
     private TestData createPendingSession(String phone, String bookingId, long finalAmount) {
-        AuthUser user = new AuthUser("Nguyen Van A", phone, phone + "@example.com", "hash");
+        User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        authUserRepository.save(user);
+        UserRepository.save(user);
 
-        CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
+        Vehicle vehicle = VehicleRepository.save(new Vehicle(
                 user,
                 "30H-" + phone.substring(phone.length() - 6),
                 VehicleType.CAR,
@@ -181,14 +180,14 @@ class LoyaltyServiceTest {
                 true
         ));
 
-        CustomerBooking booking = new CustomerBooking(
-                bookingId,
+        Booking booking = new Booking(
+                UUID.randomUUID(),
                 user,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -198,11 +197,11 @@ class LoyaltyServiceTest {
                 30
         );
         booking.confirmByOtp();
-        customerBookingRepository.save(booking);
-        WashSession session = washSessionRepository.saveAndFlush(new WashSession(booking, "Loyalty service test"));
+        BookingRepository.save(booking);
+        WashSession session = washSessionRepository.saveAndFlush(WashSession.create(booking, "Loyalty service test", null));
         return new TestData(user, booking, session);
     }
 
-    private record TestData(AuthUser customer, CustomerBooking booking, WashSession session) {
+    private record TestData(User customer, Booking booking, WashSession session) {
     }
 }

@@ -1,7 +1,6 @@
 package com.autowash.service;
 
-
-import com.autowash.entity.*;
+import com.autowash.entity.Booking;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
@@ -30,7 +29,7 @@ public class SmtpBookingEmailDeliveryService implements BookingEmailDeliveryServ
     }
 
     @Override
-    public void sendBookingOtp(CustomerBooking booking, String email, String otp, int expiresInSeconds) {
+    public void sendBookingOtp(Booking booking, String email, String otp, int expiresInSeconds) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -44,7 +43,7 @@ public class SmtpBookingEmailDeliveryService implements BookingEmailDeliveryServ
         }
     }
 
-    private String textBody(CustomerBooking booking, String otp, int expiresInSeconds) {
+    private String textBody(Booking booking, String otp, int expiresInSeconds) {
         int minutes = Math.max(expiresInSeconds / 60, 1);
         return """
                 Your AURA Car Wash booking verification code is %s.
@@ -66,7 +65,7 @@ public class SmtpBookingEmailDeliveryService implements BookingEmailDeliveryServ
         );
     }
 
-    private String htmlBody(CustomerBooking booking, String otp, int expiresInSeconds) {
+    private String htmlBody(Booking booking, String otp, int expiresInSeconds) {
         int minutes = Math.max(expiresInSeconds / 60, 1);
         return """
                 <div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.5">

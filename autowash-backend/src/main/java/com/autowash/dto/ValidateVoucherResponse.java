@@ -15,3 +15,4 @@ public record ValidateVoucherResponse(
         Instant expiresAt
 ) {
 }
+

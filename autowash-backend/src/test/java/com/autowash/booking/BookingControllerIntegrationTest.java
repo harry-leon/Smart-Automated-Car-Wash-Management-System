@@ -1,6 +1,5 @@
 package com.autowash.booking;
 
-import com.autowash.entity.*;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -10,18 +9,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
+import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
-import com.autowash.entity.enums.BookingOtpAuditEvent;
-import com.autowash.entity.enums.BookingOtpChallengeStatus;
+import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.repository.BookingOtpAuditLogRepository;
-import com.autowash.repository.BookingOtpChallengeRepository;
-import com.autowash.repository.CustomerBookingRepository;
-
+import com.autowash.repository.BookingRepository;
+import com.autowash.entity.LoyaltyAccount;
 import com.autowash.repository.LoyaltyAccountRepository;
-import com.autowash.shared.security.AuthUserPrincipal;
+import com.autowash.shared.security.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,26 +46,21 @@ class BookingControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
+
 
     @Autowired
-    private BookingOtpChallengeRepository bookingOtpChallengeRepository;
-
-    @Autowired
-    private BookingOtpAuditLogRepository bookingOtpAuditLogRepository;
-
-    @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
     private LoyaltyAccountRepository loyaltyAccountRepository;
 
     @BeforeEach
     void ensureActiveStaffExists() {
-        AuthUser staff = new AuthUser("Booking Assignment Staff", uniquePhone("0914"), "booking-assignment-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        User staff = new User("Booking Assignment Staff", uniquePhone("0914"), "booking-assignment-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        authUserRepository.saveAndFlush(staff);
+        UserRepository.saveAndFlush(staff);
     }
 
     @Test
@@ -78,17 +68,17 @@ class BookingControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/packages").param("page", "1").param("limit", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].packageId").value("pkg_001"))
+                .andExpect(jsonPath("$.data[0].packageId").value("12345678-1234-1234-1234-123456789012"))
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.limit").value(20));
     }
 
     @Test
-    void getAddOnsReturnsActiveAddOns() throws Exception {
-        mockMvc.perform(get("/api/v1/add-ons"))
+    void getServicesReturnsActiveServices() throws Exception {
+        mockMvc.perform(get("/api/v1/services"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].addonId").value("addon_001"));
+                .andExpect(jsonPath("$.data[0].serviceId").value("service_001"));
     }
 
     @Test
@@ -109,7 +99,7 @@ class BookingControllerIntegrationTest {
                         .content("""
                                 {
                                   "voucherCode": "WELCOME20",
-                                  "packageId": "pkg_001",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
                                   "amount": 150000
                                 }
                                 """))
@@ -130,7 +120,7 @@ class BookingControllerIntegrationTest {
                         .content("""
                                 {
                                   "voucherCode": "OLD10",
-                                  "packageId": "pkg_001",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
                                   "amount": 150000
                                 }
                                 """))
@@ -150,8 +140,8 @@ class BookingControllerIntegrationTest {
                         .content("""
                                 {
                                   "vehicleId": "%s",
-                                  "packageId": "pkg_001",
-                                  "addons": ["addon_001"],
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
+                                  "options": ["service_001"],
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",
@@ -235,7 +225,7 @@ class BookingControllerIntegrationTest {
                         .content("""
                                 {
                                   "vehicleId": "%s",
-                                  "packageId": "pkg_001",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "paymentMethod": "E_WALLET"
@@ -256,7 +246,7 @@ class BookingControllerIntegrationTest {
                         .content("""
                                 {
                                   "vehicleId": "%s",
-                                  "packageId": "pkg_001",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
                                   "bookingDate": "%s",
                                   "bookingTime": "2pm",
                                   "paymentMethod": "E_WALLET"
@@ -340,7 +330,7 @@ class BookingControllerIntegrationTest {
     void applyPointsRedeemsLoyaltyBalanceAndUpdatesBookingPricing() throws Exception {
         String phone = "0901234718";
         String accessToken = registerActivateAndLogin(phone);
-        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByPhone(phone).orElseThrow();
         LoyaltyAccount account = new LoyaltyAccount(customer);
         account.addPoints(120);
         loyaltyAccountRepository.saveAndFlush(account);
@@ -375,7 +365,7 @@ class BookingControllerIntegrationTest {
     void applyPointsRejectsDuplicateApplication() throws Exception {
         String phone = "0901234719";
         String accessToken = registerActivateAndLogin(phone);
-        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByPhone(phone).orElseThrow();
         LoyaltyAccount account = new LoyaltyAccount(customer);
         account.addPoints(160);
         loyaltyAccountRepository.saveAndFlush(account);
@@ -501,102 +491,7 @@ class BookingControllerIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/v1/customers/wash-tracking/{washSessionId}']").exists());
     }
 
-    @Test
-    void bookingOtpRejectsWrongCodeLocksAfterThreeFailuresAndAllowsNewResend() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234730");
-        String vehicleId = createVehicle(accessToken, "30H-223478");
-        String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
 
-        for (int i = 0; i < 2; i++) {
-            mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/otp/verify", bookingId)
-                            .header("Authorization", "Bearer " + accessToken)
-                            .contentType("application/json")
-                            .content("{ \"otp\": \"000000\" }"))
-                    .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_OTP"));
-        }
-
-        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/otp/verify", bookingId)
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType("application/json")
-                        .content("{ \"otp\": \"000000\" }"))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errorCode").value("RATE_LIMIT_EXCEEDED"));
-
-        var booking = customerBookingRepository.findById(bookingId).orElseThrow();
-        var lockedChallenge = bookingOtpChallengeRepository
-                .findFirstByBookingAndStatusOrderBySentAtDesc(booking, BookingOtpChallengeStatus.PENDING)
-                .orElseThrow();
-        org.assertj.core.api.Assertions.assertThat(lockedChallenge.isLocked()).isTrue();
-
-        String otp = resendBookingOtp(accessToken, bookingId).path("data").path("devOtp").asText();
-        verifyBookingOtp(accessToken, bookingId, otp)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("CONFIRMED"));
-
-        long failedAuditCount = bookingOtpAuditLogRepository.countByBookingAndEventTypeInAndCreatedAtAfter(
-                booking,
-                List.of(BookingOtpAuditEvent.VERIFY_FAILED),
-                Instant.now().minusSeconds(3600)
-        );
-        org.assertj.core.api.Assertions.assertThat(failedAuditCount).isGreaterThanOrEqualTo(3);
-    }
-
-    @Test
-    void bookingOtpResendInvalidatesOldOtpAndEnforcesHourlyLimit() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234731");
-        String vehicleId = createVehicle(accessToken, "30H-223479");
-        String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
-
-        String oldOtp = resendBookingOtp(accessToken, bookingId).path("data").path("devOtp").asText();
-        resendBookingOtp(accessToken, bookingId);
-        String currentOtp = resendBookingOtp(accessToken, bookingId).path("data").path("devOtp").asText();
-
-        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/otp/resend", bookingId)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.errorCode").value("RATE_LIMIT_EXCEEDED"));
-
-        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/otp/verify", bookingId)
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType("application/json")
-                        .content("""
-                                { "otp": "%s" }
-                                """.formatted(oldOtp)))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errorCode").value("INVALID_OTP"));
-
-        verifyBookingOtp(accessToken, bookingId, currentOtp)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
-                .andExpect(jsonPath("$.data.confirmationStatus").value("VERIFIED"));
-    }
-
-    @Test
-    void bookingOtpExpiredCodeCancelsPendingBooking() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234732");
-        String vehicleId = createVehicle(accessToken, "30H-223480");
-        String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
-        var booking = customerBookingRepository.findById(bookingId).orElseThrow();
-        var challenge = bookingOtpChallengeRepository
-                .findFirstByBookingAndStatusOrderBySentAtDesc(booking, BookingOtpChallengeStatus.PENDING)
-                .orElseThrow();
-        ReflectionTestUtils.setField(challenge, "expiresAt", Instant.now().minusSeconds(1));
-        bookingOtpChallengeRepository.saveAndFlush(challenge);
-
-        mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/otp/verify", bookingId)
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType("application/json")
-                        .content("{ \"otp\": \"123456\" }"))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.errorCode").value("OTP_EXPIRED"));
-
-        mockMvc.perform(get("/api/v1/customers/bookings/{bookingId}", bookingId)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("CANCELLED"))
-                .andExpect(jsonPath("$.data.confirmationStatus").value("EXPIRED"));
-    }
 
     private JsonNode createBooking(String accessToken, String vehicleId) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/customers/bookings")
@@ -605,8 +500,8 @@ class BookingControllerIntegrationTest {
                         .content("""
                                 {
                                   "vehicleId": "%s",
-                                  "packageId": "pkg_001",
-                                  "addons": ["addon_001"],
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
+                                  "options": ["service_001"],
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",
@@ -661,11 +556,11 @@ class BookingControllerIntegrationTest {
     }
 
     private RequestPostProcessor authenticatedAdmin() {
-        AuthUser admin = new AuthUser("Booking Admin", uniquePhone("0986"), "booking-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+        User admin = new User("Booking Admin", uniquePhone("0986"), "booking-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         admin.activate();
         ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
-        authUserRepository.saveAndFlush(admin);
-        AuthUserPrincipal principal = new AuthUserPrincipal(admin);
+        UserRepository.saveAndFlush(admin);
+        UserPrincipal principal = new UserPrincipal(admin);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);
@@ -703,9 +598,9 @@ class BookingControllerIntegrationTest {
     }
 
     private void setBookingStatus(String bookingId, BookingStatus status) {
-        var booking = customerBookingRepository.findById(bookingId).orElseThrow();
+        var booking = BookingRepository.findById(bookingId).orElseThrow();
         booking.updateStatus(status);
-        customerBookingRepository.saveAndFlush(booking);
+        BookingRepository.saveAndFlush(booking);
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {

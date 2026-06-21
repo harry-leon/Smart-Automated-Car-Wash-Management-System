@@ -8,12 +8,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "booking_status_histories")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BookingStatusHistory {
 
     @Id
@@ -22,7 +26,7 @@ public class BookingStatusHistory {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "booking_id", nullable = false)
-    private CustomerBooking booking;
+    private Booking booking;
 
     @Column(name = "old_status", length = 30)
     private String oldStatus;
@@ -32,30 +36,11 @@ public class BookingStatusHistory {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "changed_by")
-    private AuthUser changedBy;
+    private User changedBy;
 
-    @Column
+    @Column(name = "reason")
     private String reason;
 
     @Column(name = "changed_at", nullable = false)
     private Instant changedAt;
-
-    protected BookingStatusHistory() {
-    }
-
-    public BookingStatusHistory(CustomerBooking booking, String oldStatus, String newStatus, AuthUser changedBy, String reason) {
-        this.booking = booking;
-        this.oldStatus = oldStatus;
-        this.newStatus = newStatus;
-        this.changedBy = changedBy;
-        this.reason = reason;
-        this.changedAt = Instant.now();
-    }
-
-    @PrePersist
-    void prePersist() {
-        if (changedAt == null) {
-            changedAt = Instant.now();
-        }
-    }
 }

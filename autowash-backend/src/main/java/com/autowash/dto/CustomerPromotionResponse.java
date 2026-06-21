@@ -18,3 +18,4 @@ public record CustomerPromotionResponse(
         Instant expiresAt
 ) {
 }
+

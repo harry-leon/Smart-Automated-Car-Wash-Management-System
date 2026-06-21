@@ -6,3 +6,4 @@ public enum LoyaltyTier {
     GOLD,
     PLATINUM
 }
+

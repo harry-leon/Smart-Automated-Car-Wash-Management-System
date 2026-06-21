@@ -9,3 +9,4 @@ public enum BookingOtpAuditEvent {
     EXPIRED,
     CANCELLED
 }
+

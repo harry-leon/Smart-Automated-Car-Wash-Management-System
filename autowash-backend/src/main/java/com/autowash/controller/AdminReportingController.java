@@ -5,14 +5,18 @@ import com.autowash.dto.AdminBusinessHealthReportResponse;
 import com.autowash.dto.AdminAccountResponse;
 import com.autowash.dto.AdminCustomerDetailResponse;
 import com.autowash.dto.AdminCustomerVehicleResponse;
+import com.autowash.dto.AdminOperationsDashboardResponse;
+import com.autowash.dto.AdminStaffWorkloadResponse;
 import com.autowash.dto.AdminTierHistoryResponse;
 import com.autowash.dto.AdminWashHistoryResponse;
+import com.autowash.dto.CreateAdminStaffRequest;
+import com.autowash.dto.UpdateAdminStaffRequest;
 import com.autowash.dto.UpdateAdminCustomerRoleRequest;
 import com.autowash.dto.UpdateAdminCustomerRoleResponse;
+import com.autowash.dto.UpdateUserStatusRequest;
 import com.autowash.service.AdminReportingService;
 import com.autowash.dto.PointTransactionResponse;
 import com.autowash.service.LoyaltyService;
-import com.autowash.dto.BookingStaffTransferAuditResponse;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -29,6 +33,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -99,16 +105,6 @@ public class AdminReportingController {
         return ApiResponse.ok("Bookings retrieved", bookingPage.items(), bookingPage.pagination());
     }
 
-    @GetMapping("/operations/transfer-audits")
-    @Operation(summary = "List staff booking transfer audit logs")
-    public ApiResponse<List<BookingStaffTransferAuditResponse>> listTransferAudits(
-            @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
-    ) {
-        AdminReportingService.TransferAuditPage auditPage = adminReportingService.listTransferAudits(page, limit);
-        return ApiResponse.ok("Transfer audits retrieved", auditPage.items(), auditPage.pagination());
-    }
-
     @GetMapping("/bookings/{bookingId}")
     @Operation(summary = "Get booking detail for admin")
     public ApiResponse<com.autowash.dto.BookingDetailResponse> getBookingDetail(@PathVariable String bookingId) {
@@ -119,6 +115,15 @@ public class AdminReportingController {
     @Operation(summary = "Get customer detail for admin")
     public ApiResponse<AdminCustomerDetailResponse> getCustomerDetail(@PathVariable UUID customerId) {
         return ApiResponse.ok("Customer retrieved", adminReportingService.getCustomerDetail(customerId));
+    }
+
+    @PutMapping("/customers/{customerId}/status")
+    @Operation(summary = "Update customer status for admin")
+    public ApiResponse<AdminAccountResponse> updateCustomerStatus(
+            @PathVariable UUID customerId,
+            @Valid @RequestBody UpdateUserStatusRequest request
+    ) {
+        return ApiResponse.ok("Customer status updated", adminReportingService.updateCustomerStatus(customerId, request.status()));
     }
 
     @PutMapping("/customers/{customerId}/role")
@@ -157,6 +162,54 @@ public class AdminReportingController {
         AdminReportingService.CustomerVehiclePage vehiclePage =
                 adminReportingService.getCustomerVehicles(customerId, page, limit);
         return ApiResponse.ok("Customer vehicles retrieved", vehiclePage.items(), vehiclePage.pagination());
+    }
+
+    @GetMapping("/operations/dashboard")
+    @Operation(summary = "Get admin operations dashboard")
+    public ApiResponse<AdminOperationsDashboardResponse> getOperationsDashboard() {
+        return ApiResponse.ok("Operations dashboard retrieved", adminReportingService.getOperationsDashboard());
+    }
+
+    @PostMapping("/staff")
+    @Operation(summary = "Create staff account")
+    public ApiResponse<AdminAccountResponse> createStaff(@Valid @RequestBody CreateAdminStaffRequest request) {
+        return ApiResponse.ok("Staff created", adminReportingService.createStaff(request));
+    }
+
+    @PutMapping("/staff/{staffId}")
+    @Operation(summary = "Update staff account")
+    public ApiResponse<AdminAccountResponse> updateStaff(
+            @PathVariable UUID staffId,
+            @Valid @RequestBody UpdateAdminStaffRequest request
+    ) {
+        return ApiResponse.ok("Staff updated", adminReportingService.updateStaff(staffId, request));
+    }
+
+    @GetMapping("/staff")
+    @Operation(summary = "List staff accounts")
+    public ApiResponse<List<AdminAccountResponse>> listStaff() {
+        return ApiResponse.ok("Staff retrieved", adminReportingService.listStaff());
+    }
+
+    @PutMapping("/staff/{staffId}/status")
+    @Operation(summary = "Update staff status")
+    public ApiResponse<AdminAccountResponse> updateStaffStatus(
+            @PathVariable UUID staffId,
+            @Valid @RequestBody UpdateUserStatusRequest request
+    ) {
+        return ApiResponse.ok("Staff status updated", adminReportingService.updateStaffStatus(staffId, request.status()));
+    }
+
+    @DeleteMapping("/staff/{staffId}")
+    @Operation(summary = "Delete staff account")
+    public ApiResponse<AdminAccountResponse> deleteStaff(@PathVariable UUID staffId) {
+        return ApiResponse.ok("Staff deleted", adminReportingService.deleteStaff(staffId));
+    }
+
+    @GetMapping("/staff/{staffId}/workload")
+    @Operation(summary = "Get staff workload")
+    public ApiResponse<AdminStaffWorkloadResponse> getStaffWorkload(@PathVariable UUID staffId) {
+        return ApiResponse.ok("Staff workload retrieved", adminReportingService.getStaffWorkload(staffId));
     }
 
     @GetMapping("/customers/{customerId}/wash-history")

@@ -1,6 +1,6 @@
-package com.autowash.admin;
+package com.autowash.admin; 
+import java.util.UUID;
 
-import com.autowash.entity.*;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -10,16 +10,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
+import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
-
+import com.autowash.repository.UserRepository;
+import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.shared.security.AuthUserPrincipal;
-
+import com.autowash.repository.BookingRepository;
+import com.autowash.shared.security.UserPrincipal;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -46,13 +46,13 @@ class AdminVoucherControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private CustomerVehicleRepository customerVehicleRepository;
+    private VehicleRepository VehicleRepository;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Test
     void adminCanListVoucherCatalog() throws Exception {
@@ -66,9 +66,9 @@ class AdminVoucherControllerIntegrationTest {
     @Test
     void adminCanInspectVoucherRedemptionHistory() throws Exception {
         String voucherCode = "ADMINVOUCHER50";
-        AuthUser customer = createActiveCustomer("0901999001");
-        AuthUser staff = createActiveStaff("Staff Voucher Admin");
-        CustomerBooking booking = createConfirmedBooking(customer, staff, "ADMIN_VOUCHER_BK_001", "30H-999001", LocalDate.of(2026, 6, 14), 600000);
+        User customer = createActiveCustomer("0901999001");
+        User staff = createActiveStaff("Staff Voucher Admin");
+        Booking booking = createConfirmedBooking(customer, staff, "ADMIN_VOUCHER_BK_001", "30H-999001", LocalDate.of(2026, 6, 14), 600000);
         completeSession(booking.getId(), staff);
 
         MvcResult redeemResult = mockMvc.perform(post("/api/v1/loyalty/redeem")
@@ -97,7 +97,7 @@ class AdminVoucherControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].balanceAfter").value(10));
     }
 
-    private String completeSession(String bookingId, AuthUser staff) throws Exception {
+    private String completeSession(UUID bookingId, User staff) throws Exception {
         String sessionId = createSession(bookingId, staff);
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
                         .with(authenticatedUser(staff)))
@@ -114,7 +114,7 @@ class AdminVoucherControllerIntegrationTest {
         return sessionId;
     }
 
-    private String createSession(String bookingId, AuthUser staff) throws Exception {
+    private String createSession(UUID bookingId, User staff) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
                         .with(authenticatedUser(staff))
                         .contentType("application/json")
@@ -129,15 +129,15 @@ class AdminVoucherControllerIntegrationTest {
         return readJson(result).path("data").path("sessionId").asText();
     }
 
-    private CustomerBooking createConfirmedBooking(
-            AuthUser customer,
-            AuthUser assignedStaff,
+    private Booking createConfirmedBooking(
+            User customer,
+            User assignedStaff,
             String bookingId,
             String plate,
             LocalDate bookingDate,
             long finalAmount
     ) {
-        CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
+        Vehicle vehicle = VehicleRepository.save(new Vehicle(
                 customer,
                 plate,
                 VehicleType.CAR,
@@ -147,14 +147,14 @@ class AdminVoucherControllerIntegrationTest {
                 "Silver",
                 true
         ));
-        CustomerBooking booking = new CustomerBooking(
-                bookingId,
+        Booking booking = new Booking(
+                UUID.randomUUID(),
                 customer,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                bookingDate,
+                bookingDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -165,30 +165,30 @@ class AdminVoucherControllerIntegrationTest {
         );
         booking.assignStaff(assignedStaff);
         booking.confirmByOtp();
-        return customerBookingRepository.saveAndFlush(booking);
+        return BookingRepository.saveAndFlush(booking);
     }
 
-    private AuthUser createActiveCustomer(String phone) {
-        AuthUser user = new AuthUser("Nguyen Van A", phone, phone + "@example.com", "hash");
+    private User createActiveCustomer(String phone) {
+        User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        return authUserRepository.saveAndFlush(user);
+        return UserRepository.saveAndFlush(user);
     }
 
-    private AuthUser createActiveStaff(String fullName) {
-        AuthUser staff = new AuthUser(fullName, uniquePhone("0918"), "staff-" + plateSafe(fullName) + "@example.com", "hash");
+    private User createActiveStaff(String fullName) {
+        User staff = new User(fullName, uniquePhone("0918"), "staff-" + plateSafe(fullName) + "@example.com", "hash");
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        return authUserRepository.saveAndFlush(staff);
+        return UserRepository.saveAndFlush(staff);
     }
 
-    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedUser(AuthUser user) {
-        AuthUserPrincipal principal = new AuthUserPrincipal(user);
+    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedUser(User user) {
+        UserPrincipal principal = new UserPrincipal(user);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);
     }
 
-    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(AuthUser user) {
+    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(User user) {
         return authenticatedUser(user);
     }
 

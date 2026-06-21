@@ -4,18 +4,28 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "booking_options")
 @IdClass(BookingOption.BookingOptionId.class)
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BookingOption {
 
     @Id
-    @Column(name = "booking_id", nullable = false)
-    private UUID bookingId;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
 
     @Id
     @Column(name = "option_id", nullable = false)
@@ -27,26 +37,10 @@ public class BookingOption {
     @Column(name = "option_price", nullable = false)
     private long optionPrice;
 
-    protected BookingOption() {
-    }
-
-    public BookingOption(UUID bookingId, UUID optionId, String optionName, long optionPrice) {
-        this.bookingId = bookingId;
-        this.optionId = optionId;
-        this.optionName = optionName;
-        this.optionPrice = optionPrice;
-    }
-
-    public UUID getBookingId() { return bookingId; }
-    public UUID getOptionId() { return optionId; }
-    public String getOptionName() { return optionName; }
-    public long getOptionPrice() { return optionPrice; }
-
+    @Getter
+    @NoArgsConstructor
     public static class BookingOptionId implements Serializable {
-        private UUID bookingId;
+        private UUID booking;
         private UUID optionId;
-
-        public BookingOptionId() {
-        }
     }
 }

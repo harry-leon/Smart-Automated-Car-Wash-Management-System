@@ -4,3 +4,4 @@ public enum LanguagePreference {
     VI,
     EN
 }
+

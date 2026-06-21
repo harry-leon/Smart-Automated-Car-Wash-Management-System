@@ -1,7 +1,7 @@
 package com.autowash.entity;
 
 import com.autowash.entity.enums.DiscountType;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.enums.ActiveStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,12 +9,16 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "vouchers")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Voucher {
 
     @Id
@@ -56,62 +60,27 @@ public class Voucher {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private PromotionStatus status;
-
-    @Transient
-    private String targetTiersCsv;
-
-    protected Voucher() {
-    }
-
-    public Voucher(
-            String code,
-            DiscountType discountType,
-            int discountValue,
-            long minAmount,
-            Instant expiresAt,
-            boolean active,
-            boolean newCustomerOnly,
-            String targetTiersCsv
-    ) {
-        this.id = UUID.randomUUID();
-        this.code = code;
-        this.name = code;
-        this.discountType = discountType;
-        this.discountValue = discountValue;
-        this.minOrderAmount = minAmount;
-        this.startAt = Instant.now();
-        this.endAt = expiresAt;
-        this.status = active ? PromotionStatus.ACTIVE : PromotionStatus.INACTIVE;
-        this.newCustomerOnly = newCustomerOnly;
-        this.targetTiersCsv = targetTiersCsv;
-    }
+    private ActiveStatus status;
 
     @PrePersist
     void prePersist() {
         if (id == null) {
             id = UUID.randomUUID();
         }
-        if (name == null || name.isBlank()) {
-            name = code;
-        }
     }
 
-    public UUID getId() { return id; }
-    public String getCode() { return code; }
-    public String getName() { return name; }
-    public DiscountType getDiscountType() { return discountType; }
-    public long getDiscountValue() { return discountValue; }
-    public long getMinAmount() { return minOrderAmount; }
-    public long getMinOrderAmount() { return minOrderAmount; }
-    public Long getMaxDiscountAmount() { return maxDiscountAmount; }
-    public Integer getUsageLimit() { return usageLimit; }
-    public int getUsedCount() { return usedCount; }
-    public Instant getStartAt() { return startAt; }
-    public Instant getEndAt() { return endAt; }
-    public Instant getExpiresAt() { return endAt; }
-    public PromotionStatus getStatus() { return status; }
-    public boolean isActive() { return status == PromotionStatus.ACTIVE; }
-    public boolean isNewCustomerOnly() { return newCustomerOnly; }
-    public String getTargetTiersCsv() { return targetTiersCsv; }
+    public Voucher(String code, String name, DiscountType discountType, long discountValue, long minOrderAmount, Long maxDiscountAmount, Integer usageLimit, boolean newCustomerOnly, Instant startAt, Instant endAt, ActiveStatus status) {
+        this.code = code;
+        this.name = name;
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.minOrderAmount = minOrderAmount;
+        this.maxDiscountAmount = maxDiscountAmount;
+        this.usageLimit = usageLimit;
+        this.newCustomerOnly = newCustomerOnly;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.status = status;
+        this.usedCount = 0;
+    }
 }

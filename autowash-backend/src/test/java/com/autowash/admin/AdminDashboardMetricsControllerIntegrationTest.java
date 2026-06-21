@@ -7,10 +7,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
+import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.repository.BookingRepository;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.repository.PromotionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,20 +28,20 @@ class AdminDashboardMetricsControllerIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
     private PromotionRepository promotionRepository;
 
     @Test
     void adminCanReadDashboardMetricsFromRealRepositories() throws Exception {
-        long expectedTotalBookings = customerBookingRepository.count();
-        long expectedTotalRevenue = customerBookingRepository.sumFinalAmountByStatus(BookingStatus.CONFIRMED);
-        long expectedTotalCustomers = authUserRepository.countByRole(UserRole.CUSTOMER);
-        long expectedActivePromotions = promotionRepository.countByStatus(PromotionStatus.ACTIVE);
+        long expectedTotalBookings = BookingRepository.count();
+        long expectedTotalRevenue = BookingRepository.sumFinalAmountByStatus(BookingStatus.CONFIRMED);
+        long expectedTotalCustomers = UserRepository.countByRole(UserRole.CUSTOMER);
+        long expectedActivePromotions = promotionRepository.countByStatus(ActiveStatus.ACTIVE);
 
         mockMvc.perform(get("/api/v1/admin/dashboard/metrics")
                         .with(user("admin").roles("ADMIN")))

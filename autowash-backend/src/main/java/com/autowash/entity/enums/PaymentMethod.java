@@ -5,3 +5,4 @@ public enum PaymentMethod {
     E_WALLET,
     CASH_AT_COUNTER
 }
+

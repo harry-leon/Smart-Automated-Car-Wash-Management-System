@@ -1,10 +1,9 @@
 package com.autowash.repository;
 
-
-
-import com.autowash.entity.*;
+import com.autowash.entity.User;
+import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.WashSessionStatus;
-
+import com.autowash.entity.Vehicle;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -19,64 +18,52 @@ import org.springframework.data.repository.query.Param;
 
 public interface WashSessionRepository extends JpaRepository<WashSession, UUID> {
 
-    boolean existsByBookingIdAndStatusIn(String bookingId, Collection<WashSessionStatus> statuses);
-
-    default boolean existsByBookingIdAndStatusIn(UUID bookingId, Collection<WashSessionStatus> statuses) {
-        return existsByBookingIdAndStatusIn(bookingId == null ? null : bookingId.toString(), statuses);
-    }
+    boolean existsByBooking_IdAndStatusIn(UUID bookingId, Collection<WashSessionStatus> statuses);
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "assignedStaff"})
     Optional<WashSession> findWithBookingById(UUID id);
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
-    Optional<WashSession> findByIdAndBookingCustomer(UUID id, AuthUser customer);
+    Optional<WashSession> findByIdAndBookingCustomer(UUID id, User customer);
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     Optional<WashSession> findFirstByBookingCustomerAndStatusInOrderByCreatedAtDesc(
-            AuthUser customer,
+            User customer,
             Collection<WashSessionStatus> statuses
     );
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle"})
     Page<WashSession> findByBookingCustomerAndStatusOrderByCompletedAtDesc(
-            AuthUser customer,
+            User customer,
             WashSessionStatus status,
             Pageable pageable
     );
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle"})
     java.util.List<WashSession> findByBookingCustomerAndStatusOrderByCompletedAtDesc(
-            AuthUser customer,
+            User customer,
             WashSessionStatus status
     );
 
     @EntityGraph(attributePaths = {"booking", "assignedStaff"})
-    Optional<WashSession> findFirstByBookingIdOrderByCompletedAtDesc(String bookingId);
-
-    default Optional<WashSession> findFirstByBookingIdOrderByCompletedAtDesc(UUID bookingId) {
-        return findFirstByBookingIdOrderByCompletedAtDesc(bookingId == null ? null : bookingId.toString());
-    }
+    Optional<WashSession> findFirstByBooking_IdOrderByCompletedAtDesc(UUID bookingId);
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     java.util.List<WashSession> findAllByOrderByCreatedAtDesc();
 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
-    java.util.List<WashSession> findByAssignedStaffOrderByCreatedAtDesc(AuthUser assignedStaff);
+    java.util.List<WashSession> findByAssignedStaffOrderByCreatedAtDesc(User assignedStaff);
 
-    long countByAssignedStaffAndStatus(AuthUser assignedStaff, WashSessionStatus status);
+    long countByAssignedStaffAndStatus(User assignedStaff, WashSessionStatus status);
 
-    long countByAssignedStaffAndStatusIn(AuthUser assignedStaff, Collection<WashSessionStatus> statuses);
+    long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
 
     @EntityGraph(attributePaths = {"booking"})
-    List<WashSession> findByBookingIdIn(Collection<String> bookingIds);
+    List<WashSession> findByBooking_IdIn(Collection<UUID> bookingIds);
 
-    default List<WashSession> findByBookingIdInUuid(Collection<UUID> bookingIds) {
-        return findByBookingIdIn(bookingIds.stream().map(UUID::toString).toList());
-    }
+    long countByBookingCustomerAndStatus(User customer, WashSessionStatus status);
 
-    long countByBookingCustomerAndStatus(AuthUser customer, WashSessionStatus status);
-
-    long countByBookingVehicleAndStatus(CustomerVehicle vehicle, WashSessionStatus status);
+    long countByBookingVehicleAndStatus(Vehicle vehicle, WashSessionStatus status);
 
     @Query("""
             select max(session.completedAt) from WashSession session
@@ -84,7 +71,7 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
               and session.status = :status
             """)
     Instant findLastCompletedAtByVehicle(
-            @Param("vehicle") CustomerVehicle vehicle,
+            @Param("vehicle") Vehicle vehicle,
             @Param("status") WashSessionStatus status
     );
 
@@ -97,7 +84,7 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
               and (:dateTo is null or session.completedAt <= :dateTo)
             """)
     Page<WashSession> searchCustomerCompletedSessions(
-            @Param("customer") AuthUser customer,
+            @Param("customer") User customer,
             @Param("status") WashSessionStatus status,
             @Param("dateFrom") Instant dateFrom,
             @Param("dateTo") Instant dateTo,
@@ -112,9 +99,11 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
               and (:dateTo is null or session.createdAt <= :dateTo)
             """)
     Page<WashSession> searchCustomerSessions(
-            @Param("customer") AuthUser customer,
+            @Param("customer") User customer,
             @Param("dateFrom") Instant dateFrom,
             @Param("dateTo") Instant dateTo,
             Pageable pageable
     );
+
+    long countByStatus(WashSessionStatus status);
 }

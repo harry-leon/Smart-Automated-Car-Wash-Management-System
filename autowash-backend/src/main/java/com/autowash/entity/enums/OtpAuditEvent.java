@@ -10,3 +10,4 @@ public enum OtpAuditEvent {
     EXPIRED,
     LOCKED
 }
+

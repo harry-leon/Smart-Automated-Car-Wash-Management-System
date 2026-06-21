@@ -1,6 +1,5 @@
 package com.autowash.dto;
 
-import com.autowash.entity.*;
 import com.autowash.entity.enums.PaymentStatus;
 
 import com.autowash.entity.enums.PaymentMethod;
@@ -20,3 +19,4 @@ public record PurchaseCustomerComboResponse(
         Instant purchasedAt
 ) {
 }
+

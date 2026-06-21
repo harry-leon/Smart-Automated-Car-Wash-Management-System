@@ -1,6 +1,5 @@
 package com.autowash.catalog;
 
-import com.autowash.entity.*;
 import com.autowash.entity.enums.DiscountType;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
@@ -13,10 +12,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
+import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
-import com.autowash.repository.AuthUserRepository;
-import com.autowash.shared.security.AuthUserPrincipal;
+import com.autowash.repository.UserRepository;
+import com.autowash.shared.security.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,10 @@ class PromotionControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
+
+    @Autowired
+    private com.autowash.repository.LoyaltyAccountRepository loyaltyAccountRepository;
 
     @Test
     void adminCanCreateReadUpdateAndDeletePromotion() throws Exception {
@@ -142,7 +144,7 @@ class PromotionControllerIntegrationTest {
 
     @Test
     void customerPromotionsReturnOnlyActiveEligibleCampaigns() throws Exception {
-        AuthUser member = createActiveCustomer("0901777301", LoyaltyTier.MEMBER);
+        User member = createActiveCustomer("0901777301", LoyaltyTier.MEMBER);
         mockMvc.perform(get("/api/v1/promotions")
                         .with(authenticatedCustomer(member)))
                 .andExpect(status().isOk())
@@ -151,7 +153,7 @@ class PromotionControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[*].promotionId", not(hasItem("promo_gold15"))))
                 .andExpect(jsonPath("$.data[*].promotionId", not(hasItem("promo_old10"))));
 
-        AuthUser gold = createActiveCustomer("0901777302", LoyaltyTier.GOLD);
+        User gold = createActiveCustomer("0901777302", LoyaltyTier.GOLD);
         mockMvc.perform(get("/api/v1/promotions/active")
                         .with(authenticatedCustomer(gold)))
                 .andExpect(status().isOk())
@@ -209,15 +211,18 @@ class PromotionControllerIntegrationTest {
         return readJson(result).path("data").path("promotionId").asText();
     }
 
-    private AuthUser createActiveCustomer(String phone, LoyaltyTier tier) {
-        AuthUser user = new AuthUser("Nguyen Van A", phone, phone + "@example.com", "hash");
+    private User createActiveCustomer(String phone, LoyaltyTier tier) {
+        User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        user.updateTier(tier);
-        return authUserRepository.saveAndFlush(user);
+        user = UserRepository.saveAndFlush(user);
+        com.autowash.entity.LoyaltyAccount account = new com.autowash.entity.LoyaltyAccount(user);
+        account.updateTier(tier);
+        loyaltyAccountRepository.saveAndFlush(account);
+        return user;
     }
 
-    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(AuthUser user) {
-        AuthUserPrincipal principal = new AuthUserPrincipal(user);
+    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(User user) {
+        UserPrincipal principal = new UserPrincipal(user);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);

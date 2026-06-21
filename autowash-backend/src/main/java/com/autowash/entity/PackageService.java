@@ -7,10 +7,15 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "package_services")
 @IdClass(PackageService.PackageServiceId.class)
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PackageService {
 
     @Id
@@ -39,23 +44,10 @@ public class PackageService {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
-    protected PackageService() {
-    }
-
-    public UUID getPackageId() { return packageId; }
-    public UUID getOptionId() { return optionId; }
-    public String getOptionName() { return optionName; }
-    public String getOptionDescription() { return optionDescription; }
-    public long getOptionPrice() { return optionPrice; }
-    public int getOptionDurationMinutes() { return optionDurationMinutes; }
-    public int getQuantity() { return quantity; }
-    public int getSortOrder() { return sortOrder; }
-
+    @Getter
+    @NoArgsConstructor
     public static class PackageServiceId implements Serializable {
         private UUID packageId;
         private UUID optionId;
-
-        public PackageServiceId() {
-        }
     }
 }

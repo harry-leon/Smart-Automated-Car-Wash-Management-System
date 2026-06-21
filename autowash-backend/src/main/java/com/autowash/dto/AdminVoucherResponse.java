@@ -17,3 +17,4 @@ public record AdminVoucherResponse(
         List<String> targetTiers
 ) {
 }
+

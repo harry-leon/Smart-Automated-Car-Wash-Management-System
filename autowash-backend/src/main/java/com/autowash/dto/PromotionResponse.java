@@ -22,3 +22,4 @@ public record PromotionResponse(
         Instant updatedAt
 ) {
 }
+

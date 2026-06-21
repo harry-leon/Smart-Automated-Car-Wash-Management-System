@@ -33,3 +33,4 @@ public record CreateVehicleRequest(
         String color
 ) {
 }
+

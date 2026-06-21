@@ -10,12 +10,16 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "notifications")
 @Getter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification {
 
@@ -24,7 +28,7 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private AuthUser user;
+    private User user;
 
     @Column(nullable = false, length = 150)
     private String title;
@@ -40,4 +44,8 @@ public class Notification {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    public void markAsRead() {
+        this.read = true;
+    }
 }

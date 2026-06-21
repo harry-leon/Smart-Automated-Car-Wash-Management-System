@@ -14,7 +14,7 @@ public record CreateBookingRequest(
         @NotBlank(message = "Vehicle is required")
         String vehicleId,
         String packageId,
-        List<String> addons,
+        List<String> options,
         @NotNull(message = "Booking date is required")
         @FutureOrPresent(message = "Booking date must be today or in the future")
         LocalDate bookingDate,
@@ -39,3 +39,4 @@ public record CreateBookingRequest(
         return voucherCode.matches("^[A-Z0-9_-]+$");
     }
 }
+

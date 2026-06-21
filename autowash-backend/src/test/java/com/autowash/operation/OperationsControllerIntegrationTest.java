@@ -1,6 +1,5 @@
 package com.autowash.operation;
 
-import com.autowash.entity.*;
 import com.autowash.entity.enums.BookingStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -10,18 +9,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
+import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
-
+import com.autowash.repository.UserRepository;
+import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.CustomerBookingRepository;
-
+import com.autowash.repository.BookingRepository;
+import com.autowash.entity.WashSession;
 import com.autowash.repository.WashSessionRepository;
-import com.autowash.shared.security.AuthUserPrincipal;
-
+import com.autowash.shared.security.UserPrincipal;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
@@ -51,22 +50,22 @@ class OperationsControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private CustomerVehicleRepository customerVehicleRepository;
+    private VehicleRepository VehicleRepository;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Autowired
     private WashSessionRepository washSessionRepository;
 
-    private AuthUser defaultStaff;
+    private User defaultStaff;
 
     @Test
     void fullLifecycleSyncsBookingStatusAndReturnsFeeAndPoints() throws Exception {
-        CustomerBooking booking = createConfirmedBooking("OPS_BK_001", "0901777001", 270000);
+        Booking booking = createConfirmedBooking("OPS_BK_001", "0901777001", 270000);
 
         String sessionId = createSession(booking.getId());
         assertBookingStatus(booking.getId(), "CONFIRMED");
@@ -115,7 +114,7 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void invalidTransitionReturnsConflict() throws Exception {
-        CustomerBooking booking = createConfirmedBooking("OPS_BK_002", "0901777002", 150000);
+        Booking booking = createConfirmedBooking("OPS_BK_002", "0901777002", 150000);
         String sessionId = createSession(booking.getId());
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
@@ -127,7 +126,7 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void startWithoutCheckInReturnsConflict() throws Exception {
-        CustomerBooking booking = createConfirmedBooking("OPS_BK_003", "0901777003", 180000);
+        Booking booking = createConfirmedBooking("OPS_BK_003", "0901777003", 180000);
         String sessionId = createSession(booking.getId());
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
@@ -139,7 +138,7 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void completeWithoutStartReturnsConflict() throws Exception {
-        CustomerBooking booking = createConfirmedBooking("OPS_BK_004", "0901777004", 190000);
+        Booking booking = createConfirmedBooking("OPS_BK_004", "0901777004", 190000);
         String sessionId = createSession(booking.getId());
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
@@ -159,7 +158,7 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void eligibleSessionBookingsOnlyReturnsConfirmedBookingsWithoutActiveSession() throws Exception {
-        CustomerBooking booking = createConfirmedBooking("OPS_BK_ELIGIBLE", "0901777005", 220000);
+        Booking booking = createConfirmedBooking("OPS_BK_ELIGIBLE", "0901777005", 220000);
 
         MvcResult beforeCreate = mockMvc.perform(get("/api/v1/operations/bookings/eligible-sessions")
                         .with(authenticatedUser(defaultStaff())))
@@ -179,10 +178,10 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void staffQueueAndEligibleBookingsOnlyShowAssignedWork() throws Exception {
-        AuthUser staffA = createActiveStaff("Staff Alpha");
-        AuthUser staffB = createActiveStaff("Staff Beta");
-        CustomerBooking bookingA = createConfirmedBooking("OPS_BK_STAFF_A", "0901777011", 220000, staffA);
-        CustomerBooking bookingB = createConfirmedBooking("OPS_BK_STAFF_B", "0901777012", 180000, staffB);
+        User staffA = createActiveStaff("Staff Alpha");
+        User staffB = createActiveStaff("Staff Beta");
+        Booking bookingA = createConfirmedBooking("OPS_BK_STAFF_A", "0901777011", 220000, staffA);
+        Booking bookingB = createConfirmedBooking("OPS_BK_STAFF_B", "0901777012", 180000, staffB);
 
         String sessionA = createSession(bookingA.getId(), staffA);
         String sessionB = createSession(bookingB.getId(), staffB);
@@ -203,9 +202,9 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void staffCannotUpdateOrTransferSessionAssignedToAnotherStaff() throws Exception {
-        AuthUser owner = createActiveStaff("Staff Owner");
-        AuthUser other = createActiveStaff("Staff Other");
-        CustomerBooking booking = createConfirmedBooking("OPS_BK_LOCKED", "0901777013", 210000, owner);
+        User owner = createActiveStaff("Staff Owner");
+        User other = createActiveStaff("Staff Other");
+        Booking booking = createConfirmedBooking("OPS_BK_LOCKED", "0901777013", 210000, owner);
         String sessionId = createSession(booking.getId(), owner);
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
@@ -228,9 +227,9 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void transferSessionReassignsWorkAndCreatesAdminAuditLog() throws Exception {
-        AuthUser staffA = createActiveStaff("Staff Transfer A");
-        AuthUser staffB = createActiveStaff("Staff Transfer B");
-        CustomerBooking booking = createConfirmedBooking("OPS_BK_TRANSFER", "0901777014", 240000, staffA);
+        User staffA = createActiveStaff("Staff Transfer A");
+        User staffB = createActiveStaff("Staff Transfer B");
+        Booking booking = createConfirmedBooking("OPS_BK_TRANSFER", "0901777014", 240000, staffA);
         String sessionId = createSession(booking.getId(), staffA);
 
         mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/transfer", sessionId)
@@ -269,10 +268,10 @@ class OperationsControllerIntegrationTest {
 
     @Test
     void staffDashboardSummaryUsesOnlyAssignedRevenueAndKpi() throws Exception {
-        AuthUser staffA = createActiveStaff("Staff KPI A");
-        AuthUser staffB = createActiveStaff("Staff KPI B");
-        CustomerBooking completedForA = createConfirmedBooking("OPS_BK_KPI_A", "0901777015", 300000, staffA);
-        CustomerBooking completedForB = createConfirmedBooking("OPS_BK_KPI_B", "0901777016", 500000, staffB);
+        User staffA = createActiveStaff("Staff KPI A");
+        User staffB = createActiveStaff("Staff KPI B");
+        Booking completedForA = createConfirmedBooking("OPS_BK_KPI_A", "0901777015", 300000, staffA);
+        Booking completedForB = createConfirmedBooking("OPS_BK_KPI_B", "0901777016", 500000, staffB);
         completeDirectly(completedForA, staffA, 30);
         completeDirectly(completedForB, staffB, 50);
 
@@ -298,11 +297,11 @@ class OperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.CompleteWashSessionResponse.properties.awardedLoyaltyPoints.type").value("integer"));
     }
 
-    private String createSession(String bookingId) throws Exception {
+    private String createSession(UUID bookingId) throws Exception {
         return createSession(bookingId, defaultStaff());
     }
 
-    private String createSession(String bookingId, AuthUser staff) throws Exception {
+    private String createSession(UUID bookingId, User staff) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/operations/sessions")
                         .with(authenticatedUser(staff))
                         .contentType("application/json")
@@ -319,22 +318,22 @@ class OperationsControllerIntegrationTest {
         return readJson(result).path("data").path("sessionId").asText();
     }
 
-    private AuthUser defaultStaff() {
+    private User defaultStaff() {
         if (defaultStaff == null) {
             defaultStaff = createActiveStaff("Staff Operator");
         }
         return defaultStaff;
     }
 
-    private AuthUser createActiveStaff(String fullName) {
-        AuthUser staff = new AuthUser(fullName, uniquePhone("0918"), "staff-" + UUID.randomUUID() + "@example.com", "hash");
+    private User createActiveStaff(String fullName) {
+        User staff = new User(fullName, uniquePhone("0918"), "staff-" + UUID.randomUUID() + "@example.com", "hash");
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        return authUserRepository.saveAndFlush(staff);
+        return UserRepository.saveAndFlush(staff);
     }
 
-    private RequestPostProcessor authenticatedUser(AuthUser user) {
-        AuthUserPrincipal principal = new AuthUserPrincipal(user);
+    private RequestPostProcessor authenticatedUser(User user) {
+        UserPrincipal principal = new UserPrincipal(user);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);
@@ -348,16 +347,16 @@ class OperationsControllerIntegrationTest {
         return prefix + digits.substring(0, 6);
     }
 
-    private CustomerBooking createConfirmedBooking(String bookingId, String phone, long finalAmount) {
+    private Booking createConfirmedBooking(String bookingId, String phone, long finalAmount) {
         return createConfirmedBooking(bookingId, phone, finalAmount, defaultStaff());
     }
 
-    private CustomerBooking createConfirmedBooking(String bookingId, String phone, long finalAmount, AuthUser assignedStaff) {
-        AuthUser user = new AuthUser("Nguyen Van A", phone, phone + "@example.com", "hash");
+    private Booking createConfirmedBooking(String bookingId, String phone, long finalAmount, User assignedStaff) {
+        User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        authUserRepository.save(user);
+        UserRepository.save(user);
 
-        CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
+        Vehicle vehicle = VehicleRepository.save(new Vehicle(
                 user,
                 "30H-" + phone.substring(phone.length() - 6),
                 VehicleType.CAR,
@@ -368,14 +367,14 @@ class OperationsControllerIntegrationTest {
                 true
         ));
 
-        CustomerBooking booking = new CustomerBooking(
-                bookingId,
+        Booking booking = new Booking(
+                UUID.randomUUID(),
                 user,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -386,11 +385,11 @@ class OperationsControllerIntegrationTest {
         );
         booking.confirmByOtp();
         booking.assignStaff(assignedStaff);
-        return customerBookingRepository.saveAndFlush(booking);
+        return BookingRepository.saveAndFlush(booking);
     }
 
-    private void completeDirectly(CustomerBooking booking, AuthUser staff, int points) {
-        WashSession session = new WashSession(booking, "Completed for KPI", staff);
+    private void completeDirectly(Booking booking, User staff, int points) {
+        WashSession session = WashSession.create(booking, "Completed for KPI", staff);
         Instant now = Instant.now();
         session.queue(now.minusSeconds(1800));
         session.checkIn(now.minusSeconds(1500), booking.getFinalAmount(), "VND", points);
@@ -398,21 +397,21 @@ class OperationsControllerIntegrationTest {
         session.complete(now, points);
         washSessionRepository.saveAndFlush(session);
         booking.updateStatus(com.autowash.entity.enums.BookingStatus.COMPLETED);
-        customerBookingRepository.saveAndFlush(booking);
+        BookingRepository.saveAndFlush(booking);
     }
 
-    private void assertBookingStatus(String bookingId, String status) {
-        customerBookingRepository.flush();
-        CustomerBooking booking = customerBookingRepository.findById(bookingId).orElseThrow();
+    private void assertBookingStatus(UUID bookingId, String status) {
+        BookingRepository.flush();
+        Booking booking = BookingRepository.findById(bookingId).orElseThrow();
         assertThat(booking.getStatus().name()).isEqualTo(status);
     }
 
-    private void assertQueueContains(MvcResult result, String sessionId, String bookingId) throws Exception {
+    private void assertQueueContains(MvcResult result, String sessionId, UUID bookingId) throws Exception {
         JsonNode sessions = readJson(result).path("data").path("columns").path(0).path("sessions");
         boolean found = false;
         for (JsonNode session : sessions) {
             if (sessionId.equals(session.path("sessionId").asText())
-                    && bookingId.equals(session.path("bookingId").asText())) {
+                    && bookingId.toString().equals(session.path("bookingId").asText())) {
                 found = true;
                 break;
             }
@@ -429,18 +428,18 @@ class OperationsControllerIntegrationTest {
         }
     }
 
-    private void assertEligibleBookingContains(MvcResult result, String bookingId) throws Exception {
+    private void assertEligibleBookingContains(MvcResult result, UUID bookingId) throws Exception {
         assertThat(eligibleBookingExists(result, bookingId)).isTrue();
     }
 
-    private void assertEligibleBookingMissing(MvcResult result, String bookingId) throws Exception {
+    private void assertEligibleBookingMissing(MvcResult result, UUID bookingId) throws Exception {
         assertThat(eligibleBookingExists(result, bookingId)).isFalse();
     }
 
-    private boolean eligibleBookingExists(MvcResult result, String bookingId) throws Exception {
+    private boolean eligibleBookingExists(MvcResult result, UUID bookingId) throws Exception {
         JsonNode bookings = readJson(result).path("data");
         for (JsonNode booking : bookings) {
-            if (bookingId.equals(booking.path("bookingId").asText())) {
+            if (bookingId.toString().equals(booking.path("bookingId").asText())) {
                 return true;
             }
         }

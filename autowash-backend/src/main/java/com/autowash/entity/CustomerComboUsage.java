@@ -2,22 +2,21 @@ package com.autowash.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.UUID;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "customer_combo_usages")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomerComboUsage {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "customer_combo_id", nullable = false)
@@ -29,27 +28,9 @@ public class CustomerComboUsage {
     @Column(name = "used_at", nullable = false)
     private Instant usedAt;
 
-    @Transient
-    private LocalDate serviceDate;
-
-    @Transient
-    private Instant createdAt;
-
-    protected CustomerComboUsage() {
-    }
-
-    public CustomerComboUsage(String customerComboId, String bookingId, LocalDate serviceDate) {
-        this.customerComboId = UUID.fromString(customerComboId);
-        this.bookingId = UUID.fromString(bookingId);
-        this.serviceDate = serviceDate;
+    public CustomerComboUsage(UUID customerComboId, UUID bookingId) {
+        this.customerComboId = customerComboId;
+        this.bookingId = bookingId;
         this.usedAt = Instant.now();
-        this.createdAt = this.usedAt;
-    }
-
-    @PrePersist
-    void prePersist() {
-        if (usedAt == null) {
-            usedAt = Instant.now();
-        }
     }
 }

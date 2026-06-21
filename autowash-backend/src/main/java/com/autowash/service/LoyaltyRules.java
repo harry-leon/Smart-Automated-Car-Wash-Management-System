@@ -42,3 +42,4 @@ public final class LoyaltyRules {
     public record TierThreshold(LoyaltyTier tier, int minPoints) {
     }
 }
+

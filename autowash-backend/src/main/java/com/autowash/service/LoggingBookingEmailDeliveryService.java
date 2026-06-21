@@ -1,7 +1,6 @@
 package com.autowash.service;
 
-
-import com.autowash.entity.*;
+import com.autowash.entity.Booking;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,7 +13,7 @@ public class LoggingBookingEmailDeliveryService implements BookingEmailDeliveryS
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggingBookingEmailDeliveryService.class);
 
     @Override
-    public void sendBookingOtp(CustomerBooking booking, String email, String otp, int expiresInSeconds) {
+    public void sendBookingOtp(Booking booking, String email, String otp, int expiresInSeconds) {
         LOGGER.info(
                 "Booking OTP email queued: bookingId={}, to={}, expiresInSeconds={}, template=booking-confirmation-otp",
                 booking.getId(),

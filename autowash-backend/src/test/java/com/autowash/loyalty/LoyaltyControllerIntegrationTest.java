@@ -1,22 +1,22 @@
-package com.autowash.loyalty;
+package com.autowash.loyalty; 
+import java.util.UUID;
 
-import com.autowash.entity.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
-import com.autowash.repository.AuthUserRepository;
-
+import com.autowash.entity.User;
+import com.autowash.repository.UserRepository;
+import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.CustomerBookingRepository;
-
+import com.autowash.repository.BookingRepository;
+import com.autowash.entity.WashSession;
 import com.autowash.repository.WashSessionRepository;
-
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
@@ -42,13 +42,13 @@ class LoyaltyControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private CustomerVehicleRepository customerVehicleRepository;
+    private VehicleRepository VehicleRepository;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Autowired
     private WashSessionRepository washSessionRepository;
@@ -57,7 +57,7 @@ class LoyaltyControllerIntegrationTest {
     void accountHistoryRedeemAndOpenApiUseCustomerScope() throws Exception {
         String phone = "0901888010";
         String accessToken = registerActivateAndLogin(phone);
-        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByPhone(phone).orElseThrow();
         WashSession session = createCompletedSession(customer, "LOY_CTL_001", 600000);
 
         mockMvc.perform(get("/api/v1/loyalty/account")
@@ -154,8 +154,8 @@ class LoyaltyControllerIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    private WashSession createCompletedSession(AuthUser customer, String bookingId, long finalAmount) {
-        CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
+    private WashSession createCompletedSession(User customer, String bookingId, long finalAmount) {
+        Vehicle vehicle = VehicleRepository.save(new Vehicle(
                 customer,
                 "30H-" + customer.getPhone().substring(customer.getPhone().length() - 6),
                 VehicleType.CAR,
@@ -166,14 +166,14 @@ class LoyaltyControllerIntegrationTest {
                 true
         ));
 
-        CustomerBooking booking = new CustomerBooking(
-                bookingId,
+        Booking booking = new Booking(
+                UUID.randomUUID(),
                 customer,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -183,8 +183,8 @@ class LoyaltyControllerIntegrationTest {
                 30
         );
         booking.confirmByOtp();
-        customerBookingRepository.save(booking);
-        WashSession session = new WashSession(booking, "Loyalty controller test");
+        BookingRepository.save(booking);
+        WashSession session = WashSession.create(booking, "Loyalty controller test", null);
         Instant now = Instant.now();
         session.queue(now);
         session.checkIn(now, finalAmount, "VND", 0);

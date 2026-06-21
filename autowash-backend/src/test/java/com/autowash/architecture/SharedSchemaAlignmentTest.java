@@ -1,14 +1,13 @@
 package com.autowash.architecture;
 
-import com.autowash.entity.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-
-
-
-
-
-
+import com.autowash.entity.User;
+import com.autowash.entity.Booking;
+import com.autowash.entity.Vehicle;
+import com.autowash.entity.PointTransaction;
+import com.autowash.entity.Combo;
+import com.autowash.entity.Package;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
@@ -20,24 +19,24 @@ class SharedSchemaAlignmentTest {
 
     @Test
     void sharedEntitiesShouldMatchNewTableNames() {
-        assertThat(tableName(AuthUser.class)).isEqualTo("users");
-        assertThat(tableName(CustomerBooking.class)).isEqualTo("bookings");
-        assertThat(tableName(CustomerVehicle.class)).isEqualTo("vehicles");
-        assertThat(tableName(ServicePackage.class)).isEqualTo("packages");
-        assertThat(tableName(ServiceCombo.class)).isEqualTo("combos");
+        assertThat(tableName(User.class)).isEqualTo("users");
+        assertThat(tableName(Booking.class)).isEqualTo("bookings");
+        assertThat(tableName(Vehicle.class)).isEqualTo("vehicles");
+        assertThat(tableName(Package.class)).isEqualTo("packages");
+        assertThat(tableName(Combo.class)).isEqualTo("combos");
         assertThat(tableName(PointTransaction.class)).isEqualTo("point_transactions");
     }
 
     @Test
     void bookingAndCatalogEntitiesShouldUseUuidIdentifiers() {
-        assertThat(idFieldType(CustomerBooking.class)).isEqualTo(UUID.class);
-        assertThat(idFieldType(ServicePackage.class)).isEqualTo(UUID.class);
-        assertThat(idFieldType(ServiceCombo.class)).isEqualTo(UUID.class);
+        assertThat(idFieldType(Booking.class)).isEqualTo(UUID.class);
+        assertThat(idFieldType(Package.class)).isEqualTo(UUID.class);
+        assertThat(idFieldType(Combo.class)).isEqualTo(UUID.class);
     }
 
     @Test
     void vehicleAndPointTransactionRelationsShouldUseNewForeignKeys() throws Exception {
-        assertThat(joinColumnName(CustomerVehicle.class, "owner")).isEqualTo("customer_id");
+        assertThat(joinColumnName(Vehicle.class, "owner")).isEqualTo("customer_id");
         assertThat(joinColumnName(PointTransaction.class, "loyaltyAccount")).isEqualTo("loyalty_account_id");
     }
 

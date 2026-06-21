@@ -1,6 +1,7 @@
-package com.autowash.loyalty;
+package com.autowash.loyalty;  
+import java.time.Instant;
+import java.util.UUID;
 
-import com.autowash.entity.*;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -8,17 +9,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
+import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
-
+import com.autowash.repository.UserRepository;
+import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.shared.security.AuthUserPrincipal;
-
+import com.autowash.repository.BookingRepository;
+import com.autowash.shared.security.UserPrincipal;
+import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
-import com.autowash.repository.CustomerVehicleRepository;
+import com.autowash.repository.VehicleRepository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
@@ -41,13 +42,13 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private CustomerVehicleRepository customerVehicleRepository;
+    private VehicleRepository VehicleRepository;
 
     @Autowired
-    private CustomerBookingRepository customerBookingRepository;
+    private BookingRepository BookingRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -55,9 +56,9 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     @Test
     void loyaltyAccountAndTransactionsReflectCompletedWashPoints() throws Exception {
         String phone = "0901777101";
-        CustomerBooking booking = createConfirmedBooking("LOYALTY_BK_001", phone, 270000);
+        Booking booking = createConfirmedBooking("LOYALTY_BK_001", phone, 270000);
         String sessionId = createCompletedSession(booking.getId());
-        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByPhone(phone).orElseThrow();
 
         mockMvc.perform(get("/api/v1/loyalty/account")
                         .with(authenticatedCustomer(customer)))
@@ -80,10 +81,10 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     @Test
     void washHistoryReturnsCompletedSessionsWithAwardedPoints() throws Exception {
         String phone = "0901777102";
-        CustomerBooking booking = createConfirmedBooking("LOYALTY_BK_002", phone, 150000);
+        Booking booking = createConfirmedBooking("LOYALTY_BK_002", phone, 150000);
         String sessionId = createCompletedSession(booking.getId());
         String vehiclePlate = "30H-" + phone.substring(phone.length() - 6);
-        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByPhone(phone).orElseThrow();
 
         mockMvc.perform(get("/api/v1/customers/wash-history")
                         .with(authenticatedCustomer(customer)))
@@ -99,8 +100,8 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     @Test
     void redeemUpdatesAccountBalanceAndTransactionHistory() throws Exception {
         String phone = "0901777105";
-        CustomerBooking booking = createConfirmedBooking("LOYALTY_BK_003", phone, 600000);
-        AuthUser customer = authUserRepository.findByPhone(phone).orElseThrow();
+        Booking booking = createConfirmedBooking("LOYALTY_BK_003", phone, 600000);
+        User customer = UserRepository.findByPhone(phone).orElseThrow();
         createCompletedSession(booking.getId());
 
         mockMvc.perform(post("/api/v1/loyalty/redeem")
@@ -139,7 +140,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
 
     @Test
     void activePromotionsFilterByCustomerTierAndNewCustomerAudience() throws Exception {
-        AuthUser member = createActiveCustomer("0901777103");
+        User member = createActiveCustomer("0901777103");
         mockMvc.perform(get("/api/v1/promotions/active")
                         .with(authenticatedCustomer(member)))
                 .andExpect(status().isOk())
@@ -147,7 +148,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("ALL10")))
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("WELCOME20")));
 
-        AuthUser gold = createActiveCustomer("0901777104");
+        User gold = createActiveCustomer("0901777104");
         jdbcTemplate.update("update auth_users set tier = ? where id = ?", LoyaltyTier.GOLD.name(), gold.getId());
         jdbcTemplate.update("update auth_users set is_new_customer = ? where id = ?", false, gold.getId());
 
@@ -175,11 +176,11 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.CustomerPromotionResponse.properties.promotionCode.type").value("string"));
     }
 
-    private String createCompletedSession(String bookingId) throws Exception {
-        AuthUser staff = createActiveStaff("Loyalty Staff");
-        CustomerBooking booking = customerBookingRepository.findById(bookingId).orElseThrow();
+    private String createCompletedSession(UUID bookingId) throws Exception {
+        User staff = createActiveStaff("Loyalty Staff");
+        Booking booking = BookingRepository.findById(bookingId).orElseThrow();
         booking.assignStaff(staff);
-        customerBookingRepository.saveAndFlush(booking);
+        BookingRepository.saveAndFlush(booking);
 
         String sessionId = mockMvc.perform(post("/api/v1/operations/sessions")
                         .with(authenticatedUser(staff))
@@ -211,15 +212,15 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
         return sessionId;
     }
 
-    private AuthUser createActiveStaff(String fullName) {
-        AuthUser staff = new AuthUser(fullName, uniquePhone("0915"), "loyalty-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
+    private User createActiveStaff(String fullName) {
+        User staff = new User(fullName, uniquePhone("0915"), "loyalty-staff-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        return authUserRepository.saveAndFlush(staff);
+        return UserRepository.saveAndFlush(staff);
     }
 
-    private RequestPostProcessor authenticatedUser(AuthUser user) {
-        AuthUserPrincipal principal = new AuthUserPrincipal(user);
+    private RequestPostProcessor authenticatedUser(User user) {
+        UserPrincipal principal = new UserPrincipal(user);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);
@@ -233,10 +234,10 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
         return prefix + digits.substring(0, 6);
     }
 
-    private CustomerBooking createConfirmedBooking(String bookingId, String phone, long finalAmount) {
-        AuthUser user = createActiveCustomer(phone);
+    private Booking createConfirmedBooking(String bookingId, String phone, long finalAmount) {
+        User user = createActiveCustomer(phone);
 
-        CustomerVehicle vehicle = customerVehicleRepository.save(new CustomerVehicle(
+        Vehicle vehicle = VehicleRepository.save(new Vehicle(
                 user,
                 "30H-" + phone.substring(phone.length() - 6),
                 VehicleType.CAR,
@@ -247,14 +248,14 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 true
         ));
 
-        CustomerBooking booking = new CustomerBooking(
-                bookingId,
+        Booking booking = new Booking(
+                UUID.randomUUID(),
                 user,
                 vehicle,
-                "pkg_001",
+                UUID.randomUUID(),
                 null,
                 null,
-                LocalDate.now().plusDays(1),
+                Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
                 finalAmount,
@@ -264,17 +265,17 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 30
         );
         booking.confirmByOtp();
-        return customerBookingRepository.saveAndFlush(booking);
+        return BookingRepository.saveAndFlush(booking);
     }
 
-    private AuthUser createActiveCustomer(String phone) {
-        AuthUser user = new AuthUser("Nguyen Van A", phone, phone + "@example.com", "hash");
+    private User createActiveCustomer(String phone) {
+        User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        return authUserRepository.saveAndFlush(user);
+        return UserRepository.saveAndFlush(user);
     }
 
-    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(AuthUser user) {
-        AuthUserPrincipal principal = new AuthUserPrincipal(user);
+    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(User user) {
+        UserPrincipal principal = new UserPrincipal(user);
         UsernamePasswordAuthenticationToken token =
                 new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
         return authentication(token);

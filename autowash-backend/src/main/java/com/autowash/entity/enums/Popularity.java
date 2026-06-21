@@ -5,3 +5,4 @@ public enum Popularity {
     MEDIUM,
     HIGH
 }
+

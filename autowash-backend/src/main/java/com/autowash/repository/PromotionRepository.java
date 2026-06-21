@@ -1,43 +1,41 @@
 package com.autowash.repository;
 
-
-import com.autowash.entity.*;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.entity.Promotion;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import java.time.Instant;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface PromotionRepository extends JpaRepository<Promotion, UUID> {
+public interface PromotionRepository extends JpaRepository<Promotion, String> {
 
     Page<Promotion> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    long countByStatus(PromotionStatus status);
+    long countByStatus(ActiveStatus status);
 
     @Query("""
             select p from Promotion p
             where p.status = :status
-              and p.startDate <= :now
-              and p.endDate >= :now
+              and p.startAt <= :now
+              and p.endAt >= :now
               and (
                     p.targetingMode = :allTiers
-                    or concat(',', coalesce(p.applicableTiersCsv, ''), ',') like concat('%,', :tier, ',%')
+                    or exists (
+                        select 1 from PromotionTier pt
+                        where pt.promotionId = p.id
+                          and cast(pt.tier as string) = :tier
+                    )
               )
-            order by p.endDate asc, p.createdAt desc
+            order by p.endAt asc, p.createdAt desc
             """)
     Page<Promotion> findActiveForTier(
             @Param("now") Instant now,
             @Param("tier") String tier,
-            @Param("status") PromotionStatus status,
+            @Param("status") ActiveStatus status,
             @Param("allTiers") PromotionTargetingMode allTiers,
             Pageable pageable
     );
-
-    default java.util.Optional<Promotion> findById(String id) {
-        return id == null || id.isBlank() ? java.util.Optional.empty() : findById(UUID.fromString(id));
-    }
 }

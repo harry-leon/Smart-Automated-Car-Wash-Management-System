@@ -1,14 +1,13 @@
 package com.autowash.service;
 
-
-
-
-
-import com.autowash.entity.*;
-import com.autowash.repository.ServiceComboRepository;
-import com.autowash.repository.ServicePackageRepository;
+import com.autowash.entity.User;
+import com.autowash.entity.Booking;
+import com.autowash.entity.Combo;
+import com.autowash.entity.Package;
+import com.autowash.repository.ComboRepository;
+import com.autowash.repository.PackageRepository;
 import com.autowash.dto.CustomerWashTrackingResponse;
-
+import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.shared.exception.ApiException;
@@ -30,24 +29,24 @@ public class CustomerWashTrackingService {
 
     private final CurrentUserService currentUserService;
     private final WashSessionRepository washSessionRepository;
-    private final ServicePackageRepository servicePackageRepository;
-    private final ServiceComboRepository serviceComboRepository;
+    private final PackageRepository PackageRepository;
+    private final ComboRepository ComboRepository;
 
     public CustomerWashTrackingService(
             CurrentUserService currentUserService,
             WashSessionRepository washSessionRepository,
-            ServicePackageRepository servicePackageRepository,
-            ServiceComboRepository serviceComboRepository
+            PackageRepository PackageRepository,
+            ComboRepository ComboRepository
     ) {
         this.currentUserService = currentUserService;
         this.washSessionRepository = washSessionRepository;
-        this.servicePackageRepository = servicePackageRepository;
-        this.serviceComboRepository = serviceComboRepository;
+        this.PackageRepository = PackageRepository;
+        this.ComboRepository = ComboRepository;
     }
 
     @Transactional(readOnly = true)
     public CustomerWashTrackingResponse getActiveSession() {
-        AuthUser customer = currentUserService.getCurrentUser();
+        User customer = currentUserService.getCurrentUser();
         return washSessionRepository.findFirstByBookingCustomerAndStatusInOrderByCreatedAtDesc(customer, ACTIVE_STATUSES)
                 .map(this::toResponse)
                 .orElse(null);
@@ -55,52 +54,51 @@ public class CustomerWashTrackingService {
 
     @Transactional(readOnly = true)
     public CustomerWashTrackingResponse getSession(UUID washSessionId) {
-        AuthUser customer = currentUserService.getCurrentUser();
+        User customer = currentUserService.getCurrentUser();
         WashSession session = washSessionRepository.findByIdAndBookingCustomer(washSessionId, customer)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
         return toResponse(session);
     }
 
     private CustomerWashTrackingResponse toResponse(WashSession session) {
-        CustomerBooking booking = session.getBooking();
-        return new CustomerWashTrackingResponse(
-                session.getId().toString(),
-                booking.getId(),
-                session.getStatus().name(),
-                booking.getCustomer().getFullName(),
-                booking.getCustomer().getPhone(),
-                booking.getVehicle().getPlate(),
-                booking.getVehicle().getBrand(),
-                booking.getVehicle().getModel(),
-                booking.getPackageId(),
-                resolveServiceName(booking),
-                booking.getBookingDate(),
-                booking.getBookingTime().toString(),
-                session.getAssignedStaff() == null ? null : session.getAssignedStaff().getFullName(),
-                session.getFeeAmount(),
-                session.getFeeCurrency(),
-                session.getProjectedLoyaltyPoints(),
-                session.getAwardedLoyaltyPoints(),
-                session.getNotes(),
-                session.getCreatedAt(),
-                session.getQueuedAt(),
-                session.getCheckedInAt(),
-                session.getStartedAt(),
-                session.getCompletedAt()
-        );
+        Booking booking = session.getBooking();
+        return CustomerWashTrackingResponse.builder()
+                .washSessionId(session.getId().toString())
+                .bookingId(booking.getId().toString())
+                .status(session.getStatus().name())
+                .customerName(booking.getCustomer().getFullName())
+                .customerPhone(booking.getCustomer().getPhone())
+                .vehiclePlate(booking.getVehicle().getPlate())
+                .vehicleBrand(booking.getVehicle().getBrand())
+                .vehicleModel(booking.getVehicle().getModel())
+                .packageId(booking.getPackageId() == null ? null : booking.getPackageId().toString())
+                .serviceName(resolveServiceName(booking))
+                .bookingDate(booking.getBookingDate())
+                .bookingTime(booking.getBookingTime().toString())
+                .assignedStaffName(session.getAssignedStaff() == null ? null : session.getAssignedStaff().getFullName())
+                .feeAmount(session.getFeeAmount())
+                .projectedLoyaltyPoints(session.getProjectedLoyaltyPoints())
+                .awardedLoyaltyPoints(session.getAwardedLoyaltyPoints())
+                .notes(session.getNotes())
+                .createdAt(session.getCreatedAt())
+                .checkedInAt(session.getCheckedInAt())
+                .startedAt(session.getStartedAt())
+                .completedAt(session.getCompletedAt())
+                .build();
     }
 
-    private String resolveServiceName(CustomerBooking booking) {
+    private String resolveServiceName(Booking booking) {
         if (booking.getPackageId() != null) {
-            return servicePackageRepository.findById(booking.getPackageId())
-                    .map(ServicePackage::getName)
-                    .orElse(booking.getPackageId());
+            return PackageRepository.findById(booking.getPackageId())
+                    .map(Package::getName)
+                    .orElse(booking.getPackageId() == null ? null : booking.getPackageId().toString());
         }
         if (booking.getComboId() != null) {
-            return serviceComboRepository.findById(booking.getComboId())
-                    .map(ServiceCombo::getName)
-                    .orElse(booking.getComboId());
+            return ComboRepository.findById(booking.getComboId())
+                    .map(Combo::getName)
+                    .orElse(booking.getComboId() == null ? null : booking.getComboId().toString());
         }
         return null;
     }
 }
+

@@ -4,3 +4,4 @@ public enum BookingType {
     PACKAGE,
     COMBO
 }
+

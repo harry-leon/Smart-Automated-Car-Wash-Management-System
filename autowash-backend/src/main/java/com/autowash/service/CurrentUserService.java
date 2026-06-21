@@ -1,10 +1,9 @@
 package com.autowash.service;
 
-
-import com.autowash.entity.*;
-import com.autowash.repository.AuthUserRepository;
+import com.autowash.entity.User;
+import com.autowash.repository.UserRepository;
 import com.autowash.shared.exception.ApiException;
-import com.autowash.shared.security.AuthUserPrincipal;
+import com.autowash.shared.security.UserPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,19 +12,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class CurrentUserService {
 
-    private final AuthUserRepository authUserRepository;
+    private final UserRepository UserRepository;
 
-    public CurrentUserService(AuthUserRepository authUserRepository) {
-        this.authUserRepository = authUserRepository;
+    public CurrentUserService(UserRepository UserRepository) {
+        this.UserRepository = UserRepository;
     }
 
-    public AuthUser getCurrentUser() {
+    public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof AuthUserPrincipal principal)) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Authentication required", "UNAUTHORIZED");
         }
 
-        return authUserRepository.findById(principal.getUserId())
+        return UserRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "User not found", "RESOURCE_NOT_FOUND"));
     }
 }

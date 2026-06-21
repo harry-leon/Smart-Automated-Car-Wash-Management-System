@@ -22,3 +22,4 @@ public record UpdateUserPreferencesRequest(
         Boolean smsNotifications
 ) {
 }
+

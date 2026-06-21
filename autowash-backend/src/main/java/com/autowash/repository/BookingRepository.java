@@ -1,0 +1,229 @@
+package com.autowash.repository;
+
+import com.autowash.entity.User;
+import com.autowash.entity.enums.BookingStatus;
+import com.autowash.entity.Booking;
+import com.autowash.entity.enums.WashSessionStatus;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface BookingRepository extends JpaRepository<Booking, UUID> {
+
+    long countByCustomerAndStatusIn(User customer, Collection<BookingStatus> statuses);
+
+    @Query("""
+            select count(session.booking) from WashSession session
+            where session.assignedStaff = :assignedStaff
+              and session.booking.status in :statuses
+            """)
+    long countByAssignedStaffAndStatusIn(
+            @Param("assignedStaff") User assignedStaff,
+            @Param("statuses") Collection<BookingStatus> statuses
+    );
+
+    @Query("""
+            select count(session.booking) from WashSession session
+            where session.assignedStaff = :assignedStaff
+              and session.booking.status = :status
+            """)
+    long countByAssignedStaffAndStatus(
+            @Param("assignedStaff") User assignedStaff,
+            @Param("status") BookingStatus status
+    );
+
+    @Query("""
+            select coalesce(sum(session.booking.finalAmount), 0) from WashSession session
+            where session.assignedStaff = :staff
+              and session.booking.status = :status
+            """)
+    long sumFinalAmountByAssignedStaffAndStatus(@Param("staff") User staff, @Param("status") BookingStatus status);
+
+    @EntityGraph(attributePaths = {"vehicle"})
+    Optional<Booking> findByCustomerAndId(User customer, UUID id);
+
+    default Optional<Booking> findByCustomerAndId(User customer, String id) {
+        return parseUuid(id).flatMap(value -> findByCustomerAndId(customer, value));
+    }
+
+    default Optional<Booking> findById(String id) {
+        return parseUuid(id).flatMap(this::findById);
+    }
+
+    @EntityGraph(attributePaths = {"vehicle"})
+    Page<Booking> findByCustomerOrderByCreatedAtDesc(User customer, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"vehicle"})
+    Page<Booking> findByCustomerAndStatusOrderByCreatedAtDesc(User customer, BookingStatus status, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"vehicle"})
+    Page<Booking> findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(
+            User customer,
+            Instant scheduledFrom,
+            Instant scheduledTo,
+            Pageable pageable
+    );
+
+    default Page<Booking> findByCustomerAndBookingDateBetweenOrderByCreatedAtDesc(
+            User customer,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            Pageable pageable
+    ) {
+        ZoneId zone = ZoneId.systemDefault();
+        Instant scheduledFrom = dateFrom.atStartOfDay(zone).toInstant();
+        Instant scheduledTo = dateTo.plusDays(1).atStartOfDay(zone).minusNanos(1).toInstant();
+        return findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(customer, scheduledFrom, scheduledTo, pageable);
+    }
+
+    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @Query("""
+            select booking from Booking booking
+            where (:statusFilter = false or booking.status in :statuses)
+              and (:customerId is null or booking.customer.id = :customerId)
+              and (:dateFrom is null or booking.scheduledAt >= :dateFrom)
+              and (:dateTo is null or booking.scheduledAt <= :dateTo)
+              and (
+                    :searchLike is null
+                    or lower(str(booking.id)) like :searchLike
+                    or lower(booking.customer.fullName) like :searchLike
+                    or lower(booking.customer.phone) like :searchLike
+                    or lower(booking.vehicle.plate) like :searchLike
+              )
+            """)
+    Page<Booking> searchAdmin(
+            @Param("statuses") Collection<BookingStatus> statuses,
+            @Param("statusFilter") boolean statusFilter,
+            @Param("customerId") UUID customerId,
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            @Param("searchLike") String searchLike,
+            Pageable pageable
+    );
+
+    default Page<Booking> searchAdmin(
+            Collection<BookingStatus> statuses,
+            boolean statusFilter,
+            UUID customerId,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            String searchLike,
+            Pageable pageable
+    ) {
+        return searchAdmin(
+                statuses,
+                statusFilter,
+                customerId,
+                startOfDay(dateFrom),
+                endOfDay(dateTo),
+                searchLike,
+                pageable
+        );
+    }
+
+    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @Query("""
+            select session.booking from WashSession session
+            where session.assignedStaff = :staff
+              and (:statusFilter = false or session.booking.status in :statuses)
+              and (:dateFrom is null or session.booking.scheduledAt >= :dateFrom)
+              and (:dateTo is null or session.booking.scheduledAt <= :dateTo)
+            """)
+    Page<Booking> searchAssignedStaffBookings(
+            @Param("staff") User staff,
+            @Param("statuses") Collection<BookingStatus> statuses,
+            @Param("statusFilter") boolean statusFilter,
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            Pageable pageable
+    );
+
+    default Page<Booking> searchAssignedStaffBookings(
+            User staff,
+            Collection<BookingStatus> statuses,
+            boolean statusFilter,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            Pageable pageable
+    ) {
+        return searchAssignedStaffBookings(staff, statuses, statusFilter, startOfDay(dateFrom), endOfDay(dateTo), pageable);
+    }
+
+    @Query("select count(booking) from Booking booking where booking.customer = :customer")
+    long countByCustomer(@Param("customer") User customer);
+
+    @Query("select count(booking) from Booking booking where booking.customer = :customer and booking.status = :status")
+    long countByCustomerAndStatus(@Param("customer") User customer, @Param("status") BookingStatus status);
+
+    @Query("select coalesce(sum(booking.finalAmount), 0) from Booking booking where booking.customer = :customer and booking.status = :status")
+    long sumFinalAmountByCustomerAndStatus(@Param("customer") User customer, @Param("status") BookingStatus status);
+
+    Optional<Booking> findFirstByCustomerOrderByCreatedAtDesc(User customer);
+
+    long countByStatus(BookingStatus status);
+
+    @Query("select coalesce(sum(b.finalAmount), 0) from Booking b where b.status = :status")
+    long sumFinalAmountByStatus(@Param("status") BookingStatus status);
+
+    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @Query("""
+            select booking from Booking booking
+            where booking.status = :status
+              and not exists (
+                    select session.id from WashSession session
+                    where session.booking = booking
+                      and session.status in :activeStatuses
+              )
+            order by booking.scheduledAt asc, booking.createdAt desc
+            """)
+    List<Booking> findEligibleForOperationsSession(
+            @Param("status") BookingStatus status,
+            @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @Query("""
+            select session.booking from WashSession session
+            where session.booking.status = :status
+              and session.assignedStaff = :staff
+              and not exists (
+                    select activeSession.id from WashSession activeSession
+                    where activeSession.booking = session.booking
+                      and activeSession.status in :activeStatuses
+              )
+            order by session.booking.scheduledAt asc, session.booking.createdAt desc
+            """)
+    List<Booking> findEligibleForAssignedStaffOperationsSession(
+            @Param("staff") User staff,
+            @Param("status") BookingStatus status,
+            @Param("activeStatuses") Collection<WashSessionStatus> activeStatuses,
+            Pageable pageable
+    );
+
+    private static Optional<UUID> parseUuid(String id) {
+        try {
+            return id == null || id.isBlank() ? Optional.empty() : Optional.of(UUID.fromString(id));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
+    }
+
+    private static Instant startOfDay(LocalDate date) {
+        return date == null ? null : date.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    }
+
+    private static Instant endOfDay(LocalDate date) {
+        return date == null ? null : date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusNanos(1).toInstant();
+    }
+}

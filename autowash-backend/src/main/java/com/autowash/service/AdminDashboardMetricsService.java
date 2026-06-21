@@ -3,10 +3,10 @@ package com.autowash.service;
 import com.autowash.entity.*;
 import com.autowash.dto.DashboardMetricsDto;
 import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.AuthUserRepository;
+import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
-import com.autowash.repository.CustomerBookingRepository;
-import com.autowash.entity.enums.PromotionStatus;
+import com.autowash.repository.BookingRepository;
+import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.repository.PromotionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,26 +17,26 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AdminDashboardMetricsService {
 
-    private final CustomerBookingRepository bookingRepository;
+    private final BookingRepository bookingRepository;
     private final PromotionRepository promotionRepository;
-    private final AuthUserRepository authUserRepository;
+    private final UserRepository UserRepository;
 
     public AdminDashboardMetricsService(
-            CustomerBookingRepository bookingRepository,
+            BookingRepository bookingRepository,
             PromotionRepository promotionRepository,
-            AuthUserRepository authUserRepository
+            UserRepository UserRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.promotionRepository = promotionRepository;
-        this.authUserRepository = authUserRepository;
+        this.UserRepository = UserRepository;
     }
 
     @Transactional(readOnly = true)
     public DashboardMetricsDto getMetrics() {
         long totalBookings = bookingRepository.count();
         long totalRevenue = bookingRepository.sumFinalAmountByStatus(BookingStatus.CONFIRMED);
-        long totalCustomers = authUserRepository.countByRole(UserRole.CUSTOMER);
-        long activePromotions = promotionRepository.countByStatus(PromotionStatus.ACTIVE);
+        long totalCustomers = UserRepository.countByRole(UserRole.CUSTOMER);
+        long activePromotions = promotionRepository.countByStatus(ActiveStatus.ACTIVE);
 
         return new DashboardMetricsDto(
                 totalBookings,
@@ -46,3 +46,4 @@ public class AdminDashboardMetricsService {
         );
     }
 }
+

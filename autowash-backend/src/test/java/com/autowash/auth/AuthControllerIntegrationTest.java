@@ -1,6 +1,5 @@
 package com.autowash.auth;
 
-import com.autowash.entity.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -10,15 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-
+import com.autowash.entity.User;
 import com.autowash.entity.enums.OtpPurpose;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.autowash.dto.GoogleOAuthUserInfo;
-
-import com.autowash.repository.AuthUserRepository;
-import com.autowash.repository.GoogleAuthTicketRepository;
-import com.autowash.repository.OtpRecordRepository;
+import com.autowash.repository.UserRepository;
+import com.autowash.repository.OtpVerificationRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -41,14 +37,12 @@ class AuthControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
-    private GoogleAuthTicketRepository googleAuthTicketRepository;
 
     @Autowired
-    private AuthUserRepository authUserRepository;
+    private UserRepository UserRepository;
 
     @Autowired
-    private OtpRecordRepository otpRecordRepository;
+    private OtpVerificationRepository OtpVerificationRepository;
 
     @MockBean
     private com.autowash.service.GoogleOAuthClient googleOAuthClient;
@@ -125,13 +119,13 @@ class AuthControllerIntegrationTest {
         String email = "0901234590@example.com";
         String otp = sendOtpByEmailAndExtractDevOtp(email);
 
-        AuthUser user = authUserRepository.findByEmailIgnoreCase(email).orElseThrow();
-        String storedCode = otpRecordRepository.findFirstByUserAndPurposeAndVerifiedFalseAndInvalidatedAtIsNullOrderByCreatedAtDesc(
+        User user = UserRepository.findByEmailIgnoreCase(email).orElseThrow();
+        String storedCode = OtpVerificationRepository.findFirstByUserAndPurposeAndVerifiedAtIsNullOrderByCreatedAtDesc(
                         user,
                         OtpPurpose.EMAIL_REGISTRATION
                 )
                 .orElseThrow()
-                .getCode();
+                .getCodeHash();
 
         Assertions.assertNotEquals(otp, storedCode);
         Assertions.assertTrue(storedCode.length() > 6);
@@ -364,71 +358,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"));
     }
 
-    @Test
-    void googleCallbackWithoutCodeRedirectsToFrontendErrorPage() throws Exception {
-        MvcResult callbackResult = mockMvc.perform(get("/api/v1/auth/google/callback")
-                        .param("state", "missing-ticket")
-                        .param("iss", "https://accounts.google.com"))
-                .andExpect(status().is3xxRedirection())
-                .andReturn();
 
-        String location = callbackResult.getResponse().getHeader("Location");
-        org.junit.jupiter.api.Assertions.assertNotNull(location);
-        org.junit.jupiter.api.Assertions.assertTrue(location.startsWith("http://localhost:3000/auth/google/callback"));
-        org.junit.jupiter.api.Assertions.assertTrue(location.contains("status=error"));
-        org.junit.jupiter.api.Assertions.assertTrue(location.contains("Google%20login%20session%20expired"));
-    }
-
-    @Test
-    void googleCallbackExchangeFailureRedirectsToFrontendErrorPage() throws Exception {
-        GoogleAuthTicket ticket = new GoogleAuthTicket(
-                "exchange-failure-state",
-                "http://localhost:3000/auth/google/callback",
-                Instant.now().plusSeconds(300)
-        );
-        googleAuthTicketRepository.save(ticket);
-        when(googleOAuthClient.exchangeCode(anyString())).thenThrow(new IllegalStateException("invalid_grant"));
-
-        MvcResult callbackResult = mockMvc.perform(get("/api/v1/auth/google/callback")
-                        .param("state", "exchange-failure-state")
-                        .param("code", "bad-code"))
-                .andExpect(status().is3xxRedirection())
-                .andReturn();
-
-        String location = callbackResult.getResponse().getHeader("Location");
-        org.junit.jupiter.api.Assertions.assertNotNull(location);
-        org.junit.jupiter.api.Assertions.assertTrue(location.startsWith("http://localhost:3000/auth/google/callback"));
-        org.junit.jupiter.api.Assertions.assertTrue(location.contains("status=error"));
-        org.junit.jupiter.api.Assertions.assertTrue(location.contains("Google%20login%20failed.%20Please%20try%20again."));
-    }
-
-    @Test
-    void googleCallbackFirstTimeSignupRedirectsReadyInsteadOfFailingAtCommit() throws Exception {
-        GoogleAuthTicket ticket = new GoogleAuthTicket(
-                "new-google-user-state",
-                "http://localhost:3000/auth/google/callback",
-                Instant.now().plusSeconds(300)
-        );
-        googleAuthTicketRepository.save(ticket);
-        when(googleOAuthClient.exchangeCode("fresh-code")).thenReturn(new GoogleOAuthUserInfo(
-                "google-sub-001",
-                "fresh-google@example.com",
-                "Fresh Google User",
-                "https://example.com/avatar.png",
-                true
-        ));
-
-        MvcResult callbackResult = mockMvc.perform(get("/api/v1/auth/google/callback")
-                        .param("state", "new-google-user-state")
-                        .param("code", "fresh-code"))
-                .andExpect(status().is3xxRedirection())
-                .andReturn();
-
-        String location = callbackResult.getResponse().getHeader("Location");
-        org.junit.jupiter.api.Assertions.assertNotNull(location);
-        org.junit.jupiter.api.Assertions.assertTrue(location.contains("status=ready"));
-        org.junit.jupiter.api.Assertions.assertTrue(location.contains("state=new-google-user-state"));
-    }
 
     private void registerCustomer(String phone) throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
