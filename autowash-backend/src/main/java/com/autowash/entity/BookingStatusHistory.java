@@ -43,4 +43,13 @@ public class BookingStatusHistory {
 
     @Column(name = "changed_at", nullable = false)
     private Instant changedAt;
+
+    public BookingStatusHistory(Booking booking, String oldStatus, String newStatus, User changedBy, String reason) {
+        this.booking = booking;
+        this.oldStatus = oldStatus;
+        this.newStatus = newStatus;
+        this.changedBy = changedBy;
+        this.reason = reason;
+        this.changedAt = Instant.now();
+    }
 }

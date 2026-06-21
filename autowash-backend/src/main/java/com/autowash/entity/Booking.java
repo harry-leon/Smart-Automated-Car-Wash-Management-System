@@ -160,6 +160,7 @@ public class Booking {
     public void applyPoints(int pointsRedeemed, long pointsDiscount) {
         this.pointsRedeemed = pointsRedeemed;
         this.pointsDiscount = pointsDiscount;
+        this.finalAmount = Math.max(0, this.finalAmount - pointsDiscount);
         this.updatedAt = Instant.now();
     }
 
