@@ -14,8 +14,11 @@ class WashSessionLifecycleTest {
     void acceptsOnlyConfiguredForwardTransitions() {
         WashSessionLifecycle.validateTransition(WashSessionStatus.PENDING, WashSessionStatus.PENDING);
         WashSessionLifecycle.validateTransition(WashSessionStatus.PENDING, WashSessionStatus.CHECKED_IN);
+        WashSessionLifecycle.validateTransition(WashSessionStatus.PENDING, WashSessionStatus.CANCELLED);
         WashSessionLifecycle.validateTransition(WashSessionStatus.CHECKED_IN, WashSessionStatus.IN_PROGRESS);
+        WashSessionLifecycle.validateTransition(WashSessionStatus.CHECKED_IN, WashSessionStatus.CANCELLED);
         WashSessionLifecycle.validateTransition(WashSessionStatus.IN_PROGRESS, WashSessionStatus.COMPLETED);
+        WashSessionLifecycle.validateTransition(WashSessionStatus.IN_PROGRESS, WashSessionStatus.CANCELLED);
     }
 
     @Test
@@ -23,8 +26,11 @@ class WashSessionLifecycleTest {
         Set<Transition> validTransitions = Set.of(
                 new Transition(WashSessionStatus.PENDING, WashSessionStatus.PENDING),
                 new Transition(WashSessionStatus.PENDING, WashSessionStatus.CHECKED_IN),
+                new Transition(WashSessionStatus.PENDING, WashSessionStatus.CANCELLED),
                 new Transition(WashSessionStatus.CHECKED_IN, WashSessionStatus.IN_PROGRESS),
-                new Transition(WashSessionStatus.IN_PROGRESS, WashSessionStatus.COMPLETED)
+                new Transition(WashSessionStatus.CHECKED_IN, WashSessionStatus.CANCELLED),
+                new Transition(WashSessionStatus.IN_PROGRESS, WashSessionStatus.COMPLETED),
+                new Transition(WashSessionStatus.IN_PROGRESS, WashSessionStatus.CANCELLED)
         );
 
         for (WashSessionStatus current : WashSessionStatus.values()) {
