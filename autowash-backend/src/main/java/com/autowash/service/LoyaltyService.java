@@ -14,9 +14,11 @@ import com.autowash.dto.PointTransactionResponse;
 import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.PointTransaction;
+import com.autowash.entity.TierHistory;
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PointTransactionRepository;
+import com.autowash.repository.TierHistoryRepository;
 import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
@@ -45,6 +47,7 @@ public class LoyaltyService {
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final PointTransactionRepository pointTransactionRepository;
+    private final TierHistoryRepository tierHistoryRepository;
     private final VoucherRepository voucherRepository;
 
     public LoyaltyService(
@@ -52,12 +55,14 @@ public class LoyaltyService {
             WashSessionRepository washSessionRepository,
             LoyaltyAccountRepository loyaltyAccountRepository,
             PointTransactionRepository pointTransactionRepository,
+            TierHistoryRepository tierHistoryRepository,
             VoucherRepository voucherRepository
     ) {
         this.UserRepository = UserRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.pointTransactionRepository = pointTransactionRepository;
+        this.tierHistoryRepository = tierHistoryRepository;
         this.voucherRepository = voucherRepository;
     }
 
@@ -81,16 +86,6 @@ public class LoyaltyService {
     @Transactional
     public EarnPointsResponse postEarnTransaction(UUID customerId, UUID sessionId) {
         User customer = requireCustomer(customerId);
-        PointTransaction existing = pointTransactionRepository
-                .findByTypeAndReferenceId(PointTransactionType.EARN, sessionId.toString())
-                .orElse(null);
-        if (existing != null) {
-            if (!existing.getLoyaltyAccount().getCustomer().getId().equals(customer.getId())) {
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Wash session does not belong to customer", "BUSINESS_RULE_VIOLATION");
-            }
-            return toEarnResponse(existing, getOrCreateAccount(existing.getLoyaltyAccount().getCustomer()));
-        }
-
         WashSession session = requireSession(sessionId);
         if (session.getStatus() != WashSessionStatus.COMPLETED) {
             throw new ApiException(
@@ -104,6 +99,13 @@ public class LoyaltyService {
         }
 
         LoyaltyAccount account = getOrCreateAccountForUpdate(customer);
+        PointTransaction existing = pointTransactionRepository
+                .findByTypeAndBookingId(PointTransactionType.EARN, session.getBooking().getId())
+                .orElse(null);
+        if (existing != null) {
+            return toEarnResponse(existing, account);
+        }
+
         int pointsAwarded = calculateEarnPoints(sessionId);
         account.addPoints(pointsAwarded);
         PointTransaction transaction = new PointTransaction(
@@ -119,7 +121,7 @@ public class LoyaltyService {
             pointTransactionRepository.save(transaction);
         } catch (DataIntegrityViolationException exception) {
             PointTransaction racedTransaction = pointTransactionRepository
-                    .findByTypeAndReferenceId(PointTransactionType.EARN, sessionId.toString())
+                    .findByTypeAndBookingId(PointTransactionType.EARN, session.getBooking().getId())
                     .orElseThrow(() -> exception);
             return toEarnResponse(racedTransaction, account);
         }
@@ -218,6 +220,7 @@ public class LoyaltyService {
 
         LoyaltyTier oldTier = account.getTier();
         account.updateTier(targetTier);
+        tierHistoryRepository.save(new TierHistory(account, oldTier, targetTier, account.getTotalEarnedPoints()));
         pointTransactionRepository.save(new PointTransaction(
                 account,
                 null,
