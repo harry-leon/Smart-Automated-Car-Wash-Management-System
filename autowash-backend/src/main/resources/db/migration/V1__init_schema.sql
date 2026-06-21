@@ -91,7 +91,7 @@ CREATE TYPE "customer_combo_status" AS ENUM (
 );
 
 CREATE TABLE "users" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "full_name" varchar(100) NOT NULL,
   "phone" varchar(20) UNIQUE NOT NULL,
   "email" varchar(255) UNIQUE,
@@ -113,7 +113,7 @@ CREATE TABLE "user_preferences" (
 );
 
 CREATE TABLE "refresh_tokens" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "user_id" uuid NOT NULL,
   "token" varchar(255) UNIQUE NOT NULL,
   "expires_at" timestamptz NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE "refresh_tokens" (
 );
 
 CREATE TABLE "otp_verifications" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "user_id" uuid,
   "purpose" varchar(50) NOT NULL,
   "code_hash" varchar(255) NOT NULL,
@@ -134,7 +134,7 @@ CREATE TABLE "otp_verifications" (
 );
 
 CREATE TABLE "vehicles" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "customer_id" uuid NOT NULL,
   "plate" varchar(20) UNIQUE NOT NULL,
   "type" varchar(30) NOT NULL,
@@ -149,7 +149,7 @@ CREATE TABLE "vehicles" (
 );
 
 CREATE TABLE "packages" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "name" varchar(100) NOT NULL,
   "description" varchar(500),
   "base_price" bigint NOT NULL,
@@ -161,7 +161,7 @@ CREATE TABLE "packages" (
 );
 
 CREATE TABLE "services" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "name" varchar(100) NOT NULL,
   "description" varchar(500),
   "price" bigint NOT NULL,
@@ -184,7 +184,7 @@ CREATE TABLE "package_services" (
 );
 
 CREATE TABLE "combos" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "name" varchar(100) NOT NULL,
   "description" varchar(500),
   "price" bigint NOT NULL,
@@ -211,7 +211,7 @@ CREATE TABLE "combo_services" (
 );
 
 CREATE TABLE "vouchers" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "code" varchar(50) UNIQUE NOT NULL,
   "name" varchar(120) NOT NULL,
   "discount_type" discount_type NOT NULL,
@@ -233,7 +233,7 @@ CREATE TABLE "voucher_tiers" (
 );
 
 CREATE TABLE "promotions" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "name" varchar(120) NOT NULL,
   "description" varchar(500),
   "point_multiplier" numeric(4,2) NOT NULL DEFAULT 1,
@@ -252,7 +252,7 @@ CREATE TABLE "promotion_tiers" (
 );
 
 CREATE TABLE "bookings" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "customer_id" uuid NOT NULL,
   "vehicle_id" uuid NOT NULL,
   "booking_type" booking_type NOT NULL,
@@ -300,7 +300,7 @@ CREATE TABLE "booking_status_histories" (
 );
 
 CREATE TABLE "payments" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "booking_id" uuid UNIQUE NOT NULL,
   "method" payment_method NOT NULL,
   "status" payment_status NOT NULL DEFAULT 'UNPAID',
@@ -311,7 +311,7 @@ CREATE TABLE "payments" (
 );
 
 CREATE TABLE "wash_sessions" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "booking_id" uuid UNIQUE NOT NULL,
   "assigned_staff_id" uuid,
   "status" wash_session_status NOT NULL DEFAULT 'PENDING',
@@ -326,7 +326,7 @@ CREATE TABLE "wash_sessions" (
 );
 
 CREATE TABLE "loyalty_accounts" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "customer_id" uuid UNIQUE NOT NULL,
   "current_points" int NOT NULL DEFAULT 0,
   "total_earned_points" int NOT NULL DEFAULT 0,
@@ -356,7 +356,7 @@ CREATE TABLE "tier_histories" (
 );
 
 CREATE TABLE "customer_combos" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "customer_id" uuid NOT NULL,
   "combo_id" uuid NOT NULL,
   "total_usages" int NOT NULL,
@@ -375,7 +375,7 @@ CREATE TABLE "customer_combo_usages" (
 );
 
 CREATE TABLE "notifications" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "user_id" uuid NOT NULL,
   "title" varchar(150) NOT NULL,
   "message" text NOT NULL,
