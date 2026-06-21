@@ -19,9 +19,12 @@ import com.autowash.entity.enums.UserStatus;
 import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.Booking;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.PackageRepository;
+import com.autowash.repository.PaymentRepository;
 import com.autowash.dto.LoyaltyAccountResponse;
 import com.autowash.dto.PointTransactionResponse;
 import com.autowash.entity.enums.PointTransactionType;
@@ -80,6 +83,7 @@ public class AdminReportingService {
     private final PointTransactionRepository pointTransactionRepository;
     private final VehicleRepository VehicleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PaymentRepository paymentRepository;
 
     public AdminReportingService(
             BookingRepository bookingRepository,
@@ -90,7 +94,8 @@ public class AdminReportingService {
             LoyaltyService loyaltyService,
             PointTransactionRepository pointTransactionRepository,
             VehicleRepository VehicleRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            PaymentRepository paymentRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -101,6 +106,7 @@ public class AdminReportingService {
         this.pointTransactionRepository = pointTransactionRepository;
         this.VehicleRepository = VehicleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.paymentRepository = paymentRepository;
     }
 
     @Transactional
@@ -411,6 +417,7 @@ public class AdminReportingService {
                 .map(option -> new com.autowash.dto.BookingOptionResponse(option.getOptionId().toString(), option.getOptionName(), option.getOptionPrice()))
                 .toList();
 
+        PaymentInfo payment = resolvePaymentInfo(booking);
         return new com.autowash.dto.BookingDetailResponse(
                 booking.getId().toString(),
                 booking.getId().toString(),
@@ -442,10 +449,10 @@ public class AdminReportingService {
                         booking.getBookingTime().plusMinutes(booking.getEstimatedDurationMinutes()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
                 ),
                 new com.autowash.dto.BookingDetailResponse.Payment(
-                        booking.getPaymentMethod().name(),
-                        booking.getPaymentStatus().name(),
-                        "TXN_" + booking.getId().toString(),
-                        booking.getCreatedAt()
+                        payment.method().name(),
+                        payment.status().name(),
+                        payment.transactionRef(),
+                        payment.paidAt()
                 ),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),
@@ -680,6 +687,7 @@ public class AdminReportingService {
 
     private AdminBookingResponse toBookingResponse(Booking booking, WashSession session, Map<UUID, String> serviceNames) {
         String staffName = booking.getAssignedStaff() == null ? null : booking.getAssignedStaff().getFullName();
+        PaymentInfo payment = resolvePaymentInfo(booking);
         return new AdminBookingResponse(
                 booking.getId().toString(),
                 booking.getId().toString(),
@@ -692,8 +700,8 @@ public class AdminReportingService {
                 booking.getBookingDate(),
                 booking.getBookingTime(),
                 booking.getFinalAmount(),
-                booking.getPaymentMethod().name(),
-                booking.getPaymentStatus().name(),
+                payment.method().name(),
+                payment.status().name(),
                 booking.getStatus().name(),
                 session == null ? null : session.getId(),
                 session == null ? null : session.getStatus().name(),
@@ -1085,6 +1093,17 @@ public class AdminReportingService {
         }
     }
 
+    private PaymentInfo resolvePaymentInfo(Booking booking) {
+        return paymentRepository.findByBooking(booking)
+                .map(payment -> new PaymentInfo(
+                        payment.getMethod(),
+                        payment.getStatus(),
+                        payment.getTransactionRef(),
+                        payment.getPaidAt()
+                ))
+                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, null, null));
+    }
+
     public record BookingPage(List<AdminBookingResponse> items, PaginationMeta pagination) {
     }
 
@@ -1101,6 +1120,14 @@ public class AdminReportingService {
     }
 
     private record TierChange(String fromTier, String toTier) {
+    }
+
+    private record PaymentInfo(
+            PaymentMethod method,
+            PaymentStatus status,
+            String transactionRef,
+            Instant paidAt
+    ) {
     }
 }
 

@@ -13,8 +13,14 @@ import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.Booking;
 import com.autowash.entity.BookingOption;
+import com.autowash.entity.BookingStatusHistory;
+import com.autowash.entity.Payment;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.BookingOptionRepository;
+import com.autowash.repository.BookingStatusHistoryRepository;
+import com.autowash.repository.PaymentRepository;
 import com.autowash.entity.Combo;
 import com.autowash.entity.Package;
 import com.autowash.entity.Voucher;
@@ -69,6 +75,8 @@ public class BookingService {
     private final StaffAssignmentService staffAssignmentService;
     private final CustomerComboService customerComboService;
     private final BookingOptionRepository bookingOptionRepository;
+    private final PaymentRepository paymentRepository;
+    private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
 
     public BookingService(
             CurrentUserService currentUserService,
@@ -81,7 +89,9 @@ public class BookingService {
             LoyaltyService loyaltyService,
             StaffAssignmentService staffAssignmentService,
             CustomerComboService customerComboService,
-            BookingOptionRepository bookingOptionRepository
+            BookingOptionRepository bookingOptionRepository,
+            PaymentRepository paymentRepository,
+            BookingStatusHistoryRepository bookingStatusHistoryRepository
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -94,6 +104,8 @@ public class BookingService {
         this.staffAssignmentService = staffAssignmentService;
         this.customerComboService = customerComboService;
         this.bookingOptionRepository = bookingOptionRepository;
+        this.paymentRepository = paymentRepository;
+        this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
     }
 
     @Transactional
@@ -179,6 +191,13 @@ public class BookingService {
                 .map(option -> new BookingOption(booking, option.getId(), option.getName(), option.getPrice()))
                 .toList();
         bookingOptionRepository.saveAll(bookingOptions);
+        Payment payment = paymentRepository.save(new Payment(
+                booking,
+                request.paymentMethod(),
+                initialPaymentStatus(request.paymentMethod()),
+                booking.getFinalAmount()
+        ));
+        recordStatusHistory(booking, null, booking.getStatus(), user, "Booking created");
 
         if (Combo != null) {
             if (ownedCombo == null) {
@@ -203,8 +222,8 @@ public class BookingService {
                 booking.getBookingDate(),
                 booking.getBookingTime().toString(),
                 booking.getEstimatedDurationMinutes(),
-                booking.getPaymentMethod().name(),
-                booking.getPaymentStatus().name(),
+                payment.getMethod().name(),
+                payment.getStatus().name(),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),
                 0,
@@ -257,7 +276,9 @@ public class BookingService {
         if (!CANCELLABLE_BOOKING_STATUSES.contains(booking.getStatus())) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be cancelled", "RESOURCE_LOCKED");
         }
+        BookingStatus oldStatus = booking.getStatus();
         booking.cancel(reason);
+        recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), reason);
         return new CancelBookingResponse(
                 booking.getId().toString(),
                 booking.getStatus().name(),
@@ -295,6 +316,7 @@ public class BookingService {
 
         RedeemPointsResponse redemption = loyaltyService.redeemPoints(user.getId(), pointsToApply, booking.getId().toString());
         booking.applyPoints(pointsToApply, discountAmount);
+        paymentRepository.findByBooking(booking).ifPresent(payment -> payment.updateAmount(booking.getFinalAmount()));
         return new ApplyPointsResponse(
                 booking.getId().toString(),
                 pointsToApply,
@@ -313,7 +335,12 @@ public class BookingService {
 
     @Transactional
     public void updateStatus(Booking booking, BookingStatus status) {
+        BookingStatus oldStatus = booking.getStatus();
+        if (oldStatus == status) {
+            return;
+        }
         booking.updateStatus(status);
+        recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), null);
     }
 
     private Booking findOwnedBooking(String bookingId) {
@@ -345,6 +372,7 @@ public class BookingService {
         String packageName = resolvePackageName(booking);
         var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
+        PaymentInfo payment = resolvePaymentInfo(booking);
         return new BookingDetailResponse(
                 booking.getId().toString(),
                 booking.getId().toString(),
@@ -376,10 +404,10 @@ public class BookingService {
                         booking.getBookingTime().plusMinutes(booking.getEstimatedDurationMinutes()).format(DateTimeFormatter.ofPattern("HH:mm"))
                 ),
                 new BookingDetailResponse.Payment(
-                        booking.getPaymentMethod().name(),
-                        booking.getPaymentStatus().name(),
-                        "TXN_" + booking.getId(),
-                        booking.getCreatedAt()
+                        payment.method().name(),
+                        payment.status().name(),
+                        payment.transactionRef(),
+                        payment.paidAt()
                 ),
                 booking.getStatus().name(),
                 booking.getConfirmationStatus().name(),
@@ -420,8 +448,55 @@ public class BookingService {
                 .toList();
     }
 
+    private PaymentStatus initialPaymentStatus(PaymentMethod method) {
+        return method == PaymentMethod.CASH_AT_COUNTER ? PaymentStatus.UNPAID : PaymentStatus.PENDING_PAYMENT;
+    }
+
+    private PaymentInfo resolvePaymentInfo(Booking booking) {
+        return paymentRepository.findByBooking(booking)
+                .map(payment -> new PaymentInfo(
+                        payment.getMethod(),
+                        payment.getStatus(),
+                        payment.getTransactionRef(),
+                        payment.getPaidAt()
+                ))
+                .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, null, null));
+    }
+
+    private void recordStatusHistory(
+            Booking booking,
+            BookingStatus oldStatus,
+            BookingStatus newStatus,
+            User changedBy,
+            String reason
+    ) {
+        bookingStatusHistoryRepository.save(new BookingStatusHistory(
+                booking,
+                oldStatus == null ? null : oldStatus.name(),
+                newStatus.name(),
+                changedBy,
+                reason
+        ));
+    }
+
+    private User currentActorOrNull() {
+        try {
+            return currentUserService.getCurrentUser();
+        } catch (ApiException exception) {
+            return null;
+        }
+    }
+
     private String generateBookingId() {
         return "BK_" + System.currentTimeMillis();
+    }
+
+    private record PaymentInfo(
+            PaymentMethod method,
+            PaymentStatus status,
+            String transactionRef,
+            java.time.Instant paidAt
+    ) {
     }
 
     public record BookingPage(List<BookingListItemResponse> items, PaginationMeta pagination) {

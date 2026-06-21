@@ -49,5 +49,17 @@ public class Payment {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-}
 
+    public Payment(Booking booking, PaymentMethod method, PaymentStatus status, long amount) {
+        this.id = UUID.randomUUID();
+        this.booking = booking;
+        this.method = method;
+        this.status = status;
+        this.amount = amount;
+        this.createdAt = Instant.now();
+    }
+
+    public void updateAmount(long amount) {
+        this.amount = amount;
+    }
+}
