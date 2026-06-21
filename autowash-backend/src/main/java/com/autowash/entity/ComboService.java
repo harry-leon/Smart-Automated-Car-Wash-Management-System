@@ -44,6 +44,18 @@ public class ComboService {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    public ComboService(UUID comboId, UUID optionId, String optionName, String optionDescription,
+                        long optionPrice, int optionDurationMinutes, int quantity, int sortOrder) {
+        this.comboId = comboId;
+        this.optionId = optionId;
+        this.optionName = optionName;
+        this.optionDescription = optionDescription;
+        this.optionPrice = optionPrice;
+        this.optionDurationMinutes = optionDurationMinutes;
+        this.quantity = quantity;
+        this.sortOrder = sortOrder;
+    }
+
     @Getter
     @NoArgsConstructor
     public static class ComboServiceId implements Serializable {
