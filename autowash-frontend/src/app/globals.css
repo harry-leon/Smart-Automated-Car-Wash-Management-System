@@ -7,25 +7,35 @@
 @layer base {
   :root {
     --background: 210 40% 98%;
-    --foreground: 222.2 47.4% 11.2%;
+    --foreground: 224 71% 4%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
+    --card-foreground: 224 71% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 224 71% 4%;
+    
+    /* Primary: High-Tech Neon Cyan */
+    --primary: 187 90% 36%;
+    --primary-foreground: 180 100% 98%;
+    
+    /* Secondary: Clean light slate */
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 224 71% 4%;
+    
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+    
+    /* Accent: Eco Acid Green / Lime highlights */
+    --accent: 84 80% 92%;
+    --accent-foreground: 84 90% 18%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.9rem;
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 187 90% 36%;
+    
+    /* Premium Fluid Minimalism Corner Radius */
+    --radius: 1.25rem;
   }
 
   * {
@@ -39,6 +49,7 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    text-rendering: optimizeLegibility;
   }
 
   a {
@@ -69,7 +80,7 @@
     }
   }
 
-  /* Custom Premium Scrollbar */
+  /* Custom Premium Scrollbar using Neon Cyan accents */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -78,11 +89,37 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(14, 165, 233, 0.25); /* sky-500/25 */
+    background: rgba(8, 145, 178, 0.16);
     border-radius: 9999px;
     transition: background 0.3s ease;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(14, 165, 233, 0.5); /* sky-500/50 */
+    background: rgba(8, 145, 178, 0.4);
+  }
+}
+
+@layer components {
+  .aw-page {
+    @apply min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(132,204,22,0.05),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(6,182,212,0.05),transparent_40%),linear-gradient(180deg,#fafbfc_0%,#ffffff_48%,#f8fafc_100%)] text-slate-950;
+  }
+
+  .aw-surface {
+    @apply rounded-2xl border border-slate-200/50 bg-white/95 shadow-[0_2px_8px_rgba(15,23,42,0.02)] transition-all duration-300;
+  }
+
+  .aw-panel {
+    @apply rounded-2xl border border-slate-200/60 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.03)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_12px_40px_rgba(15,23,42,0.05)];
+  }
+
+  .aw-muted-panel {
+    @apply rounded-2xl border border-slate-200 bg-slate-50/60 transition-colors duration-300;
+  }
+
+  .aw-kicker {
+    @apply text-xs font-bold uppercase tracking-[0.18em] text-primary;
+  }
+
+  .aw-link {
+    @apply font-semibold text-primary transition hover:text-primary/80;
   }
 }

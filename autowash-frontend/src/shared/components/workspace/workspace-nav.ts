@@ -38,30 +38,31 @@ export type WorkspaceTheme = {
 
 export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
   CUSTOMER: {
-    label: "Customer Portal",
+    label: "Customer",
     description: "Bookings and wash tracking",
-    accent: "bg-sky-600 text-white shadow-sky-600/20",
-    accentSoft: "border-sky-200 bg-sky-50 text-sky-700",
-    activeNav: "bg-sky-600 text-white shadow-sm shadow-sky-600/20",
-    mobileActive: "bg-sky-50 text-sky-700",
+    accent: "bg-slate-950 text-cyan-400 border border-slate-800 shadow-[0_4px_20px_rgba(6,182,212,0.15)]",
+    accentSoft: "border-cyan-200 bg-cyan-50/50 text-cyan-800",
+    activeNav: "bg-slate-950 text-white border border-slate-800 shadow-sm",
+    mobileActive: "bg-cyan-50 text-cyan-800",
   },
   STAFF: {
-    label: "Staff Operations",
+    label: "Staff",
     description: "Check-in and wash flow",
-    accent: "bg-violet-600 text-white shadow-violet-600/20",
-    accentSoft: "border-violet-200 bg-violet-50 text-violet-700",
-    activeNav: "bg-violet-600 text-white shadow-sm shadow-violet-600/20",
-    mobileActive: "bg-violet-50 text-violet-700",
+    accent: "bg-slate-950 text-lime-400 border border-slate-800 shadow-[0_4px_20px_rgba(132,204,22,0.15)]",
+    accentSoft: "border-lime-200 bg-lime-50/50 text-lime-800",
+    activeNav: "bg-slate-950 text-white border border-slate-800 shadow-sm",
+    mobileActive: "bg-lime-50 text-lime-800",
   },
   ADMIN: {
-    label: "Admin Dashboard",
+    label: "Admin",
     description: "System control center",
-    accent: "bg-orange-600 text-white shadow-orange-600/20",
-    accentSoft: "border-orange-200 bg-orange-50 text-orange-700",
-    activeNav: "bg-orange-600 text-white shadow-sm shadow-orange-600/20",
-    mobileActive: "bg-orange-50 text-orange-700",
+    accent: "bg-slate-950 text-slate-100 border border-slate-800 shadow-[0_4px_20px_rgba(15,23,42,0.15)]",
+    accentSoft: "border-slate-200 bg-slate-100 text-slate-800",
+    activeNav: "bg-slate-950 text-white border border-slate-800 shadow-sm",
+    mobileActive: "bg-slate-100 text-slate-900",
   },
 };
+
 
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
   { href: "/customer/home", label: "Home", icon: LayoutDashboard, exact: true },

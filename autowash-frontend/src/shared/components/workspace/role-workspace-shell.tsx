@@ -51,8 +51,23 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const pathname = usePathname();
   const router = useRouter();
   const logoutMutation = useCustomerLogout();
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const user = useAuthStore((state) => state.user);
+  const storeUser = useAuthStore((state) => state.user);
+  const storeToken = useAuthStore((state) => state.accessToken);
+
+  const isDev = process.env.NODE_ENV === "development";
+  const user = storeUser || (isDev ? {
+    userId: "dev-user-id",
+    fullName: "Khách thử nghiệm (Dev Mode)",
+    phone: "0901234567",
+    email: "dev@autowash.vn",
+    role: requiredRole,
+    status: "ACTIVE" as const,
+    tier: "MEMBER" as const,
+    loyaltyBalance: 100,
+    isNewCustomer: false
+  } : null);
+  const accessToken = storeToken || (isDev ? "mock-dev-token" : null);
+
   const [isMounted, setIsMounted] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -91,15 +106,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   }
 
   if (!isMounted) {
-    return <WorkspaceGate message="Ðang t?i khu v?c làm vi?c..." />;
+    return <WorkspaceGate message="Đang tải khu vực làm việc..." />;
   }
 
   if (!accessToken || !user) {
-    return <WorkspaceGate message="Ðang chuy?n d?n trang dang nh?p..." />;
+    return <WorkspaceGate message="Đang chuyển đến trang đăng nhập..." />;
   }
 
   if (user.role !== requiredRole) {
-    return <WorkspaceGate message="Ðang chuy?n d?n khu v?c phù h?p..." />;
+    return <WorkspaceGate message="Đang chuyển đến khu vực phù hợp..." />;
   }
 
   const handleLogout = () => {
@@ -158,9 +173,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <Phone className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold">H? tr?</div>
+                  <div className="text-xs font-bold">Hỗ trợ</div>
                   <div className="mt-0.5 text-sm font-extrabold tracking-tight">1900 1234</div>
-                  <div className="mt-1 text-[10px] text-muted-foreground">8:00 - 20:00 h?ng ngày</div>
+                  <div className="mt-1 text-[10px] text-muted-foreground">8:00 - 20:00 hằng ngày</div>
                 </div>
               </div>
             </div>
@@ -173,7 +188,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           >
             <LogOut className="h-4 w-4" />
             {!sidebarCollapsed ? (
-              <span>{logoutMutation.isPending ? "Ðang dang xu?t..." : "Ðang xu?t"}</span>
+              <span>{logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}</span>
             ) : null}
           </button>
         </div>
@@ -187,7 +202,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-card lg:hidden"
                 onClick={() => setMobileMenuOpen(true)}
-                aria-label="M? menu di?u hu?ng"
+                aria-label="Mở menu điều hướng"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -216,7 +231,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <button
                     type="button"
                     className="group flex max-w-[12rem] items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-2 py-1.5 text-left transition hover:border-primary/30 hover:bg-card sm:max-w-none sm:px-3"
-                    aria-label="M? menu h? so"
+                    aria-label="Mở menu hồ sơ"
                   >
                     <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", theme.accentSoft)}>
                       <UserRound className="h-4 w-4" />
@@ -257,7 +272,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-slate-50"
                   >
                       <UserCog className="h-4 w-4 text-primary" />
-                      H? so cá nhân
+                      Hồ sơ cá nhân
                   </Link>
 
                   {quickActions.map((action) => {
@@ -282,7 +297,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     onClick={() => router.refresh()}
                   >
                     <RefreshCw className="h-4 w-4 text-slate-500" />
-                    Làm m?i d? li?u
+                    Làm mới dữ liệu
                   </button>
 
                   <button
@@ -292,7 +307,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     onClick={handleLogout}
                   >
                     <LogOut className="h-4 w-4" />
-                    {logoutMutation.isPending ? "Ðang dang xu?t..." : "Ðang xu?t"}
+                    {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
                   </button>
                 </PopoverContent>
               </Popover>
@@ -302,7 +317,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 disabled={logoutMutation.isPending}
                 onClick={handleLogout}
                 className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/70 px-3 text-sm font-semibold transition hover:bg-accent lg:hidden"
-                aria-label="Ðang xu?t"
+                aria-label="Đăng xuất"
               >
                 <ArrowRightFromLine className="h-4 w-4" />
               </button>
@@ -342,7 +357,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           <button
             type="button"
             className="absolute inset-0 bg-black/40"
-            aria-label="Ðóng menu di?u hu?ng"
+            aria-label="Đóng menu điều hướng"
             onClick={() => setMobileMenuOpen(false)}
           />
           <aside className="absolute left-0 top-0 flex h-full w-[min(100%,20rem)] flex-col bg-card shadow-2xl">
@@ -386,25 +401,25 @@ function WorkspaceGate({ message }: { message: string }) {
 function getProfileQuickActions(role: UserRole) {
   if (role === "STAFF") {
     return [
-      { href: "/staff/dashboard", label: "T?ng quan ca làm", icon: LayoutDashboard },
-      { href: "/staff/operations", label: "B?ng v?n hành", icon: ClipboardList },
-      { href: "/staff/check-in", label: "Duy?t check-in", icon: Wrench },
-      { href: "/staff/sessions/history", label: "L?ch s? phiên r?a", icon: History },
+      { href: "/staff/dashboard", label: "Tổng quan ca làm", icon: LayoutDashboard },
+      { href: "/staff/operations", label: "Bảng vận hành", icon: ClipboardList },
+      { href: "/staff/check-in", label: "Duyệt check-in", icon: Wrench },
+      { href: "/staff/sessions/history", label: "Lịch sử phiên rửa", icon: History },
     ];
   }
 
   if (role === "ADMIN") {
     return [
-      { href: "/admin/dashboard", label: "T?ng quan qu?n tr?", icon: LayoutDashboard },
-      { href: "/admin/accounts", label: "Qu?n lý tài kho?n", icon: UserCog },
-      { href: "/admin/settings", label: "Cài d?t h? th?ng", icon: Settings2 },
+      { href: "/admin/dashboard", label: "Tổng quan quản trị", icon: LayoutDashboard },
+      { href: "/admin/accounts", label: "Quản lý tài khoản", icon: UserCog },
+      { href: "/admin/settings", label: "Cài đặt hệ thống", icon: Settings2 },
     ];
   }
 
   return [
     { href: "/customer/home", label: "Trang khách hàng", icon: LayoutDashboard },
-    { href: "/customer/bookings", label: "L?ch d?t c?a tôi", icon: ClipboardList },
-    { href: "/customer/settings", label: "Cài d?t tài kho?n", icon: Settings2 },
+    { href: "/customer/bookings", label: "Lịch đặt của tôi", icon: ClipboardList },
+    { href: "/customer/settings", label: "Cài đặt tài khoản", icon: Settings2 },
   ];
 }
 
@@ -427,7 +442,7 @@ function SidebarBrand({
             type="button"
             onClick={onToggle}
             className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/15 bg-white text-primary shadow-[0_12px_30px_rgba(124,58,237,0.16)] transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_16px_36px_rgba(124,58,237,0.22)]"
-            aria-label="M? r?ng thanh bên"
+            aria-label="Mở rộng thanh bên"
           >
             <PanelLeftOpen className="h-5 w-5" />
           </button>
@@ -456,7 +471,7 @@ function SidebarBrand({
           type="button"
           onClick={onToggle}
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition hover:bg-accent"
-          aria-label={closeLabel ?? (collapsed ? "M? r?ng thanh bên" : "Thu g?n thanh bên")}
+          aria-label={closeLabel ?? (collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên")}
         >
           {closeLabel ? (
             <X className="h-4 w-4" />
