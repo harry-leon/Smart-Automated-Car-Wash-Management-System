@@ -175,7 +175,7 @@ public class Booking {
         return baseAmount;
     }
 
-    public long getAddonsTotal() {
+    public long getOptionsTotal() {
         return optionsAmount;
     }
 
@@ -215,7 +215,7 @@ public class Booking {
         return null;
     }
 
-    public List<BookingOption> getAddons() {
+    public List<BookingOption> getOptions() {
         return List.of();
     }
 
@@ -229,5 +229,5 @@ public class Booking {
 
     public void expireOtpConfirmation() {}
 
-    public void addAddon(BookingOption option) {}
+    public void addOption(BookingOption option) {}
 }

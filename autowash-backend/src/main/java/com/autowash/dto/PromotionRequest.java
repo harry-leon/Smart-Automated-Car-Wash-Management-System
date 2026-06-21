@@ -1,5 +1,6 @@
 package com.autowash.dto;
 
+import com.autowash.entity.*;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.ActiveStatus;

@@ -1,9 +1,9 @@
 package com.autowash.service;
 
 import com.autowash.entity.User;
-import com.autowash.dto.AddonSelectionResponse;
 import com.autowash.dto.ApplyPointsRequest;
 import com.autowash.dto.ApplyPointsResponse;
+import com.autowash.dto.BookingOptionResponse;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
@@ -12,7 +12,9 @@ import com.autowash.dto.CreateBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.Booking;
+import com.autowash.entity.BookingOption;
 import com.autowash.repository.BookingRepository;
+import com.autowash.repository.BookingOptionRepository;
 import com.autowash.entity.Combo;
 import com.autowash.entity.Package;
 import com.autowash.entity.Voucher;
@@ -66,6 +68,7 @@ public class BookingService {
     private final LoyaltyService loyaltyService;
     private final StaffAssignmentService staffAssignmentService;
     private final CustomerComboService customerComboService;
+    private final BookingOptionRepository bookingOptionRepository;
 
     public BookingService(
             CurrentUserService currentUserService,
@@ -77,7 +80,8 @@ public class BookingService {
             WashSessionRepository washSessionRepository,
             LoyaltyService loyaltyService,
             StaffAssignmentService staffAssignmentService,
-            CustomerComboService customerComboService
+            CustomerComboService customerComboService,
+            BookingOptionRepository bookingOptionRepository
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -89,6 +93,7 @@ public class BookingService {
         this.loyaltyService = loyaltyService;
         this.staffAssignmentService = staffAssignmentService;
         this.customerComboService = customerComboService;
+        this.bookingOptionRepository = bookingOptionRepository;
     }
 
     @Transactional
@@ -105,7 +110,7 @@ public class BookingService {
                 )
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Vehicle not found or not owned", "RESOURCE_NOT_FOUND"));
 
-        List<com.autowash.entity.Service> addons = catalogService.requireActiveAddons(request.addons());
+        List<com.autowash.entity.Service> options = catalogService.requireActiveOptions(request.options());
         Package Package = null;
         Combo Combo = null;
         CustomerCombo ownedCombo = null;
@@ -143,8 +148,8 @@ public class BookingService {
             }
         }
 
-        long addonsTotal = addons.stream().mapToLong(com.autowash.entity.Service::getPrice).sum();
-        long subtotal = basePrice + addonsTotal;
+        long optionsTotal = options.stream().mapToLong(com.autowash.entity.Service::getPrice).sum();
+        long subtotal = basePrice + optionsTotal;
         Voucher voucher = null;
         long voucherDiscount = 0;
         if (request.voucherCode() != null && !request.voucherCode().isBlank()) {
@@ -164,12 +169,16 @@ public class BookingService {
                 LocalTime.parse(request.bookingTime()),
                 request.paymentMethod(),
                 basePrice,
-                addonsTotal,
+                optionsTotal,
                 voucherDiscount,
                 subtotal - voucherDiscount,
-                baseDuration + addons.stream().mapToInt(com.autowash.entity.Service::getDurationMinutes).sum()
+                baseDuration + options.stream().mapToInt(com.autowash.entity.Service::getDurationMinutes).sum()
         );
         BookingRepository.save(booking);
+        List<BookingOption> bookingOptions = options.stream()
+                .map(option -> new BookingOption(booking, option.getId(), option.getName(), option.getPrice()))
+                .toList();
+        bookingOptionRepository.saveAll(bookingOptions);
 
         if (Combo != null) {
             if (ownedCombo == null) {
@@ -186,9 +195,9 @@ public class BookingService {
                 vehicle.getPlate(),
                 responsePackageId,
                 responsePackageName,
-                toAddonSelections(booking.getAddons()),
+                toOptionSelections(booking),
                 booking.getBasePrice(),
-                booking.getAddonsTotal(),
+                booking.getOptionsTotal(),
                 booking.getVoucherDiscount(),
                 booking.getFinalAmount(),
                 booking.getBookingDate(),
@@ -348,11 +357,11 @@ public class BookingService {
                 booking.getVehicle().getModel(),
                 booking.getPackageId() != null ? booking.getPackageId().toString() : null,
                 packageName,
-                toAddonSelections(booking.getAddons()),
+                toOptionSelections(booking),
                 new BookingDetailResponse.Pricing(
                         booking.getBasePrice(),
-                        booking.getAddonsTotal(),
-                        booking.getBasePrice() + booking.getAddonsTotal(),
+                        booking.getOptionsTotal(),
+                        booking.getBasePrice() + booking.getOptionsTotal(),
                         booking.getVoucherCode(),
                         booking.getVoucherDiscount(),
                         booking.getPointsRedeemed(),
@@ -405,9 +414,9 @@ public class BookingService {
         return null;
     }
 
-    private List<AddonSelectionResponse> toAddonSelections(List<com.autowash.entity.BookingOption> addons) {
-        return addons.stream()
-                .map(addon -> new AddonSelectionResponse(addon.getOptionId().toString(), addon.getOptionName(), addon.getOptionPrice()))
+    private List<BookingOptionResponse> toOptionSelections(Booking booking) {
+        return bookingOptionRepository.findByBooking_Id(booking.getId()).stream()
+                .map(option -> new BookingOptionResponse(option.getOptionId().toString(), option.getOptionName(), option.getOptionPrice()))
                 .toList();
     }
 

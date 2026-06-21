@@ -407,8 +407,8 @@ public class AdminReportingService {
         var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
 
-        List<com.autowash.dto.AddonSelectionResponse> addonSelections = booking.getAddons().stream()
-                .map(addon -> new com.autowash.dto.AddonSelectionResponse(addon.getOptionId().toString(), addon.getOptionName(), addon.getOptionPrice()))
+        List<com.autowash.dto.BookingOptionResponse> optionSelections = booking.getOptions().stream()
+                .map(option -> new com.autowash.dto.BookingOptionResponse(option.getOptionId().toString(), option.getOptionName(), option.getOptionPrice()))
                 .toList();
 
         return new com.autowash.dto.BookingDetailResponse(
@@ -423,11 +423,11 @@ public class AdminReportingService {
                 booking.getVehicle().getModel(),
                 booking.getPackageId() == null ? null : booking.getPackageId().toString(),
                 packageName,
-                addonSelections,
+                optionSelections,
                 new com.autowash.dto.BookingDetailResponse.Pricing(
                         booking.getBasePrice(),
-                        booking.getAddonsTotal(),
-                        booking.getBasePrice() + booking.getAddonsTotal(),
+                        booking.getOptionsTotal(),
+                        booking.getBasePrice() + booking.getOptionsTotal(),
                         booking.getVoucherCode(),
                         booking.getVoucherDiscount(),
                         booking.getPointsRedeemed(),

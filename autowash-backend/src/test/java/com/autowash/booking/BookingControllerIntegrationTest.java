@@ -74,11 +74,11 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
-    void getAddOnsReturnsActiveAddOns() throws Exception {
-        mockMvc.perform(get("/api/v1/add-ons"))
+    void getServicesReturnsActiveServices() throws Exception {
+        mockMvc.perform(get("/api/v1/services"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].addonId").value("addon_001"));
+                .andExpect(jsonPath("$.data[0].serviceId").value("service_001"));
     }
 
     @Test
@@ -141,7 +141,7 @@ class BookingControllerIntegrationTest {
                                 {
                                   "vehicleId": "%s",
                                   "packageId": "12345678-1234-1234-1234-123456789012",
-                                  "addons": ["addon_001"],
+                                  "options": ["service_001"],
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",
@@ -501,7 +501,7 @@ class BookingControllerIntegrationTest {
                                 {
                                   "vehicleId": "%s",
                                   "packageId": "12345678-1234-1234-1234-123456789012",
-                                  "addons": ["addon_001"],
+                                  "options": ["service_001"],
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",

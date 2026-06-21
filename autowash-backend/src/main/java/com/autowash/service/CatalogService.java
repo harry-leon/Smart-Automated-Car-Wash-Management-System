@@ -1,8 +1,8 @@
 package com.autowash.service;
 
-import com.autowash.dto.AddonResponse;
 import com.autowash.dto.ComboResponse;
 import com.autowash.dto.PackageResponse;
+import com.autowash.dto.ServiceResponse;
 import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.ActiveStatus;
@@ -68,9 +68,9 @@ public class CatalogService {
     }
 
     @Transactional(readOnly = true)
-    public List<AddonResponse> getAddons() {
+    public List<ServiceResponse> getServices() {
         return serviceRepository.findByStatusOrderByIdAsc(ActiveStatus.ACTIVE).stream()
-                .map(this::toAddonResponse)
+                .map(this::toServiceResponse)
                 .toList();
     }
 
@@ -112,13 +112,13 @@ public class CatalogService {
     }
 
     @Transactional(readOnly = true)
-    public List<com.autowash.entity.Service> requireActiveAddons(List<String> addonIds) {
-        if (addonIds == null || addonIds.isEmpty()) {
+    public List<com.autowash.entity.Service> requireActiveOptions(List<String> optionIds) {
+        if (optionIds == null || optionIds.isEmpty()) {
             return List.of();
         }
-        return addonIds.stream()
+        return optionIds.stream()
                 .map(id -> serviceRepository.findByIdAndStatus(java.util.UUID.fromString(id), ActiveStatus.ACTIVE)
-                        .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Add-on is not available", "BUSINESS_RULE_VIOLATION")))
+                        .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Service option is not available", "BUSINESS_RULE_VIOLATION")))
                 .toList();
     }
 
@@ -176,17 +176,14 @@ public class CatalogService {
         );
     }
 
-    private AddonResponse toAddonResponse(com.autowash.entity.Service addon) {
-        return new AddonResponse(
-                addon.getId().toString(),
-                addon.getName(),
-                addon.getDescription(),
-                addon.getPrice(),
-                addon.getDurationMinutes(),
-                null,
-                null,
-                List.of(),
-                addon.getStatus().name()
+    private ServiceResponse toServiceResponse(com.autowash.entity.Service service) {
+        return new ServiceResponse(
+                service.getId().toString(),
+                service.getName(),
+                service.getDescription(),
+                service.getPrice(),
+                service.getDurationMinutes(),
+                service.getStatus().name()
         );
     }
 

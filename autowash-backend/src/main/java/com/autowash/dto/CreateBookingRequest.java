@@ -1,5 +1,6 @@
 package com.autowash.dto;
 
+import com.autowash.entity.*;
 import com.autowash.entity.enums.PaymentMethod;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -13,7 +14,7 @@ public record CreateBookingRequest(
         @NotBlank(message = "Vehicle is required")
         String vehicleId,
         String packageId,
-        List<String> addons,
+        List<String> options,
         @NotNull(message = "Booking date is required")
         @FutureOrPresent(message = "Booking date must be today or in the future")
         LocalDate bookingDate,

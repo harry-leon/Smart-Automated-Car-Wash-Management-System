@@ -1,8 +1,8 @@
 package com.autowash.controller;
 
-import com.autowash.dto.AddonResponse;
 import com.autowash.dto.ComboResponse;
 import com.autowash.dto.PackageResponse;
+import com.autowash.dto.ServiceResponse;
 import com.autowash.dto.ValidateVoucherRequest;
 import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.service.CatalogService;
@@ -42,10 +42,10 @@ public class CatalogController {
         return ApiResponse.ok("Packages retrieved", packagePage.items(), packagePage.pagination());
     }
 
-    @GetMapping("/api/v1/add-ons")
-    @Operation(summary = "List available add-on services")
-    public ApiResponse<List<AddonResponse>> getAddOns() {
-        return ApiResponse.ok("Add-ons retrieved", catalogService.getAddons());
+    @GetMapping("/api/v1/services")
+    @Operation(summary = "List available services")
+    public ApiResponse<List<ServiceResponse>> getServices() {
+        return ApiResponse.ok("Services retrieved", catalogService.getServices());
     }
 
     @GetMapping("/api/v1/combos/available")

@@ -1,5 +1,6 @@
 package com.autowash.dto;
 
+import com.autowash.entity.*;
 import com.autowash.entity.enums.LanguagePreference;
 import com.autowash.entity.enums.ThemePreference;
 import jakarta.validation.constraints.NotNull;

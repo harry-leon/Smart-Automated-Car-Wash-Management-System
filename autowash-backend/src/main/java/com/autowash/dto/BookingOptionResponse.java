@@ -1,7 +1,7 @@
 package com.autowash.dto;
 
-public record AddonSelectionResponse(
-        String addonId,
+public record BookingOptionResponse(
+        String optionId,
         String name,
         long price
 ) {

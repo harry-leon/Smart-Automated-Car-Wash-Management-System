@@ -16,7 +16,7 @@ public record BookingDetailResponse(
         String vehicleModel,
         String packageId,
         String packageName,
-        List<AddonSelectionResponse> addons,
+        List<BookingOptionResponse> options,
         Pricing pricing,
         Scheduling scheduling,
         Payment payment,
@@ -32,7 +32,7 @@ public record BookingDetailResponse(
 ) {
     public record Pricing(
             long basePrice,
-            long addonsTotal,
+            long optionsTotal,
             long subtotal,
             String voucherCode,
             long voucherDiscount,
