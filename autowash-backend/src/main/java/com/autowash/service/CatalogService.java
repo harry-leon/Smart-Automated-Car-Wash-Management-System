@@ -7,20 +7,29 @@ import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.Combo;
+import com.autowash.entity.ComboService;
 import com.autowash.entity.Package;
+import com.autowash.entity.PackageService;
 import com.autowash.entity.Voucher;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.repository.ComboRepository;
+import com.autowash.repository.ComboServiceRepository;
 import com.autowash.repository.PackageRepository;
+import com.autowash.repository.PackageServiceRepository;
 import com.autowash.repository.VoucherRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -33,6 +42,8 @@ public class CatalogService {
     private final PackageRepository PackageRepository;
     private final ServiceRepository serviceRepository;
     private final ComboRepository ComboRepository;
+    private final PackageServiceRepository packageServiceRepository;
+    private final ComboServiceRepository comboServiceRepository;
     private final VoucherRepository voucherRepository;
     private final CurrentUserService currentUserService;
 
@@ -40,12 +51,16 @@ public class CatalogService {
             PackageRepository PackageRepository,
             ServiceRepository serviceRepository,
             ComboRepository ComboRepository,
+            PackageServiceRepository packageServiceRepository,
+            ComboServiceRepository comboServiceRepository,
             VoucherRepository voucherRepository,
             CurrentUserService currentUserService
     ) {
         this.PackageRepository = PackageRepository;
         this.serviceRepository = serviceRepository;
         this.ComboRepository = ComboRepository;
+        this.packageServiceRepository = packageServiceRepository;
+        this.comboServiceRepository = comboServiceRepository;
         this.voucherRepository = voucherRepository;
         this.currentUserService = currentUserService;
     }
@@ -112,13 +127,60 @@ public class CatalogService {
     }
 
     @Transactional(readOnly = true)
-    public List<com.autowash.entity.Service> requireActiveOptions(List<String> optionIds) {
-        if (optionIds == null || optionIds.isEmpty()) {
+    public List<CatalogOption> requireActivePackageOptions(Package pkg, List<String> optionIds) {
+        List<UUID> parsedOptionIds = parseUniqueOptionIds(optionIds);
+        if (parsedOptionIds.isEmpty()) {
             return List.of();
         }
-        return optionIds.stream()
-                .map(id -> serviceRepository.findByIdAndStatus(java.util.UUID.fromString(id), ActiveStatus.ACTIVE)
-                        .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Service option is not available", "BUSINESS_RULE_VIOLATION")))
+
+        assertActiveServices(parsedOptionIds);
+        Map<UUID, PackageService> optionsById = packageServiceRepository
+                .findByPackageIdAndOptionIdIn(pkg.getId(), parsedOptionIds)
+                .stream()
+                .collect(Collectors.toMap(PackageService::getOptionId, Function.identity()));
+
+        return parsedOptionIds.stream()
+                .map(optionId -> {
+                    PackageService option = optionsById.get(optionId);
+                    if (option == null) {
+                        throw optionUnavailable();
+                    }
+                    return new CatalogOption(
+                            option.getOptionId(),
+                            option.getOptionName(),
+                            option.getOptionPrice(),
+                            option.getOptionDurationMinutes()
+                    );
+                })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CatalogOption> requireActiveComboOptions(Combo combo, List<String> optionIds) {
+        List<UUID> parsedOptionIds = parseUniqueOptionIds(optionIds);
+        if (parsedOptionIds.isEmpty()) {
+            return List.of();
+        }
+
+        assertActiveServices(parsedOptionIds);
+        Map<UUID, ComboService> optionsById = comboServiceRepository
+                .findByComboIdAndOptionIdIn(combo.getId(), parsedOptionIds)
+                .stream()
+                .collect(Collectors.toMap(ComboService::getOptionId, Function.identity()));
+
+        return parsedOptionIds.stream()
+                .map(optionId -> {
+                    ComboService option = optionsById.get(optionId);
+                    if (option == null) {
+                        throw optionUnavailable();
+                    }
+                    return new CatalogOption(
+                            option.getOptionId(),
+                            option.getOptionName(),
+                            option.getOptionPrice(),
+                            option.getOptionDurationMinutes()
+                    );
+                })
                 .toList();
     }
 
@@ -162,6 +224,9 @@ public class CatalogService {
     }
 
     private PackageResponse toPackageResponse(Package Package) {
+        List<String> features = packageServiceRepository.findByPackageIdOrderBySortOrderAsc(Package.getId()).stream()
+                .map(PackageService::getOptionName)
+                .toList();
         return new PackageResponse(
                 Package.getId().toString(),
                 Package.getName(),
@@ -169,7 +234,7 @@ public class CatalogService {
                 Package.getBasePrice(),
                 Package.getDurationMinutes(),
                 null,
-                List.of(),
+                features,
                 Package.getImageUrl(),
                 Package.getStatus().name(),
                 null
@@ -188,14 +253,19 @@ public class CatalogService {
     }
 
     private ComboResponse toComboResponse(Combo combo) {
+        List<ComboService> services = comboServiceRepository.findByComboIdOrderBySortOrderAsc(combo.getId());
+        List<String> benefits = services.stream()
+                .map(ComboService::getOptionName)
+                .toList();
+        int maxServices = services.stream().mapToInt(ComboService::getQuantity).sum();
         return new ComboResponse(
                 combo.getId().toString(),
                 combo.getName(),
                 combo.getDescription(),
                 combo.getPrice(),
                 combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
-                combo.getMaxUsages() == null ? 0 : combo.getMaxUsages(),
-                List.of(),
+                maxServices,
+                benefits,
                 combo.getImageUrl(),
                 combo.getStatus() == ActiveStatus.ACTIVE,
                 false,
@@ -203,7 +273,47 @@ public class CatalogService {
         );
     }
 
+    private List<UUID> parseUniqueOptionIds(List<String> optionIds) {
+        if (optionIds == null || optionIds.isEmpty()) {
+            return List.of();
+        }
+        Set<UUID> uniqueIds = new LinkedHashSet<>();
+        for (String optionId : optionIds) {
+            UUID parsedId = parseOptionId(optionId);
+            if (!uniqueIds.add(parsedId)) {
+                throw optionUnavailable();
+            }
+        }
+        return new ArrayList<>(uniqueIds);
+    }
+
+    private UUID parseOptionId(String optionId) {
+        try {
+            if (optionId == null || optionId.isBlank()) {
+                throw optionUnavailable();
+            }
+            return UUID.fromString(optionId);
+        } catch (IllegalArgumentException exception) {
+            throw optionUnavailable();
+        }
+    }
+
+    private void assertActiveServices(Collection<UUID> optionIds) {
+        for (UUID optionId : optionIds) {
+            if (optionId == null || serviceRepository.findByIdAndStatus(optionId, ActiveStatus.ACTIVE).isEmpty()) {
+                throw optionUnavailable();
+            }
+        }
+    }
+
+    private ApiException optionUnavailable() {
+        return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Service option is not available", "BUSINESS_RULE_VIOLATION");
+    }
+
     public record PackagePage(List<PackageResponse> items, PaginationMeta pagination) {
+    }
+
+    public record CatalogOption(UUID optionId, String name, long price, int durationMinutes) {
     }
 }
 

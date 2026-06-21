@@ -122,7 +122,6 @@ public class BookingService {
                 )
                 .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Vehicle not found or not owned", "RESOURCE_NOT_FOUND"));
 
-        List<com.autowash.entity.Service> options = catalogService.requireActiveOptions(request.options());
         Package Package = null;
         Combo Combo = null;
         CustomerCombo ownedCombo = null;
@@ -142,7 +141,7 @@ public class BookingService {
         } else {
             Combo = catalogService.requireActiveCombo(request.comboId());
             ownedCombo = customerComboService.findActiveOwnedCombo(user, Combo.getId().toString());
-            baseDuration = 0;
+            baseDuration = Combo.getDurationMinutes();
             responsePackageName = Combo.getName();
             if (ownedCombo != null) {
                 if (ownedCombo.isExpired()) {
@@ -160,7 +159,10 @@ public class BookingService {
             }
         }
 
-        long optionsTotal = options.stream().mapToLong(com.autowash.entity.Service::getPrice).sum();
+        List<CatalogService.CatalogOption> options = Package != null
+                ? catalogService.requireActivePackageOptions(Package, request.options())
+                : catalogService.requireActiveComboOptions(Combo, request.options());
+        long optionsTotal = options.stream().mapToLong(CatalogService.CatalogOption::price).sum();
         long subtotal = basePrice + optionsTotal;
         Voucher voucher = null;
         long voucherDiscount = 0;
@@ -184,11 +186,11 @@ public class BookingService {
                 optionsTotal,
                 voucherDiscount,
                 subtotal - voucherDiscount,
-                baseDuration + options.stream().mapToInt(com.autowash.entity.Service::getDurationMinutes).sum()
+                baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum()
         );
         BookingRepository.save(booking);
         List<BookingOption> bookingOptions = options.stream()
-                .map(option -> new BookingOption(booking, option.getId(), option.getName(), option.getPrice()))
+                .map(option -> new BookingOption(booking, option.optionId(), option.name(), option.price()))
                 .toList();
         bookingOptionRepository.saveAll(bookingOptions);
         Payment payment = paymentRepository.save(new Payment(
