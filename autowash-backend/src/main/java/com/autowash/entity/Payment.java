@@ -62,4 +62,13 @@ public class Payment {
     public void updateAmount(long amount) {
         this.amount = amount;
     }
+
+    public void markPaid(String transactionRef) {
+        if (this.status == PaymentStatus.PAID) {
+            return;
+        }
+        this.status = PaymentStatus.PAID;
+        this.transactionRef = transactionRef;
+        this.paidAt = Instant.now();
+    }
 }

@@ -9,6 +9,7 @@ import com.autowash.dto.BookingListItemResponse;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
+import com.autowash.dto.PayBookingResponse;
 import com.autowash.entity.CustomerCombo;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.Booking;
@@ -329,6 +330,34 @@ public class BookingService {
         );
     }
 
+    @Transactional
+    public PayBookingResponse payBooking(String bookingId, String transactionRef) {
+        Booking booking = findOwnedBooking(bookingId);
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.NO_SHOW) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Booking cannot be paid", "BUSINESS_RULE_VIOLATION");
+        }
+
+        Payment payment = paymentRepository.findByBooking(booking)
+                .orElseGet(() -> paymentRepository.save(new Payment(
+                        booking,
+                        PaymentMethod.CASH_AT_COUNTER,
+                        PaymentStatus.UNPAID,
+                        booking.getFinalAmount()
+                )));
+
+        if (payment.getStatus() != PaymentStatus.PAID) {
+            payment.updateAmount(booking.getFinalAmount());
+            payment.markPaid(resolveTransactionRef(booking, transactionRef));
+            if (booking.getStatus() == BookingStatus.PENDING) {
+                BookingStatus oldStatus = booking.getStatus();
+                booking.updateStatus(BookingStatus.CONFIRMED);
+                recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Payment completed");
+            }
+        }
+
+        return toPayBookingResponse(booking, payment);
+    }
+
     @Transactional(readOnly = true)
     public Booking requireBookingForOperations(String bookingId) {
         return BookingRepository.findById(bookingId)
@@ -463,6 +492,26 @@ public class BookingService {
                         payment.getPaidAt()
                 ))
                 .orElseGet(() -> new PaymentInfo(PaymentMethod.CASH_AT_COUNTER, PaymentStatus.UNPAID, null, null));
+    }
+
+    private String resolveTransactionRef(Booking booking, String transactionRef) {
+        if (transactionRef != null && !transactionRef.isBlank()) {
+            return transactionRef.trim();
+        }
+        return "PAY-" + booking.getId();
+    }
+
+    private PayBookingResponse toPayBookingResponse(Booking booking, Payment payment) {
+        return new PayBookingResponse(
+                booking.getId().toString(),
+                payment.getId().toString(),
+                payment.getMethod().name(),
+                payment.getStatus().name(),
+                payment.getAmount(),
+                payment.getTransactionRef(),
+                payment.getPaidAt(),
+                booking.getStatus().name()
+        );
     }
 
     private void recordStatusHistory(
