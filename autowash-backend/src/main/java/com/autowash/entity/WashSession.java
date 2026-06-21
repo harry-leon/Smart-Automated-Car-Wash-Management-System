@@ -18,6 +18,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "wash_sessions")
@@ -39,7 +41,8 @@ public class WashSession {
     private User assignedStaff;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "wash_session_status")
     private WashSessionStatus status;
 
     @Column(name = "fee_amount")
@@ -82,7 +85,7 @@ public class WashSession {
     }
 
     public void queue(Instant queuedAt) {
-        this.status = WashSessionStatus.PENDING;
+        this.status = WashSessionStatus.QUEUED;
     }
 
     public void checkIn(Instant checkedInAt, long feeAmount, String ignoredCurrency, int projectedPoints) {

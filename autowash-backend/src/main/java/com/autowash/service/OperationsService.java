@@ -42,6 +42,7 @@ public class OperationsService {
 
     private static final Set<WashSessionStatus> ACTIVE_SESSION_STATUSES = Set.of(
             WashSessionStatus.PENDING,
+            WashSessionStatus.QUEUED,
             WashSessionStatus.CHECKED_IN,
             WashSessionStatus.IN_PROGRESS
     );
@@ -117,6 +118,7 @@ public class OperationsService {
 
         List<OperationsQueueResponse.QueueColumn> columns = List.of(
                 column("PENDING", "Pending", cardsByStatus, WashSessionStatus.PENDING),
+                column(WashSessionStatus.QUEUED, "Queued", cardsByStatus),
                 column(WashSessionStatus.CHECKED_IN, "Checked-In", cardsByStatus),
                 column(WashSessionStatus.IN_PROGRESS, "In Progress", cardsByStatus),
                 column(WashSessionStatus.COMPLETED, "Completed", cardsByStatus)
@@ -125,7 +127,7 @@ public class OperationsService {
         return OperationsQueueResponse.builder()
                 .summary(OperationsQueueResponse.QueueSummary.builder()
                         .total(sessions.size())
-                        .pending(count(sessions, WashSessionStatus.PENDING))
+                        .pending(count(sessions, WashSessionStatus.PENDING) + count(sessions, WashSessionStatus.QUEUED))
                         .checkedIn(count(sessions, WashSessionStatus.CHECKED_IN))
                         .inProgress(count(sessions, WashSessionStatus.IN_PROGRESS))
                         .completed(count(sessions, WashSessionStatus.COMPLETED))
@@ -158,6 +160,7 @@ public class OperationsService {
     @Transactional
     public QueueWashSessionResponse queueSession(UUID sessionId) {
         WashSession session = requireSessionForCurrentUser(sessionId);
+        WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.QUEUED);
         session.queue(Instant.now());
         return QueueWashSessionResponse.builder()
                 .sessionId(session.getId())
@@ -172,6 +175,7 @@ public class OperationsService {
         int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
         Instant checkedInAt = Instant.now();
+        WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.CHECKED_IN);
         session.checkIn(checkedInAt, booking.getFinalAmount(), currency, projectedPoints);
         bookingService.updateStatus(booking, BookingStatus.CHECKED_IN);
         return CheckInWashSessionResponse.builder()
@@ -186,6 +190,7 @@ public class OperationsService {
     public StartWashSessionResponse startSession(UUID sessionId) {
         WashSession session = requireSessionForCurrentUser(sessionId);
         Instant startedAt = Instant.now();
+        WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.IN_PROGRESS);
         session.start(startedAt);
         bookingService.updateStatus(session.getBooking(), BookingStatus.IN_PROGRESS);
         return StartWashSessionResponse.builder()
@@ -201,6 +206,7 @@ public class OperationsService {
         int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
         Instant completedAt = Instant.now();
+        WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.COMPLETED);
         session.complete(completedAt, projectedPoints);
         EarnPointsResponse earnResult = loyaltyService.postEarnTransaction(
                 session.getBooking().getCustomer().getId(),
@@ -236,6 +242,7 @@ public class OperationsService {
                 BookingRepository.countByAssignedStaffAndStatus(staff, BookingStatus.CONFIRMED),
                 washSessionRepository.countByAssignedStaffAndStatusIn(staff, Set.of(
                         WashSessionStatus.PENDING,
+                        WashSessionStatus.QUEUED,
                         WashSessionStatus.CHECKED_IN,
                         WashSessionStatus.IN_PROGRESS
                 )),

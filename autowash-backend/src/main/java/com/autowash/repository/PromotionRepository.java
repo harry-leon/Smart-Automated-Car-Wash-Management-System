@@ -2,15 +2,17 @@ package com.autowash.repository;
 
 import com.autowash.entity.Promotion;
 import com.autowash.entity.enums.ActiveStatus;
+import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import java.time.Instant;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface PromotionRepository extends JpaRepository<Promotion, String> {
+public interface PromotionRepository extends JpaRepository<Promotion, UUID> {
 
     Page<Promotion> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
@@ -26,14 +28,14 @@ public interface PromotionRepository extends JpaRepository<Promotion, String> {
                     or exists (
                         select 1 from PromotionTier pt
                         where pt.promotionId = p.id
-                          and cast(pt.tier as string) = :tier
+                          and pt.tier = :tier
                     )
               )
             order by p.endAt asc, p.createdAt desc
             """)
     Page<Promotion> findActiveForTier(
             @Param("now") Instant now,
-            @Param("tier") String tier,
+            @Param("tier") LoyaltyTier tier,
             @Param("status") ActiveStatus status,
             @Param("allTiers") PromotionTargetingMode allTiers,
             Pageable pageable

@@ -33,6 +33,12 @@ public class BookingPromotion {
     @Column(name = "point_multiplier", nullable = false, precision = 4, scale = 2)
     private BigDecimal pointMultiplier;
 
+    public BookingPromotion(Booking booking, UUID promotionId, BigDecimal pointMultiplier) {
+        this.booking = booking;
+        this.promotionId = promotionId;
+        this.pointMultiplier = pointMultiplier;
+    }
+
     @Getter
     @NoArgsConstructor
     public static class BookingPromotionId implements Serializable {

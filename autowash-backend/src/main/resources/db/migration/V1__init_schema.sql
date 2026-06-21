@@ -5,10 +5,13 @@ CREATE TYPE "user_role" AS ENUM (
 );
 
 CREATE TYPE "user_account_status" AS ENUM (
+  'PENDING',
+  'PENDING_VERIFY',
   'ACTIVE',
   'BLOCKED',
   'SUSPENDED',
-  'INACTIVE'
+  'INACTIVE',
+  'DELETED'
 );
 
 CREATE TYPE "vehicle_status" AS ENUM (
@@ -70,6 +73,7 @@ CREATE TYPE "payment_status" AS ENUM (
 
 CREATE TYPE "wash_session_status" AS ENUM (
   'PENDING',
+  'QUEUED',
   'CHECKED_IN',
   'IN_PROGRESS',
   'COMPLETED',
@@ -441,6 +445,9 @@ CREATE INDEX "idx_loyalty_accounts_customer_id" ON "loyalty_accounts" ("customer
 CREATE INDEX "idx_point_transactions_loyalty_account_id" ON "point_transactions" ("loyalty_account_id");
 
 CREATE INDEX "idx_point_transactions_booking_id" ON "point_transactions" ("booking_id");
+
+CREATE UNIQUE INDEX "uk_point_transactions_booking_type" ON "point_transactions" ("booking_id", "type")
+WHERE "booking_id" IS NOT NULL AND "type" IN ('EARN', 'REDEEM');
 
 CREATE INDEX "idx_tier_histories_loyalty_account_id" ON "tier_histories" ("loyalty_account_id");
 

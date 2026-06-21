@@ -12,6 +12,8 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "combos")
@@ -47,7 +49,8 @@ public class Combo {
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "active_status")
     private ActiveStatus status;
 
     @Column(name = "created_at", nullable = false)
@@ -55,4 +58,40 @@ public class Combo {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    public Combo(String name, String description, long price, Long originalPrice, int durationMinutes,
+                 Integer durationDays, Integer maxUsages, String imageUrl, ActiveStatus status) {
+        Instant now = Instant.now();
+        this.id = UUID.randomUUID();
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.originalPrice = originalPrice;
+        this.durationMinutes = durationMinutes;
+        this.durationDays = durationDays;
+        this.maxUsages = maxUsages;
+        this.imageUrl = imageUrl;
+        this.status = status;
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    public void update(String name, String description, long price, Long originalPrice, int durationMinutes,
+                       Integer durationDays, Integer maxUsages, String imageUrl, ActiveStatus status) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.originalPrice = originalPrice;
+        this.durationMinutes = durationMinutes;
+        this.durationDays = durationDays;
+        this.maxUsages = maxUsages;
+        this.imageUrl = imageUrl;
+        this.status = status;
+        this.updatedAt = Instant.now();
+    }
+
+    public void deactivate() {
+        this.status = ActiveStatus.INACTIVE;
+        this.updatedAt = Instant.now();
+    }
 }

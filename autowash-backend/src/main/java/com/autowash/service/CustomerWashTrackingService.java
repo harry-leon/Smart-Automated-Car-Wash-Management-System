@@ -23,6 +23,7 @@ public class CustomerWashTrackingService {
 
     private static final Set<WashSessionStatus> ACTIVE_STATUSES = Set.of(
             WashSessionStatus.PENDING,
+            WashSessionStatus.QUEUED,
             WashSessionStatus.CHECKED_IN,
             WashSessionStatus.IN_PROGRESS
     );

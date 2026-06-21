@@ -15,6 +15,8 @@ import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "tier_histories")
@@ -35,7 +37,8 @@ public class TierHistory {
     private LoyaltyTier oldTier;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "new_tier", nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "new_tier", nullable = false, columnDefinition = "loyalty_tier")
     private LoyaltyTier newTier;
 
     @Column(name = "total_points_at_change", nullable = false)

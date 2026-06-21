@@ -1,19 +1,27 @@
 package com.autowash.service;
 
+import com.autowash.dto.AdminVoucherRequest;
 import com.autowash.dto.AdminVoucherRedemptionResponse;
 import com.autowash.dto.AdminVoucherResponse;
 import com.autowash.entity.Voucher;
+import com.autowash.entity.VoucherTier;
+import com.autowash.entity.enums.ActiveStatus;
+import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.repository.VoucherRepository;
+import com.autowash.repository.VoucherTierRepository;
 import com.autowash.entity.PointTransaction;
 import com.autowash.entity.enums.PointTransactionType;
 import com.autowash.repository.PointTransactionRepository;
 import com.autowash.shared.dto.PaginationMeta;
+import com.autowash.shared.exception.ApiException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,21 +29,84 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminVoucherService {
 
     private final VoucherRepository voucherRepository;
+    private final VoucherTierRepository voucherTierRepository;
     private final PointTransactionRepository pointTransactionRepository;
 
     public AdminVoucherService(
             VoucherRepository voucherRepository,
+            VoucherTierRepository voucherTierRepository,
             PointTransactionRepository pointTransactionRepository
     ) {
         this.voucherRepository = voucherRepository;
+        this.voucherTierRepository = voucherTierRepository;
         this.pointTransactionRepository = pointTransactionRepository;
     }
 
     @Transactional(readOnly = true)
     public List<AdminVoucherResponse> listVouchers() {
-        return voucherRepository.findAll(Sort.by(Sort.Order.desc("active"), Sort.Order.asc("expiresAt"))).stream()
+        return voucherRepository.findAll(Sort.by(Sort.Order.asc("status"), Sort.Order.asc("endAt"))).stream()
                 .map(this::toVoucherResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AdminVoucherResponse getVoucher(String code) {
+        return toVoucherResponse(requireVoucher(code));
+    }
+
+    @Transactional
+    public AdminVoucherResponse createVoucher(AdminVoucherRequest request) {
+        validateRequest(request);
+        String code = normalizeCode(request.code());
+        if (voucherRepository.existsByCode(code)) {
+            throw new ApiException(HttpStatus.CONFLICT, "Voucher code already exists", "DUPLICATE_RESOURCE");
+        }
+        Voucher voucher = voucherRepository.save(new Voucher(
+                code,
+                request.name(),
+                request.discountType(),
+                request.discountValue(),
+                request.minOrderAmount(),
+                request.maxDiscountAmount(),
+                request.usageLimit(),
+                request.newCustomerOnly(),
+                request.startAt(),
+                request.endAt(),
+                statusOrActive(request.status())
+        ));
+        replaceVoucherTiers(voucher.getId(), request.targetTiers());
+        return toVoucherResponse(voucher);
+    }
+
+    @Transactional
+    public AdminVoucherResponse updateVoucher(String code, AdminVoucherRequest request) {
+        validateRequest(request);
+        Voucher voucher = requireVoucher(code);
+        String requestedCode = normalizeCode(request.code());
+        if (!voucher.getCode().equals(requestedCode)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Voucher code cannot be changed", "VALIDATION_ERROR");
+        }
+        voucher.update(
+                request.name(),
+                request.discountType(),
+                request.discountValue(),
+                request.minOrderAmount(),
+                request.maxDiscountAmount(),
+                request.usageLimit(),
+                request.newCustomerOnly(),
+                request.startAt(),
+                request.endAt(),
+                statusOrActive(request.status())
+        );
+        replaceVoucherTiers(voucher.getId(), request.targetTiers());
+        return toVoucherResponse(voucher);
+    }
+
+    @Transactional
+    public AdminVoucherResponse deleteVoucher(String code) {
+        Voucher voucher = requireVoucher(code);
+        voucher.deactivate();
+        return toVoucherResponse(voucher);
     }
 
     @Transactional(readOnly = true)
@@ -79,18 +150,47 @@ public class AdminVoucherService {
                 voucher.getEndAt(),
                 voucher.getStatus() == com.autowash.entity.enums.ActiveStatus.ACTIVE,
                 voucher.isNewCustomerOnly(),
-                parseTargetTiers("")
+                voucherTierRepository.findByVoucherId(voucher.getId()).stream()
+                        .map(VoucherTier::getTier)
+                        .map(Enum::name)
+                        .toList()
         );
     }
 
-    private List<String> parseTargetTiers(String targetTiersCsv) {
-        if (targetTiersCsv == null || targetTiersCsv.isBlank()) {
-            return List.of();
+    private Voucher requireVoucher(String code) {
+        return voucherRepository.findByCode(normalizeCode(code))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Voucher not found", "RESOURCE_NOT_FOUND"));
+    }
+
+    private void replaceVoucherTiers(UUID voucherId, List<LoyaltyTier> tiers) {
+        voucherTierRepository.deleteByVoucherId(voucherId);
+        if (tiers == null || tiers.isEmpty()) {
+            return;
         }
-        return Arrays.stream(targetTiersCsv.split(","))
-                .map(String::trim)
-                .filter(value -> !value.isBlank())
-                .toList();
+        voucherTierRepository.saveAll(tiers.stream()
+                .distinct()
+                .map(tier -> new VoucherTier(voucherId, tier))
+                .toList());
+    }
+
+    private void validateRequest(AdminVoucherRequest request) {
+        if (request.startAt().isAfter(request.endAt())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "startAt must be before or equal to endAt", "VALIDATION_ERROR");
+        }
+        if (request.discountType().name().equals("PERCENT") && request.discountValue() > 100) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Percent discount must be between 1 and 100", "VALIDATION_ERROR");
+        }
+    }
+
+    private String normalizeCode(String code) {
+        if (code == null || code.isBlank()) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Voucher not found", "RESOURCE_NOT_FOUND");
+        }
+        return code.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private ActiveStatus statusOrActive(ActiveStatus status) {
+        return status == null ? ActiveStatus.ACTIVE : status;
     }
 
     private AdminVoucherRedemptionResponse toRedemptionResponse(PointTransaction transaction) {
