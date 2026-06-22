@@ -2,6 +2,8 @@ package com.autowash.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -17,6 +19,7 @@ import lombok.NoArgsConstructor;
 public class CustomerComboUsage {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "customer_combo_id", nullable = false)

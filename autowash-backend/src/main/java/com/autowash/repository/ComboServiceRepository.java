@@ -10,4 +10,6 @@ public interface ComboServiceRepository extends JpaRepository<ComboService, Comb
     List<ComboService> findByComboIdOrderBySortOrderAsc(UUID comboId);
 
     List<ComboService> findByComboIdAndOptionIdIn(UUID comboId, Collection<UUID> optionIds);
+
+    void deleteByComboId(UUID comboId);
 }

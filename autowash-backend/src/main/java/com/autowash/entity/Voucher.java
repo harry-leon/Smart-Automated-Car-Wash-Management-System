@@ -14,6 +14,8 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "vouchers")
@@ -31,7 +33,8 @@ public class Voucher {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "discount_type", nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "discount_type", nullable = false, columnDefinition = "discount_type")
     private DiscountType discountType;
 
     @Column(name = "discount_value", nullable = false)
@@ -59,7 +62,8 @@ public class Voucher {
     private Instant endAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "active_status")
     private ActiveStatus status;
 
     @PrePersist
@@ -82,5 +86,32 @@ public class Voucher {
         this.endAt = endAt;
         this.status = status;
         this.usedCount = 0;
+    }
+
+    public boolean isUsageLimitReached() {
+        return usageLimit != null && usedCount >= usageLimit;
+    }
+
+    public void recordUse() {
+        this.usedCount++;
+    }
+
+    public void update(String name, DiscountType discountType, long discountValue, long minOrderAmount,
+                       Long maxDiscountAmount, Integer usageLimit, boolean newCustomerOnly,
+                       Instant startAt, Instant endAt, ActiveStatus status) {
+        this.name = name;
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.minOrderAmount = minOrderAmount;
+        this.maxDiscountAmount = maxDiscountAmount;
+        this.usageLimit = usageLimit;
+        this.newCustomerOnly = newCustomerOnly;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.status = status;
+    }
+
+    public void deactivate() {
+        this.status = ActiveStatus.INACTIVE;
     }
 }

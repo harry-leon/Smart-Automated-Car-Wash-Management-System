@@ -1,3 +1,102 @@
+<<<<<<< HEAD
+=======
+CREATE TYPE "user_role" AS ENUM (
+  'CUSTOMER',
+  'STAFF',
+  'ADMIN'
+);
+
+CREATE TYPE "user_account_status" AS ENUM (
+  'PENDING',
+  'PENDING_VERIFY',
+  'ACTIVE',
+  'BLOCKED',
+  'SUSPENDED',
+  'INACTIVE',
+  'DELETED'
+);
+
+CREATE TYPE "vehicle_status" AS ENUM (
+  'ACTIVE',
+  'INACTIVE',
+  'DELETED'
+);
+
+CREATE TYPE "active_status" AS ENUM (
+  'ACTIVE',
+  'INACTIVE'
+);
+
+CREATE TYPE "discount_type" AS ENUM (
+  'PERCENT',
+  'FIXED_AMOUNT'
+);
+
+CREATE TYPE "loyalty_tier" AS ENUM (
+  'MEMBER',
+  'SILVER',
+  'GOLD',
+  'PLATINUM'
+);
+
+CREATE TYPE "promotion_targeting_mode" AS ENUM (
+  'ALL_TIERS',
+  'SPECIFIC_TIERS'
+);
+
+CREATE TYPE "booking_type" AS ENUM (
+  'PACKAGE',
+  'COMBO'
+);
+
+CREATE TYPE "booking_status" AS ENUM (
+  'PENDING',
+  'CONFIRMED',
+  'CHECKED_IN',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED',
+  'NO_SHOW'
+);
+
+CREATE TYPE "payment_method" AS ENUM (
+  'CASH_AT_COUNTER',
+  'BANK_TRANSFER',
+  'E_WALLET'
+);
+
+CREATE TYPE "payment_status" AS ENUM (
+  'UNPAID',
+  'PENDING_PAYMENT',
+  'PAID',
+  'FAILED',
+  'REFUNDED'
+);
+
+CREATE TYPE "wash_session_status" AS ENUM (
+  'PENDING',
+  'QUEUED',
+  'CHECKED_IN',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED'
+);
+
+CREATE TYPE "point_transaction_type" AS ENUM (
+  'EARN',
+  'REDEEM',
+  'EXPIRE',
+  'ADJUST'
+);
+
+CREATE TYPE "customer_combo_status" AS ENUM (
+  'ACTIVE',
+  'EXPIRED',
+  'USED_UP',
+  'CANCELLED'
+);
+
+>>>>>>> e3a66a2aa4f3414b949f40ee69107af9205f4c49
 CREATE TABLE "users" (
   "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "full_name" varchar(100) NOT NULL,
@@ -396,6 +495,9 @@ CREATE INDEX "idx_loyalty_accounts_customer_id" ON "loyalty_accounts" ("customer
 CREATE INDEX "idx_point_transactions_loyalty_account_id" ON "point_transactions" ("loyalty_account_id");
 
 CREATE INDEX "idx_point_transactions_booking_id" ON "point_transactions" ("booking_id");
+
+CREATE UNIQUE INDEX "uk_point_transactions_booking_type" ON "point_transactions" ("booking_id", "type")
+WHERE "booking_id" IS NOT NULL AND "type" IN ('EARN', 'REDEEM');
 
 CREATE INDEX "idx_tier_histories_loyalty_account_id" ON "tier_histories" ("loyalty_account_id");
 

@@ -47,7 +47,7 @@ public class CustomerComboService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CustomerCombo findActiveOwnedCombo(User customer, String comboId) {
         UUID comboUuid = UUID.fromString(comboId);
         CustomerCombo combo = customerComboRepository
@@ -57,6 +57,11 @@ public class CustomerComboService {
             return null;
         }
         if (combo.isExpired()) {
+            combo.markExpired();
+            return null;
+        }
+        if (!combo.hasRemainingUsages()) {
+            combo.consumeUsage();
             return null;
         }
         return combo;
@@ -73,7 +78,7 @@ public class CustomerComboService {
                 Combo.getId(),
                 Math.max(Combo.getMaxUsages() == null ? 0 : Combo.getMaxUsages(), 1),
                 Instant.now(),
-                Instant.now().plusSeconds((long) Combo.getDurationDays() * 24 * 60 * 60)
+                expiresAt(Instant.now(), Combo)
         );
         return customerComboRepository.save(combo);
     }
@@ -90,7 +95,7 @@ public class CustomerComboService {
                 Combo.getId(),
                 Math.max(Combo.getMaxUsages() == null ? 0 : Combo.getMaxUsages(), 1),
                 now,
-                now.plusSeconds((long) Combo.getDurationDays() * 24 * 60 * 60)
+                expiresAt(now, Combo)
         ));
 
         return new PurchaseCustomerComboResponse(
@@ -110,8 +115,12 @@ public class CustomerComboService {
 
     @Transactional
     public void recordUsage(CustomerCombo combo, String bookingId, java.time.LocalDate serviceDate) {
+        UUID parsedBookingId = UUID.fromString(bookingId);
+        if (customerComboUsageRepository.existsByBookingId(parsedBookingId)) {
+            return;
+        }
         combo.consumeUsage();
-        customerComboUsageRepository.save(new CustomerComboUsage(combo.getId(), UUID.fromString(bookingId)));
+        customerComboUsageRepository.save(new CustomerComboUsage(combo.getId(), parsedBookingId));
     }
 
     @Transactional
@@ -132,8 +141,15 @@ public class CustomerComboService {
                 combo.getRemainingUsages(),
                 combo.getActivatedAt(),
                 combo.getExpiresAt(),
-                combo.getLastUsedAt()
+                customerComboUsageRepository.findFirstByCustomerComboIdOrderByUsedAtDesc(combo.getId())
+                        .map(CustomerComboUsage::getUsedAt)
+                        .orElse(null)
         );
+    }
+
+    private Instant expiresAt(Instant activatedAt, Combo combo) {
+        int durationDays = combo.getDurationDays() == null ? 30 : combo.getDurationDays();
+        return activatedAt.plusSeconds((long) durationDays * 24 * 60 * 60);
     }
 }
 

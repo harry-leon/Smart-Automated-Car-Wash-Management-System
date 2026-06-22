@@ -16,6 +16,8 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "payments")
@@ -31,11 +33,13 @@ public class Payment {
     private Booking booking;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "method", nullable = false, length = 30)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "method", nullable = false, columnDefinition = "payment_method")
     private PaymentMethod method;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "payment_status")
     private PaymentStatus status;
 
     @Column(nullable = false)
@@ -61,5 +65,14 @@ public class Payment {
 
     public void updateAmount(long amount) {
         this.amount = amount;
+    }
+
+    public void markPaid(String transactionRef) {
+        if (this.status == PaymentStatus.PAID) {
+            return;
+        }
+        this.status = PaymentStatus.PAID;
+        this.transactionRef = transactionRef;
+        this.paidAt = Instant.now();
     }
 }

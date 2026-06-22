@@ -6,17 +6,25 @@ import com.autowash.dto.ServiceResponse;
 import com.autowash.dto.ValidateVoucherResponse;
 import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.ActiveStatus;
+import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.Combo;
 import com.autowash.entity.ComboService;
+import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.Package;
 import com.autowash.entity.PackageService;
+import com.autowash.entity.User;
 import com.autowash.entity.Voucher;
+import com.autowash.entity.VoucherTier;
+import com.autowash.entity.enums.BookingStatus;
+import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.ComboServiceRepository;
+import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.PackageServiceRepository;
 import com.autowash.repository.VoucherRepository;
+import com.autowash.repository.VoucherTierRepository;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
@@ -45,6 +53,9 @@ public class CatalogService {
     private final PackageServiceRepository packageServiceRepository;
     private final ComboServiceRepository comboServiceRepository;
     private final VoucherRepository voucherRepository;
+    private final VoucherTierRepository voucherTierRepository;
+    private final LoyaltyAccountRepository loyaltyAccountRepository;
+    private final BookingRepository bookingRepository;
     private final CurrentUserService currentUserService;
 
     public CatalogService(
@@ -54,6 +65,9 @@ public class CatalogService {
             PackageServiceRepository packageServiceRepository,
             ComboServiceRepository comboServiceRepository,
             VoucherRepository voucherRepository,
+            VoucherTierRepository voucherTierRepository,
+            LoyaltyAccountRepository loyaltyAccountRepository,
+            BookingRepository bookingRepository,
             CurrentUserService currentUserService
     ) {
         this.PackageRepository = PackageRepository;
@@ -62,6 +76,9 @@ public class CatalogService {
         this.packageServiceRepository = packageServiceRepository;
         this.comboServiceRepository = comboServiceRepository;
         this.voucherRepository = voucherRepository;
+        this.voucherTierRepository = voucherTierRepository;
+        this.loyaltyAccountRepository = loyaltyAccountRepository;
+        this.bookingRepository = bookingRepository;
         this.currentUserService = currentUserService;
     }
 
@@ -193,25 +210,49 @@ public class CatalogService {
     }
 
     public long calculateDiscountAmount(Voucher voucher, long amount) {
+        long discountAmount;
         if (voucher.getDiscountType() == DiscountType.PERCENT) {
-            return amount * voucher.getDiscountValue() / 100;
+            discountAmount = amount * voucher.getDiscountValue() / 100;
+        } else {
+            discountAmount = Math.min(voucher.getDiscountValue(), amount);
         }
-        return Math.min(voucher.getDiscountValue(), amount);
+        if (voucher.getMaxDiscountAmount() != null) {
+            discountAmount = Math.min(discountAmount, voucher.getMaxDiscountAmount());
+        }
+        return Math.min(discountAmount, amount);
     }
 
     private void validateVoucherOrThrow(Voucher voucher, long amount) {
-        if (voucher.getStatus() != com.autowash.entity.enums.ActiveStatus.ACTIVE) {
+        Instant now = Instant.now();
+        if (voucher.getStatus() != ActiveStatus.ACTIVE) {
             throw businessRule("VOUCHER_NOT_FOUND", "Voucher not found", "USE_DIFFERENT_VOUCHER");
         }
-        if (voucher.getEndAt().isBefore(Instant.now())) {
+        if (voucher.getStartAt().isAfter(now)) {
+            throw businessRule("VOUCHER_NOT_STARTED", "This voucher is not active yet", "USE_DIFFERENT_VOUCHER");
+        }
+        if (voucher.getEndAt().isBefore(now)) {
             throw businessRule("VOUCHER_EXPIRED", "This voucher has expired", "USE_DIFFERENT_VOUCHER");
+        }
+        if (voucher.isUsageLimitReached()) {
+            throw businessRule("USAGE_LIMIT_REACHED", "This voucher has reached its usage limit", "USE_DIFFERENT_VOUCHER");
         }
         if (amount < voucher.getMinOrderAmount()) {
             throw businessRule("AMOUNT_TOO_LOW", "Booking amount is below minimum for this voucher", "INCREASE_ORDER_VALUE");
         }
-        if (voucher.isNewCustomerOnly() && !currentUserService.getCurrentUser().isNewCustomer()) {
+        User currentUser = currentUserService.getCurrentUser();
+        if (voucher.isNewCustomerOnly() && bookingRepository.countByCustomerAndStatus(currentUser, BookingStatus.COMPLETED) > 0) {
             throw businessRule("NEW_CUSTOMER_ONLY", "This voucher is for new customers only", "USE_DIFFERENT_VOUCHER");
         }
+        List<VoucherTier> tiers = voucherTierRepository.findByVoucherId(voucher.getId());
+        if (!tiers.isEmpty() && tiers.stream().noneMatch(tier -> tier.getTier() == currentCustomerTier())) {
+            throw businessRule("TIER_NOT_ELIGIBLE", "This voucher is not available for your loyalty tier", "USE_DIFFERENT_VOUCHER");
+        }
+    }
+
+    private LoyaltyTier currentCustomerTier() {
+        return loyaltyAccountRepository.findByCustomerId(currentUserService.getCurrentUser().getId())
+                .map(LoyaltyAccount::getTier)
+                .orElse(LoyaltyTier.MEMBER);
     }
 
     private ApiException businessRule(String code, String message, String action) {

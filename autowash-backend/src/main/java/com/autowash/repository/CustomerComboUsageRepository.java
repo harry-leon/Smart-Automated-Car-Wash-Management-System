@@ -2,7 +2,12 @@ package com.autowash.repository;
 
 
 import com.autowash.entity.*;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CustomerComboUsageRepository extends JpaRepository<CustomerComboUsage, Long> {
+    Optional<CustomerComboUsage> findFirstByCustomerComboIdOrderByUsedAtDesc(UUID customerComboId);
+
+    boolean existsByBookingId(UUID bookingId);
 }

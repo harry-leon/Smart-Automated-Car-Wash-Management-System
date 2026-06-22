@@ -6,6 +6,8 @@ import com.autowash.dto.CancelBookingRequest;
 import com.autowash.dto.CancelBookingResponse;
 import com.autowash.dto.CreateBookingRequest;
 import com.autowash.dto.CreateBookingResponse;
+import com.autowash.dto.PayBookingRequest;
+import com.autowash.dto.PayBookingResponse;
 import com.autowash.service.BookingService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -81,6 +83,18 @@ public class BookingController {
         return ApiResponse.ok(
                 "Booking cancelled successfully",
                 bookingService.cancelBooking(bookingId, request == null ? null : request.reason())
+        );
+    }
+
+    @PostMapping("/{bookingId}/pay")
+    @Operation(summary = "Mark booking payment as paid")
+    public ApiResponse<PayBookingResponse> payBooking(
+            @PathVariable String bookingId,
+            @Valid @RequestBody(required = false) PayBookingRequest request
+    ) {
+        return ApiResponse.ok(
+                "Booking payment completed",
+                bookingService.payBooking(bookingId, request == null ? null : request.transactionRef())
         );
     }
 
