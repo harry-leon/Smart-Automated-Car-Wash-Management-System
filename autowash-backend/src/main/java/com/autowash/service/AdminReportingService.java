@@ -187,7 +187,7 @@ public class AdminReportingService {
         if (staff.getRole() != UserRole.STAFF) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Target account is not staff", "BUSINESS_RULE_VIOLATION");
         }
-        staff.updateStatus(UserStatus.DELETED);
+        staff.updateStatus(UserStatus.INACTIVE);
         return toAccountResponse(UserRepository.save(staff));
     }
 

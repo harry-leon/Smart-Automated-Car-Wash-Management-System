@@ -10,12 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.autowash.entity.User;
+import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.UserRepository;
 import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.BookingRepository;
+import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.shared.security.UserPrincipal;
 import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
@@ -26,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -51,7 +52,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     private BookingRepository BookingRepository;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private LoyaltyAccountRepository loyaltyAccountRepository;
 
     @Test
     void loyaltyAccountAndTransactionsReflectCompletedWashPoints() throws Exception {
@@ -149,8 +150,9 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("WELCOME20")));
 
         User gold = createActiveCustomer("0901777104");
-        jdbcTemplate.update("update auth_users set tier = ? where id = ?", LoyaltyTier.GOLD.name(), gold.getId());
-        jdbcTemplate.update("update auth_users set is_new_customer = ? where id = ?", false, gold.getId());
+        LoyaltyAccount goldAccount = loyaltyAccountRepository.findByCustomerId(gold.getId()).orElseThrow();
+        goldAccount.updateTier(LoyaltyTier.GOLD);
+        loyaltyAccountRepository.saveAndFlush(goldAccount);
 
         mockMvc.perform(get("/api/v1/promotions/active")
                         .with(authenticatedCustomer(gold)))
@@ -271,7 +273,10 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     private User createActiveCustomer(String phone) {
         User user = new User("Nguyen Van A", phone, phone + "@example.com", "hash");
         user.activate();
-        return UserRepository.saveAndFlush(user);
+        User savedUser = UserRepository.saveAndFlush(user);
+        loyaltyAccountRepository.findByCustomerId(savedUser.getId())
+                .orElseGet(() -> loyaltyAccountRepository.saveAndFlush(new LoyaltyAccount(savedUser)));
+        return savedUser;
     }
 
     private org.springframework.test.web.servlet.request.RequestPostProcessor authenticatedCustomer(User user) {

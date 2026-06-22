@@ -371,17 +371,17 @@ class OperationsControllerIntegrationTest {
                 UUID.randomUUID(),
                 user,
                 vehicle,
-                UUID.randomUUID(),
-                null,
-                null,
+                null, // packageId
+                null, // comboId
+                null, // voucherId
                 Instant.now().plusSeconds(86400),
                 LocalTime.of(14, 0),
                 PaymentMethod.E_WALLET,
-                finalAmount,
-                0,
-                0,
-                finalAmount,
-                30
+                finalAmount, // baseAmount
+                0, // optionsAmount
+                0, // discountAmount
+                finalAmount, // finalAmount
+                30 // estimatedDurationMinutes
         );
         booking.confirmByOtp();
         booking.assignStaff(assignedStaff);

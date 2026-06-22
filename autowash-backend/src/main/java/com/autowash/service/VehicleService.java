@@ -39,8 +39,8 @@ public class VehicleService {
         User user = currentUserService.getCurrentUser();
         String normalizedPlate = normalizePlate(request.plate());
 
-        if (VehicleRepository.existsByOwnerAndPlate(user, normalizedPlate)) {
-            throw new ApiException(HttpStatus.CONFLICT, "Plate already exists for this customer", "DUPLICATE_PLATE");
+        if (VehicleRepository.existsByPlate(normalizedPlate)) {
+            throw new ApiException(HttpStatus.CONFLICT, "Plate already exists in the system", "DUPLICATE_PLATE");
         }
 
         boolean shouldBePrimary = VehicleRepository.countByOwnerAndStatus(user, VehicleStatus.ACTIVE) == 0;

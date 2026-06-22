@@ -1,5 +1,6 @@
 package com.autowash.controller;
 
+import com.autowash.dto.ForgotPasswordRequest;
 import com.autowash.dto.LoginRequest;
 import com.autowash.dto.LoginResponse;
 import com.autowash.dto.LogoutRequest;
@@ -7,6 +8,7 @@ import com.autowash.dto.RefreshTokenRequest;
 import com.autowash.dto.RefreshTokenResponse;
 import com.autowash.dto.RegisterRequest;
 import com.autowash.dto.RegisterResponse;
+import com.autowash.dto.ResetPasswordRequest;
 import com.autowash.dto.SendOtpRequest;
 import com.autowash.dto.SendOtpResponse;
 import com.autowash.dto.VerifyOtpRequest;
@@ -72,6 +74,35 @@ public class AuthController {
     @Operation(summary = "Login with phone and password")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok("Login successful", authService.login(request));
+    }
+
+    @PostMapping("/forgot-password/request")
+    @Operation(summary = "Send OTP for password reset")
+    public ApiResponse<SendOtpResponse> requestForgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.ok(
+                "Password reset OTP sent successfully",
+                authService.requestForgotPassword(request.email(), request.phone(), metadata(servletRequest))
+        );
+    }
+
+    @PostMapping("/forgot-password/reset")
+    @Operation(summary = "Reset password with OTP")
+    public ApiResponse<Void> resetForgotPassword(
+            @Valid @RequestBody ResetPasswordRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        authService.resetForgotPassword(
+                request.email(),
+                request.phone(),
+                request.otp(),
+                request.newPassword(),
+                request.newPasswordConfirm(),
+                metadata(servletRequest)
+        );
+        return ApiResponse.ok("Password reset successful", null);
     }
 
     @PostMapping("/refresh")

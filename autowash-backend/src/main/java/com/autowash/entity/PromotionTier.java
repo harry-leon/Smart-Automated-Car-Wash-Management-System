@@ -26,7 +26,7 @@ public class PromotionTier {
 
     @Id
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "loyalty_tier")
+    @Column(nullable = false, length = 20)
     private LoyaltyTier tier;
 
     @Getter

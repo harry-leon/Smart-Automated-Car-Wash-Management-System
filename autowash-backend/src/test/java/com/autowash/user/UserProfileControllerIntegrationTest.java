@@ -1,6 +1,8 @@
 package com.autowash.user;
 
-import com.autowash.entity.*;
+import com.autowash.entity.User;
+import com.autowash.entity.enums.UserStatus;
+import com.autowash.repository.UserRepository;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -27,6 +29,9 @@ class UserProfileControllerIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     void getProfileReturnsAuthenticatedCustomerProfile() throws Exception {
@@ -147,6 +152,18 @@ class UserProfileControllerIntegrationTest {
     void getProfileRequiresValidBearerToken() throws Exception {
         mockMvc.perform(get("/api/v1/users/profile")
                         .header("Authorization", "Bearer invalid-token"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getProfileRejectsTokenWhenUserIsNoLongerActive() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234687");
+        User user = userRepository.findByPhone("0901234687").orElseThrow();
+        user.updateStatus(UserStatus.BLOCKED);
+        userRepository.save(user);
+
+        mockMvc.perform(get("/api/v1/users/profile")
+                        .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isUnauthorized());
     }
 

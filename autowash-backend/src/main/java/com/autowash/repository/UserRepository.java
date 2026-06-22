@@ -18,13 +18,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByPhone(String phone);
     Optional<User> findByEmailIgnoreCase(String email);
 
-    @Query("select account from User account where :oauthSubject is not null and 1 = 0")
-    Optional<User> findByOauthSubject(@Param("oauthSubject") String oauthSubject);
-
-    default boolean existsByOauthSubject(String oauthSubject) {
-        return false;
-    }
-
     boolean existsByEmailIgnoreCase(String email);
     boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
     long countByRole(UserRole role);

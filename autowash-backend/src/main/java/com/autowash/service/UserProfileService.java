@@ -4,7 +4,6 @@ import com.autowash.entity.User;
 import com.autowash.entity.UserPreference;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.UserPreferenceRepository;
-import com.autowash.service.CustomerLoyaltyService;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.dto.UpdateUserProfileRequest;
 import com.autowash.dto.UpdateUserProfileResponse;
@@ -23,17 +22,20 @@ public class UserProfileService {
     private final UserRepository UserRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final CustomerLoyaltyService customerLoyaltyService;
+    private final LoyaltyService loyaltyService;
 
     public UserProfileService(
             CurrentUserService currentUserService,
             UserRepository UserRepository,
             UserPreferenceRepository userPreferenceRepository,
-            CustomerLoyaltyService customerLoyaltyService
+            CustomerLoyaltyService customerLoyaltyService,
+            LoyaltyService loyaltyService
     ) {
         this.currentUserService = currentUserService;
         this.UserRepository = UserRepository;
         this.userPreferenceRepository = userPreferenceRepository;
         this.customerLoyaltyService = customerLoyaltyService;
+        this.loyaltyService = loyaltyService;
     }
 
     public UserProfileResponse getCurrentUserProfile() {
@@ -46,7 +48,7 @@ public class UserProfileService {
                 user.getEmail(),
                 user.getStatus().name(),
                 user.getRole().name(),
-                "STANDARD",
+                loyaltyService.getAccount(user.getId()).tier(),
                 user.isNewCustomer(),
                 customerLoyaltyService.getCurrentBalance(user),
                 user.getCreatedAt(),

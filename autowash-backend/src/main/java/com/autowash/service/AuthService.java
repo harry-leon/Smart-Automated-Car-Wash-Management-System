@@ -6,14 +6,18 @@ import com.autowash.dto.RefreshTokenResponse;
 import com.autowash.dto.RegisterRequest;
 import com.autowash.dto.RegisterResponse;
 import com.autowash.dto.SendOtpResponse;
+import com.autowash.entity.LoyaltyAccount;
+import com.autowash.entity.UserPreference;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.OtpPurpose;
 import com.autowash.entity.OtpVerification;
 import com.autowash.entity.RefreshToken;
 import com.autowash.entity.enums.UserStatus;
+import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.OtpVerificationRepository;
 import com.autowash.repository.RefreshTokenRepository;
+import com.autowash.repository.UserPreferenceRepository;
 import com.autowash.shared.exception.ApiException;
 import java.time.Instant;
 import java.util.UUID;
@@ -30,6 +34,8 @@ public class AuthService {
     private final UserRepository UserRepository;
     private final OtpVerificationRepository OtpVerificationRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserPreferenceRepository userPreferenceRepository;
+    private final LoyaltyAccountRepository loyaltyAccountRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpService otpService;
     private final EmailDeliveryService emailDeliveryService;
@@ -43,6 +49,8 @@ public class AuthService {
             UserRepository UserRepository,
             OtpVerificationRepository OtpVerificationRepository,
             RefreshTokenRepository refreshTokenRepository,
+            UserPreferenceRepository userPreferenceRepository,
+            LoyaltyAccountRepository loyaltyAccountRepository,
             PasswordEncoder passwordEncoder,
             OtpService otpService,
             EmailDeliveryService emailDeliveryService,
@@ -55,6 +63,8 @@ public class AuthService {
         this.UserRepository = UserRepository;
         this.OtpVerificationRepository = OtpVerificationRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userPreferenceRepository = userPreferenceRepository;
+        this.loyaltyAccountRepository = loyaltyAccountRepository;
         this.passwordEncoder = passwordEncoder;
         this.otpService = otpService;
         this.emailDeliveryService = emailDeliveryService;
@@ -80,7 +90,8 @@ public class AuthService {
                 request.email(),
                 passwordEncoder.encode(request.password())
         );
-        UserRepository.save(user);
+        user = UserRepository.save(user);
+        ensureDefaultCustomerRecords(user);
         SendOtpResponse otpResponse = issueRegistrationOtp(user, metadata, false);
 
         return new RegisterResponse(
@@ -189,6 +200,36 @@ public class AuthService {
     }
 
     @Transactional
+    public SendOtpResponse requestForgotPassword(String email, String phone, RequestMetadata metadata) {
+        User user = resolveOtpUser(email, phone)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+        requireActiveUser(user);
+        enforcePasswordResetResendLimit(user);
+
+        return issueOtp(user, OtpPurpose.PASSWORD_RESET, metadata);
+    }
+
+    @Transactional(noRollbackFor = ApiException.class)
+    public void resetForgotPassword(
+            String email,
+            String phone,
+            String otp,
+            String newPassword,
+            String newPasswordConfirm,
+            RequestMetadata metadata
+    ) {
+        if (!newPassword.equals(newPasswordConfirm)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Passwords do not match", "VALIDATION_ERROR");
+        }
+
+        User user = resolveOtpUser(email, phone)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+        requireActiveUser(user);
+        verifyOtpForPurpose(user, OtpPurpose.PASSWORD_RESET, otp);
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+    }
+
+    @Transactional
     public RefreshTokenResponse refresh(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid refresh token", "TOKEN_INVALID"));
@@ -232,7 +273,7 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole().name(),
                 user.getStatus().name(),
-                "STANDARD",
+                "MEMBER",
                 0,
                 user.isNewCustomer(),
                 accessToken,
@@ -254,12 +295,24 @@ public class AuthService {
     }
 
     private void requirePendingUser(User user) {
-        if (user.getStatus() != UserStatus.PENDING_VERIFY && user.getStatus() != UserStatus.PENDING) {
+        if (user.getStatus() != UserStatus.INACTIVE) {
             throw new ApiException(
                     HttpStatus.UNPROCESSABLE_ENTITY,
                     "Account is not pending OTP verification",
                     "RESOURCE_LOCKED"
             );
+        }
+    }
+
+    private void requireActiveUser(User user) {
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account blocked", "ACCOUNT_BLOCKED");
+        }
+        if (user.getStatus() == UserStatus.SUSPENDED) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account suspended", "ACCOUNT_SUSPENDED");
+        }
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account is not active", "RESOURCE_LOCKED");
         }
     }
 
@@ -281,6 +334,71 @@ public class AuthService {
         Instant windowStart = Instant.now().minusSeconds(3600);
         if (OtpVerificationRepository.countByUserAndPurposeAndCreatedAtAfter(user, OtpPurpose.EMAIL_REGISTRATION, windowStart) >= 3) {
             throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", "RATE_LIMIT_EXCEEDED");
+        }
+    }
+
+    private void enforcePasswordResetResendLimit(User user) {
+        Instant windowStart = Instant.now().minusSeconds(3600);
+        if (OtpVerificationRepository.countByUserAndPurposeAndCreatedAtAfter(user, OtpPurpose.PASSWORD_RESET, windowStart) >= 3) {
+            throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, "Too many OTP resend requests", "RATE_LIMIT_EXCEEDED");
+        }
+    }
+
+    private SendOtpResponse issueOtp(User user, OtpPurpose purpose, RequestMetadata metadata) {
+        String code = otpService.generateOtp();
+        OtpVerification OtpVerification = new OtpVerification(
+                user,
+                purpose,
+                passwordEncoder.encode(code),
+                user.getEmail(),
+                Instant.now().plusSeconds(otpExpirationSeconds)
+        );
+        OtpVerificationRepository.save(OtpVerification);
+        try {
+            emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
+        } catch (RuntimeException exception) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to send OTP email", "OTP_SEND_FAILED");
+        }
+        return new SendOtpResponse(
+                user.getEmail(),
+                user.getPhone(),
+                (int) otpExpirationSeconds,
+                maskEmail(user.getEmail()),
+                maskPhone(user.getPhone()),
+                "OTP sent successfully",
+                otpExposeForDev ? code : null
+        );
+    }
+
+    private void verifyOtpForPurpose(User user, OtpPurpose purpose, String otp) {
+        OtpVerification OtpVerification = OtpVerificationRepository.findFirstByUserAndPurposeAndVerifiedAtIsNullOrderByCreatedAtDesc(user, purpose)
+                .orElseThrow(() -> new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP"));
+
+        if (OtpVerification.getExpiresAt().isBefore(Instant.now())) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP has expired", "OTP_EXPIRED");
+        }
+
+        if (OtpVerification.getAttempts() >= otpMaxAttempts) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
+        }
+
+        if (!passwordEncoder.matches(otp, OtpVerification.getCodeHash())) {
+            OtpVerification.incrementAttempts();
+            if (OtpVerification.getAttempts() >= otpMaxAttempts) {
+                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Too many failed attempts", "RATE_LIMIT_EXCEEDED");
+            }
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "OTP incorrect or expired", "INVALID_OTP");
+        }
+
+        OtpVerification.markVerified();
+    }
+
+    private void ensureDefaultCustomerRecords(User user) {
+        if (!userPreferenceRepository.existsById(user.getId())) {
+            userPreferenceRepository.save(new UserPreference(user));
+        }
+        if (loyaltyAccountRepository.findByCustomerId(user.getId()).isEmpty()) {
+            loyaltyAccountRepository.save(new LoyaltyAccount(user));
         }
     }
 

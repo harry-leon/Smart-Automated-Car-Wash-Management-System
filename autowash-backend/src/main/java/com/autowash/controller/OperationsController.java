@@ -43,7 +43,7 @@ public class OperationsController {
         this.operationsService = operationsService;
     }
 
-    @PostMapping
+    @PostMapping("")
     @Operation(summary = "Create wash session from a booking")
     public ResponseEntity<ApiResponse<CreateWashSessionResponse>> createSession(
             @Valid @RequestBody CreateWashSessionRequest request

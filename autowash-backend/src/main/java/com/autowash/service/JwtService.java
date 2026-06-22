@@ -30,9 +30,10 @@ public class JwtService {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(user.getId().toString())
+                .claim("userId", user.getId().toString())
                 .claim("phone", user.getPhone())
                 .claim("role", user.getRole().name())
-                .claim("tier", "STANDARD")
+                .claim("tier", "MEMBER")
                 .claim("status", user.getStatus().name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(accessTokenExpirationSeconds)))

@@ -50,7 +50,6 @@ public class UserPreference {
 
     public UserPreference(User user) {
         this.user = user;
-        this.userId = user.getId();
         this.language = LanguagePreference.VI;
         this.theme = ThemePreference.LIGHT;
         this.notificationsEnabled = true;
