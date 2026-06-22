@@ -13,9 +13,12 @@ import com.autowash.entity.User;
 import com.autowash.entity.enums.OtpPurpose;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.OtpVerificationRepository;
+import com.autowash.repository.UserPreferenceRepository;
 import java.time.Instant;
+import java.util.Base64;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +47,12 @@ class AuthControllerIntegrationTest {
     @Autowired
     private OtpVerificationRepository OtpVerificationRepository;
 
+    @Autowired
+    private UserPreferenceRepository userPreferenceRepository;
+
+    @Autowired
+    private LoyaltyAccountRepository loyaltyAccountRepository;
+
     @MockBean
     private com.autowash.service.GoogleOAuthClient googleOAuthClient;
 
@@ -63,8 +72,12 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.phone").value("0901234568"))
-                .andExpect(jsonPath("$.data.status").value("PENDING_VERIFY"))
+                .andExpect(jsonPath("$.data.status").value("INACTIVE"))
                 .andExpect(jsonPath("$.data.requiresOtpVerification").value(true));
+
+        User user = UserRepository.findByPhone("0901234568").orElseThrow();
+        Assertions.assertTrue(userPreferenceRepository.existsById(user.getId()));
+        Assertions.assertTrue(loyaltyAccountRepository.findByCustomerId(user.getId()).isPresent());
     }
 
     @Test
@@ -138,7 +151,6 @@ class AuthControllerIntegrationTest {
 
         sendOtpByEmailAndExtractDevOtp(email);
         sendOtpByEmailAndExtractDevOtp(email);
-        sendOtpByEmailAndExtractDevOtp(email);
 
         mockMvc.perform(post("/api/v1/auth/otp/send")
                         .contentType("application/json")
@@ -201,6 +213,61 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.accessToken").isString())
                 .andExpect(jsonPath("$.data.refreshToken").isString());
+    }
+
+    @Test
+    void accessTokenContainsSharedUserClaims() throws Exception {
+        registerCustomer("0901234593");
+        String otp = sendOtpAndExtractDevOtp("0901234593");
+        String accessToken = verifyOtp("0901234593", otp).path("data").path("accessToken").asText();
+
+        JsonNode claims = decodeJwtPayload(accessToken);
+
+        Assertions.assertEquals(claims.path("sub").asText(), claims.path("userId").asText());
+        Assertions.assertEquals("CUSTOMER", claims.path("role").asText());
+        Assertions.assertEquals("ACTIVE", claims.path("status").asText());
+    }
+
+    @Test
+    void forgotPasswordRequestAndResetAllowLoginWithNewPassword() throws Exception {
+        registerCustomer("0901234594");
+        String registrationOtp = sendOtpAndExtractDevOtp("0901234594");
+        verifyOtp("0901234594", registrationOtp);
+
+        MvcResult forgotPasswordResult = mockMvc.perform(post("/api/v1/auth/forgot-password/request")
+                        .contentType("application/json")
+                        .content("""
+                                { "email": "0901234594@example.com" }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.devOtp").isString())
+                .andReturn();
+
+        String resetOtp = readJson(forgotPasswordResult).path("data").path("devOtp").asText();
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "email": "0901234594@example.com",
+                                  "otp": "%s",
+                                  "newPassword": "NewSecurePass1!",
+                                  "newPasswordConfirm": "NewSecurePass1!"
+                                }
+                                """.formatted(resetOtp)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "identifier": "0901234594@example.com",
+                                  "password": "NewSecurePass1!",
+                                  "rememberMe": false
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").isString());
     }
 
     @Test
@@ -413,5 +480,11 @@ class AuthControllerIntegrationTest {
 
     private JsonNode readJson(MvcResult result) throws Exception {
         return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private JsonNode decodeJwtPayload(String token) throws Exception {
+        String payload = token.split("\\.")[1];
+        byte[] decoded = Base64.getUrlDecoder().decode(payload);
+        return objectMapper.readTree(decoded);
     }
 }

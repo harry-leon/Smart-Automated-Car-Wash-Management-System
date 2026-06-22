@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 CREATE TYPE "user_role" AS ENUM (
   'CUSTOMER',
   'STAFF',
@@ -94,17 +96,18 @@ CREATE TYPE "customer_combo_status" AS ENUM (
   'CANCELLED'
 );
 
+>>>>>>> e3a66a2aa4f3414b949f40ee69107af9205f4c49
 CREATE TABLE "users" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "full_name" varchar(100) NOT NULL,
   "phone" varchar(20) UNIQUE NOT NULL,
   "email" varchar(255) UNIQUE,
   "password_hash" varchar(255) NOT NULL,
-  "role" user_role NOT NULL,
-  "status" user_account_status NOT NULL DEFAULT 'ACTIVE',
+  "role" varchar(20) NOT NULL CHECK ("role" IN ('CUSTOMER', 'STAFF', 'ADMIN')),
+  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'BLOCKED', 'SUSPENDED', 'INACTIVE')),
   "avatar_url" varchar(500),
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "updated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE "user_preferences" (
@@ -117,62 +120,66 @@ CREATE TABLE "user_preferences" (
 );
 
 CREATE TABLE "refresh_tokens" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "user_id" uuid NOT NULL,
   "token" varchar(255) UNIQUE NOT NULL,
-  "expires_at" timestamptz NOT NULL,
-  "revoked_at" timestamptz,
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "expires_at" timestamp with time zone NOT NULL,
+  "revoked_at" timestamp with time zone,
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE "otp_verifications" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "user_id" uuid,
-  "purpose" varchar(50) NOT NULL,
+  "purpose" varchar(50) NOT NULL CHECK ("purpose" IN ('REGISTRATION', 'EMAIL_REGISTRATION', 'PASSWORD_RESET', 'BOOKING_CONFIRMATION')),
   "code_hash" varchar(255) NOT NULL,
   "delivery_address" varchar(255) NOT NULL,
-  "attempts" int NOT NULL DEFAULT 0,
-  "expires_at" timestamptz NOT NULL,
-  "verified_at" timestamptz,
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "attempts" int NOT NULL DEFAULT 0 CHECK ("attempts" >= 0),
+  "expires_at" timestamp with time zone NOT NULL,
+  "verified_at" timestamp with time zone,
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE "vehicles" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "customer_id" uuid NOT NULL,
   "plate" varchar(20) UNIQUE NOT NULL,
   "type" varchar(30) NOT NULL,
   "brand" varchar(50) NOT NULL,
   "model" varchar(50) NOT NULL,
-  "vehicle_year" int,
+  "vehicle_year" int NOT NULL,
   "color" varchar(30),
   "is_primary" boolean NOT NULL DEFAULT false,
-  "status" vehicle_status NOT NULL DEFAULT 'ACTIVE',
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "updated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'INACTIVE', 'DELETED')),
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE "packages" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "name" varchar(100) NOT NULL,
   "description" varchar(500),
   "base_price" bigint NOT NULL,
   "duration_minutes" int NOT NULL,
   "image_url" varchar(500),
-  "status" active_status NOT NULL DEFAULT 'ACTIVE',
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "updated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'INACTIVE')),
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("base_price" >= 0),
+  CHECK ("duration_minutes" > 0)
 );
 
 CREATE TABLE "services" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "name" varchar(100) NOT NULL,
   "description" varchar(500),
   "price" bigint NOT NULL,
   "duration_minutes" int NOT NULL,
-  "status" active_status NOT NULL DEFAULT 'ACTIVE',
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "updated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'INACTIVE')),
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("price" >= 0),
+  CHECK ("duration_minutes" >= 0)
 );
 
 CREATE TABLE "package_services" (
@@ -184,11 +191,14 @@ CREATE TABLE "package_services" (
   "option_duration_minutes" int NOT NULL,
   "quantity" int NOT NULL DEFAULT 1,
   "sort_order" int NOT NULL DEFAULT 0,
+  CHECK ("option_price" >= 0),
+  CHECK ("option_duration_minutes" >= 0),
+  CHECK ("quantity" > 0),
   PRIMARY KEY ("package_id", "option_id")
 );
 
 CREATE TABLE "combos" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "name" varchar(100) NOT NULL,
   "description" varchar(500),
   "price" bigint NOT NULL,
@@ -197,9 +207,14 @@ CREATE TABLE "combos" (
   "duration_days" int,
   "max_usages" int,
   "image_url" varchar(500),
-  "status" active_status NOT NULL DEFAULT 'ACTIVE',
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "updated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'INACTIVE')),
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("price" >= 0),
+  CHECK ("original_price" IS NULL OR "original_price" >= 0),
+  CHECK ("duration_minutes" > 0),
+  CHECK ("duration_days" IS NULL OR "duration_days" > 0),
+  CHECK ("max_usages" IS NULL OR "max_usages" > 0)
 );
 
 CREATE TABLE "combo_services" (
@@ -211,60 +226,71 @@ CREATE TABLE "combo_services" (
   "option_duration_minutes" int NOT NULL,
   "quantity" int NOT NULL DEFAULT 1,
   "sort_order" int NOT NULL DEFAULT 0,
+  CHECK ("option_price" >= 0),
+  CHECK ("option_duration_minutes" >= 0),
+  CHECK ("quantity" > 0),
   PRIMARY KEY ("combo_id", "option_id")
 );
 
 CREATE TABLE "vouchers" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "code" varchar(50) UNIQUE NOT NULL,
   "name" varchar(120) NOT NULL,
-  "discount_type" discount_type NOT NULL,
+  "discount_type" varchar(20) NOT NULL CHECK ("discount_type" IN ('PERCENT', 'FIXED_AMOUNT')),
   "discount_value" bigint NOT NULL,
   "min_order_amount" bigint NOT NULL DEFAULT 0,
   "max_discount_amount" bigint,
   "usage_limit" int,
   "used_count" int NOT NULL DEFAULT 0,
   "new_customer_only" boolean NOT NULL DEFAULT false,
-  "start_at" timestamptz NOT NULL,
-  "end_at" timestamptz NOT NULL,
-  "status" active_status NOT NULL DEFAULT 'ACTIVE'
+  "start_at" timestamp with time zone NOT NULL,
+  "end_at" timestamp with time zone NOT NULL,
+  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'INACTIVE')),
+  CHECK ("end_at" > "start_at"),
+  CHECK ("discount_value" > 0),
+  CHECK ("min_order_amount" >= 0),
+  CHECK ("max_discount_amount" IS NULL OR "max_discount_amount" >= 0),
+  CHECK ("usage_limit" IS NULL OR "usage_limit" > 0),
+  CHECK ("used_count" >= 0)
 );
 
 CREATE TABLE "voucher_tiers" (
   "voucher_id" uuid NOT NULL,
-  "tier" loyalty_tier NOT NULL,
+  "tier" varchar(20) NOT NULL CHECK ("tier" IN ('MEMBER', 'SILVER', 'GOLD', 'PLATINUM')),
   PRIMARY KEY ("voucher_id", "tier")
 );
 
 CREATE TABLE "promotions" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "name" varchar(120) NOT NULL,
   "description" varchar(500),
   "point_multiplier" numeric(4,2) NOT NULL DEFAULT 1,
-  "targeting_mode" promotion_targeting_mode NOT NULL DEFAULT 'ALL_TIERS',
-  "start_at" timestamptz NOT NULL,
-  "end_at" timestamptz NOT NULL,
-  "status" active_status NOT NULL DEFAULT 'ACTIVE',
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "updated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "targeting_mode" varchar(30) NOT NULL DEFAULT 'ALL_TIERS' CHECK ("targeting_mode" IN ('ALL_TIERS', 'SPECIFIC_TIERS')),
+  "start_at" timestamp with time zone NOT NULL,
+  "end_at" timestamp with time zone NOT NULL,
+  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'INACTIVE')),
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("end_at" > "start_at"),
+  CHECK ("point_multiplier" > 0)
 );
 
 CREATE TABLE "promotion_tiers" (
   "promotion_id" uuid NOT NULL,
-  "tier" loyalty_tier NOT NULL,
+  "tier" varchar(20) NOT NULL CHECK ("tier" IN ('MEMBER', 'SILVER', 'GOLD', 'PLATINUM')),
   PRIMARY KEY ("promotion_id", "tier")
 );
 
 CREATE TABLE "bookings" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "customer_id" uuid NOT NULL,
   "vehicle_id" uuid NOT NULL,
-  "booking_type" booking_type NOT NULL,
+  "booking_type" varchar(30) NOT NULL CHECK ("booking_type" IN ('PACKAGE', 'COMBO')),
   "package_id" uuid,
   "combo_id" uuid,
   "voucher_id" uuid,
-  "status" booking_status NOT NULL DEFAULT 'PENDING',
-  "scheduled_at" timestamptz NOT NULL,
+  "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW')),
+  "scheduled_at" timestamp with time zone NOT NULL,
   "base_amount" bigint NOT NULL DEFAULT 0,
   "options_amount" bigint NOT NULL DEFAULT 0,
   "discount_amount" bigint NOT NULL DEFAULT 0,
@@ -274,8 +300,19 @@ CREATE TABLE "bookings" (
   "points_discount" bigint NOT NULL DEFAULT 0,
   "note" text,
   "cancel_reason" varchar(500),
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "updated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK (
+    ("booking_type" = 'PACKAGE' AND "package_id" IS NOT NULL AND "combo_id" IS NULL)
+    OR ("booking_type" = 'COMBO' AND "combo_id" IS NOT NULL AND "package_id" IS NULL)
+  ),
+  CHECK ("base_amount" >= 0),
+  CHECK ("options_amount" >= 0),
+  CHECK ("discount_amount" >= 0),
+  CHECK ("final_amount" >= 0),
+  CHECK ("estimated_duration_minutes" >= 0),
+  CHECK ("points_redeemed" >= 0),
+  CHECK ("points_discount" >= 0)
 );
 
 CREATE TABLE "booking_options" (
@@ -283,6 +320,7 @@ CREATE TABLE "booking_options" (
   "option_id" uuid NOT NULL,
   "option_name" varchar(100) NOT NULL,
   "option_price" bigint NOT NULL,
+  CHECK ("option_price" >= 0),
   PRIMARY KEY ("booking_id", "option_id")
 );
 
@@ -290,6 +328,7 @@ CREATE TABLE "booking_promotions" (
   "booking_id" uuid NOT NULL,
   "promotion_id" uuid NOT NULL,
   "point_multiplier" numeric(4,2) NOT NULL,
+  CHECK ("point_multiplier" > 0),
   PRIMARY KEY ("booking_id", "promotion_id")
 );
 
@@ -300,92 +339,103 @@ CREATE TABLE "booking_status_histories" (
   "new_status" varchar(30) NOT NULL,
   "changed_by" uuid,
   "reason" text,
-  "changed_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "changed_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE "payments" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "booking_id" uuid UNIQUE NOT NULL,
-  "method" payment_method NOT NULL,
-  "status" payment_status NOT NULL DEFAULT 'UNPAID',
+  "method" varchar(30) NOT NULL CHECK ("method" IN ('CASH_AT_COUNTER', 'BANK_TRANSFER', 'E_WALLET')),
+  "status" varchar(30) NOT NULL DEFAULT 'UNPAID' CHECK ("status" IN ('UNPAID', 'PENDING_PAYMENT', 'PAID', 'FAILED', 'REFUNDED')),
   "amount" bigint NOT NULL,
   "transaction_ref" varchar(120),
-  "paid_at" timestamptz,
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "paid_at" timestamp with time zone,
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("amount" >= 0)
 );
 
 CREATE TABLE "wash_sessions" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "booking_id" uuid UNIQUE NOT NULL,
   "assigned_staff_id" uuid,
-  "status" wash_session_status NOT NULL DEFAULT 'PENDING',
+  "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
   "fee_amount" bigint,
   "projected_points" int,
   "awarded_points" int,
-  "checked_in_at" timestamptz,
-  "started_at" timestamptz,
-  "completed_at" timestamptz,
+  "checked_in_at" timestamp with time zone,
+  "started_at" timestamp with time zone,
+  "completed_at" timestamp with time zone,
   "notes" text,
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("fee_amount" IS NULL OR "fee_amount" >= 0),
+  CHECK ("projected_points" IS NULL OR "projected_points" >= 0),
+  CHECK ("awarded_points" IS NULL OR "awarded_points" >= 0)
 );
 
 CREATE TABLE "loyalty_accounts" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "customer_id" uuid UNIQUE NOT NULL,
   "current_points" int NOT NULL DEFAULT 0,
   "total_earned_points" int NOT NULL DEFAULT 0,
-  "tier" loyalty_tier NOT NULL DEFAULT 'MEMBER',
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "updated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "tier" varchar(20) NOT NULL DEFAULT 'MEMBER' CHECK ("tier" IN ('MEMBER', 'SILVER', 'GOLD', 'PLATINUM')),
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("current_points" >= 0),
+  CHECK ("total_earned_points" >= 0)
 );
 
 CREATE TABLE "point_transactions" (
   "id" BIGSERIAL PRIMARY KEY,
   "loyalty_account_id" uuid NOT NULL,
   "booking_id" uuid,
-  "type" point_transaction_type NOT NULL,
+  "type" varchar(20) NOT NULL CHECK ("type" IN ('EARN', 'REDEEM', 'EXPIRE', 'ADJUST')),
   "points" int NOT NULL,
   "balance_after" int NOT NULL,
   "reason" varchar(255) NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("balance_after" >= 0)
 );
 
 CREATE TABLE "tier_histories" (
   "id" BIGSERIAL PRIMARY KEY,
   "loyalty_account_id" uuid NOT NULL,
   "old_tier" varchar(20),
-  "new_tier" loyalty_tier NOT NULL,
+  "new_tier" varchar(20) NOT NULL CHECK ("new_tier" IN ('MEMBER', 'SILVER', 'GOLD', 'PLATINUM')),
   "total_points_at_change" int NOT NULL,
-  "changed_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "changed_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("total_points_at_change" >= 0)
 );
 
 CREATE TABLE "customer_combos" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "customer_id" uuid NOT NULL,
   "combo_id" uuid NOT NULL,
   "total_usages" int NOT NULL,
   "remaining_usages" int NOT NULL,
-  "status" customer_combo_status NOT NULL DEFAULT 'ACTIVE',
-  "activated_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  "expires_at" timestamptz NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'EXPIRED', 'USED_UP', 'CANCELLED')),
+  "activated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "expires_at" timestamp with time zone NOT NULL,
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CHECK ("total_usages" > 0),
+  CHECK ("remaining_usages" >= 0),
+  CHECK ("remaining_usages" <= "total_usages")
 );
 
 CREATE TABLE "customer_combo_usages" (
   "id" BIGSERIAL PRIMARY KEY,
   "customer_combo_id" uuid NOT NULL,
   "booking_id" uuid UNIQUE NOT NULL,
-  "used_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "used_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE TABLE "notifications" (
-  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "user_id" uuid NOT NULL,
   "title" varchar(150) NOT NULL,
   "message" text NOT NULL,
   "type" varchar(50) NOT NULL,
   "is_read" boolean NOT NULL DEFAULT false,
-  "created_at" timestamptz NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 CREATE INDEX "idx_users_role" ON "users" ("role");
@@ -459,158 +509,68 @@ CREATE INDEX "idx_customer_combo_usages_customer_combo_id" ON "customer_combo_us
 
 CREATE INDEX "idx_notifications_user_id" ON "notifications" ("user_id");
 
-COMMENT ON COLUMN "otp_verifications"."attempts" IS 'CHECK: attempts >= 0';
+ALTER TABLE "user_preferences" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "packages"."base_price" IS 'CHECK: base_price >= 0';
+ALTER TABLE "refresh_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "packages"."duration_minutes" IS 'CHECK: duration_minutes > 0';
+ALTER TABLE "otp_verifications" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "services"."price" IS 'CHECK: price >= 0';
+ALTER TABLE "vehicles" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "services"."duration_minutes" IS 'CHECK: duration_minutes >= 0';
+ALTER TABLE "package_services" ADD FOREIGN KEY ("package_id") REFERENCES "packages" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "package_services"."option_price" IS 'CHECK: option_price >= 0';
+ALTER TABLE "package_services" ADD FOREIGN KEY ("option_id") REFERENCES "services" ("id") ;
 
-COMMENT ON COLUMN "package_services"."option_duration_minutes" IS 'CHECK: option_duration_minutes >= 0';
+ALTER TABLE "combo_services" ADD FOREIGN KEY ("combo_id") REFERENCES "combos" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "package_services"."quantity" IS 'CHECK: quantity > 0';
+ALTER TABLE "combo_services" ADD FOREIGN KEY ("option_id") REFERENCES "services" ("id") ;
 
-COMMENT ON COLUMN "combos"."price" IS 'CHECK: price >= 0';
+ALTER TABLE "voucher_tiers" ADD FOREIGN KEY ("voucher_id") REFERENCES "vouchers" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "combos"."original_price" IS 'CHECK: original_price IS NULL OR original_price >= 0';
+ALTER TABLE "promotion_tiers" ADD FOREIGN KEY ("promotion_id") REFERENCES "promotions" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "combos"."duration_minutes" IS 'CHECK: duration_minutes > 0';
+ALTER TABLE "bookings" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ;
 
-COMMENT ON COLUMN "combos"."duration_days" IS 'CHECK: duration_days IS NULL OR duration_days > 0';
+ALTER TABLE "bookings" ADD FOREIGN KEY ("vehicle_id") REFERENCES "vehicles" ("id") ;
 
-COMMENT ON COLUMN "combos"."max_usages" IS 'CHECK: max_usages IS NULL OR max_usages > 0';
+ALTER TABLE "bookings" ADD FOREIGN KEY ("package_id") REFERENCES "packages" ("id") ;
 
-COMMENT ON COLUMN "combo_services"."option_price" IS 'CHECK: option_price >= 0';
+ALTER TABLE "bookings" ADD FOREIGN KEY ("combo_id") REFERENCES "combos" ("id") ;
 
-COMMENT ON COLUMN "combo_services"."option_duration_minutes" IS 'CHECK: option_duration_minutes >= 0';
+ALTER TABLE "bookings" ADD FOREIGN KEY ("voucher_id") REFERENCES "vouchers" ("id") ;
 
-COMMENT ON COLUMN "combo_services"."quantity" IS 'CHECK: quantity > 0';
+ALTER TABLE "booking_options" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE ;
 
-COMMENT ON TABLE "vouchers" IS 'CHECK: end_at > start_at';
+ALTER TABLE "booking_options" ADD FOREIGN KEY ("option_id") REFERENCES "services" ("id") ;
 
-COMMENT ON COLUMN "vouchers"."discount_value" IS 'CHECK: discount_value > 0';
+ALTER TABLE "booking_promotions" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "vouchers"."min_order_amount" IS 'CHECK: min_order_amount >= 0';
+ALTER TABLE "booking_promotions" ADD FOREIGN KEY ("promotion_id") REFERENCES "promotions" ("id") ;
 
-COMMENT ON COLUMN "vouchers"."max_discount_amount" IS 'CHECK: max_discount_amount IS NULL OR max_discount_amount >= 0';
+ALTER TABLE "booking_status_histories" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "vouchers"."usage_limit" IS 'CHECK: usage_limit IS NULL OR usage_limit > 0';
+ALTER TABLE "booking_status_histories" ADD FOREIGN KEY ("changed_by") REFERENCES "users" ("id") ;
 
-COMMENT ON COLUMN "vouchers"."used_count" IS 'CHECK: used_count >= 0';
+ALTER TABLE "payments" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE ;
 
-COMMENT ON TABLE "promotions" IS 'CHECK: end_at > start_at';
+ALTER TABLE "wash_sessions" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "promotions"."point_multiplier" IS 'CHECK: point_multiplier > 0';
+ALTER TABLE "wash_sessions" ADD FOREIGN KEY ("assigned_staff_id") REFERENCES "users" ("id") ;
 
-COMMENT ON TABLE "bookings" IS 'CHECK: PACKAGE requires package_id NOT NULL and combo_id NULL; COMBO requires combo_id NOT NULL and package_id NULL';
+ALTER TABLE "loyalty_accounts" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "bookings"."base_amount" IS 'CHECK: base_amount >= 0';
+ALTER TABLE "point_transactions" ADD FOREIGN KEY ("loyalty_account_id") REFERENCES "loyalty_accounts" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "bookings"."options_amount" IS 'CHECK: options_amount >= 0';
+ALTER TABLE "point_transactions" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE SET NULL ;
 
-COMMENT ON COLUMN "bookings"."discount_amount" IS 'CHECK: discount_amount >= 0';
+ALTER TABLE "tier_histories" ADD FOREIGN KEY ("loyalty_account_id") REFERENCES "loyalty_accounts" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "bookings"."final_amount" IS 'CHECK: final_amount >= 0';
+ALTER TABLE "customer_combos" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "bookings"."estimated_duration_minutes" IS 'CHECK: estimated_duration_minutes >= 0';
+ALTER TABLE "customer_combos" ADD FOREIGN KEY ("combo_id") REFERENCES "combos" ("id") ;
 
-COMMENT ON COLUMN "bookings"."points_redeemed" IS 'CHECK: points_redeemed >= 0';
+ALTER TABLE "customer_combo_usages" ADD FOREIGN KEY ("customer_combo_id") REFERENCES "customer_combos" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "bookings"."points_discount" IS 'CHECK: points_discount >= 0';
+ALTER TABLE "customer_combo_usages" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE ;
 
-COMMENT ON COLUMN "booking_options"."option_price" IS 'CHECK: option_price >= 0';
-
-COMMENT ON COLUMN "booking_promotions"."point_multiplier" IS 'CHECK: point_multiplier > 0';
-
-COMMENT ON COLUMN "payments"."amount" IS 'CHECK: amount >= 0';
-
-COMMENT ON COLUMN "wash_sessions"."fee_amount" IS 'CHECK: fee_amount IS NULL OR fee_amount >= 0';
-
-COMMENT ON COLUMN "wash_sessions"."projected_points" IS 'CHECK: projected_points IS NULL OR projected_points >= 0';
-
-COMMENT ON COLUMN "wash_sessions"."awarded_points" IS 'CHECK: awarded_points IS NULL OR awarded_points >= 0';
-
-COMMENT ON COLUMN "loyalty_accounts"."current_points" IS 'CHECK: current_points >= 0';
-
-COMMENT ON COLUMN "loyalty_accounts"."total_earned_points" IS 'CHECK: total_earned_points >= 0';
-
-COMMENT ON COLUMN "point_transactions"."balance_after" IS 'CHECK: balance_after >= 0';
-
-COMMENT ON COLUMN "tier_histories"."total_points_at_change" IS 'CHECK: total_points_at_change >= 0';
-
-COMMENT ON TABLE "customer_combos" IS 'CHECK: remaining_usages <= total_usages';
-
-COMMENT ON COLUMN "customer_combos"."total_usages" IS 'CHECK: total_usages > 0';
-
-COMMENT ON COLUMN "customer_combos"."remaining_usages" IS 'CHECK: remaining_usages >= 0';
-
-ALTER TABLE "user_preferences" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "refresh_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "otp_verifications" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "vehicles" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "package_services" ADD FOREIGN KEY ("package_id") REFERENCES "packages" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "package_services" ADD FOREIGN KEY ("option_id") REFERENCES "services" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "combo_services" ADD FOREIGN KEY ("combo_id") REFERENCES "combos" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "combo_services" ADD FOREIGN KEY ("option_id") REFERENCES "services" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "voucher_tiers" ADD FOREIGN KEY ("voucher_id") REFERENCES "vouchers" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "promotion_tiers" ADD FOREIGN KEY ("promotion_id") REFERENCES "promotions" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "bookings" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "bookings" ADD FOREIGN KEY ("vehicle_id") REFERENCES "vehicles" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "bookings" ADD FOREIGN KEY ("package_id") REFERENCES "packages" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "bookings" ADD FOREIGN KEY ("combo_id") REFERENCES "combos" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "bookings" ADD FOREIGN KEY ("voucher_id") REFERENCES "vouchers" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "booking_options" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "booking_options" ADD FOREIGN KEY ("option_id") REFERENCES "services" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "booking_promotions" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "booking_promotions" ADD FOREIGN KEY ("promotion_id") REFERENCES "promotions" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "booking_status_histories" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "booking_status_histories" ADD FOREIGN KEY ("changed_by") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "payments" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "wash_sessions" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "wash_sessions" ADD FOREIGN KEY ("assigned_staff_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "loyalty_accounts" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "point_transactions" ADD FOREIGN KEY ("loyalty_account_id") REFERENCES "loyalty_accounts" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "point_transactions" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE SET NULL DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "tier_histories" ADD FOREIGN KEY ("loyalty_account_id") REFERENCES "loyalty_accounts" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "customer_combos" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "customer_combos" ADD FOREIGN KEY ("combo_id") REFERENCES "combos" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "customer_combo_usages" ADD FOREIGN KEY ("customer_combo_id") REFERENCES "customer_combos" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "customer_combo_usages" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "notifications" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "notifications" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;

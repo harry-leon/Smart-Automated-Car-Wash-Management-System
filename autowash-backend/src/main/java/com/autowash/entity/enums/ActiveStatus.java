@@ -1,7 +1,7 @@
 package com.autowash.entity.enums;
 
 /**
- * Maps to DB type: active_status
+ * Stored as varchar with a database CHECK constraint.
  * Values: ACTIVE | INACTIVE
  * Used by: packages.status, services.status, combos.status,
  *          vouchers.status, promotions.status

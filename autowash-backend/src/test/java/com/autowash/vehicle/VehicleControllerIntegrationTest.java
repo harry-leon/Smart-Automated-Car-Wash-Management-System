@@ -75,6 +75,29 @@ class VehicleControllerIntegrationTest {
     }
 
     @Test
+    void createVehicleRejectsDuplicatePlateAcrossCustomers() throws Exception {
+        String firstToken = registerActivateAndLogin("0901234611");
+        String secondToken = registerActivateAndLogin("0901234612");
+        createVehicle(firstToken, "30H-123466", "Toyota", "Camry");
+
+        mockMvc.perform(post("/api/v1/customers/vehicles")
+                        .header("Authorization", "Bearer " + secondToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "plate": "30H-123466",
+                                  "type": "CAR",
+                                  "brand": "Honda",
+                                  "model": "Civic",
+                                  "year": 2024,
+                                  "color": "Black"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_PLATE"));
+    }
+
+    @Test
     void listVehiclesReturnsOnlyCurrentCustomerVehiclesWithPagination() throws Exception {
         String firstToken = registerActivateAndLogin("0901234603");
         String secondToken = registerActivateAndLogin("0901234604");
