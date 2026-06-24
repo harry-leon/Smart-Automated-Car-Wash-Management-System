@@ -12,9 +12,6 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "combos")
 @Getter
@@ -49,8 +46,7 @@ public class Combo {
     private String imageUrl;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "active_status")
+    @Column(nullable = false)
     private ActiveStatus status;
 
     @Column(name = "created_at", nullable = false)

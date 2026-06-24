@@ -75,7 +75,7 @@ class StaffAssignmentServiceIntegrationTest {
                 UUID.randomUUID(),
                 customer,
                 vehicle,
-                UUID.randomUUID(),
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(86400),

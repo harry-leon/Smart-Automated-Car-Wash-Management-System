@@ -78,7 +78,7 @@ class BookingControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/services"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].serviceId").value("service_001"));
+                .andExpect(jsonPath("$.data[0].serviceId").value("33333333-1234-1234-1234-123456789012"));
     }
 
     @Test
@@ -86,7 +86,7 @@ class BookingControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/combos/available"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(8))
-                .andExpect(jsonPath("$.data[0].comboId").value("combo_001"));
+                .andExpect(jsonPath("$.data[0].comboId").value("55555555-1234-1234-1234-123456789012"));
     }
 
     @Test
@@ -141,7 +141,7 @@ class BookingControllerIntegrationTest {
                                 {
                                   "vehicleId": "%s",
                                   "packageId": "12345678-1234-1234-1234-123456789012",
-                                  "options": ["service_001"],
+                                  "options": ["33333333-1234-1234-1234-123456789012"],
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",
@@ -175,14 +175,14 @@ class BookingControllerIntegrationTest {
                         .content("""
                                 {
                                   "vehicleId": "%s",
-                                  "comboId": "combo_001",
+                                  "comboId": "55555555-1234-1234-1234-123456789012",
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "paymentMethod": "E_WALLET"
                                 }
                                 """.formatted(vehicleId, futureBookingDate())))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data.comboId").value("55555555-1234-1234-1234-123456789012"))
                 .andExpect(jsonPath("$.data.customerComboId").isNotEmpty())
                 .andExpect(jsonPath("$.data.comboPurchased").value(true));
 
@@ -190,7 +190,7 @@ class BookingControllerIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data[0].comboId").value("55555555-1234-1234-1234-123456789012"))
                 .andExpect(jsonPath("$.data[0].remainingUsages").value(3));
     }
 
@@ -198,17 +198,17 @@ class BookingControllerIntegrationTest {
     void activateComboCreatesOwnedCombo() throws Exception {
         String accessToken = registerActivateAndLogin("0901234721");
 
-        mockMvc.perform(post("/api/v1/customers/combos/{comboId}/activate", "combo_001")
+        mockMvc.perform(post("/api/v1/customers/combos/{comboId}/activate", "55555555-1234-1234-1234-123456789012")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "comboId": "combo_001",
+                                  "comboId": "55555555-1234-1234-1234-123456789012",
                                   "paymentMethod": "E_WALLET"
                                 }
                         """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.comboId").value("combo_001"))
+                .andExpect(jsonPath("$.data.comboId").value("55555555-1234-1234-1234-123456789012"))
                 .andExpect(jsonPath("$.data.paymentMethod").value("E_WALLET"))
                 .andExpect(jsonPath("$.data.paymentStatus").value("PENDING"));
     }
@@ -331,7 +331,8 @@ class BookingControllerIntegrationTest {
         String phone = "0901234718";
         String accessToken = registerActivateAndLogin(phone);
         User customer = UserRepository.findByPhone(phone).orElseThrow();
-        LoyaltyAccount account = new LoyaltyAccount(customer);
+        LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(customer.getId())
+                .orElseGet(() -> new LoyaltyAccount(customer));
         account.addPoints(120);
         loyaltyAccountRepository.saveAndFlush(account);
 
@@ -366,7 +367,8 @@ class BookingControllerIntegrationTest {
         String phone = "0901234719";
         String accessToken = registerActivateAndLogin(phone);
         User customer = UserRepository.findByPhone(phone).orElseThrow();
-        LoyaltyAccount account = new LoyaltyAccount(customer);
+        LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(customer.getId())
+                .orElseGet(() -> new LoyaltyAccount(customer));
         account.addPoints(160);
         loyaltyAccountRepository.saveAndFlush(account);
 
@@ -501,7 +503,7 @@ class BookingControllerIntegrationTest {
                                 {
                                   "vehicleId": "%s",
                                   "packageId": "12345678-1234-1234-1234-123456789012",
-                                  "options": ["service_001"],
+                                  "options": ["33333333-1234-1234-1234-123456789012"],
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",
@@ -598,7 +600,7 @@ class BookingControllerIntegrationTest {
     }
 
     private void setBookingStatus(String bookingId, BookingStatus status) {
-        var booking = BookingRepository.findById(bookingId).orElseThrow();
+        var booking = BookingRepository.findById(java.util.UUID.fromString(bookingId)).orElseThrow();
         booking.updateStatus(status);
         BookingRepository.saveAndFlush(booking);
     }

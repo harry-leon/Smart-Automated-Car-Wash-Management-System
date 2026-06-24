@@ -3,7 +3,6 @@ package com.autowash.entity;
 import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.entity.enums.VehicleType;
 
-import com.autowash.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -18,9 +17,6 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "vehicles")
 @Getter
@@ -34,7 +30,7 @@ public class Vehicle {
     @JoinColumn(name = "customer_id", nullable = false)
     private User owner;
 
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, unique = true)
     private String plate;
 
     @Enumerated(EnumType.STRING)
@@ -54,8 +50,7 @@ public class Vehicle {
     private String color;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "vehicle_status")
+    @Column(nullable = false)
     private VehicleStatus status;
 
     @Column(name = "is_primary", nullable = false)

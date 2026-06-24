@@ -14,9 +14,6 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "vouchers")
 @Getter
@@ -33,8 +30,7 @@ public class Voucher {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "discount_type", nullable = false, columnDefinition = "discount_type")
+    @Column(name = "discount_type", nullable = false)
     private DiscountType discountType;
 
     @Column(name = "discount_value", nullable = false)
@@ -62,8 +58,7 @@ public class Voucher {
     private Instant endAt;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "active_status")
+    @Column(nullable = false)
     private ActiveStatus status;
 
     @PrePersist

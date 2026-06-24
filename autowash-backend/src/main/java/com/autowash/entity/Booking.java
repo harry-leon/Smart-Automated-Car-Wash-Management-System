@@ -23,9 +23,6 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "bookings")
 @Getter
@@ -44,8 +41,7 @@ public class Booking {
     private Vehicle vehicle;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "booking_type", nullable = false, columnDefinition = "booking_type")
+    @Column(name = "booking_type", nullable = false)
     private BookingType bookingType;
 
     @Column(name = "package_id")
@@ -58,8 +54,7 @@ public class Booking {
     private UUID voucherId;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "booking_status")
+    @Column(nullable = false)
     private BookingStatus status;
 
     @Column(name = "scheduled_at", nullable = false)

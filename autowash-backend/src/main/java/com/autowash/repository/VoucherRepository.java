@@ -1,6 +1,5 @@
 package com.autowash.repository;
 
-import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.Voucher;
 import java.time.Instant;
 import java.util.List;

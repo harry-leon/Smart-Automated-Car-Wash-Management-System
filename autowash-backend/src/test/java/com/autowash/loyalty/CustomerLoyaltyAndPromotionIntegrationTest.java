@@ -254,7 +254,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 UUID.randomUUID(),
                 user,
                 vehicle,
-                UUID.randomUUID(),
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(86400),

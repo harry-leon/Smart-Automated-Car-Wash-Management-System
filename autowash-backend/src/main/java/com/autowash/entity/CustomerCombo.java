@@ -15,9 +15,6 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "customer_combos")
 @Getter
@@ -41,8 +38,7 @@ public class CustomerCombo {
     private int remainingUsages;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "customer_combo_status")
+    @Column(nullable = false)
     private CustomerComboStatus status;
 
     @Column(name = "activated_at", nullable = false)
