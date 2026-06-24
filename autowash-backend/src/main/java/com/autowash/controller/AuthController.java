@@ -13,11 +13,14 @@ import com.autowash.dto.SendOtpRequest;
 import com.autowash.dto.SendOtpResponse;
 import com.autowash.dto.VerifyOtpRequest;
 import com.autowash.service.AuthService;
+import com.autowash.service.GoogleOAuthService;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,9 +37,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleOAuthService googleOAuthService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, GoogleOAuthService googleOAuthService) {
         this.authService = authService;
+        this.googleOAuthService = googleOAuthService;
     }
 
     @PostMapping("/register")
@@ -116,6 +121,61 @@ public class AuthController {
     public ApiResponse<Void> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request.refreshToken());
         return ApiResponse.ok("Logout successful", null);
+    }
+
+    @GetMapping("/google/start")
+    @Operation(summary = "Redirect to Google OAuth consent screen")
+    public void googleStart(
+            @RequestParam(value = "returnUrl", defaultValue = "http://localhost:3000/auth/google/callback") String returnUrl,
+            HttpServletResponse response
+    ) throws IOException {
+        String redirectUrl = googleOAuthService.buildAuthorizationUrl(returnUrl);
+        response.sendRedirect(redirectUrl);
+    }
+
+    @GetMapping("/google/callback")
+    @Operation(summary = "Google OAuth callback — process code and redirect to frontend")
+    public void googleCallback(
+            @RequestParam("code") String code,
+            @RequestParam(value = "state", defaultValue = "") String state,
+            HttpServletResponse response
+    ) throws IOException {
+        String redirectUrl = googleOAuthService.handleCallback(code, state);
+        response.sendRedirect(redirectUrl);
+    }
+
+    @GetMapping("/google/tickets/{state}")
+    @Operation(summary = "Get Google auth ticket status")
+    public ApiResponse<com.autowash.dto.GoogleAuthTicketResponse> getGoogleTicket(
+            @PathVariable("state") String state
+    ) {
+        return ApiResponse.ok("Ticket retrieved", googleOAuthService.getTicket(state));
+    }
+
+    @PostMapping("/google/tickets/exchange")
+    @Operation(summary = "Exchange a READY Google ticket for a JWT")
+    public ApiResponse<LoginResponse> exchangeGoogleTicket(
+            @RequestBody java.util.Map<String, String> body
+    ) {
+        String state = body.get("state");
+        if (state == null || state.isBlank()) {
+            throw new com.autowash.shared.exception.ApiException(
+                    HttpStatus.BAD_REQUEST, "state is required", "VALIDATION_ERROR");
+        }
+        return ApiResponse.ok("Login successful", googleOAuthService.exchangeTicket(state));
+    }
+
+    @PostMapping("/google/tickets/link")
+    @Operation(summary = "Confirm linking Google account to an existing local account")
+    public ApiResponse<LoginResponse> confirmGoogleLink(
+            @RequestBody java.util.Map<String, String> body
+    ) {
+        String state = body.get("state");
+        if (state == null || state.isBlank()) {
+            throw new com.autowash.shared.exception.ApiException(
+                    HttpStatus.BAD_REQUEST, "state is required", "VALIDATION_ERROR");
+        }
+        return ApiResponse.ok("Account linked and login successful", googleOAuthService.confirmLink(state));
     }
 
     private AuthService.RequestMetadata metadata(HttpServletRequest request) {

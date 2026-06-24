@@ -471,14 +471,24 @@ export function ModernAuthPopupModal({
                 {loginErrorMessage ? <ErrorBox message={loginErrorMessage} /> : null}
               </form>
 
-              <button
-                type="button"
-                onClick={handleContinueWithGoogle}
-                className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
-              >
-                <GoogleIcon />
-                Ðang nh?p b?ng Google
-              </button>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 to-transparent" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    {copy.orContinueWith}
+                  </span>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/70 to-transparent" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleContinueWithGoogle}
+                  className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+                >
+                  <GoogleIcon />
+                  {copy.googleLoginButton}
+                </button>
+              </div>
 
               <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 pt-4">
                 <span className="text-sm text-slate-500">{copy.noAccount}</span>
@@ -562,7 +572,7 @@ export function ModernAuthPopupModal({
                     className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
                   >
                     <GoogleIcon />
-                    Ðang ký b?ng Google
+                    {copy.googleRegisterButton}
                   </button>
                 </div>
 

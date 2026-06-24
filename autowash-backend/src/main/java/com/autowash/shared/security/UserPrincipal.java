@@ -36,7 +36,8 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getPassword() {
-        return passwordHash;
+        // Google-only users have no password hash — return empty string to satisfy Spring Security contract
+        return passwordHash != null ? passwordHash : "";
     }
 
     @Override

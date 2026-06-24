@@ -130,13 +130,19 @@ export function LoginForm() {
         <div>Sau khi đăng nhập, hệ thống tự chuyển đến khu vực khách hàng.</div>
       </div>
 
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hoặc tiếp tục với</span>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+      </div>
+
       <button
         type="button"
         onClick={handleContinueWithGoogle}
-        className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50"
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-black text-white">G</span>
-        Continue with Google
+        <GoogleIcon />
+        Đăng nhập bằng Google
       </button>
 
       <Button
@@ -163,5 +169,30 @@ export function LoginForm() {
 
       {errorMessage ? <p className="text-sm text-rose-600">{errorMessage}</p> : null}
     </form>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <span className="flex h-6 w-6 items-center justify-center">
+      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+        <path
+          fill="#4285F4"
+          d="M21.35 11.1H12v3.9h5.35c-.23 1.4-1 2.6-2.2 3.4v2.8h3.55c2.08-1.9 3.28-4.7 3.28-8.1 0-.7-.06-1.3-.18-2z"
+        />
+        <path
+          fill="#34A853"
+          d="M12 22c2.97 0 5.47-.98 7.29-2.66l-3.55-2.8c-.99.66-2.26 1.05-3.74 1.05-2.87 0-5.3-1.93-6.17-4.53H2.17v2.9A10 10 0 0 0 12 22z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M5.83 13.06A5.98 5.98 0 0 1 5.5 11c0-.72.12-1.42.33-2.06V6.04H2.17A10 10 0 0 0 2 11c0 1.61.39 3.12 1.08 4.46l2.75-2.4z"
+        />
+        <path
+          fill="#EA4335"
+          d="M12 5.92c1.62 0 3.06.56 4.2 1.65l3.15-3.15A9.97 9.97 0 0 0 12 2 10 10 0 0 0 2.17 6.04l3.66 2.9C6.7 7.84 9.03 5.92 12 5.92z"
+        />
+      </svg>
+    </span>
   );
 }

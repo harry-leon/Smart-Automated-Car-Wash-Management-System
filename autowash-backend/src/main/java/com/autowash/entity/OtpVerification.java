@@ -26,8 +26,8 @@ public class OtpVerification {
     @Id
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
     @Enumerated(EnumType.STRING)
