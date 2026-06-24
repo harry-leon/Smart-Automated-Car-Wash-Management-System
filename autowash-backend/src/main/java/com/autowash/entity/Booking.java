@@ -211,7 +211,6 @@ public class Booking {
         return PaymentStatus.UNPAID;
     }
 
-
     public String getVoucherCode() {
         return null;
     }
@@ -222,6 +221,7 @@ public class Booking {
 
     public void assignStaff(User staff) {
         this.assignedStaff = staff;
+        this.updatedAt = Instant.now();
     }
 
     public void startOtpConfirmationWindow(Instant expiresAt) {}

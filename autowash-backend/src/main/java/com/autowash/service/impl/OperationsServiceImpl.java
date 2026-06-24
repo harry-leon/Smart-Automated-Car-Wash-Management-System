@@ -368,6 +368,7 @@ public class OperationsServiceImpl implements OperationsService {
     }
 
     private EligibleSessionBookingResponse toEligibleBooking(Booking booking) {
+        User assignedStaff = booking.getAssignedStaff();
         return new EligibleSessionBookingResponse(
                 booking.getId().toString(),
                 booking.getCustomer().getFullName(),
@@ -378,7 +379,9 @@ public class OperationsServiceImpl implements OperationsService {
                 booking.getBookingDate(),
                 booking.getBookingTime(),
                 booking.getFinalAmount(),
-                booking.getEstimatedDurationMinutes()
+                booking.getEstimatedDurationMinutes(),
+                assignedStaff == null ? null : assignedStaff.getId().toString(),
+                assignedStaff == null ? null : assignedStaff.getFullName()
         );
     }
 

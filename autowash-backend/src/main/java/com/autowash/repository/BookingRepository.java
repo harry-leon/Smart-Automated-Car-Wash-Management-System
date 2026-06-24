@@ -66,7 +66,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         return findByCustomerAndScheduledAtBetweenOrderByCreatedAtDesc(customer, scheduledFrom, scheduledTo, pageable);
     }
 
-    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
             select booking from Booking booking
             where (:statusFilter = false or booking.status in :statuses)
@@ -111,7 +111,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
         );
     }
 
-    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
             select booking from Booking booking
             where booking.assignedStaff = :staff
@@ -155,7 +155,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("select coalesce(sum(b.finalAmount), 0) from Booking b where b.status = :status")
     long sumFinalAmountByStatus(@Param("status") BookingStatus status);
 
-    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
             select booking from Booking booking
             where booking.status = :status
@@ -172,7 +172,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
             Pageable pageable
     );
 
-    @EntityGraph(attributePaths = {"customer", "vehicle"})
+    @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
             select booking from Booking booking
             where booking.status = :status

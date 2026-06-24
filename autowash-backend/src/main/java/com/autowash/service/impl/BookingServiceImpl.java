@@ -375,6 +375,7 @@ public class BookingServiceImpl implements BookingService {
                 BookingStatus oldStatus = booking.getStatus();
                 booking.updateStatus(BookingStatus.CONFIRMED);
                 recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Payment completed");
+                staffAssignmentService.tryPickStaffForBookingAssignment().ifPresent(booking::assignStaff);
             }
         }
 
@@ -525,6 +526,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private PayBookingResponse toPayBookingResponse(Booking booking, Payment payment) {
+        User assignedStaff = booking.getAssignedStaff();
         return new PayBookingResponse(
                 booking.getId().toString(),
                 payment.getId().toString(),
@@ -533,7 +535,9 @@ public class BookingServiceImpl implements BookingService {
                 payment.getAmount(),
                 payment.getTransactionRef(),
                 payment.getPaidAt(),
-                booking.getStatus().name()
+                booking.getStatus().name(),
+                assignedStaff == null ? null : assignedStaff.getId().toString(),
+                assignedStaff == null ? null : assignedStaff.getFullName()
         );
     }
 

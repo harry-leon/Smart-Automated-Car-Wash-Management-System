@@ -58,6 +58,22 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
 
     long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
 
+    boolean existsByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
+
+    @Query("""
+            select count(session) from WashSession session
+            where session.assignedStaff = :assignedStaff
+              and session.status = :status
+              and session.completedAt >= :completedFrom
+              and session.completedAt < :completedTo
+            """)
+    long countByAssignedStaffAndStatusAndCompletedAtBetween(
+            @Param("assignedStaff") User assignedStaff,
+            @Param("status") WashSessionStatus status,
+            @Param("completedFrom") Instant completedFrom,
+            @Param("completedTo") Instant completedTo
+    );
+
     @EntityGraph(attributePaths = {"booking"})
     List<WashSession> findByBooking_IdIn(Collection<UUID> bookingIds);
 
