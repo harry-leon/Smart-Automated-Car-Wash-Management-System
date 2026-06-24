@@ -283,6 +283,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String maskPhone(String phone) {
+        if (phone == null) return null;
         return phone.substring(0, 4) + "****" + phone.substring(phone.length() - 2);
     }
 
