@@ -2,7 +2,6 @@ package com.autowash.dto;
 
 import com.autowash.entity.*;
 import com.autowash.entity.enums.LoyaltyTier;
-import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import jakarta.validation.constraints.Min;
@@ -22,8 +21,7 @@ public record PromotionRequest(
         )
         String name,
         @Size(max = 500) String description,
-        @NotNull DiscountType discountType,
-        @Min(1) int discountValue,
+        @NotNull Double pointMultiplier,
         @NotNull Instant startDate,
         @NotNull Instant endDate,
         @NotNull PromotionTargetingMode targetingMode,

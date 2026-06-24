@@ -8,7 +8,6 @@ import com.autowash.entity.Promotion;
 import com.autowash.entity.PromotionTier;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.ActiveStatus;
-import com.autowash.entity.enums.DiscountType;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.PromotionTargetingMode;
 import com.autowash.repository.LoyaltyAccountRepository;
@@ -58,7 +57,7 @@ public class PromotionServiceImpl implements PromotionService {
         Promotion promotion = new Promotion(
                 request.name(),
                 request.description(),
-                BigDecimal.valueOf(request.discountValue()).movePointLeft(2),
+                BigDecimal.valueOf(request.pointMultiplier()),
                 request.startDate(),
                 request.endDate(),
                 request.targetingMode(),
@@ -87,7 +86,7 @@ public class PromotionServiceImpl implements PromotionService {
         promotion.update(
                 request.name(),
                 request.description(),
-                BigDecimal.valueOf(request.discountValue()).movePointLeft(2),
+                BigDecimal.valueOf(request.pointMultiplier()),
                 request.startDate(),
                 request.endDate(),
                 request.targetingMode(),
@@ -146,8 +145,8 @@ public class PromotionServiceImpl implements PromotionService {
         if (request.startDate().isAfter(request.endDate())) {
             throw validationError("startDate", "startDate must be before or equal to endDate");
         }
-        if (request.discountType() == DiscountType.PERCENT && request.discountValue() > 100) {
-            throw validationError("discountValue", "Percent discount must be between 1 and 100");
+        if (request.pointMultiplier() < 0.0 || request.pointMultiplier() > 99.99) {
+            throw validationError("pointMultiplier", "Point multiplier must be between 0.0 and 99.99");
         }
         if (request.targetingMode() == PromotionTargetingMode.SPECIFIC_TIERS) {
             if (request.applicableTiers() == null || request.applicableTiers().isEmpty()) {
@@ -188,8 +187,7 @@ public class PromotionServiceImpl implements PromotionService {
                 promotion.getId().toString(),
                 promotion.getName(),
                 promotion.getDescription(),
-                "POINT_MULTIPLIER",
-                promotion.getPointMultiplier().movePointRight(2).intValue(),
+                promotion.getPointMultiplier().doubleValue(),
                 promotion.getStartAt(),
                 promotion.getEndAt(),
                 promotion.getTargetingMode().name(),
@@ -207,9 +205,8 @@ public class PromotionServiceImpl implements PromotionService {
                 promotion.name(),
                 promotion.targetingMode(),
                 promotion.applicableTiers(),
-                "POINT_MULTIPLIER",
-                promotion.discountValue(),
-                0,
+                promotion.pointMultiplier(),
+                0L,
                 false,
                 promotion.endDate()
         );

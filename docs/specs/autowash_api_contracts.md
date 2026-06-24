@@ -2053,9 +2053,8 @@ Customer tier is resolved from the authenticated customer token; clients do not 
     {
       "promotionId": "promo_001",
       "name": "Summer Flash Sale",
-      "description": "20% off all services",
-      "discountType": "PERCENT",
-      "discountValue": 20,
+      "description": "Double loyalty points for all services",
+      "pointMultiplier": 2.0,
       "startDate": "2026-06-01T00:00:00Z",
       "endDate": "2026-08-31T23:59:59Z",
       "targetingMode": "ALL_TIERS",
@@ -2702,9 +2701,8 @@ Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/point-history
 ```json
 {
   "name": "Summer Sale",
-  "description": "20% off all services",
-  "discountType": "PERCENT",
-  "discountValue": 20,
+  "description": "Double loyalty points for all services",
+  "pointMultiplier": 2.0,
   "startDate": "2026-06-01T00:00:00Z",
   "endDate": "2026-08-31T23:59:59Z",
   "targetingMode": "ALL_TIERS",
@@ -2723,9 +2721,8 @@ Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/point-history
   "data": {
     "promotionId": "promo_001",
     "name": "Summer Sale",
-    "description": "20% off all services",
-    "discountType": "PERCENT",
-    "discountValue": 20,
+    "description": "Double loyalty points for all services",
+    "pointMultiplier": 2.0,
     "startDate": "2026-06-01T00:00:00Z",
     "endDate": "2026-08-31T23:59:59Z",
     "targetingMode": "ALL_TIERS",
@@ -2746,7 +2743,7 @@ Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/point-history
 
 **Validation:**
 - `startDate <= endDate`
-- `discountType=PERCENT` requires `discountValue` between 1 and 100
+- `pointMultiplier` must be between `1.0` and `99.99`
 - `targetingMode=SELECTED_TIERS` requires at least one `applicableTiers` value from `MEMBER`, `SILVER`, `GOLD`, `PLATINUM`
 
 ---

@@ -1,7 +1,6 @@
 package com.autowash.dto;
 
 import com.autowash.entity.*;
-import com.autowash.entity.enums.DiscountType;
 
 import java.time.Instant;
 import java.util.List;
@@ -11,8 +10,7 @@ public record CustomerPromotionResponse(
         String title,
         String promotionType,
         List<String> targetTiers,
-        String discountType,
-        int discountValue,
+        Double pointMultiplier,
         long minAmount,
         boolean newCustomerOnly,
         Instant expiresAt

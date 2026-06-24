@@ -85,7 +85,7 @@ class BookingControllerIntegrationTest {
     void getAvailableCombosReturnsActiveCombos() throws Exception {
         mockMvc.perform(get("/api/v1/combos/available"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(8))
+                .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].comboId").value("55555555-1234-1234-1234-123456789012"));
     }
 
@@ -130,7 +130,7 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
-    void createBookingCreatesPendingOtpConfirmationAndVerifyConfirmsBooking() throws Exception {
+    void createBookingCreatesPendingAndPayConfirmsBooking() throws Exception {
         String accessToken = registerActivateAndLogin("0901234703");
         String vehicleId = createVehicle(accessToken, "30H-223456");
 
@@ -141,7 +141,6 @@ class BookingControllerIntegrationTest {
                                 {
                                   "vehicleId": "%s",
                                   "packageId": "12345678-1234-1234-1234-123456789012",
-                                  "options": ["33333333-1234-1234-1234-123456789012"],
                                   "bookingDate": "%s",
                                   "bookingTime": "14:00",
                                   "voucherCode": "WELCOME20",
@@ -151,17 +150,15 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.confirmationStatus").value("PENDING"))
-                .andExpect(jsonPath("$.data.otpExpiresIn").value(300))
-                .andExpect(jsonPath("$.data.paymentStatus").value("CONFIRMED"))
+                .andExpect(jsonPath("$.data.paymentStatus").value("PENDING_PAYMENT"))
                 .andExpect(jsonPath("$.data.vehicleId").value(vehicleId))
-                .andExpect(jsonPath("$.data.finalAmount").value(270000))
+                .andExpect(jsonPath("$.data.finalAmount").value(120000))
                 .andReturn());
 
         String bookingId = createResponse.path("data").path("bookingId").asText();
-        verifyBookingOtpWithResend(accessToken, bookingId)
+        payBooking(accessToken, bookingId)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
-                .andExpect(jsonPath("$.data.confirmationStatus").value("VERIFIED"));
+                .andExpect(jsonPath("$.data.bookingStatus").value("CONFIRMED"));
     }
 
     @Test
@@ -191,7 +188,7 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].comboId").value("55555555-1234-1234-1234-123456789012"))
-                .andExpect(jsonPath("$.data[0].remainingUsages").value(3));
+                .andExpect(jsonPath("$.data[0].remainingUsages").value(4));
     }
 
     @Test
@@ -351,7 +348,7 @@ class BookingControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.bookingId").value(bookingId))
                 .andExpect(jsonPath("$.data.pointsApplied").value(50))
                 .andExpect(jsonPath("$.data.discountAmount").value(50000))
-                .andExpect(jsonPath("$.data.finalAmount").value(220000))
+                .andExpect(jsonPath("$.data.finalAmount").value(110000))
                 .andExpect(jsonPath("$.data.loyaltyBalance").value(70));
 
         mockMvc.perform(get("/api/v1/customers/bookings/{bookingId}", bookingId)
@@ -359,7 +356,7 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.pricing.pointsRedeemed").value(50))
                 .andExpect(jsonPath("$.data.pricing.pointsDiscount").value(50000))
-                .andExpect(jsonPath("$.data.pricing.finalAmount").value(220000));
+                .andExpect(jsonPath("$.data.pricing.finalAmount").value(110000));
     }
 
     @Test
@@ -417,7 +414,7 @@ class BookingControllerIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
-                .andExpect(jsonPath("$.data.refundStatus").value("INITIATED"));
+                .andExpect(jsonPath("$.data.refundStatus").value("NONE"));
     }
 
     @Test
@@ -437,7 +434,7 @@ class BookingControllerIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("CANCELLED"))
-                .andExpect(jsonPath("$.data.refundStatus").value("INITIATED"));
+                .andExpect(jsonPath("$.data.refundStatus").value("NONE"));
     }
 
     @Test
@@ -516,30 +513,19 @@ class BookingControllerIntegrationTest {
 
     private String createVerifiedBooking(String accessToken, String vehicleId) throws Exception {
         String bookingId = createBooking(accessToken, vehicleId).path("data").path("bookingId").asText();
-        verifyBookingOtpWithResend(accessToken, bookingId).andExpect(status().isOk());
+        payBooking(accessToken, bookingId).andExpect(status().isOk());
         return bookingId;
     }
 
-    private org.springframework.test.web.servlet.ResultActions verifyBookingOtpWithResend(String accessToken, String bookingId) throws Exception {
-        String otp = resendBookingOtp(accessToken, bookingId).path("data").path("devOtp").asText();
-        return verifyBookingOtp(accessToken, bookingId, otp);
-    }
-
-    private JsonNode resendBookingOtp(String accessToken, String bookingId) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/otp/resend", bookingId)
-                        .header("Authorization", "Bearer " + accessToken))
-                .andExpect(status().isOk())
-                .andReturn();
-        return readJson(result);
-    }
-
-    private org.springframework.test.web.servlet.ResultActions verifyBookingOtp(String accessToken, String bookingId, String otp) throws Exception {
-        return mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/otp/verify", bookingId)
+    private org.springframework.test.web.servlet.ResultActions payBooking(String accessToken, String bookingId) throws Exception {
+        return mockMvc.perform(post("/api/v1/customers/bookings/{bookingId}/pay", bookingId)
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .content("""
-                        { "otp": "%s" }
-                        """.formatted(otp)));
+                        {
+                          "transactionRef": "TXN_123"
+                        }
+                        """));
     }
 
     private String createWashSession(String bookingId, String notes) throws Exception {

@@ -1,4 +1,4 @@
-package com.autowash.service;
+package com.autowash.service.impl;
 
 import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
@@ -7,6 +7,7 @@ import com.autowash.repository.UserRepository;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.service.StaffAssignmentService;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class StaffAssignmentServiceImpl implements StaffAssignmentService {
 
     private static final Set<BookingStatus> ACTIVE_ASSIGNMENT_STATUSES = Set.of(
+            BookingStatus.PENDING,
             BookingStatus.CONFIRMED,
             BookingStatus.CHECKED_IN,
             BookingStatus.IN_PROGRESS

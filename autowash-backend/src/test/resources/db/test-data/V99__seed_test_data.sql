@@ -15,3 +15,7 @@ INSERT INTO "vouchers" ("id", "code", "name", "discount_type", "discount_value",
 
 INSERT INTO "promotions" ("id", "name", "description", "targeting_mode", "point_multiplier", "start_at", "end_at", "status") VALUES
 ('88888888-1234-1234-1234-123456789012', 'All 10% Off', '10% off for all', 'ALL_TIERS', 1.0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE');
+
+INSERT INTO "package_services" ("package_id", "option_id", "option_name", "option_description", "option_price", "option_duration_minutes") VALUES ('12345678-1234-1234-1234-123456789012', '33333333-1234-1234-1234-123456789012', 'Waxing', 'Apply carnauba wax', 50000, 15);
+
+INSERT INTO "vouchers" ("id", "code", "name", "discount_type", "discount_value", "max_discount_amount", "min_order_amount", "usage_limit", "used_count", "start_at", "end_at", "status") VALUES ('99999999-1234-1234-1234-123456789012', 'OLD10', 'Expired 10% off', 'PERCENT', 10, 50000, 100000, 100, 0, DATEADD('DAY', -60, CURRENT_TIMESTAMP), DATEADD('DAY', -30, CURRENT_TIMESTAMP), 'ACTIVE');

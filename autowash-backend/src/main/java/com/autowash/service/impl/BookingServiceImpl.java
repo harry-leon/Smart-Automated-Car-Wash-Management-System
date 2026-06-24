@@ -200,6 +200,11 @@ public class BookingServiceImpl implements BookingService {
                 subtotal - voucherDiscount,
                 baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum()
         );
+        try {
+            booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
+        } catch (ApiException ignored) {
+            // If no active staff available, booking remains unassigned
+        }
         BookingRepository.save(booking);
         List<BookingOption> bookingOptions = options.stream()
                 .map(option -> new BookingOption(booking, option.optionId(), option.name(), option.price()))

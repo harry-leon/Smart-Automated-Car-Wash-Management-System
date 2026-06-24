@@ -40,6 +40,10 @@ public class Booking {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_staff_id")
+    private User assignedStaff;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "booking_type", nullable = false)
     private BookingType bookingType;
@@ -207,9 +211,6 @@ public class Booking {
         return PaymentStatus.UNPAID;
     }
 
-    public User getAssignedStaff() {
-        return null;
-    }
 
     public String getVoucherCode() {
         return null;
@@ -219,7 +220,9 @@ public class Booking {
         return List.of();
     }
 
-    public void assignStaff(User staff) {}
+    public void assignStaff(User staff) {
+        this.assignedStaff = staff;
+    }
 
     public void startOtpConfirmationWindow(Instant expiresAt) {}
 

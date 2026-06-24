@@ -1,5 +1,6 @@
-package com.autowash.service;
+package com.autowash.service.impl;
 
+import com.autowash.service.*;
 import com.autowash.entity.User;
 import com.autowash.entity.Booking;
 import com.autowash.entity.Combo;

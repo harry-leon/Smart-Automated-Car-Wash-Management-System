@@ -190,7 +190,7 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].type").value("EARN"))
                 .andExpect(jsonPath("$.data[0].points").value(27))
-                .andExpect(jsonPath("$.data[0].referenceId").value(sessionId));
+                .andExpect(jsonPath("$.data[0].referenceId").value(booking.getId().toString()));
 
         mockMvc.perform(get("/api/v1/admin/customers/{customerId}/tier-history", customerId)
                         .with(user("admin").roles("ADMIN")))
@@ -277,7 +277,7 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.AdminBookingResponse.properties.bookingId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminCustomerDetailResponse.properties.customerId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminCustomerVehicleResponse.properties.vehicleId.type").value("string"))
-                .andExpect(jsonPath("$.components.schemas.AdminTierHistoryResponse.properties.id.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.AdminTierHistoryResponse.properties.id.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.AdminWashHistoryResponse.properties.sessionId.type").value("string"));
     }
 
@@ -356,7 +356,7 @@ class AdminReportingControllerIntegrationTest {
                 UUID.randomUUID(),
                 user,
                 vehicle,
-                null,
+                UUID.fromString("12345678-1234-1234-1234-123456789012"),
                 null,
                 null,
                 bookingDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),

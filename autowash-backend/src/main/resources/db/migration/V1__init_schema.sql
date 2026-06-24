@@ -192,6 +192,7 @@ CREATE TABLE "bookings" (
   "package_id" uuid,
   "combo_id" uuid,
   "voucher_id" uuid,
+  "assigned_staff_id" uuid,
   "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW')),
   "scheduled_at" timestamp with time zone NOT NULL,
   "base_amount" bigint NOT NULL DEFAULT 0,
@@ -440,6 +441,8 @@ ALTER TABLE "bookings" ADD FOREIGN KEY ("package_id") REFERENCES "packages" ("id
 ALTER TABLE "bookings" ADD FOREIGN KEY ("combo_id") REFERENCES "combos" ("id") ;
 
 ALTER TABLE "bookings" ADD FOREIGN KEY ("voucher_id") REFERENCES "vouchers" ("id") ;
+
+ALTER TABLE "bookings" ADD FOREIGN KEY ("assigned_staff_id") REFERENCES "users" ("id") ;
 
 ALTER TABLE "booking_options" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE ;
 

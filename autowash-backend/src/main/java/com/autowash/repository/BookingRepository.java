@@ -22,31 +22,11 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     long countByCustomerAndStatusIn(User customer, Collection<BookingStatus> statuses);
 
-    @Query("""
-            select count(session.booking) from WashSession session
-            where session.assignedStaff = :assignedStaff
-              and session.booking.status in :statuses
-            """)
-    long countByAssignedStaffAndStatusIn(
-            @Param("assignedStaff") User assignedStaff,
-            @Param("statuses") Collection<BookingStatus> statuses
-    );
+    long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<BookingStatus> statuses);
 
-    @Query("""
-            select count(session.booking) from WashSession session
-            where session.assignedStaff = :assignedStaff
-              and session.booking.status = :status
-            """)
-    long countByAssignedStaffAndStatus(
-            @Param("assignedStaff") User assignedStaff,
-            @Param("status") BookingStatus status
-    );
+    long countByAssignedStaffAndStatus(User assignedStaff, BookingStatus status);
 
-    @Query("""
-            select coalesce(sum(session.booking.finalAmount), 0) from WashSession session
-            where session.assignedStaff = :staff
-              and session.booking.status = :status
-            """)
+    @Query("select coalesce(sum(booking.finalAmount), 0) from Booking booking where booking.assignedStaff = :staff and booking.status = :status")
     long sumFinalAmountByAssignedStaffAndStatus(@Param("staff") User staff, @Param("status") BookingStatus status);
 
     @EntityGraph(attributePaths = {"vehicle"})
@@ -133,11 +113,11 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @EntityGraph(attributePaths = {"customer", "vehicle"})
     @Query("""
-            select session.booking from WashSession session
-            where session.assignedStaff = :staff
-              and (:statusFilter = false or session.booking.status in :statuses)
-              and (:dateFrom is null or session.booking.scheduledAt >= :dateFrom)
-              and (:dateTo is null or session.booking.scheduledAt <= :dateTo)
+            select booking from Booking booking
+            where booking.assignedStaff = :staff
+              and (:statusFilter = false or booking.status in :statuses)
+              and (:dateFrom is null or booking.scheduledAt >= :dateFrom)
+              and (:dateTo is null or booking.scheduledAt <= :dateTo)
             """)
     Page<Booking> searchAssignedStaffBookings(
             @Param("staff") User staff,
@@ -194,15 +174,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @EntityGraph(attributePaths = {"customer", "vehicle"})
     @Query("""
-            select session.booking from WashSession session
-            where session.booking.status = :status
-              and session.assignedStaff = :staff
+            select booking from Booking booking
+            where booking.status = :status
+              and booking.assignedStaff = :staff
               and not exists (
                     select activeSession.id from WashSession activeSession
-                    where activeSession.booking = session.booking
+                    where activeSession.booking = booking
                       and activeSession.status in :activeStatuses
               )
-            order by session.booking.scheduledAt asc, session.booking.createdAt desc
+            order by booking.scheduledAt asc, booking.createdAt desc
             """)
     List<Booking> findEligibleForAssignedStaffOperationsSession(
             @Param("staff") User staff,

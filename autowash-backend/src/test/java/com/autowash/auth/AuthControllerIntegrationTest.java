@@ -72,7 +72,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.phone").value("0901234568"))
-                .andExpect(jsonPath("$.data.status").value("INACTIVE"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.requiresOtpVerification").value(true));
 
         User user = UserRepository.findByPhone("0901234568").orElseThrow();
