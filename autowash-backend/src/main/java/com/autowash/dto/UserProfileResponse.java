@@ -10,6 +10,7 @@ public record UserProfileResponse(
         String status,
         String role,
         String tier,
+        boolean hasGoogleAuth,
         boolean isNewCustomer,
         int loyaltyBalance,
         Instant registeredAt,

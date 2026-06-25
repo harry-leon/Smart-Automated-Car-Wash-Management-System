@@ -67,7 +67,7 @@ export function useUpdateStaffProfile() {
         setAuthUser({
           ...user,
           fullName: response.fullName,
-          phone: response.phone,
+          phone: response.phone ?? "",
           email: response.email,
         });
       }

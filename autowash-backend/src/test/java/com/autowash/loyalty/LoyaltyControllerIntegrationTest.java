@@ -57,7 +57,7 @@ class LoyaltyControllerIntegrationTest {
     void accountHistoryRedeemAndOpenApiUseCustomerScope() throws Exception {
         String phone = "0901888010";
         String accessToken = registerActivateAndLogin(phone);
-        User customer = UserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByEmailIgnoreCase(phone + "@example.com").orElseThrow();
         WashSession session = createCompletedSession(customer, "LOY_CTL_001", 600000);
 
         mockMvc.perform(get("/api/v1/loyalty/account")
@@ -155,9 +155,14 @@ class LoyaltyControllerIntegrationTest {
     }
 
     private WashSession createCompletedSession(User customer, String bookingId, long finalAmount) {
+        String plateSuffixSource = customer.getPhone() != null
+                ? customer.getPhone()
+                : customer.getEmail();
+        String plateSuffix = plateSuffixSource.substring(Math.max(0, plateSuffixSource.length() - 6));
+
         Vehicle vehicle = VehicleRepository.save(new Vehicle(
                 customer,
-                "30H-" + customer.getPhone().substring(customer.getPhone().length() - 6),
+                "30H-" + plateSuffix,
                 VehicleType.CAR,
                 "Toyota",
                 "Camry",
@@ -193,18 +198,19 @@ class LoyaltyControllerIntegrationTest {
         return washSessionRepository.saveAndFlush(session);
     }
 
-    private String registerActivateAndLogin(String phone) throws Exception {
+    private String registerActivateAndLogin(String emailLocalPart) throws Exception {
+        String email = emailLocalPart + "@example.com";
+
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
                                   "fullName": "Nguyen Van A",
-                                  "phone": "%s",
-                                  "email": "%s@example.com",
+                                  "email": "%s",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
-                                """.formatted(phone, phone)))
+                                """.formatted(email)))
                 .andReturn();
 
         String otp = readJson(registerResult).path("data").path("devOtp").asText();
@@ -213,10 +219,10 @@ class LoyaltyControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "%s",
+                                  "email": "%s",
                                   "otp": "%s"
                                 }
-                                """.formatted(phone, otp)))
+                                """.formatted(email, otp)))
                 .andExpect(status().isOk())
                 .andReturn();
 

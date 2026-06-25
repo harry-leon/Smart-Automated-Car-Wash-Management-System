@@ -61,6 +61,63 @@ test("builds auth session from API auth payload", () => {
   });
 });
 
+test("normalizes a missing phone number from Google auth payload to an empty string", () => {
+  const session = buildAuthSession({
+    userId: "user_google",
+    fullName: "Google Customer",
+    phone: null,
+    email: "google@example.com",
+    role: "CUSTOMER",
+    status: "ACTIVE",
+    tier: "MEMBER",
+    loyaltyBalance: 0,
+    accessToken: "access-token",
+    refreshToken: "refresh-token",
+    expiresIn: 3600,
+  });
+
+  assert.equal(session.user.phone, "");
+});
+
+test("normalizes a missing phone number from profile payload to an empty string", () => {
+  const user = applyProfileToAuthUser(
+    {
+      userId: "user_123",
+      fullName: "Existing User",
+      phone: "0901234567",
+      email: "old@example.com",
+      role: "CUSTOMER",
+      status: "ACTIVE",
+      tier: "MEMBER",
+      loyaltyBalance: 10,
+      isNewCustomer: true,
+    },
+    {
+      userId: "user_123",
+      fullName: "Existing User",
+      phone: null,
+      email: "old@example.com",
+      role: "CUSTOMER",
+      status: "ACTIVE",
+      tier: "MEMBER",
+      isNewCustomer: true,
+      loyaltyBalance: 10,
+      registeredAt: "2026-05-25T00:00:00Z",
+      preferences: {
+        userId: "user_123",
+        language: "VI",
+        theme: "LIGHT",
+        notificationsEnabled: true,
+        emailNotifications: false,
+        smsNotifications: true,
+      },
+      hasGoogleAuth: false,
+    },
+  );
+
+  assert.equal(user.phone, "");
+});
+
 test("applies fresh profile fields onto the authenticated user for workspace sync", () => {
   const user = applyProfileToAuthUser(
     {
@@ -93,6 +150,7 @@ test("applies fresh profile fields onto the authenticated user for workspace syn
         emailNotifications: false,
         smsNotifications: true,
       },
+      hasGoogleAuth: false,
     },
   );
 
@@ -142,6 +200,7 @@ test("detects when the auth user is already in sync with the profile payload", (
           emailNotifications: false,
           smsNotifications: true,
         },
+        hasGoogleAuth: false,
       },
     ),
     true,

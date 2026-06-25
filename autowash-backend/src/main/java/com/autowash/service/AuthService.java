@@ -11,11 +11,11 @@ import com.autowash.entity.User;
 
 public interface AuthService {
     RegisterResponse register(RegisterRequest request, RequestMetadata metadata);
-    SendOtpResponse sendRegistrationOtp(String email, String phone, RequestMetadata metadata);
-    LoginResponse verifyRegistrationOtp(String email, String phone, String otp, RequestMetadata metadata);
+    SendOtpResponse sendRegistrationOtp(String email, RequestMetadata metadata);
+    LoginResponse verifyRegistrationOtp(String email, String otp, RequestMetadata metadata);
     LoginResponse login(LoginRequest request);
-    SendOtpResponse requestForgotPassword(String email, String phone, RequestMetadata metadata);
-    void resetForgotPassword(String email, String phone, String otp, String newPassword, String newPasswordConfirm, RequestMetadata metadata);
+    SendOtpResponse requestForgotPassword(String email, RequestMetadata metadata);
+    void resetForgotPassword(String email, String otp, String newPassword, String newPasswordConfirm, RequestMetadata metadata);
     RefreshTokenResponse refresh(String token);
     void logout(String token);
     RefreshToken createRefreshToken(User user);

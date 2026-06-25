@@ -2,6 +2,7 @@ package com.autowash.service.impl;
 
 import com.autowash.entity.User;
 import com.autowash.entity.UserPreference;
+import com.autowash.repository.UserOAuthAccountRepository;
 import com.autowash.repository.UserRepository;
 import com.autowash.repository.UserPreferenceRepository;
 import com.autowash.service.CurrentUserService;
@@ -24,6 +25,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final CurrentUserService currentUserService;
     private final UserRepository UserRepository;
+    private final UserOAuthAccountRepository userOAuthAccountRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final CustomerLoyaltyService customerLoyaltyService;
     private final LoyaltyService loyaltyService;
@@ -31,12 +33,14 @@ public class UserProfileServiceImpl implements UserProfileService {
     public UserProfileServiceImpl(
             CurrentUserService currentUserService,
             UserRepository UserRepository,
+            UserOAuthAccountRepository userOAuthAccountRepository,
             UserPreferenceRepository userPreferenceRepository,
             CustomerLoyaltyService customerLoyaltyService,
             LoyaltyService loyaltyService
     ) {
         this.currentUserService = currentUserService;
         this.UserRepository = UserRepository;
+        this.userOAuthAccountRepository = userOAuthAccountRepository;
         this.userPreferenceRepository = userPreferenceRepository;
         this.customerLoyaltyService = customerLoyaltyService;
         this.loyaltyService = loyaltyService;
@@ -46,6 +50,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     public UserProfileResponse getCurrentUserProfile() {
         User user = currentUserService.getCurrentUser();
         UserPreference preference = loadOrCreatePreference(user);
+        boolean hasGoogleAuth = userOAuthAccountRepository.existsByUserId(user.getId());
         return new UserProfileResponse(
                 user.getId().toString(),
                 user.getFullName(),
@@ -54,6 +59,7 @@ public class UserProfileServiceImpl implements UserProfileService {
                 user.getStatus().name(),
                 user.getRole().name(),
                 loyaltyService.getAccount(user.getId()).tier(),
+                hasGoogleAuth,
                 user.isNewCustomer(),
                 customerLoyaltyService.getCurrentBalance(user),
                 user.getCreatedAt(),
@@ -71,16 +77,23 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Transactional
     public UpdateUserProfileResponse updateProfile(UpdateUserProfileRequest request) {
         User user = currentUserService.getCurrentUser();
-        if (UserRepository.existsByPhoneAndIdNot(request.phone(), user.getId())) {
+        boolean hasGoogleAuth = userOAuthAccountRepository.existsByUserId(user.getId());
+        String normalizedPhone = request.phone() == null || request.phone().isBlank() ? null : request.phone().trim();
+
+        if (normalizedPhone != null && UserRepository.existsByPhoneAndIdNot(normalizedPhone, user.getId())) {
             throw new ApiException(HttpStatus.CONFLICT, "Phone number already in use", "DUPLICATE_PHONE");
         }
-        if (request.email() != null && UserRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), user.getId())) {
+        if (!hasGoogleAuth
+                && request.email() != null
+                && UserRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), user.getId())) {
             throw new ApiException(HttpStatus.CONFLICT, "Email already in use", "DUPLICATE_EMAIL");
         }
 
         user.setFullName(request.fullName());
-        user.setEmail(request.email());
-        user.setPhone(request.phone());
+        if (!hasGoogleAuth) {
+            user.setEmail(request.email());
+        }
+        user.setPhone(normalizedPhone);
         user.markNotNewCustomer();
 
         return new UpdateUserProfileResponse(

@@ -327,7 +327,7 @@ class BookingControllerIntegrationTest {
     void applyPointsRedeemsLoyaltyBalanceAndUpdatesBookingPricing() throws Exception {
         String phone = "0901234718";
         String accessToken = registerActivateAndLogin(phone);
-        User customer = UserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByEmailIgnoreCase(phone + "@example.com").orElseThrow();
         LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(customer.getId())
                 .orElseGet(() -> new LoyaltyAccount(customer));
         account.addPoints(120);
@@ -363,7 +363,7 @@ class BookingControllerIntegrationTest {
     void applyPointsRejectsDuplicateApplication() throws Exception {
         String phone = "0901234719";
         String accessToken = registerActivateAndLogin(phone);
-        User customer = UserRepository.findByPhone(phone).orElseThrow();
+        User customer = UserRepository.findByEmailIgnoreCase(phone + "@example.com").orElseThrow();
         LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(customer.getId())
                 .orElseGet(() -> new LoyaltyAccount(customer));
         account.addPoints(160);
@@ -591,18 +591,19 @@ class BookingControllerIntegrationTest {
         BookingRepository.saveAndFlush(booking);
     }
 
-    private String registerActivateAndLogin(String phone) throws Exception {
+    private String registerActivateAndLogin(String emailLocalPart) throws Exception {
+        String email = emailLocalPart + "@example.com";
+
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
                                   "fullName": "Nguyen Van A",
-                                  "phone": "%s",
-                                  "email": "%s@example.com",
+                                  "email": "%s",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
-                                """.formatted(phone, phone)))
+                                """.formatted(email)))
                 .andReturn();
 
         String otp = readJson(registerResult).path("data").path("devOtp").asText();
@@ -611,10 +612,10 @@ class BookingControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "%s",
+                                  "email": "%s",
                                   "otp": "%s"
                                 }
-                                """.formatted(phone, otp)))
+                                """.formatted(email, otp)))
                 .andExpect(status().isOk())
                 .andReturn();
 
