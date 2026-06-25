@@ -58,7 +58,7 @@ public class AuthController {
             @Valid @RequestBody SendOtpRequest request,
             HttpServletRequest servletRequest
     ) {
-        return ApiResponse.ok("OTP sent successfully", authService.sendRegistrationOtp(request.email(), request.phone(), metadata(servletRequest)));
+        return ApiResponse.ok("OTP sent successfully", authService.sendRegistrationOtp(request.email(), metadata(servletRequest)));
     }
 
     @PostMapping("/otp/verify")
@@ -67,11 +67,11 @@ public class AuthController {
             @Valid @RequestBody VerifyOtpRequest request,
             HttpServletRequest servletRequest
     ) {
-        return ApiResponse.ok("OTP verified. Account activated.", authService.verifyRegistrationOtp(request.email(), request.phone(), request.otp(), metadata(servletRequest)));
+        return ApiResponse.ok("OTP verified. Account activated.", authService.verifyRegistrationOtp(request.email(), request.otp(), metadata(servletRequest)));
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Login with phone and password")
+    @Operation(summary = "Login with email and password")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok("Login successful", authService.login(request));
     }
@@ -84,7 +84,7 @@ public class AuthController {
     ) {
         return ApiResponse.ok(
                 "Password reset OTP sent successfully",
-                authService.requestForgotPassword(request.email(), request.phone(), metadata(servletRequest))
+                authService.requestForgotPassword(request.email(), metadata(servletRequest))
         );
     }
 
@@ -96,7 +96,6 @@ public class AuthController {
     ) {
         authService.resetForgotPassword(
                 request.email(),
-                request.phone(),
                 request.otp(),
                 request.newPassword(),
                 request.newPasswordConfirm(),

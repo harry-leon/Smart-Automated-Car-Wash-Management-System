@@ -13,7 +13,6 @@ public record UpdateUserProfileRequest(
         @Email(message = "Email must be valid")
         String email,
 
-        @NotBlank(message = "Phone is required")
         @Pattern(regexp = "^0[0-9]{9}$", message = "Phone must start with 0 and be 10 digits")
         String phone
 ) {

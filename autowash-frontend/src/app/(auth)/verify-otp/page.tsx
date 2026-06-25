@@ -7,7 +7,6 @@ export default function VerifyOtpPage({
 }: {
   searchParams?: {
     email?: string;
-    phone?: string;
     autoSend?: string;
     expiresIn?: string;
   };
@@ -29,7 +28,6 @@ export default function VerifyOtpPage({
       <VerifyOtpForm
         autoSend={searchParams?.autoSend === "1"}
         initialEmail={searchParams?.email ?? ""}
-        initialPhone={searchParams?.phone ?? ""}
         initialExpiresIn={Number.isFinite(expiresIn) ? expiresIn : 300}
       />
     </PublicAuthShell>
