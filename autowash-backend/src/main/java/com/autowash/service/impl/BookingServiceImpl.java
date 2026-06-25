@@ -40,7 +40,6 @@ import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
 import com.autowash.service.CurrentUserService;
 import com.autowash.repository.WashSessionRepository;
-import com.autowash.service.StaffAssignmentService;
 import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleStatus;
 import com.autowash.repository.VehicleRepository;
@@ -51,6 +50,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -78,13 +78,15 @@ public class BookingServiceImpl implements BookingService {
     private final ComboRepository ComboRepository;
     private final WashSessionRepository washSessionRepository;
     private final LoyaltyService loyaltyService;
-    private final StaffAssignmentService staffAssignmentService;
     private final CustomerComboService customerComboService;
     private final BookingOptionRepository bookingOptionRepository;
     private final BookingPromotionRepository bookingPromotionRepository;
     private final PaymentRepository paymentRepository;
     private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
     private final PromotionService promotionService;
+    private final LocalTime operatingStartTime;
+    private final LocalTime operatingEndTime;
+    private final int maxAdvanceDays;
 
     public BookingServiceImpl(
             CurrentUserService currentUserService,
@@ -95,13 +97,15 @@ public class BookingServiceImpl implements BookingService {
             ComboRepository ComboRepository,
             WashSessionRepository washSessionRepository,
             LoyaltyService loyaltyService,
-            StaffAssignmentService staffAssignmentService,
             CustomerComboService customerComboService,
             BookingOptionRepository bookingOptionRepository,
             BookingPromotionRepository bookingPromotionRepository,
             PaymentRepository paymentRepository,
             BookingStatusHistoryRepository bookingStatusHistoryRepository,
-            PromotionService promotionService
+            PromotionService promotionService,
+            @Value("${autowash.booking.operating-hours.start:08:00}") String operatingStartTime,
+            @Value("${autowash.booking.operating-hours.end:20:00}") String operatingEndTime,
+            @Value("${autowash.booking.max-advance-days:30}") int maxAdvanceDays
     ) {
         this.currentUserService = currentUserService;
         this.VehicleRepository = VehicleRepository;
@@ -111,18 +115,22 @@ public class BookingServiceImpl implements BookingService {
         this.ComboRepository = ComboRepository;
         this.washSessionRepository = washSessionRepository;
         this.loyaltyService = loyaltyService;
-        this.staffAssignmentService = staffAssignmentService;
         this.customerComboService = customerComboService;
         this.bookingOptionRepository = bookingOptionRepository;
         this.bookingPromotionRepository = bookingPromotionRepository;
         this.paymentRepository = paymentRepository;
         this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
         this.promotionService = promotionService;
+        this.operatingStartTime = LocalTime.parse(operatingStartTime);
+        this.operatingEndTime = LocalTime.parse(operatingEndTime);
+        this.maxAdvanceDays = maxAdvanceDays;
     }
 
     @Transactional
     public CreateBookingResponse createBooking(CreateBookingRequest request, Object metadata) {
         User user = currentUserService.getCurrentUser();
+        LocalTime requestedBookingTime = LocalTime.parse(request.bookingTime());
+        validateBookingTime(request.bookingDate(), requestedBookingTime);
         if (BookingRepository.countByCustomerAndStatusIn(user, ACTIVE_BOOKING_STATUSES) >= 3) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Maximum active bookings exceeded", "MAX_ACTIVE_BOOKINGS_EXCEEDED");
         }
@@ -183,7 +191,7 @@ public class BookingServiceImpl implements BookingService {
             voucherDiscount = catalogService.calculateDiscountAmount(voucher, subtotal);
         }
 
-        LocalDateTime scheduledAt = request.bookingDate().atTime(LocalTime.parse(request.bookingTime()));
+        LocalDateTime scheduledAt = request.bookingDate().atTime(requestedBookingTime);
         Booking booking = new Booking(
                 UUID.randomUUID(),
                 user,
@@ -192,7 +200,7 @@ public class BookingServiceImpl implements BookingService {
                 Combo == null ? null : Combo.getId(),
                 voucher == null ? null : voucher.getId(),
                 scheduledAt.toInstant(java.time.ZoneOffset.UTC),
-                LocalTime.parse(request.bookingTime()),
+                requestedBookingTime,
                 request.paymentMethod(),
                 basePrice,
                 optionsTotal,
@@ -200,11 +208,6 @@ public class BookingServiceImpl implements BookingService {
                 subtotal - voucherDiscount,
                 baseDuration + options.stream().mapToInt(CatalogService.CatalogOption::durationMinutes).sum()
         );
-        try {
-            booking.assignStaff(staffAssignmentService.pickLeastLoadedActiveStaff());
-        } catch (ApiException ignored) {
-            // If no active staff available, booking remains unassigned
-        }
         BookingRepository.save(booking);
         List<BookingOption> bookingOptions = options.stream()
                 .map(option -> new BookingOption(booking, option.optionId(), option.name(), option.price()))
@@ -375,7 +378,6 @@ public class BookingServiceImpl implements BookingService {
                 BookingStatus oldStatus = booking.getStatus();
                 booking.updateStatus(BookingStatus.CONFIRMED);
                 recordStatusHistory(booking, oldStatus, booking.getStatus(), currentActorOrNull(), "Payment completed");
-                staffAssignmentService.tryPickStaffForBookingAssignment().ifPresent(booking::assignStaff);
             }
         }
 
@@ -396,6 +398,31 @@ public class BookingServiceImpl implements BookingService {
         }
         booking.updateStatus(status);
         recordStatusHistory(booking, oldStatus, status, currentActorOrNull(), null);
+    }
+
+    private void validateBookingTime(LocalDate bookingDate, LocalTime bookingTime) {
+        if (bookingTime.isBefore(operatingStartTime) || !bookingTime.isBefore(operatingEndTime)) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking time must be within operating hours",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
+        LocalDate today = LocalDate.now();
+        if (bookingDate.isAfter(today.plusDays(maxAdvanceDays))) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking date exceeds maximum advance booking window",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
+        if (bookingDate.atTime(bookingTime).isBefore(LocalDateTime.now())) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Booking time cannot be in the past",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
     }
 
     private Booking findOwnedBooking(String bookingId) {

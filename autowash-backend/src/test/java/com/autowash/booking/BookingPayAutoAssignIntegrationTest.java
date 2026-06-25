@@ -1,6 +1,8 @@
 package com.autowash.booking;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -9,6 +11,7 @@ import com.autowash.entity.User;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.UserRepository;
+import com.autowash.shared.security.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -19,10 +22,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -41,6 +46,8 @@ class BookingPayAutoAssignIntegrationTest {
     @Autowired
     private BookingRepository bookingRepository;
 
+    private User operationsStaff;
+
     @BeforeEach
     void ensureActiveStaffExists() {
         User staff = new User(
@@ -51,11 +58,11 @@ class BookingPayAutoAssignIntegrationTest {
         );
         staff.activate();
         ReflectionTestUtils.setField(staff, "role", UserRole.STAFF);
-        userRepository.saveAndFlush(staff);
+        operationsStaff = userRepository.saveAndFlush(staff);
     }
 
     @Test
-    void payBookingAutoAssignsStaffWhenBookingIsConfirmed() throws Exception {
+    void checkInSessionAutoAssignsStaffWhenCustomerArrives() throws Exception {
         String accessToken = registerActivateAndLogin("0901234799");
         String vehicleId = createVehicle(accessToken, "30H-229999");
 
@@ -85,25 +92,41 @@ class BookingPayAutoAssignIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.bookingStatus").value("CONFIRMED"))
+                .andExpect(jsonPath("$.data.assignedStaffId").value(nullValue()))
+                .andExpect(jsonPath("$.data.assignedStaffName").value(nullValue()));
+
+        var booking = bookingRepository.findById(UUID.fromString(bookingId)).orElseThrow();
+        assertThat(booking.getAssignedStaff()).isNull();
+
+        mockMvc.perform(post("/api/v1/operations/sessions")
+                        .with(authenticatedStaff())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "bookingId": "%s",
+                                  "notes": "Customer arrived for check-in"
+                                }
+                                """.formatted(bookingId)))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.assignedStaffId").isNotEmpty())
                 .andExpect(jsonPath("$.data.assignedStaffName").isNotEmpty());
 
-        var booking = bookingRepository.findById(UUID.fromString(bookingId)).orElseThrow();
+        booking = bookingRepository.findById(UUID.fromString(bookingId)).orElseThrow();
         assertThat(booking.getAssignedStaff()).isNotNull();
     }
 
     private String registerActivateAndLogin(String phone) throws Exception {
+        String email = phone + "@example.com";
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "fullName": "Pay Auto Assign Customer",
-                                  "phone": "%s",
-                                  "email": "%s@example.com",
+                                  "email": "%s",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
-                                """.formatted(phone, phone)))
+                                """.formatted(email)))
                 .andExpect(status().isCreated())
                 .andReturn();
 
@@ -113,10 +136,10 @@ class BookingPayAutoAssignIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "phone": "%s",
+                                  "email": "%s",
                                   "otp": "%s"
                                 }
-                                """.formatted(phone, otp)))
+                                """.formatted(email, otp)))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -144,6 +167,13 @@ class BookingPayAutoAssignIntegrationTest {
 
     private JsonNode readJson(MvcResult result) throws Exception {
         return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    private RequestPostProcessor authenticatedStaff() {
+        UserPrincipal principal = new UserPrincipal(operationsStaff);
+        UsernamePasswordAuthenticationToken token =
+                new UsernamePasswordAuthenticationToken(principal, principal.getPassword(), principal.getAuthorities());
+        return authentication(token);
     }
 
     private String futureBookingDate() {

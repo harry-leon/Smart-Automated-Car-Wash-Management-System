@@ -54,6 +54,9 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     java.util.List<WashSession> findByAssignedStaffOrderByCreatedAtDesc(User assignedStaff);
 
+    @EntityGraph(attributePaths = {"booking"})
+    java.util.List<WashSession> findByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
+
     long countByAssignedStaffAndStatus(User assignedStaff, WashSessionStatus status);
 
     long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
@@ -76,6 +79,9 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
 
     @EntityGraph(attributePaths = {"booking"})
     List<WashSession> findByBooking_IdIn(Collection<UUID> bookingIds);
+
+    @EntityGraph(attributePaths = {"booking"})
+    List<WashSession> findByBooking_IdAndStatusIn(UUID bookingId, Collection<WashSessionStatus> statuses);
 
     long countByBookingCustomerAndStatus(User customer, WashSessionStatus status);
 

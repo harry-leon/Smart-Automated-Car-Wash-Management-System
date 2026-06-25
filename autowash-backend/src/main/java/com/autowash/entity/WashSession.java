@@ -9,7 +9,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
@@ -29,8 +28,8 @@ public class WashSession {
     @Id
     private UUID id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "booking_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -58,6 +57,12 @@ public class WashSession {
 
     @Column(name = "completed_at")
     private Instant completedAt;
+
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
+
+    @Column(name = "cancel_reason", length = 500)
+    private String cancelReason;
 
     @Column(name = "notes")
     private String notes;
@@ -100,6 +105,12 @@ public class WashSession {
         this.status = WashSessionStatus.COMPLETED;
         this.completedAt = completedAt;
         this.awardedPoints = awardedPoints;
+    }
+
+    public void cancel(Instant cancelledAt, String reason) {
+        this.status = WashSessionStatus.CANCELLED;
+        this.cancelledAt = cancelledAt;
+        this.cancelReason = reason;
     }
 
     public Integer getProjectedLoyaltyPoints() {

@@ -16,8 +16,10 @@ import com.autowash.repository.UserRepository;
 import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.BookingRepository;
+import com.autowash.repository.BookingStatusHistoryRepository;
 import com.autowash.entity.WashSession;
 import com.autowash.repository.WashSessionRepository;
+import com.autowash.service.BookingNoShowService;
 import com.autowash.shared.security.UserPrincipal;
 import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
@@ -61,6 +63,12 @@ class OperationsControllerIntegrationTest {
 
     @Autowired
     private WashSessionRepository washSessionRepository;
+
+    @Autowired
+    private BookingNoShowService bookingNoShowService;
+
+    @Autowired
+    private BookingStatusHistoryRepository bookingStatusHistoryRepository;
 
     private User defaultStaff;
 
@@ -108,6 +116,52 @@ class OperationsControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.awardedLoyaltyPoints").value(27));
 
         assertBookingStatus(booking.getId(), "COMPLETED");
+    }
+
+    @Test
+    void cancelSessionReturnsBookingToConfirmedAndAllowsReplacementSession() throws Exception {
+        Booking booking = createConfirmedBooking("OPS_BK_CANCEL", uniquePhone("0901"), 210000);
+        String sessionId = createSession(booking.getId());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
+                        .with(authenticatedUser(defaultStaff())))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
+                        .with(authenticatedUser(defaultStaff())))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/cancel", sessionId)
+                        .with(authenticatedUser(defaultStaff()))
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "reason": "Bay equipment unavailable"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.data.bookingStatus").value("CONFIRMED"))
+                .andExpect(jsonPath("$.data.reason").value("Bay equipment unavailable"));
+        assertBookingStatus(booking.getId(), "CONFIRMED");
+
+        String replacementSessionId = createSession(booking.getId());
+        assertThat(replacementSessionId).isNotEqualTo(sessionId);
+    }
+
+    @Test
+    void noShowScanMarksOverdueConfirmedBookingAndRecordsHistory() throws Exception {
+        Booking booking = createConfirmedBooking("OPS_BK_NOSHOW", uniquePhone("0901"), 180000);
+        String sessionId = createSession(booking.getId());
+        ReflectionTestUtils.setField(booking, "scheduledAt", Instant.now().minusSeconds(3600));
+        BookingRepository.saveAndFlush(booking);
+
+        int markedCount = bookingNoShowService.markOverdueBookingsNoShow();
+
+        assertThat(markedCount).isGreaterThanOrEqualTo(1);
+        assertBookingStatus(booking.getId(), "NO_SHOW");
+        WashSession session = washSessionRepository.findById(UUID.fromString(sessionId)).orElseThrow();
+        assertThat(session.getStatus()).isEqualTo(com.autowash.entity.enums.WashSessionStatus.CANCELLED);
+        assertThat(bookingStatusHistoryRepository.existsByBooking_IdAndNewStatus(booking.getId(), "NO_SHOW")).isTrue();
     }
 
     @Test
@@ -196,6 +250,21 @@ class OperationsControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         assertEligibleBookingMissing(eligibleForB, bookingA.getId());
+    }
+
+    @Test
+    void staffEligibleBookingsIncludeUnassignedConfirmedBookingsForAutoAssignment() throws Exception {
+        User staff = createActiveStaff("Staff Check In Desk");
+        Booking booking = createConfirmedBooking("OPS_BK_UNASSIGNED", uniquePhone("0901"), 220000, staff);
+        ReflectionTestUtils.setField(booking, "assignedStaff", null);
+        BookingRepository.saveAndFlush(booking);
+
+        MvcResult eligible = mockMvc.perform(get("/api/v1/operations/bookings/eligible-sessions")
+                        .with(authenticatedUser(staff)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertEligibleBookingContains(eligible, booking.getId());
     }
 
     @Test

@@ -154,6 +154,11 @@ public class Booking {
         this.updatedAt = Instant.now();
     }
 
+    public void markNoShow() {
+        this.status = BookingStatus.NO_SHOW;
+        this.updatedAt = Instant.now();
+    }
+
     public void cancel(String reason) {
         this.status = BookingStatus.CANCELLED;
         this.cancelReason = reason;

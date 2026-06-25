@@ -1,6 +1,7 @@
 package com.autowash.service;
 
 import com.autowash.dto.CheckInWashSessionResponse;
+import com.autowash.dto.CancelWashSessionResponse;
 import com.autowash.dto.CompleteWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
@@ -21,6 +22,7 @@ public interface OperationsService {
     CheckInWashSessionResponse checkInSession(UUID sessionId);
     StartWashSessionResponse startSession(UUID sessionId);
     CompleteWashSessionResponse completeSession(UUID sessionId);
+    CancelWashSessionResponse cancelSession(UUID sessionId, String reason);
     StaffDashboardSummaryResponse getStaffSummary();
     List<StaffOptionResponse> listActiveStaff();
     OperationsQueueResponse getOperationsQueue();

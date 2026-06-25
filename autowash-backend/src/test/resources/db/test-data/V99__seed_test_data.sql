@@ -13,6 +13,8 @@ INSERT INTO "vouchers" ("id", "code", "name", "discount_type", "discount_value",
 ('66666666-1234-1234-1234-123456789012', 'WELCOME20', '20% off for new customers', 'PERCENT', 20, 50000, 100000, 100, 0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE'),
 ('77777777-1234-1234-1234-123456789012', 'ADMINVOUCHER50', '50k off', 'FIXED_AMOUNT', 50000, 50000, 100000, 100, 0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE');
 
+UPDATE "vouchers" SET "new_customer_only" = true WHERE "code" = 'WELCOME20';
+
 INSERT INTO "promotions" ("id", "name", "description", "targeting_mode", "point_multiplier", "start_at", "end_at", "status") VALUES
 ('88888888-1234-1234-1234-123456789012', 'All 10% Off', '10% off for all', 'ALL_TIERS', 1.0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE');
 

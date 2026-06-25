@@ -1,6 +1,8 @@
 package com.autowash.service.impl;
 
 import com.autowash.entity.User;
+import com.autowash.entity.Booking;
+import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.BookingStatus;
 import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.UserStatus;
@@ -85,6 +87,52 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
     }
 
     @Override
+    public Optional<User> tryPickLeastLoadedActiveStaffForBooking(Booking booking) {
+        Instant dayStart = startOfToday();
+        Instant dayEnd = startOfTomorrow();
+        return UserRepository.findByRoleAndStatusOrderByFullNameAsc(UserRole.STAFF, UserStatus.ACTIVE)
+                .stream()
+                .filter(staff -> isStaffAvailableForBooking(staff, booking))
+                .min(Comparator
+                        .comparingLong((User staff) -> washSessionRepository.countByAssignedStaffAndStatusAndCompletedAtBetween(
+                                staff,
+                                WashSessionStatus.COMPLETED,
+                                dayStart,
+                                dayEnd
+                        ))
+                        .thenComparing(User::getFullName)
+                        .thenComparing(User::getId));
+    }
+
+    @Override
+    public User pickLeastLoadedActiveStaffForBooking(Booking booking) {
+        return tryPickLeastLoadedActiveStaffForBooking(booking)
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "No active staff available for this booking time",
+                        "NO_AVAILABLE_STAFF"
+                ));
+    }
+
+    @Override
+    public boolean isStaffAvailableForBooking(User staff, Booking booking) {
+        if (staff == null || booking == null) {
+            return false;
+        }
+        Instant targetStart = booking.getScheduledAt();
+        Instant targetEnd = targetStart.plusSeconds((long) booking.getEstimatedDurationMinutes() * 60);
+        List<WashSession> activeSessions = washSessionRepository.findByAssignedStaffAndStatusIn(staff, BUSY_SESSION_STATUSES);
+        return activeSessions.stream()
+                .filter(session -> !session.getBooking().getId().equals(booking.getId()))
+                .noneMatch(session -> overlaps(
+                        targetStart,
+                        targetEnd,
+                        session.getBooking().getScheduledAt(),
+                        session.getBooking().getScheduledAt().plusSeconds((long) session.getBooking().getEstimatedDurationMinutes() * 60)
+                ));
+    }
+
+    @Override
     public User requireActiveStaff(UUID staffId) {
         User staff = UserRepository.findById(staffId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Staff not found", "RESOURCE_NOT_FOUND"));
@@ -105,5 +153,9 @@ public class StaffAssignmentServiceImpl implements StaffAssignmentService {
 
     private static Instant startOfTomorrow() {
         return LocalDate.now(ASSIGNMENT_ZONE).plusDays(1).atStartOfDay(ASSIGNMENT_ZONE).toInstant();
+    }
+
+    private static boolean overlaps(Instant leftStart, Instant leftEnd, Instant rightStart, Instant rightEnd) {
+        return leftStart.isBefore(rightEnd) && rightStart.isBefore(leftEnd);
     }
 }

@@ -142,6 +142,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("select count(booking) from Booking booking where booking.customer = :customer")
     long countByCustomer(@Param("customer") User customer);
 
+    boolean existsByCustomerAndVoucherId(User customer, UUID voucherId);
+
     @Query("select count(booking) from Booking booking where booking.customer = :customer and booking.status = :status")
     long countByCustomerAndStatus(@Param("customer") User customer, @Param("status") BookingStatus status);
 
@@ -154,6 +156,23 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Query("select coalesce(sum(b.finalAmount), 0) from Booking b where b.status = :status")
     long sumFinalAmountByStatus(@Param("status") BookingStatus status);
+
+    @EntityGraph(attributePaths = {"customer"})
+    @Query("""
+            select booking from Booking booking
+            where booking.status = :status
+              and booking.scheduledAt <= :cutoff
+              and not exists (
+                    select session.id from WashSession session
+                    where session.booking = booking
+                      and session.status in :checkedInStatuses
+              )
+            """)
+    List<Booking> findNoShowCandidates(
+            @Param("status") BookingStatus status,
+            @Param("cutoff") Instant cutoff,
+            @Param("checkedInStatuses") Collection<WashSessionStatus> checkedInStatuses
+    );
 
     @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
@@ -176,7 +195,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("""
             select booking from Booking booking
             where booking.status = :status
-              and booking.assignedStaff = :staff
+              and (booking.assignedStaff = :staff or booking.assignedStaff is null)
               and not exists (
                     select activeSession.id from WashSession activeSession
                     where activeSession.booking = booking

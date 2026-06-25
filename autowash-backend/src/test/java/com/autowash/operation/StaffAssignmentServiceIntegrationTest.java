@@ -95,6 +95,19 @@ class StaffAssignmentServiceIntegrationTest {
         )).isTrue();
     }
 
+    @Test
+    void bookingTimeAssignmentExcludesStaffWithOverlappingActiveSession() {
+        User overlappingStaff = createStaff("Overlapping Session Staff", "0920");
+        Booking targetBooking = createConfirmedBooking(uniquePhone("0902"));
+        createActiveSessionAt(overlappingStaff, "0901777051", targetBooking.getScheduledAt());
+
+        assertThat(staffAssignmentService.isStaffAvailableForBooking(overlappingStaff, targetBooking)).isFalse();
+
+        User selected = staffAssignmentService.pickLeastLoadedActiveStaffForBooking(targetBooking);
+
+        assertThat(selected.getId()).isNotEqualTo(overlappingStaff.getId());
+    }
+
     private static final Set<com.autowash.entity.enums.BookingStatus> ACTIVE_ASSIGNMENT_STATUSES = Set.of(
             com.autowash.entity.enums.BookingStatus.CONFIRMED,
             com.autowash.entity.enums.BookingStatus.CHECKED_IN,
@@ -138,6 +151,14 @@ class StaffAssignmentServiceIntegrationTest {
 
     private void createActiveSession(User staff, String customerPhone) {
         Booking booking = createConfirmedBooking(customerPhone);
+        booking.assignStaff(staff);
+        BookingRepository.saveAndFlush(booking);
+        washSessionRepository.saveAndFlush(WashSession.create(booking, null, staff));
+    }
+
+    private void createActiveSessionAt(User staff, String customerPhone, Instant scheduledAt) {
+        Booking booking = createConfirmedBooking(customerPhone);
+        ReflectionTestUtils.setField(booking, "scheduledAt", scheduledAt);
         booking.assignStaff(staff);
         BookingRepository.saveAndFlush(booking);
         washSessionRepository.saveAndFlush(WashSession.create(booking, null, staff));

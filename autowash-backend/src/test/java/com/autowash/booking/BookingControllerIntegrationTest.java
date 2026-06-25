@@ -255,6 +255,121 @@ class BookingControllerIntegrationTest {
     }
 
     @Test
+    void createBookingRejectsOutsideOperatingHours() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234722");
+        String vehicleId = createVehicle(accessToken, "30H-223469");
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
+                                  "bookingDate": "%s",
+                                  "bookingTime": "23:00",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId, futureBookingDate())))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("BUSINESS_RULE_VIOLATION"));
+    }
+
+    @Test
+    void createBookingRejectsDateBeyondAdvanceWindow() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234723");
+        String vehicleId = createVehicle(accessToken, "30H-223470");
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
+                                  "bookingDate": "%s",
+                                  "bookingTime": "14:00",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId, LocalDate.now().plusDays(31))))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("BUSINESS_RULE_VIOLATION"));
+    }
+
+    @Test
+    void newCustomerOnlyVoucherRequiresNoPriorBookings() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234724");
+        String vehicleId = createVehicle(accessToken, "30H-223471");
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
+                                  "bookingDate": "%s",
+                                  "bookingTime": "14:00",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId, futureBookingDate())))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
+                                  "bookingDate": "%s",
+                                  "bookingTime": "15:00",
+                                  "voucherCode": "WELCOME20",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId, futureBookingDate())))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("NEW_CUSTOMER_ONLY"));
+    }
+
+    @Test
+    void voucherCanOnlyBeUsedOnceBySameCustomer() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234725");
+        String vehicleId = createVehicle(accessToken, "30H-223472");
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
+                                  "bookingDate": "%s",
+                                  "bookingTime": "14:00",
+                                  "voucherCode": "ADMINVOUCHER50",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId, futureBookingDate())))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/customers/bookings")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "vehicleId": "%s",
+                                  "packageId": "12345678-1234-1234-1234-123456789012",
+                                  "bookingDate": "%s",
+                                  "bookingTime": "15:00",
+                                  "voucherCode": "ADMINVOUCHER50",
+                                  "paymentMethod": "E_WALLET"
+                                }
+                                """.formatted(vehicleId, futureBookingDate())))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.error.code").value("VOUCHER_ALREADY_USED"));
+    }
+
+    @Test
     void getBookingsAndDetailAreOwnerScoped() throws Exception {
         String firstToken = registerActivateAndLogin("0901234706");
         String secondToken = registerActivateAndLogin("0901234707");

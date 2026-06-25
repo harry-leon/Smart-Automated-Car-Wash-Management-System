@@ -7,6 +7,7 @@ import com.autowash.repository.BookingRepository;
 import com.autowash.service.BookingService;
 import com.autowash.dto.EarnPointsResponse;
 import com.autowash.service.LoyaltyService;
+import com.autowash.dto.CancelWashSessionResponse;
 import com.autowash.dto.CheckInWashSessionResponse;
 import com.autowash.dto.CompleteWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
@@ -99,6 +100,8 @@ public class OperationsServiceImpl implements OperationsService {
                 .sessionId(session.getId())
                 .status(session.getStatus().name())
                 .bookingId(booking.getId().toString())
+                .assignedStaffId(assignedStaff == null ? null : assignedStaff.getId())
+                .assignedStaffName(assignedStaff == null ? null : assignedStaff.getFullName())
                 .createdAt(session.getCreatedAt())
                 .build();
     }
@@ -173,6 +176,7 @@ public class OperationsServiceImpl implements OperationsService {
     public CheckInWashSessionResponse checkInSession(UUID sessionId) {
         WashSession session = requireSessionForCurrentUser(sessionId);
         Booking booking = session.getBooking();
+        ensureSessionAssigneeForCheckIn(session);
         int projectedPoints = loyaltyService.calculateEarnPoints(sessionId);
 
         Instant checkedInAt = Instant.now();
@@ -220,6 +224,24 @@ public class OperationsServiceImpl implements OperationsService {
                 .status(session.getStatus().name())
                 .completedAt(session.getCompletedAt())
                 .awardedLoyaltyPoints(earnResult.pointsAwarded())
+                .build();
+    }
+
+    @Transactional
+    public CancelWashSessionResponse cancelSession(UUID sessionId, String reason) {
+        WashSession session = requireSessionForCurrentUser(sessionId);
+        WashSessionLifecycle.validateTransition(session.getStatus(), WashSessionStatus.CANCELLED);
+        String normalizedReason = normalizeCancelReason(reason);
+        Instant cancelledAt = Instant.now();
+        session.cancel(cancelledAt, normalizedReason);
+        bookingService.updateStatus(session.getBooking(), BookingStatus.CONFIRMED);
+        return CancelWashSessionResponse.builder()
+                .sessionId(session.getId())
+                .status(session.getStatus().name())
+                .bookingId(session.getBooking().getId().toString())
+                .bookingStatus(session.getBooking().getStatus().name())
+                .reason(session.getCancelReason())
+                .cancelledAt(session.getCancelledAt())
                 .build();
     }
 
@@ -303,16 +325,45 @@ public class OperationsServiceImpl implements OperationsService {
     private User resolveSessionAssigneeForCreate(Booking booking, User actor) {
         User assignedStaff = booking.getAssignedStaff();
         if (actor.getRole() == UserRole.STAFF) {
-            if (assignedStaff == null || !assignedStaff.getId().equals(actor.getId())) {
+            if (assignedStaff != null && !assignedStaff.getId().equals(actor.getId())) {
                 throw new ApiException(HttpStatus.NOT_FOUND, "Booking not found", "RESOURCE_NOT_FOUND");
             }
-            return actor;
         }
-        if (assignedStaff == null) {
-            assignedStaff = staffAssignmentService.pickLeastLoadedActiveStaff();
+
+        if (assignedStaff == null || !staffAssignmentService.isStaffAvailableForBooking(assignedStaff, booking)) {
+            assignedStaff = staffAssignmentService.pickLeastLoadedActiveStaffForBooking(booking);
             booking.assignStaff(assignedStaff);
         }
         return assignedStaff;
+    }
+
+    private void ensureSessionAssigneeForCheckIn(WashSession session) {
+        Booking booking = session.getBooking();
+        User assignedStaff = session.getAssignedStaff();
+        if (assignedStaff == null || !staffAssignmentService.isStaffAvailableForBooking(assignedStaff, booking)) {
+            assignedStaff = staffAssignmentService.pickLeastLoadedActiveStaffForBooking(booking);
+            booking.assignStaff(assignedStaff);
+            session.assignStaff(assignedStaff);
+        }
+    }
+
+    private String normalizeCancelReason(String reason) {
+        String normalized = reason == null ? "" : reason.trim();
+        if (normalized.isBlank()) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Cancel reason is required",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
+        if (normalized.length() > 500) {
+            throw new ApiException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Cancel reason must be at most 500 characters",
+                    "BUSINESS_RULE_VIOLATION"
+            );
+        }
+        return normalized;
     }
 
     private OperationsQueueResponse.QueueColumn column(
