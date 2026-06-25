@@ -154,6 +154,11 @@ public class Booking {
         this.updatedAt = Instant.now();
     }
 
+    public void markNoShow() {
+        this.status = BookingStatus.NO_SHOW;
+        this.updatedAt = Instant.now();
+    }
+
     public void cancel(String reason) {
         this.status = BookingStatus.CANCELLED;
         this.cancelReason = reason;
@@ -211,7 +216,6 @@ public class Booking {
         return PaymentStatus.UNPAID;
     }
 
-
     public String getVoucherCode() {
         return null;
     }
@@ -222,6 +226,7 @@ public class Booking {
 
     public void assignStaff(User staff) {
         this.assignedStaff = staff;
+        this.updatedAt = Instant.now();
     }
 
     public void startOtpConfirmationWindow(Instant expiresAt) {}

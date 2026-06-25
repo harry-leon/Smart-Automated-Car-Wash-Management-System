@@ -10,6 +10,8 @@ public record PayBookingResponse(
         long amount,
         String transactionRef,
         Instant paidAt,
-        String bookingStatus
+        String bookingStatus,
+        String assignedStaffId,
+        String assignedStaffName
 ) {
 }

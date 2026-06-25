@@ -286,7 +286,7 @@ CREATE TABLE "payments" (
 
 CREATE TABLE "wash_sessions" (
   "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
-  "booking_id" uuid UNIQUE NOT NULL,
+  "booking_id" uuid NOT NULL,
   "assigned_staff_id" uuid,
   "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'QUEUED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
   "fee_amount" bigint,
@@ -295,6 +295,8 @@ CREATE TABLE "wash_sessions" (
   "checked_in_at" timestamp with time zone,
   "started_at" timestamp with time zone,
   "completed_at" timestamp with time zone,
+  "cancelled_at" timestamp with time zone,
+  "cancel_reason" varchar(500),
   "notes" text,
   "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   CHECK ("fee_amount" IS NULL OR "fee_amount" >= 0),
@@ -411,6 +413,8 @@ CREATE INDEX "idx_bookings_package_id" ON "bookings" ("package_id");
 CREATE INDEX "idx_bookings_combo_id" ON "bookings" ("combo_id");
 
 CREATE INDEX "idx_bookings_voucher_id" ON "bookings" ("voucher_id");
+
+CREATE UNIQUE INDEX "uk_bookings_customer_voucher" ON "bookings" ("customer_id", "voucher_id");
 
 CREATE INDEX "idx_booking_options_option_id" ON "booking_options" ("option_id");
 

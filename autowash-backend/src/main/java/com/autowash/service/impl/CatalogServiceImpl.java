@@ -15,7 +15,6 @@ import com.autowash.entity.PackageService;
 import com.autowash.entity.User;
 import com.autowash.entity.Voucher;
 import com.autowash.entity.VoucherTier;
-import com.autowash.entity.enums.BookingStatus;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.ServiceRepository;
 import com.autowash.repository.ComboRepository;
@@ -241,8 +240,11 @@ public class CatalogServiceImpl implements CatalogService {
             throw businessRule("AMOUNT_TOO_LOW", "Booking amount is below minimum for this voucher", "INCREASE_ORDER_VALUE");
         }
         User currentUser = currentUserService.getCurrentUser();
-        if (voucher.isNewCustomerOnly() && bookingRepository.countByCustomerAndStatus(currentUser, BookingStatus.COMPLETED) > 0) {
+        if (voucher.isNewCustomerOnly() && bookingRepository.countByCustomer(currentUser) > 0) {
             throw businessRule("NEW_CUSTOMER_ONLY", "This voucher is for new customers only", "USE_DIFFERENT_VOUCHER");
+        }
+        if (bookingRepository.existsByCustomerAndVoucherId(currentUser, voucher.getId())) {
+            throw businessRule("VOUCHER_ALREADY_USED", "You have already used this voucher", "USE_DIFFERENT_VOUCHER");
         }
         List<VoucherTier> tiers = voucherTierRepository.findByVoucherId(voucher.getId());
         if (!tiers.isEmpty() && tiers.stream().noneMatch(tier -> tier.getTier() == currentCustomerTier())) {

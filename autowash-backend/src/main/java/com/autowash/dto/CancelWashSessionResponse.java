@@ -5,12 +5,12 @@ import java.util.UUID;
 import lombok.Builder;
 
 @Builder
-public record CreateWashSessionResponse(
+public record CancelWashSessionResponse(
         UUID sessionId,
         String status,
         String bookingId,
-        UUID assignedStaffId,
-        String assignedStaffName,
-        Instant createdAt
+        String bookingStatus,
+        String reason,
+        Instant cancelledAt
 ) {
 }
