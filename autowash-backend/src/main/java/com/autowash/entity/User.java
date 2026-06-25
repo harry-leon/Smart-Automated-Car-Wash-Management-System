@@ -69,6 +69,27 @@ public class User {
         this.newCustomer = true;
     }
 
+    /**
+     * Factory method for users created via Google OAuth.
+     * phone and passwordHash are null - user signed in with Google only.
+     */
+    public static User fromGoogle(String fullName, String email, String avatarUrl) {
+        Instant now = Instant.now();
+        User user = new User();
+        user.id = UUID.randomUUID();
+        user.fullName = (fullName != null && !fullName.isBlank()) ? fullName : email;
+        user.phone = null;
+        user.email = email;
+        user.passwordHash = null;
+        user.avatarUrl = avatarUrl;
+        user.role = UserRole.CUSTOMER;
+        user.status = UserStatus.ACTIVE;
+        user.createdAt = now;
+        user.updatedAt = now;
+        user.newCustomer = true;
+        return user;
+    }
+
     public void updateRole(UserRole role) {
         this.role = role;
         this.updatedAt = Instant.now();
@@ -76,6 +97,11 @@ public class User {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
         this.updatedAt = Instant.now();
     }
 
