@@ -3,9 +3,9 @@
 CREATE TABLE "users" (
   "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "full_name" varchar(100) NOT NULL,
-  "phone" varchar(20) UNIQUE NOT NULL,
+  "phone" varchar(20) UNIQUE,
   "email" varchar(255) UNIQUE,
-  "password_hash" varchar(255) NOT NULL,
+  "password_hash" varchar(255),
   "role" varchar(20) NOT NULL CHECK ("role" IN ('CUSTOMER', 'STAFF', 'ADMIN')),
   "status" varchar(20) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'ACTIVE', 'BLOCKED', 'SUSPENDED', 'INACTIVE')),
   "avatar_url" varchar(500),
@@ -41,6 +41,32 @@ CREATE TABLE "otp_verifications" (
   "expires_at" timestamp with time zone NOT NULL,
   "verified_at" timestamp with time zone,
   "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+);
+
+CREATE TABLE "user_oauth_accounts" (
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
+  "user_id" uuid NOT NULL,
+  "provider" varchar(30) NOT NULL CHECK ("provider" IN ('GOOGLE')),
+  "provider_user_id" varchar(255) NOT NULL,
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CONSTRAINT "uq_oauth_user_provider" UNIQUE ("user_id", "provider"),
+  CONSTRAINT "uq_oauth_provider_uid" UNIQUE ("provider", "provider_user_id")
+);
+
+CREATE TABLE "google_auth_tickets" (
+  "state" varchar(255) PRIMARY KEY,
+  "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'LINK_REQUIRED', 'READY', 'CONSUMED', 'EXPIRED')),
+  "provider_email" varchar(255),
+  "provider_full_name" varchar(150),
+  "provider_avatar_url" varchar(500),
+  "provider_subject" varchar(255),
+  "return_url" varchar(1000) NOT NULL,
+  "user_id" uuid,
+  "expires_at" timestamp with time zone NOT NULL,
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "consumed_at" timestamp with time zone
 );
 
 CREATE TABLE "vehicles" (
@@ -350,6 +376,12 @@ CREATE INDEX "idx_refresh_tokens_user_id" ON "refresh_tokens" ("user_id");
 
 CREATE INDEX "idx_otp_verifications_user_id" ON "otp_verifications" ("user_id");
 
+CREATE INDEX "idx_oauth_user_id" ON "user_oauth_accounts" ("user_id");
+
+CREATE INDEX "idx_google_tickets_user_id" ON "google_auth_tickets" ("user_id");
+
+CREATE INDEX "idx_google_tickets_expires" ON "google_auth_tickets" ("expires_at");
+
 CREATE INDEX "idx_vehicles_customer_id" ON "vehicles" ("customer_id");
 
 CREATE INDEX "idx_package_services_package_id" ON "package_services" ("package_id");
@@ -417,6 +449,10 @@ ALTER TABLE "user_preferences" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("
 ALTER TABLE "refresh_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
 ALTER TABLE "otp_verifications" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
+
+ALTER TABLE "user_oauth_accounts" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
+
+ALTER TABLE "google_auth_tickets" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
 ALTER TABLE "vehicles" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 

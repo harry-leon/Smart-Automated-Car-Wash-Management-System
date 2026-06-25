@@ -2,18 +2,16 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Loader2, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
+import { ArrowRight, Loader2, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { useCustomerRegister } from "@/features/auth/hooks/use-auth";
-import { emailPattern, passwordPattern, phonePattern } from "@/shared/lib/validators";
-import { cn } from "@/shared/lib/utils";
+import { emailPattern, passwordPattern } from "@/shared/lib/validators";
 
 export function RegisterForm() {
   const router = useRouter();
   const registerMutation = useCustomerRegister();
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -22,32 +20,27 @@ export function RegisterForm() {
   const fullNameError =
     (fullName.length > 0 && fullName.trim().length === 0 ? "Full name is required." : null) ??
     getFieldErrorMessage(fieldErrors, "fullName");
-  const phoneError =
-    (phone.length > 0 && !phonePattern.test(phone)
-      ? "Phone must use Vietnamese format 0XXXXXXXXX."
-      : null) ?? getFieldErrorMessage(fieldErrors, "phone");
   const emailError =
-    (email.length > 0 && !emailPattern.test(email) ? "Email không hợp lệ." : null) ??
+    (email.length > 0 && !emailPattern.test(email) ? "Email khong hop le." : null) ??
     getFieldErrorMessage(fieldErrors, "email");
   const passwordError =
     (password.length > 0 && !passwordPattern.test(password)
-      ? "Mật khẩu cần có chữ hoa, chữ thường, số, ký tự đặc biệt và tối thiểu 8 ký tự."
+      ? "Mat khau can co chu hoa, chu thuong, so, ky tu dac biet va toi thieu 8 ky tu."
       : null) ?? getFieldErrorMessage(fieldErrors, "password");
   const passwordConfirmError =
     (passwordConfirm.length > 0 && passwordConfirm !== password
-      ? "Mật khẩu xác nhận phải khớp với mật khẩu."
+      ? "Mat khau xac nhan phai khop voi mat khau."
       : null) ?? getFieldErrorMessage(fieldErrors, "passwordConfirm");
 
   const canSubmit = useMemo(() => {
     return (
       fullName.trim().length > 0 &&
-      phonePattern.test(phone) &&
       emailPattern.test(email) &&
       passwordPattern.test(password) &&
       passwordConfirm === password &&
       !registerMutation.isPending
     );
-  }, [email, fullName, password, passwordConfirm, phone, registerMutation.isPending]);
+  }, [email, fullName, password, passwordConfirm, registerMutation.isPending]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -58,7 +51,6 @@ export function RegisterForm() {
 
     const response = await registerMutation.mutateAsync({
       fullName: fullName.trim(),
-      phone,
       email,
       password,
       passwordConfirm,
@@ -74,7 +66,6 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-4">
-        {/* Full Name */}
         <div className="space-y-2">
           <label htmlFor="fullName" className="text-sm font-bold tracking-wide text-slate-700">
             Full name
@@ -94,36 +85,10 @@ export function RegisterForm() {
             </div>
           </div>
           {fullNameError ? (
-            <p className="text-xs font-semibold text-rose-600 pl-1">{fullNameError}</p>
+            <p className="pl-1 text-xs font-semibold text-rose-600">{fullNameError}</p>
           ) : null}
         </div>
 
-        {/* Phone */}
-        <div className="space-y-2">
-          <label htmlFor="phone" className="text-sm font-bold tracking-wide text-slate-700">
-            Phone
-          </label>
-          <div className="relative flex items-center">
-            <input
-              id="phone"
-              autoComplete="tel"
-              inputMode="tel"
-              name="phone"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value.replace(/\s/g, ""))}
-              placeholder="0901234567"
-              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
-            />
-            <div className="absolute left-4 flex items-center justify-center text-slate-400">
-              <Phone className="h-4 w-4" />
-            </div>
-          </div>
-          {phoneError ? (
-            <p className="text-xs font-semibold text-rose-600 pl-1">{phoneError}</p>
-          ) : null}
-        </div>
-
-        {/* Email */}
         <div className="space-y-2">
           <label htmlFor="email" className="text-sm font-bold tracking-wide text-slate-700">
             Email
@@ -143,14 +108,13 @@ export function RegisterForm() {
             </div>
           </div>
           {emailError ? (
-            <p className="text-xs font-semibold text-rose-600 pl-1">{emailError}</p>
+            <p className="pl-1 text-xs font-semibold text-rose-600">{emailError}</p>
           ) : null}
         </div>
 
-        {/* Password */}
         <div className="space-y-2">
           <label htmlFor="password" className="text-sm font-bold tracking-wide text-slate-700">
-            Mật khẩu
+            Mat khau
           </label>
           <div className="relative flex items-center">
             <input
@@ -160,7 +124,7 @@ export function RegisterForm() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="••••••••"
+              placeholder="********"
               className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
             />
             <div className="absolute left-4 flex items-center justify-center text-slate-400">
@@ -168,14 +132,13 @@ export function RegisterForm() {
             </div>
           </div>
           {passwordError ? (
-            <p className="text-xs font-semibold text-rose-600 pl-1">{passwordError}</p>
+            <p className="pl-1 text-xs font-semibold text-rose-600">{passwordError}</p>
           ) : null}
         </div>
 
-        {/* Confirm Password */}
         <div className="space-y-2">
           <label htmlFor="passwordConfirm" className="text-sm font-bold tracking-wide text-slate-700">
-            Xác nhận mật khẩu
+            Xac nhan mat khau
           </label>
           <div className="relative flex items-center">
             <input
@@ -185,7 +148,7 @@ export function RegisterForm() {
               type="password"
               value={passwordConfirm}
               onChange={(event) => setPasswordConfirm(event.target.value)}
-              placeholder="••••••••"
+              placeholder="********"
               className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
             />
             <div className="absolute left-4 flex items-center justify-center text-slate-400">
@@ -193,7 +156,7 @@ export function RegisterForm() {
             </div>
           </div>
           {passwordConfirmError ? (
-            <p className="text-xs font-semibold text-rose-600 pl-1">{passwordConfirmError}</p>
+            <p className="pl-1 text-xs font-semibold text-rose-600">{passwordConfirmError}</p>
           ) : null}
         </div>
       </div>
@@ -211,7 +174,7 @@ export function RegisterForm() {
             </>
           ) : (
             <>
-              Đăng ký
+              Dang ky
               <ArrowRight className="h-4 w-4" />
             </>
           )}
@@ -219,7 +182,7 @@ export function RegisterForm() {
       </div>
 
       {errorMessage ? (
-        <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 text-center text-xs font-bold text-rose-600 animate-pulse">
+        <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-center text-xs font-bold text-rose-600 animate-pulse">
           {errorMessage}
         </div>
       ) : null}

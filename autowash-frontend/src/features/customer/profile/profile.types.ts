@@ -15,11 +15,12 @@ export type UserPreferences = {
 export type UserProfile = {
   userId: string;
   fullName: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   status: UserStatus;
   role: UserRole;
   tier: LoyaltyTier | null;
+  hasGoogleAuth: boolean;
   isNewCustomer: boolean;
   loyaltyBalance: number;
   registeredAt: string;
@@ -29,13 +30,13 @@ export type UserProfile = {
 export type UpdateUserProfileRequest = {
   fullName: string;
   email: string | null;
-  phone: string;
+  phone: string | null;
 };
 
 export type UpdateUserProfileResponse = {
   userId: string;
   fullName: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   updatedAt: string;
 };

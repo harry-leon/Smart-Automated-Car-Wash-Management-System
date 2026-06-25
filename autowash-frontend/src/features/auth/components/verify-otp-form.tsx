@@ -22,12 +22,10 @@ const OTP_LENGTH = 6;
 export function VerifyOtpForm({
   autoSend,
   initialEmail,
-  initialPhone,
   initialExpiresIn,
 }: {
   autoSend: boolean;
   initialEmail: string;
-  initialPhone: string;
   initialExpiresIn: number;
 }) {
   const [email, setEmail] = useState(initialEmail);

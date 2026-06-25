@@ -33,8 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthServiceImpl implements AuthService {
-    private static final String PHONE_PATTERN = "^0[0-9]{9}$";
-
     private final UserRepository UserRepository;
     private final OtpVerificationRepository OtpVerificationRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -81,16 +79,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Transactional
     public RegisterResponse register(RegisterRequest request, RequestMetadata metadata) {
-        if (UserRepository.existsByPhone(request.phone())) {
-            throw new ApiException(HttpStatus.CONFLICT, "Phone number already registered", "DUPLICATE_PHONE");
-        }
         if (UserRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
         }
 
         User user = new User(
                 request.fullName(),
-                request.phone(),
+                null,
                 request.email(),
                 passwordEncoder.encode(request.password())
         );
@@ -100,7 +95,6 @@ public class AuthServiceImpl implements AuthService {
 
         return new RegisterResponse(
                 user.getId().toString(),
-                user.getPhone(),
                 user.getFullName(),
                 user.getEmail(),
                 user.getStatus().name(),
@@ -111,8 +105,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Transactional
-    public SendOtpResponse sendRegistrationOtp(String email, String phone, RequestMetadata metadata) {
-        User user = resolveOtpUser(email, phone)
+    public SendOtpResponse sendRegistrationOtp(String email, RequestMetadata metadata) {
+        User user = resolveEmailUser(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         requirePendingUser(user);
         enforceResendLimit(user);
@@ -147,8 +141,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Transactional(noRollbackFor = ApiException.class)
-    public LoginResponse verifyRegistrationOtp(String email, String phone, String otp, RequestMetadata metadata) {
-        User user = resolveOtpUser(email, phone)
+    public LoginResponse verifyRegistrationOtp(String email, String otp, RequestMetadata metadata) {
+        User user = resolveEmailUser(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         requirePendingUser(user);
 
@@ -182,14 +176,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        User user = resolveLoginUser(request.identifier())
+        User user = resolveEmailUser(request.email())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Invalid credentials", "INVALID_CREDENTIALS"));
 
         if (user.getStatus() == UserStatus.BLOCKED) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Account blocked", "ACCOUNT_BLOCKED");
         }
 
-        if (user.getStatus() != UserStatus.ACTIVE || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        if (user.getStatus() != UserStatus.ACTIVE
+                || user.getPasswordHash() == null
+                || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Invalid credentials", "INVALID_CREDENTIALS");
         }
 
@@ -200,8 +196,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Transactional
-    public SendOtpResponse requestForgotPassword(String email, String phone, RequestMetadata metadata) {
-        User user = resolveOtpUser(email, phone)
+    public SendOtpResponse requestForgotPassword(String email, RequestMetadata metadata) {
+        User user = resolveEmailUser(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         requireActiveUser(user);
         enforcePasswordResetResendLimit(user);
@@ -212,7 +208,6 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(noRollbackFor = ApiException.class)
     public void resetForgotPassword(
             String email,
-            String phone,
             String otp,
             String newPassword,
             String newPasswordConfirm,
@@ -222,7 +217,7 @@ public class AuthServiceImpl implements AuthService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Passwords do not match", "VALIDATION_ERROR");
         }
 
-        User user = resolveOtpUser(email, phone)
+        User user = resolveEmailUser(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
         requireActiveUser(user);
         verifyOtpForPurpose(user, OtpPurpose.PASSWORD_RESET, otp);
@@ -283,6 +278,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 6) {
+            return null;
+        }
         return phone.substring(0, 4) + "****" + phone.substring(phone.length() - 2);
     }
 
@@ -313,14 +311,11 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private java.util.Optional<User> resolveOtpUser(String email, String phone) {
-        if (email != null && !email.isBlank()) {
-            return UserRepository.findByEmailIgnoreCase(email.trim());
+    private java.util.Optional<User> resolveEmailUser(String email) {
+        if (email == null || email.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Email is required", "VALIDATION_ERROR");
         }
-        if (phone != null && !phone.isBlank()) {
-            return UserRepository.findByPhone(phone.trim());
-        }
-        throw new ApiException(HttpStatus.BAD_REQUEST, "Email is required", "VALIDATION_ERROR");
+        return UserRepository.findByEmailIgnoreCase(email.trim());
     }
 
     private void invalidateActiveRegistrationOtps(User user) {
@@ -399,12 +394,5 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private java.util.Optional<User> resolveLoginUser(String identifier) {
-        String normalizedIdentifier = identifier.trim();
-        if (normalizedIdentifier.matches(PHONE_PATTERN)) {
-            return UserRepository.findByPhone(normalizedIdentifier);
-        }
-        return UserRepository.findByEmailIgnoreCase(normalizedIdentifier);
-    }
 }
 
