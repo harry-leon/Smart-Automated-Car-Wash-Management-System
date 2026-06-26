@@ -82,7 +82,7 @@ export function LoginForm() {
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value.replace(/\s/g, ""))}
             placeholder="0901234567 hoặc you@gmail.com"
-            className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
+            className="h-12 rounded-md border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-teal-400 focus:bg-white focus:ring-teal-200"
           />
         </div>
         {identifierValidationMessage ? (
@@ -104,7 +104,7 @@ export function LoginForm() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="••••••••"
-            className="h-12 rounded-xl border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-sky-400 focus:bg-white focus:ring-sky-200"
+            className="h-12 rounded-md border-slate-200 bg-slate-50/70 pl-10 text-base shadow-none transition focus:border-teal-400 focus:bg-white focus:ring-teal-200"
           />
         </div>
         {passwordValidationMessage ? (
@@ -112,19 +112,19 @@ export function LoginForm() {
         ) : null}
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3">
         <label className="flex items-center gap-3 text-sm text-slate-600">
           <Checkbox checked={rememberMe} onCheckedChange={(checked) => setRememberMe(Boolean(checked))} />
           Ghi nhớ đăng nhập
         </label>
-        <Link href="/register" className="text-sm font-semibold text-sky-700 hover:text-sky-800">
+        <Link href="/register" className="text-sm font-semibold text-teal-700 hover:text-teal-800">
           Tạo tài khoản
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-blue-50 p-4 text-sm text-slate-600">
+      <div className="rounded-lg border border-teal-100 bg-teal-50/70 p-4 text-sm text-slate-600">
         <div className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
-          <Sparkles className="h-4 w-4 text-sky-600" />
+          <Sparkles className="h-4 w-4 text-teal-700" />
           Đăng nhập bằng số điện thoại hoặc email
         </div>
         <div>Sau khi đăng nhập, hệ thống tự chuyển đến khu vực khách hàng.</div>
@@ -133,7 +133,7 @@ export function LoginForm() {
       <button
         type="button"
         onClick={handleContinueWithGoogle}
-        className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50"
+        className="flex h-12 w-full items-center justify-center gap-3 rounded-md border border-slate-200 bg-white text-sm font-bold text-slate-800 transition hover:border-slate-300 hover:bg-slate-50"
       >
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[11px] font-black text-white">G</span>
         Continue with Google
@@ -144,7 +144,7 @@ export function LoginForm() {
         size="lg"
         disabled={!canSubmit}
         className={cn(
-          "h-12 w-full rounded-xl bg-slate-900 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-0.5 hover:bg-slate-800",
+          "h-12 w-full rounded-md bg-slate-900 text-base font-semibold text-white shadow-lg shadow-slate-900/15 transition-all hover:-translate-y-0.5 hover:bg-slate-800",
           "disabled:translate-y-0 disabled:shadow-none",
         )}
       >
