@@ -117,7 +117,7 @@ This README documents observable behavior exactly as implemented, including thos
 5. Customer manages vehicles on `/customer/vehicles`.
 6. Customer enters `/customer/bookings/new` to create a booking through a checkout-style flow.
 7. Customer selects either:
-   - `SINGLE_PACKAGE`, with package, add-ons, voucher, and payment method
+   - `SINGLE_PACKAGE`, with package, services, voucher, and payment method
    - `COMBO`, using the active combo and linked vehicle
 8. Payment is simulated in the booking form itself:
    - zero-amount combo bookings are treated as paid
@@ -214,7 +214,7 @@ This README documents observable behavior exactly as implemented, including thos
 | BR-41 | Only service packages with status `ACTIVE` appear in the customer booking checkout flow. |
 | BR-42 | Combo mode is disabled when there is no active combo or remaining combo uses are zero. |
 | BR-43 | Combo mode auto-locks the booking to the combo-linked vehicle and combo-supported package. |
-| BR-44 | Single-package mode allows add-on selection; combo mode does not expose add-ons in the form. |
+| BR-44 | Single-package mode allows service selection; combo mode does not expose services in the form. |
 | BR-45 | Customer booking schedule defaults to tomorrow at `10:30`. |
 | BR-46 | Booking time picker blocks slots already occupied by module-local bookings in statuses `CONFIRMED`, `CHECKED_IN`, or `IN_PROGRESS`. |
 | BR-47 | Customer booking supports one voucher per booking. |

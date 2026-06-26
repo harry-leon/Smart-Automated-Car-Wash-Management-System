@@ -30,7 +30,7 @@ The AutoWash Pro system operates across 6 major business domains:
 - **Wash Sessions** - Operational record of staff executing a booking
 - **Live Wash Tracking** - Derived progress view from wash session status, start time, and service duration
 - **Loyalty Points** - Point ledger with earning and redemption transactions
-- **Packages** - Service offerings with pricing and add-ons
+- **Packages** - Service offerings with pricing and services
 - **Combos** - Time-based subscription packages
 - **Promotions/Vouchers** - Discount codes and promotional mechanics
 - **Staff Members** - Service workers with operational status and capacity
@@ -517,37 +517,37 @@ Layer conventions for new backend code:
 - **Priority:** High
 - **Dependency:** None
 
-### Task 4.2 - Package Add-ons Management
+### Task 4.2 - Package services Management
 
-- **Name:** Implement Add-ons for Packages
-- **Description:** Define optional add-on services that can be selected during booking
+- **Name:** Implement services for Packages
+- **Description:** Define optional service services that can be selected during booking
 - **Input:**
-  - Add-on name (e.g., "Interior Cleaning", "Wax Coating")
+  - service name (e.g., "Interior Cleaning", "Wax Coating")
   - Description
   - Price (additional cost)
   - Category
-  - Applicable to packages (which packages support this add-on)
+  - Applicable to packages (which packages support this service)
 - **Output:**
-  - POST `/api/v1/admin/add-ons` - Create add-on
-  - GET `/api/v1/add-ons` - List available add-ons
-  - PUT `/api/v1/admin/add-ons/{addonId}` - Update add-on
+  - POST `/api/v1/admin/services` - Create service
+  - GET `/api/v1/services` - List available services
+  - PUT `/api/v1/admin/services/{addonId}` - Update service
   - `add_ons` table: `( id, name, description, price, createdAt, ... )`
   - `package_add_ons` junction table: `( id, packageId, addonId )`
 - **Business Rules:**
-  - BR-42: Add-ons are optional, customer selects during checkout
-  - BR-43: Add-on pricing is cumulative with base package price
+  - BR-42: services are optional, customer selects during checkout
+  - BR-43: service pricing is cumulative with base package price
 - **Priority:** Medium
 - **Dependency:** Task 4.1
 
 ### Task 4.3 - Create Booking (Checkout Flow)
 
 - **Name:** Implement Create Booking Endpoint
-- **Description:** Customer creates a new booking with package, add-ons, vehicle, and payment method selection
+- **Description:** Customer creates a new booking with package, services, vehicle, and payment method selection
 - **Input:**
   - Customer ID (from JWT)
   - Vehicle ID (customer's vehicle)
   - Package ID
-  - Add-on IDs (optional array)
+  - service IDs (optional array)
   - Preferred date/time
   - Vehicle plate (verification)
   - Voucher code (optional)
@@ -607,7 +607,7 @@ Layer conventions for new backend code:
   - Sort: by date (desc default)
 - **Output:**
   - GET `/api/v1/customers/bookings` endpoint
-  - List of booking DTOs with nested package, add-ons, vehicle, status
+  - List of booking DTOs with nested package, services, vehicle, status
   - Pagination metadata: total, page, limit
   - Include: bookingId, date, package name, total price, status, washStatus (if completed)
 - **Business Rules:**
@@ -625,7 +625,7 @@ Layer conventions for new backend code:
   - Customer ID (from JWT, ownership verification)
 - **Output:**
   - GET `/api/v1/customers/bookings/{bookingId}` endpoint
-  - Full booking DTO: customer, vehicle, package, add-ons, price breakdown, payment info, status, wash session details (if linked)
+  - Full booking DTO: customer, vehicle, package, services, price breakdown, payment info, status, wash session details (if linked)
   - HTTP 404 if not found or not owned by user
 - **Business Rules:**
   - BR-57: Only booking owner (customer) can view details
@@ -744,7 +744,7 @@ Layer conventions for new backend code:
 - **Business Rules:**
   - BR-83: Start washing enabled only when already checked-in
   - BR-71: Only assigned staff can start wash
-  - BR-72: Estimated finish time calculated (base + add-ons duration)
+  - BR-72: Estimated finish time calculated (base + services duration)
 - **Priority:** High
 - **Dependency:** Task 5.2
 
@@ -1309,7 +1309,7 @@ Layer conventions for new backend code:
   - Linked wash session status (if exists)
 - **Output:**
   - GET `/api/v1/admin/bookings/{bookingId}` endpoint
-  - Full booking detail DTO: customer, vehicle, package, add-ons, price breakdown, wash session (if exists)
+  - Full booking detail DTO: customer, vehicle, package, services, price breakdown, wash session (if exists)
   - PUT `/api/v1/admin/bookings/{bookingId}/assign-staff` endpoint (if session exists and IN_PROGRESS)
   - Update `wash_sessions.staffId`
   - Response: updated booking with new staff
@@ -1610,7 +1610,7 @@ Layer conventions for new backend code:
 - **Input:**
   - Customer ID from JWT
   - Active booking or wash session ID
-  - Wash session `startedAt`, status, package duration, add-on durations
+  - Wash session `startedAt`, status, package duration, service durations
 - **Output:**
   - GET `/api/v1/customers/wash-tracking/active` - Return active tracked booking/session if any
   - GET `/api/v1/customers/wash-tracking/{washSessionId}` - Return current progress snapshot
@@ -1808,7 +1808,7 @@ Layer conventions for new backend code:
 8. **Task 3.1** - Create Vehicle
 9. **Task 3.2** - List Customer Vehicles
 10. **Task 4.1** - Package Catalog Management
-11. **Task 4.2** - Package Add-ons
+11. **Task 4.2** - Package services
 12. **Task 4.3** - Create Booking
 13. **Task 4.4** - Payment Simulation & Finalization
 

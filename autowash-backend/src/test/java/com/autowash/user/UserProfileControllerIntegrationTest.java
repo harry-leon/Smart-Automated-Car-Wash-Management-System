@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.hamcrest.Matchers.nullValue;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -35,12 +36,13 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void getProfileReturnsAuthenticatedCustomerProfile() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234680");
+        String accessToken = registerActivateAndLogin("customer4680");
 
         mockMvc.perform(get("/api/v1/users/profile")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.phone").value("0901234680"))
+                .andExpect(jsonPath("$.data.phone").value(nullValue()))
+                .andExpect(jsonPath("$.data.hasGoogleAuth").value(false))
                 .andExpect(jsonPath("$.data.role").value("CUSTOMER"))
                 .andExpect(jsonPath("$.data.tier").value("MEMBER"))
                 .andExpect(jsonPath("$.data.loyaltyBalance").value(0))
@@ -56,7 +58,7 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void updateProfileUpdatesFullNameEmailAndPhone() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234681");
+        String accessToken = registerActivateAndLogin("customer4681");
 
         mockMvc.perform(put("/api/v1/users/profile")
                         .header("Authorization", "Bearer " + accessToken)
@@ -76,8 +78,20 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void updateProfileRejectsDuplicatePhone() throws Exception {
-        String firstAccessToken = registerActivateAndLogin("0901234585");
-        registerActivateAndLogin("0901234586");
+        String firstAccessToken = registerActivateAndLogin("customer4585");
+        String secondAccessToken = registerActivateAndLogin("customer4586");
+
+        mockMvc.perform(put("/api/v1/users/profile")
+                        .header("Authorization", "Bearer " + secondAccessToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "fullName": "Nguyen Van Existing",
+                                  "email": "customer4586@example.com",
+                                  "phone": "0901234586"
+                                }
+                                """))
+                .andExpect(status().isOk());
 
         mockMvc.perform(put("/api/v1/users/profile")
                         .header("Authorization", "Bearer " + firstAccessToken)
@@ -85,7 +99,7 @@ class UserProfileControllerIntegrationTest {
                         .content("""
                                 {
                                   "fullName": "Nguyen Van Updated",
-                                  "email": "updated@example.com",
+                                  "email": "customer4585.updated@example.com",
                                   "phone": "0901234586"
                                 }
                                 """))
@@ -95,7 +109,7 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void updateProfileRejectsInvalidEmail() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234682");
+        String accessToken = registerActivateAndLogin("customer4682");
 
         mockMvc.perform(put("/api/v1/users/profile")
                         .header("Authorization", "Bearer " + accessToken)
@@ -112,7 +126,7 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void getPreferencesReturnsCurrentUserPreferences() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234683");
+        String accessToken = registerActivateAndLogin("customer4683");
 
         mockMvc.perform(get("/api/v1/users/preferences")
                         .header("Authorization", "Bearer " + accessToken))
@@ -124,7 +138,7 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void updatePreferencesPersistsNewValues() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234684");
+        String accessToken = registerActivateAndLogin("customer4684");
 
         mockMvc.perform(put("/api/v1/users/preferences")
                         .header("Authorization", "Bearer " + accessToken)
@@ -157,8 +171,8 @@ class UserProfileControllerIntegrationTest {
 
     @Test
     void getProfileRejectsTokenWhenUserIsNoLongerActive() throws Exception {
-        String accessToken = registerActivateAndLogin("0901234687");
-        User user = userRepository.findByPhone("0901234687").orElseThrow();
+        String accessToken = registerActivateAndLogin("customer4687");
+        User user = userRepository.findByEmailIgnoreCase("customer4687@example.com").orElseThrow();
         user.updateStatus(UserStatus.BLOCKED);
         userRepository.save(user);
 
@@ -183,18 +197,19 @@ class UserProfileControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.UpdateUserPreferencesResponse.properties.smsNotifications").doesNotExist());
     }
 
-    private String registerActivateAndLogin(String phone) throws Exception {
+    private String registerActivateAndLogin(String emailLocalPart) throws Exception {
+        String email = emailLocalPart + "@example.com";
+
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
                                   "fullName": "Nguyen Van A",
-                                  "phone": "%s",
                                   "email": "%s@example.com",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
-                                """.formatted(phone, phone)))
+                                """.formatted(emailLocalPart)))
                 .andReturn();
 
         String otp = readJson(registerResult).path("data").path("devOtp").asText();
@@ -203,10 +218,10 @@ class UserProfileControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "%s",
+                                  "email": "%s",
                                   "otp": "%s"
                                 }
-                                """.formatted(phone, otp)))
+                                """.formatted(email, otp)))
                 .andExpect(status().isOk())
                 .andReturn();
 

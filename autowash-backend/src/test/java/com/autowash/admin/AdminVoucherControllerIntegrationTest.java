@@ -151,7 +151,7 @@ class AdminVoucherControllerIntegrationTest {
                 UUID.randomUUID(),
                 customer,
                 vehicle,
-                UUID.randomUUID(),
+                null,
                 null,
                 null,
                 bookingDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),

@@ -1,6 +1,7 @@
-package com.autowash.service;
+package com.autowash.service.impl;
 
 import com.autowash.entity.Booking;
+import com.autowash.service.BookingEmailDeliveryService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
@@ -12,13 +13,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnProperty(prefix = "autowash.email", name = "provider", havingValue = "smtp")
-public class SmtpBookingEmailDeliveryService implements BookingEmailDeliveryService {
+public class SmtpBookingEmailDeliveryServiceImpl implements BookingEmailDeliveryService {
 
     private final JavaMailSender mailSender;
     private final String from;
     private final String fromName;
 
-    public SmtpBookingEmailDeliveryService(
+    public SmtpBookingEmailDeliveryServiceImpl(
             JavaMailSender mailSender,
             @Value("${autowash.email.from}") String from,
             @Value("${autowash.email.from-name:AURA Car Wash}") String fromName

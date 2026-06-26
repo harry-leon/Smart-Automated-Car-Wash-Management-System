@@ -1,5 +1,6 @@
-package com.autowash.service;
+package com.autowash.service.impl;
 
+import com.autowash.service.EmailDeliveryService;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,15 +12,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 @ConditionalOnProperty(prefix = "autowash.email", name = "provider", havingValue = "smtp")
-public class SmtpEmailDeliveryService implements EmailDeliveryService {
+public class SmtpEmailDeliveryServiceImpl implements EmailDeliveryService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SmtpEmailDeliveryService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SmtpEmailDeliveryServiceImpl.class);
 
     private final JavaMailSender mailSender;
     private final String from;
     private final String fromName;
 
-    public SmtpEmailDeliveryService(
+    public SmtpEmailDeliveryServiceImpl(
             JavaMailSender mailSender,
             @Value("${autowash.email.from}") String from,
             @Value("${autowash.email.from-name:AURA Car Wash}") String fromName

@@ -11,7 +11,6 @@ import {
   Loader2,
   LockKeyhole,
   Mail,
-  Phone,
   ShieldCheck,
   Sparkles,
   Star,
@@ -35,7 +34,7 @@ import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { getLoginIdentifierValidationMessage, normalizeLoginIdentifier } from "@/features/auth/lib/login-identifier";
 import { getPasswordVisibilityState } from "@/features/auth/lib/password-visibility";
 import { cn } from "@/shared/lib/utils";
-import { emailPattern, otpPattern, passwordPattern, phonePattern } from "@/shared/lib/validators";
+import { emailPattern, otpPattern, passwordPattern } from "@/shared/lib/validators";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 
 type AuthMode = "login" | "register" | "otp";
@@ -210,19 +209,18 @@ export function ModernAuthPopupModal({
   }, [accessToken, onClose, router, user]);
 
   const loginMutation = useCustomerLogin();
-  const [loginId, setLoginId] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [isLoginPassVisible, setIsLoginPassVisible] = useState(false);
   const loginPassVisibility = getPasswordVisibilityState(isLoginPassVisible);
-  const loginIdNormalized = normalizeLoginIdentifier(loginId);
-  const loginIdError = getLoginIdentifierValidationMessage(loginIdNormalized);
+  const loginEmailNormalized = normalizeLoginIdentifier(loginEmail);
+  const loginIdError = getLoginIdentifierValidationMessage(loginEmailNormalized);
   const loginPassError = loginPass.length > 0 && loginPass.length < 8 ? copy.loginPasswordError : null;
   const canLoginSubmit = loginIdError === null && loginPass.length >= 8 && !loginMutation.isPending;
   const loginErrorMessage = loginMutation.error ? getDisplayErrorMessage(loginMutation.error) : null;
 
   const registerMutation = useCustomerRegister();
   const [regName, setRegName] = useState("");
-  const [regPhone, setRegPhone] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPass, setRegPass] = useState("");
   const [regConfirmPass, setRegConfirmPass] = useState("");
@@ -231,19 +229,17 @@ export function ModernAuthPopupModal({
   const regPassVisibility = getPasswordVisibilityState(isRegPassVisible);
   const regConfirmVisibility = getPasswordVisibilityState(isRegConfirmVisible);
   const regNameError = regName.length > 0 && regName.trim().length === 0 ? copy.nameError : null;
-  const regPhoneError = regPhone.length > 0 && !phonePattern.test(regPhone) ? copy.phoneError : null;
   const regEmailError = regEmail.length > 0 && !emailPattern.test(regEmail) ? copy.emailError : null;
   const regPassError = regPass.length > 0 && !passwordPattern.test(regPass) ? copy.passwordRule : null;
   const regConfirmError = regConfirmPass.length > 0 && regConfirmPass !== regPass ? copy.confirmError : null;
   const canRegisterSubmit = useMemo(
     () =>
       regName.trim().length > 0 &&
-      phonePattern.test(regPhone) &&
       emailPattern.test(regEmail) &&
       passwordPattern.test(regPass) &&
       regConfirmPass === regPass &&
       !registerMutation.isPending,
-    [regConfirmPass, regEmail, regName, regPass, regPhone, registerMutation.isPending],
+    [regConfirmPass, regEmail, regName, regPass, registerMutation.isPending],
   );
   const registerErrorMessage = registerMutation.error ? getDisplayErrorMessage(registerMutation.error) : null;
 
@@ -284,7 +280,7 @@ export function ModernAuthPopupModal({
     event.preventDefault();
     if (!canLoginSubmit) return;
     loginMutation.mutate({
-      identifier: loginIdNormalized,
+      email: loginEmailNormalized,
       password: loginPass,
       rememberMe: true,
     });
@@ -296,8 +292,7 @@ export function ModernAuthPopupModal({
     registerMutation.mutate(
       {
         fullName: regName.trim(),
-        phone: regPhone,
-        email: regEmail,
+        email: regEmail.trim(),
         password: regPass,
         passwordConfirm: regConfirmPass,
       },
@@ -422,12 +417,13 @@ export function ModernAuthPopupModal({
             <div key={`${language}-login`} className="mx-auto w-full max-w-[520px] space-y-7 pt-8 animate-in fade-in slide-in-from-right-4 duration-500 ease-out">
               <AuthHeader eyebrow={copy.eyebrowLogin} icon={ShieldCheck} title={copy.loginTitle} description={copy.loginDescription} />
               <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <Field label={copy.identifierLabel} error={loginIdError}>
+                <Field label="Email" error={loginIdError}>
                   <input
-                    value={loginId}
-                    onChange={(event) => setLoginId(event.target.value.replace(/\s/g, ""))}
-                    placeholder={copy.identifierPlaceholder}
+                    value={loginEmail}
+                    onChange={(event) => setLoginEmail(event.target.value.replace(/\s/g, ""))}
+                    placeholder="you@gmail.com"
                     className={inputCls}
+                    inputMode="email"
                   />
                   <Mail className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </Field>
@@ -498,13 +494,14 @@ export function ModernAuthPopupModal({
                   <UserRound className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </Field>
 
-                <Field label={copy.phoneLabel} error={regPhoneError}>
-                  <input value={regPhone} onChange={(event) => setRegPhone(event.target.value.replace(/\s/g, ""))} placeholder={copy.phonePlaceholder} className={inputCls} />
-                  <Phone className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                </Field>
-
                 <Field label={copy.emailLabel} error={regEmailError}>
-                  <input value={regEmail} onChange={(event) => setRegEmail(event.target.value)} placeholder={copy.emailPlaceholder} className={inputCls} />
+                  <input
+                    value={regEmail}
+                    onChange={(event) => setRegEmail(event.target.value)}
+                    placeholder={copy.emailPlaceholder}
+                    className={inputCls}
+                    inputMode="email"
+                  />
                   <Mail className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 </Field>
 

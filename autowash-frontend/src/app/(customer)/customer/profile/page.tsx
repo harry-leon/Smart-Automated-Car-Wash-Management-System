@@ -12,8 +12,8 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
+import { validateProfileForm } from "@/features/customer/profile/lib/profile-form-validation";
 import { buildUpdateUserProfileRequest } from "@/features/customer/profile/lib/profile-update-payload";
-import { emailPattern, phonePattern } from "@/shared/lib/validators";
 import {
   useCustomerProfile,
   useUpdateCustomerProfile,
@@ -45,7 +45,7 @@ export default function CustomerProfilePage() {
     setForm({
       fullName: profileQuery.data.fullName,
       email: profileQuery.data.email ?? "",
-      phone: profileQuery.data.phone,
+      phone: profileQuery.data.phone ?? "",
     });
     setShowValidation(false);
     updateProfileMutation.reset();
@@ -62,7 +62,7 @@ export default function CustomerProfilePage() {
   const hasChanges = profileQuery.data
     ? form.fullName !== profileQuery.data.fullName ||
       form.email !== (profileQuery.data.email ?? "") ||
-      form.phone !== profileQuery.data.phone
+      form.phone !== (profileQuery.data.phone ?? "")
     : false;
 
   const handleFieldChange =
@@ -151,7 +151,7 @@ export default function CustomerProfilePage() {
               <div>
                 <div className="text-sm font-semibold text-slate-900">{profile.fullName}</div>
                 <div className="text-xs text-slate-500">
-                  {profile.tier ?? "MEMBER"} • {profile.phone}
+                  {profile.tier ?? "MEMBER"} • {profile.phone ?? "Phone not provided"}
                 </div>
               </div>
             </div>
@@ -168,7 +168,7 @@ export default function CustomerProfilePage() {
             </CardHeader>
             <CardContent className="space-y-4 p-6">
               <InfoRow label="Full name" value={profile.fullName} />
-              <InfoRow label="Phone" value={profile.phone} />
+              <InfoRow label="Phone" value={profile.phone ?? "Not provided"} />
               <InfoRow label="Email" value={profile.email ?? "Not provided"} />
               <InfoRow label="Role" value={profile.role} />
               <InfoRow label="Status" value={profile.status} />
@@ -182,7 +182,7 @@ export default function CustomerProfilePage() {
             <CardHeader className="border-b border-slate-200/70 bg-slate-50/80">
               <CardTitle className="text-base text-slate-900">Update profile</CardTitle>
               <CardDescription>
-                Editable scope stays limited to full name, email, and phone.
+                Full name and phone stay editable. Google-linked accounts keep their email locked.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -205,6 +205,12 @@ export default function CustomerProfilePage() {
                   onChange={handleFieldChange("email")}
                   placeholder="customer@example.com"
                   inputMode="email"
+                  disabled={profile.hasGoogleAuth}
+                  helperText={
+                    profile.hasGoogleAuth
+                      ? "Google-linked email is the primary account identifier and cannot be edited here."
+                      : null
+                  }
                   error={resolveFieldError(
                     "email",
                     fieldErrors.email,
@@ -327,6 +333,8 @@ function ProfileField({
   placeholder,
   error,
   inputMode,
+  disabled = false,
+  helperText = null,
 }: {
   label: string;
   value: string;
@@ -334,6 +342,8 @@ function ProfileField({
   placeholder: string;
   error: string | null;
   inputMode?: "text" | "email" | "numeric" | "tel" | "search" | "url" | "none" | "decimal";
+  disabled?: boolean;
+  helperText?: string | null;
 }) {
   return (
     <div className="space-y-2">
@@ -343,8 +353,10 @@ function ProfileField({
         onChange={onChange}
         placeholder={placeholder}
         inputMode={inputMode}
-        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+        disabled={disabled}
+        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
       />
+      {helperText ? <p className="text-sm text-slate-500">{helperText}</p> : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
     </div>
   );
@@ -357,19 +369,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <div className="text-sm font-semibold text-slate-900">{value}</div>
     </div>
   );
-}
-
-function validateProfileForm(form: ProfileFormState) {
-  return {
-    fullName: form.fullName.trim().length === 0 ? "Full name is required." : null,
-    email:
-      form.email.trim().length > 0 && !emailPattern.test(form.email.trim())
-        ? "Email must be valid."
-        : null,
-    phone: !phonePattern.test(form.phone.trim())
-      ? "Phone must use Vietnamese format 0XXXXXXXXX."
-      : null,
-  };
 }
 
 function resolveFieldError(

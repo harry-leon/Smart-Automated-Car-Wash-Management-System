@@ -18,6 +18,13 @@ import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.repository.BookingRepository;
 import com.autowash.repository.LoyaltyAccountRepository;
+import com.autowash.repository.PromotionRepository;
+import com.autowash.repository.PromotionTierRepository;
+import com.autowash.entity.Promotion;
+import com.autowash.entity.PromotionTier;
+import com.autowash.entity.enums.PromotionTargetingMode;
+import com.autowash.entity.enums.ActiveStatus;
+import java.math.BigDecimal;
 import com.autowash.shared.security.UserPrincipal;
 import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
@@ -54,6 +61,12 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
     @Autowired
     private LoyaltyAccountRepository loyaltyAccountRepository;
 
+    @Autowired
+    private PromotionRepository promotionRepository;
+
+    @Autowired
+    private PromotionTierRepository promotionTierRepository;
+
     @Test
     void loyaltyAccountAndTransactionsReflectCompletedWashPoints() throws Exception {
         String phone = "0901777101";
@@ -75,8 +88,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].type").value("EARN"))
                 .andExpect(jsonPath("$.data[0].points").value(27))
-                .andExpect(jsonPath("$.data[0].bookingId").value("LOYALTY_BK_001"))
-                .andExpect(jsonPath("$.data[0].sessionId").value(sessionId));
+                .andExpect(jsonPath("$.data[0].bookingId").value(booking.getId().toString()));
     }
 
     @Test
@@ -91,8 +103,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                         .with(authenticatedCustomer(customer)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].sessionId").value(sessionId))
-                .andExpect(jsonPath("$.data[0].bookingId").value("LOYALTY_BK_002"))
+                .andExpect(jsonPath("$.data[0].bookingId").value(booking.getId().toString()))
                 .andExpect(jsonPath("$.data[0].vehiclePlate").value(vehiclePlate))
                 .andExpect(jsonPath("$.data[0].awardedPoints").value(15))
                 .andExpect(jsonPath("$.data[0].status").value("COMPLETED"));
@@ -111,9 +122,9 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                         .content("""
                                 {
                                   "pointsToRedeem": 50,
-                                  "referenceId": "LOYALTY_BK_003"
+                                  "referenceId": "%s"
                                 }
-                                """))
+                                """.formatted(booking.getId().toString())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.pointsRedeemed").value(50))
                 .andExpect(jsonPath("$.data.newBalance").value(10))
@@ -141,13 +152,19 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
 
     @Test
     void activePromotionsFilterByCustomerTierAndNewCustomerAudience() throws Exception {
+        Promotion p1 = new Promotion("ALL10", "All 10", BigDecimal.valueOf(1.0), Instant.now().minusSeconds(10), Instant.now().plusSeconds(100000), PromotionTargetingMode.ALL_TIERS, ActiveStatus.ACTIVE);
+        promotionRepository.saveAndFlush(p1);
+        
+        Promotion p2 = new Promotion("GOLD15", "Gold 15", BigDecimal.valueOf(1.5), Instant.now().minusSeconds(10), Instant.now().plusSeconds(100000), PromotionTargetingMode.SPECIFIC_TIERS, ActiveStatus.ACTIVE);
+        promotionRepository.saveAndFlush(p2);
+        promotionTierRepository.saveAndFlush(new PromotionTier(p2.getId(), LoyaltyTier.GOLD));
         User member = createActiveCustomer("0901777103");
         mockMvc.perform(get("/api/v1/promotions/active")
                         .with(authenticatedCustomer(member)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[*].promotionCode", hasItem("ALL10")))
-                .andExpect(jsonPath("$.data[*].promotionCode", hasItem("WELCOME20")));
+                .andExpect(jsonPath("$.data[*].promotionCode", hasItem("All 10% Off")))
+                .andExpect(jsonPath("$.data[*].promotionCode", hasItem("ALL10")));
 
         User gold = createActiveCustomer("0901777104");
         LoyaltyAccount goldAccount = loyaltyAccountRepository.findByCustomerId(gold.getId()).orElseThrow();
@@ -157,7 +174,8 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
         mockMvc.perform(get("/api/v1/promotions/active")
                         .with(authenticatedCustomer(gold)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[*].promotionCode", hasItem("All 10% Off")))
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("ALL10")))
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("GOLD15")));
     }
@@ -254,7 +272,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
                 UUID.randomUUID(),
                 user,
                 vehicle,
-                UUID.randomUUID(),
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(86400),

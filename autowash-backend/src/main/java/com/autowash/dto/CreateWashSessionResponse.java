@@ -9,6 +9,8 @@ public record CreateWashSessionResponse(
         UUID sessionId,
         String status,
         String bookingId,
+        UUID assignedStaffId,
+        String assignedStaffName,
         Instant createdAt
 ) {
 }
