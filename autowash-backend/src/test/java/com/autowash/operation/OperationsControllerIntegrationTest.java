@@ -435,11 +435,13 @@ class OperationsControllerIntegrationTest {
                 true
         ));
 
+        // Use seeded package UUID to satisfy the FK constraint packages(id)
+        UUID seededPackageId = UUID.fromString("12345678-1234-1234-1234-123456789012");
         Booking booking = new Booking(
                 UUID.randomUUID(),
                 user,
                 vehicle,
-                null, // packageId
+                seededPackageId, // packageId
                 null, // comboId
                 null, // voucherId
                 Instant.now().plusSeconds(86400),
