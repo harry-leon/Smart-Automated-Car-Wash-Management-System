@@ -1,6 +1,8 @@
 package com.autowash.controller;
 
 import com.autowash.dto.CheckInWashSessionResponse;
+import com.autowash.dto.CancelWashSessionRequest;
+import com.autowash.dto.CancelWashSessionResponse;
 import com.autowash.dto.CompleteWashSessionResponse;
 import com.autowash.dto.CreateWashSessionRequest;
 import com.autowash.dto.CreateWashSessionResponse;
@@ -76,6 +78,13 @@ public class OperationsController {
         return ApiResponse.ok("Wash session completed", operationsService.completeSession(sessionId));
     }
 
-
+    @PostMapping("/{sessionId}/cancel")
+    @Operation(summary = "Cancel wash session")
+    public ApiResponse<CancelWashSessionResponse> cancelSession(
+            @PathVariable UUID sessionId,
+            @Valid @RequestBody CancelWashSessionRequest request
+    ) {
+        return ApiResponse.ok("Wash session cancelled", operationsService.cancelSession(sessionId, request.reason()));
+    }
 
 }

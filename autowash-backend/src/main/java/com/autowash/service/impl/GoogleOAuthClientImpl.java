@@ -1,6 +1,7 @@
-package com.autowash.service;
+package com.autowash.service.impl;
 
 import com.autowash.dto.GoogleOAuthUserInfo;
+import com.autowash.service.GoogleOAuthClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -3,18 +3,21 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.autowash.entity.User;
-import com.autowash.entity.enums.UserRole;
-import com.autowash.repository.UserRepository;
 import com.autowash.entity.Booking;
-import com.autowash.entity.enums.PaymentMethod;
-import com.autowash.repository.BookingRepository;
-import com.autowash.service.StaffAssignmentService;
+import com.autowash.entity.User;
 import com.autowash.entity.Vehicle;
+import com.autowash.entity.WashSession;
+import com.autowash.entity.enums.PaymentMethod;
+import com.autowash.entity.enums.UserRole;
 import com.autowash.entity.enums.VehicleType;
+import com.autowash.repository.BookingRepository;
+import com.autowash.repository.UserRepository;
 import com.autowash.repository.VehicleRepository;
+import com.autowash.repository.WashSessionRepository;
+import com.autowash.service.StaffAssignmentService;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,16 +41,90 @@ class StaffAssignmentServiceIntegrationTest {
     @Autowired
     private BookingRepository BookingRepository;
 
+    @Autowired
+    private WashSessionRepository washSessionRepository;
+
     @Test
     void picksLeastLoadedActiveStaffForNewBookingAssignment() {
         User busyStaff = createStaff("Busy Staff", "0913");
         User availableStaff = createStaff("Available Staff", "0912");
-        createAssignedBooking("ASSIGN_BUSY_001", busyStaff, "0901777021");
-        createAssignedBooking("ASSIGN_BUSY_002", busyStaff, "0901777022");
+        createAssignedBooking(busyStaff, "0901777021");
+        createAssignedBooking(busyStaff, "0901777022");
 
         User selected = staffAssignmentService.pickLeastLoadedActiveStaff();
 
-        assertThat(selected.getId()).isEqualTo(availableStaff.getId());
+        assertThat(selected.getId()).isNotEqualTo(busyStaff.getId());
+        assertThat(BookingRepository.countByAssignedStaffAndStatusIn(selected, ACTIVE_ASSIGNMENT_STATUSES))
+                .isLessThan(BookingRepository.countByAssignedStaffAndStatusIn(busyStaff, ACTIVE_ASSIGNMENT_STATUSES));
+    }
+
+    @Test
+    void picksStaffWithLowestDailyCompletedWashCount() {
+        User lowDailyStaff = createStaff("Low Daily Staff", "0915");
+        User highDailyStaff = createStaff("High Daily Staff", "0916");
+        createCompletedSession(highDailyStaff, "0901777031");
+        createCompletedSession(highDailyStaff, "0901777032");
+
+        User selected = staffAssignmentService.pickLeastLoadedActiveStaff();
+
+        assertThat(selected.getId()).isNotEqualTo(highDailyStaff.getId());
+        assertThat(washSessionRepository.countByAssignedStaffAndStatusAndCompletedAtBetween(
+                selected,
+                com.autowash.entity.enums.WashSessionStatus.COMPLETED,
+                startOfToday(),
+                startOfTomorrow()
+        )).isLessThan(2);
+    }
+
+    @Test
+    void excludesStaffWithActiveWashSession() {
+        User busySessionStaff = createStaff("Busy Session Staff", "0917");
+        createActiveSession(busySessionStaff, "0901777041");
+
+        User selected = staffAssignmentService.pickLeastLoadedActiveStaff();
+
+        assertThat(selected.getId()).isNotEqualTo(busySessionStaff.getId());
+        assertThat(washSessionRepository.existsByAssignedStaffAndStatusIn(
+                busySessionStaff,
+                Set.of(
+                        com.autowash.entity.enums.WashSessionStatus.PENDING,
+                        com.autowash.entity.enums.WashSessionStatus.QUEUED,
+                        com.autowash.entity.enums.WashSessionStatus.CHECKED_IN,
+                        com.autowash.entity.enums.WashSessionStatus.IN_PROGRESS
+                )
+        )).isTrue();
+    }
+
+    @Test
+    void bookingTimeAssignmentExcludesStaffWithOverlappingActiveSession() {
+        User overlappingStaff = createStaff("Overlapping Session Staff", "0920");
+        Booking targetBooking = createConfirmedBooking(uniquePhone("0902"));
+        createActiveSessionAt(overlappingStaff, "0901777051", targetBooking.getScheduledAt());
+
+        assertThat(staffAssignmentService.isStaffAvailableForBooking(overlappingStaff, targetBooking)).isFalse();
+
+        User selected = staffAssignmentService.pickLeastLoadedActiveStaffForBooking(targetBooking);
+
+        assertThat(selected.getId()).isNotEqualTo(overlappingStaff.getId());
+    }
+
+    private static final Set<com.autowash.entity.enums.BookingStatus> ACTIVE_ASSIGNMENT_STATUSES = Set.of(
+            com.autowash.entity.enums.BookingStatus.CONFIRMED,
+            com.autowash.entity.enums.BookingStatus.CHECKED_IN,
+            com.autowash.entity.enums.BookingStatus.IN_PROGRESS
+    );
+
+    private static java.time.Instant startOfToday() {
+        return java.time.LocalDate.now(java.time.ZoneId.systemDefault())
+                .atStartOfDay(java.time.ZoneId.systemDefault())
+                .toInstant();
+    }
+
+    private static java.time.Instant startOfTomorrow() {
+        return java.time.LocalDate.now(java.time.ZoneId.systemDefault())
+                .plusDays(1)
+                .atStartOfDay(java.time.ZoneId.systemDefault())
+                .toInstant();
     }
 
     private User createStaff(String fullName, String phonePrefix) {
@@ -57,7 +134,37 @@ class StaffAssignmentServiceIntegrationTest {
         return UserRepository.saveAndFlush(staff);
     }
 
-    private void createAssignedBooking(String bookingId, User staff, String customerPhone) {
+    private void createAssignedBooking(User staff, String customerPhone) {
+        Booking booking = createConfirmedBooking(customerPhone);
+        booking.assignStaff(staff);
+        BookingRepository.saveAndFlush(booking);
+    }
+
+    private void createCompletedSession(User staff, String customerPhone) {
+        Booking booking = createConfirmedBooking(customerPhone);
+        booking.assignStaff(staff);
+        BookingRepository.saveAndFlush(booking);
+        WashSession session = WashSession.create(booking, null, staff);
+        session.complete(Instant.now(), 10);
+        washSessionRepository.saveAndFlush(session);
+    }
+
+    private void createActiveSession(User staff, String customerPhone) {
+        Booking booking = createConfirmedBooking(customerPhone);
+        booking.assignStaff(staff);
+        BookingRepository.saveAndFlush(booking);
+        washSessionRepository.saveAndFlush(WashSession.create(booking, null, staff));
+    }
+
+    private void createActiveSessionAt(User staff, String customerPhone, Instant scheduledAt) {
+        Booking booking = createConfirmedBooking(customerPhone);
+        ReflectionTestUtils.setField(booking, "scheduledAt", scheduledAt);
+        booking.assignStaff(staff);
+        BookingRepository.saveAndFlush(booking);
+        washSessionRepository.saveAndFlush(WashSession.create(booking, null, staff));
+    }
+
+    private Booking createConfirmedBooking(String customerPhone) {
         User customer = new User("Assignment Customer", customerPhone, customerPhone + "@example.com", "hash");
         customer.activate();
         UserRepository.saveAndFlush(customer);
@@ -75,7 +182,7 @@ class StaffAssignmentServiceIntegrationTest {
                 UUID.randomUUID(),
                 customer,
                 vehicle,
-                UUID.randomUUID(),
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(86400),
@@ -88,8 +195,7 @@ class StaffAssignmentServiceIntegrationTest {
                 30
         );
         booking.confirmByOtp();
-        booking.assignStaff(staff);
-        BookingRepository.saveAndFlush(booking);
+        return booking;
     }
 
     private String uniquePhone(String prefix) {

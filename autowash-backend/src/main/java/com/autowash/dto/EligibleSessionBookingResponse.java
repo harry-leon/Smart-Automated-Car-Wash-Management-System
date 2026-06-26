@@ -13,6 +13,8 @@ public record EligibleSessionBookingResponse(
         LocalDate bookingDate,
         LocalTime bookingTime,
         long finalAmount,
-        int estimatedDurationMinutes
+        int estimatedDurationMinutes,
+        String assignedStaffId,
+        String assignedStaffName
 ) {
 }

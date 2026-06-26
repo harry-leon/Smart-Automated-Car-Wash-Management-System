@@ -1,4 +1,4 @@
-import { emailPattern, phonePattern } from "../../../shared/lib/validators.ts";
+import { emailPattern } from "../../../shared/lib/validators.ts";
 
 export function normalizeLoginIdentifier(value: string) {
   return value.trim().replace(/\s/g, "");
@@ -6,12 +6,12 @@ export function normalizeLoginIdentifier(value: string) {
 
 export function getLoginIdentifierValidationMessage(value: string) {
   if (value.length === 0) {
-    return "Phone number or email is required.";
+    return "Email is required.";
   }
 
-  if (phonePattern.test(value) || emailPattern.test(value)) {
+  if (emailPattern.test(value)) {
     return null;
   }
 
-  return "Enter a valid Vietnamese phone number or email address.";
+  return "Enter a valid email address.";
 }

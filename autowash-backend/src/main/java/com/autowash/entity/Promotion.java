@@ -12,18 +12,10 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Set;
 import java.util.UUID;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.FetchType;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "promotions")
 @Getter
@@ -43,8 +35,7 @@ public class Promotion {
     private BigDecimal pointMultiplier;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "targeting_mode", nullable = false, columnDefinition = "promotion_targeting_mode")
+    @Column(name = "targeting_mode", nullable = false)
     private PromotionTargetingMode targetingMode;
 
     @Column(name = "start_at", nullable = false)
@@ -54,8 +45,7 @@ public class Promotion {
     private Instant endAt;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "active_status")
+    @Column(nullable = false)
     private ActiveStatus status;
 
     @Column(name = "created_at", nullable = false)
