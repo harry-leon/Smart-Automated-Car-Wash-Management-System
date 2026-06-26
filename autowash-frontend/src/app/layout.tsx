@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AutoWash Pro",
-  description: "Smart automated car wash booking and operations platform"
+  description: "Next.js frontend skeleton for AutoWash workspaces"
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body className="min-h-screen bg-white text-slate-900 antialiased">
         <QueryProvider>
           {children}
           <Toaster />

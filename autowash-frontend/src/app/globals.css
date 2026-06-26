@@ -6,26 +6,26 @@
 
 @layer base {
   :root {
-    --background: 180 28% 98%;
-    --foreground: 216 35% 14%;
+    --background: 210 40% 98%;
+    --foreground: 222.2 47.4% 11.2%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
-    --primary: 180 70% 31%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 180 32% 94%;
-    --secondary-foreground: 184 38% 22%;
-    --muted: 180 24% 95%;
-    --muted-foreground: 216 16% 42%;
-    --accent: 180 34% 93%;
-    --accent-foreground: 184 42% 22%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 186 24% 88%;
-    --input: 186 24% 88%;
-    --ring: 180 70% 31%;
-    --radius: 0.5rem;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.9rem;
   }
 
   * {
@@ -37,10 +37,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    background:
-      radial-gradient(circle at 18% 0%, rgba(20, 184, 166, 0.08), transparent 30rem),
-      linear-gradient(180deg, #f8fbfb 0%, #ffffff 48%, #f4faf8 100%);
+    @apply bg-background text-foreground;
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
@@ -81,11 +78,11 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(20, 184, 166, 0.25);
+    background: rgba(14, 165, 233, 0.25); /* sky-500/25 */
     border-radius: 9999px;
     transition: background 0.3s ease;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(20, 184, 166, 0.48);
+    background: rgba(14, 165, 233, 0.5); /* sky-500/50 */
   }
 }
