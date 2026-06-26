@@ -1,6 +1,5 @@
 package com.autowash.entity;
 
-import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,9 +15,6 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "loyalty_accounts")
 @Getter
@@ -39,8 +35,7 @@ public class LoyaltyAccount {
     private int totalEarnedPoints;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "loyalty_tier")
+    @Column(nullable = false)
     private LoyaltyTier tier;
 
     @Column(name = "created_at", nullable = false)

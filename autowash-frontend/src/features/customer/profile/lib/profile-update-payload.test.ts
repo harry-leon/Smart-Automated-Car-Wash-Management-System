@@ -31,3 +31,18 @@ test("keeps a non-empty email value when updating profile", () => {
     },
   );
 });
+
+test("normalizes blank phone to null before updating profile", () => {
+  assert.deepEqual(
+    buildUpdateUserProfileRequest({
+      fullName: "Nguyen Van A",
+      email: "customer@example.com",
+      phone: "   ",
+    }),
+    {
+      fullName: "Nguyen Van A",
+      email: "customer@example.com",
+      phone: null,
+    },
+  );
+});

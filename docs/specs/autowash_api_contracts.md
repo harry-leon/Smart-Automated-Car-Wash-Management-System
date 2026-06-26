@@ -1124,16 +1124,16 @@ Or with response:
 
 ---
 
-### 8.2 GET /add-ons
+### 8.2 GET /services
 
-**List available add-on services**
+**List available service services**
 
 **Response (200 OK):**
 ```json
 {
   "success": true,
   "statusCode": 200,
-  "message": "Add-ons retrieved",
+  "message": "services retrieved",
   "data": [
     {
       "addonId": "addon_001",
@@ -1161,10 +1161,10 @@ Or with response:
 ```
 
 **Frontend Behavior:**
-1. Show add-ons as checkboxes during checkout
-2. Display price increase for each selected add-on
-3. Filter add-ons based on selected package
-4. Show duration estimate updates as add-ons are selected
+1. Show services as checkboxes during checkout
+2. Display price increase for each selected service
+3. Filter services based on selected package
+4. Show duration estimate updates as services are selected
 
 ---
 
@@ -1333,7 +1333,7 @@ Or with response:
 1. Show multi-step checkout form
    - Step 1: Select vehicle
    - Step 2: Select package/combo
-   - Step 3: Select add-ons
+   - Step 3: Select services
    - Step 4: Choose date/time
    - Step 5: Enter voucher code
    - Step 6: Select payment method
@@ -1851,7 +1851,7 @@ Or with response:
     "tierBenefits": {
       "name": "Silver",
       "pointMultiplier": 1.2,
-      "benefits": ["Priority booking", "5% discount on add-ons", "Free tier upgrade token"]
+      "benefits": ["Priority booking", "5% discount on services", "Free tier upgrade token"]
     },
     "lastTierReviewDate": "2026-05-01T00:00:00Z",
     "nextTierReviewDate": "2026-06-01T00:00:00Z",
@@ -2053,9 +2053,8 @@ Customer tier is resolved from the authenticated customer token; clients do not 
     {
       "promotionId": "promo_001",
       "name": "Summer Flash Sale",
-      "description": "20% off all services",
-      "discountType": "PERCENT",
-      "discountValue": 20,
+      "description": "Double loyalty points for all services",
+      "pointMultiplier": 2.0,
       "startDate": "2026-06-01T00:00:00Z",
       "endDate": "2026-08-31T23:59:59Z",
       "targetingMode": "ALL_TIERS",
@@ -2702,9 +2701,8 @@ Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/point-history
 ```json
 {
   "name": "Summer Sale",
-  "description": "20% off all services",
-  "discountType": "PERCENT",
-  "discountValue": 20,
+  "description": "Double loyalty points for all services",
+  "pointMultiplier": 2.0,
   "startDate": "2026-06-01T00:00:00Z",
   "endDate": "2026-08-31T23:59:59Z",
   "targetingMode": "ALL_TIERS",
@@ -2723,9 +2721,8 @@ Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/point-history
   "data": {
     "promotionId": "promo_001",
     "name": "Summer Sale",
-    "description": "20% off all services",
-    "discountType": "PERCENT",
-    "discountValue": 20,
+    "description": "Double loyalty points for all services",
+    "pointMultiplier": 2.0,
     "startDate": "2026-06-01T00:00:00Z",
     "endDate": "2026-08-31T23:59:59Z",
     "targetingMode": "ALL_TIERS",
@@ -2746,7 +2743,7 @@ Alias for compatibility: `GET /api/v1/admin/customers/{customerId}/point-history
 
 **Validation:**
 - `startDate <= endDate`
-- `discountType=PERCENT` requires `discountValue` between 1 and 100
+- `pointMultiplier` must be between `1.0` and `99.99`
 - `targetingMode=SELECTED_TIERS` requires at least one `applicableTiers` value from `MEMBER`, `SILVER`, `GOLD`, `PLATINUM`
 
 ---
@@ -3052,10 +3049,12 @@ enum UserRole {
 
 ```
 enum UserStatus {
-  PENDING = "PENDING",           // Awaiting OTP verification
+  PENDING = "PENDING",           // Profile incomplete
+  PENDING_VERIFY = "PENDING_VERIFY", // Awaiting OTP verification
   ACTIVE = "ACTIVE",             // Verified and active
-  BLOCKED = "BLOCKED",           // Admin blocked
+  INACTIVE = "INACTIVE",         // Inactive account
   SUSPENDED = "SUSPENDED",       // Temporary suspension
+  BLOCKED = "BLOCKED",           // Admin blocked
   DELETED = "DELETED"            // Soft deleted
 }
 ```

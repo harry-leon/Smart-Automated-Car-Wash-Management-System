@@ -53,7 +53,8 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
               and (:#{#searchQuery == null} = true or lower(str(pt.booking.id)) like :searchQuery
                    or lower(pt.loyaltyAccount.customer.fullName) like :searchQuery
                    or lower(pt.loyaltyAccount.customer.phone) like :searchQuery
-                   or lower(pt.loyaltyAccount.customer.email) like :searchQuery)
+                   or lower(pt.loyaltyAccount.customer.email) like :searchQuery
+                   or lower(pt.reason) like :searchQuery)
               and (:#{#dateFrom == null} = true or pt.createdAt >= :dateFrom)
               and (:#{#dateTo == null} = true or pt.createdAt <= :dateTo)
             """)

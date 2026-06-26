@@ -23,9 +23,6 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "bookings")
 @Getter
@@ -43,9 +40,12 @@ public class Booking {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_staff_id")
+    private User assignedStaff;
+
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "booking_type", nullable = false, columnDefinition = "booking_type")
+    @Column(name = "booking_type", nullable = false)
     private BookingType bookingType;
 
     @Column(name = "package_id")
@@ -58,8 +58,7 @@ public class Booking {
     private UUID voucherId;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "booking_status")
+    @Column(nullable = false)
     private BookingStatus status;
 
     @Column(name = "scheduled_at", nullable = false)
@@ -155,6 +154,11 @@ public class Booking {
         this.updatedAt = Instant.now();
     }
 
+    public void markNoShow() {
+        this.status = BookingStatus.NO_SHOW;
+        this.updatedAt = Instant.now();
+    }
+
     public void cancel(String reason) {
         this.status = BookingStatus.CANCELLED;
         this.cancelReason = reason;
@@ -212,10 +216,6 @@ public class Booking {
         return PaymentStatus.UNPAID;
     }
 
-    public User getAssignedStaff() {
-        return null;
-    }
-
     public String getVoucherCode() {
         return null;
     }
@@ -224,7 +224,10 @@ public class Booking {
         return List.of();
     }
 
-    public void assignStaff(User staff) {}
+    public void assignStaff(User staff) {
+        this.assignedStaff = staff;
+        this.updatedAt = Instant.now();
+    }
 
     public void startOtpConfirmationWindow(Instant expiresAt) {}
 

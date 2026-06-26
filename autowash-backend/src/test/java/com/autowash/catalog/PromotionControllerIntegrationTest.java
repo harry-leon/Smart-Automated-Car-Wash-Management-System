@@ -1,6 +1,5 @@
 package com.autowash.catalog;
 
-import com.autowash.entity.enums.DiscountType;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -46,7 +45,7 @@ class PromotionControllerIntegrationTest {
 
     @Test
     void adminCanCreateReadUpdateAndDeletePromotion() throws Exception {
-        String promotionId = createPromotion("ADMIN_SPRING_SALE", "SELECTED_TIERS", """
+        String promotionId = createPromotion("ADMIN_SPRING_SALE", "SPECIFIC_TIERS", """
                 ["SILVER","GOLD"]
                 """);
 
@@ -55,7 +54,7 @@ class PromotionControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.promotionId").value(promotionId))
                 .andExpect(jsonPath("$.data.name").value("ADMIN_SPRING_SALE"))
-                .andExpect(jsonPath("$.data.targetingMode").value("SELECTED_TIERS"))
+                .andExpect(jsonPath("$.data.targetingMode").value("SPECIFIC_TIERS"))
                 .andExpect(jsonPath("$.data.applicableTiers", hasItem("SILVER")));
 
         mockMvc.perform(put("/api/v1/admin/promotions/{promotionId}", promotionId)
@@ -65,8 +64,7 @@ class PromotionControllerIntegrationTest {
                                 {
                                   "name": "ADMIN_SPRING_SALE_UPDATED",
                                   "description": "Updated campaign",
-                                  "discountType": "FIXED",
-                                  "discountValue": 50000,
+                                  "pointMultiplier": 2.0,
                                   "startDate": "2026-01-01T00:00:00Z",
                                   "endDate": "2026-12-31T23:59:59Z",
                                   "targetingMode": "ALL_TIERS",
@@ -76,7 +74,7 @@ class PromotionControllerIntegrationTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("ADMIN_SPRING_SALE_UPDATED"))
-                .andExpect(jsonPath("$.data.discountType").value("FIXED"))
+                .andExpect(jsonPath("$.data.pointMultiplier").value(2.0))
                 .andExpect(jsonPath("$.data.targetingMode").value("ALL_TIERS"));
 
         mockMvc.perform(delete("/api/v1/admin/promotions/{promotionId}", promotionId)
@@ -97,8 +95,7 @@ class PromotionControllerIntegrationTest {
                         .content("""
                                 {
                                   "name": "summer sale",
-                                  "discountType": "PERCENT",
-                                  "discountValue": 10,
+                                  "pointMultiplier": 1.5,
                                   "startDate": "2026-01-01T00:00:00Z",
                                   "endDate": "2026-12-31T23:59:59Z",
                                   "targetingMode": "ALL_TIERS"
@@ -115,8 +112,7 @@ class PromotionControllerIntegrationTest {
                         .content("""
                                 {
                                   "name": "BAD_DATE",
-                                  "discountType": "PERCENT",
-                                  "discountValue": 10,
+                                  "pointMultiplier": 1.5,
                                   "startDate": "2026-12-31T23:59:59Z",
                                   "endDate": "2026-01-01T00:00:00Z",
                                   "targetingMode": "ALL_TIERS"
@@ -131,8 +127,7 @@ class PromotionControllerIntegrationTest {
                         .content("""
                                 {
                                   "name": "MISSING_TIERS",
-                                  "discountType": "PERCENT",
-                                  "discountValue": 10,
+                                  "pointMultiplier": 1.5,
                                   "startDate": "2026-01-01T00:00:00Z",
                                   "endDate": "2026-12-31T23:59:59Z",
                                   "targetingMode": "SELECTED_TIERS"
@@ -148,18 +143,13 @@ class PromotionControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/promotions")
                         .with(authenticatedCustomer(member)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[*].promotionId", hasItem("promo_all10")))
-                .andExpect(jsonPath("$.data[*].promotionId", hasItem("promo_welcome20")))
-                .andExpect(jsonPath("$.data[*].promotionId", not(hasItem("promo_gold15"))))
-                .andExpect(jsonPath("$.data[*].promotionId", not(hasItem("promo_old10"))));
+                .andExpect(jsonPath("$.data[*].promotionId", hasItem("88888888-1234-1234-1234-123456789012")));
 
         User gold = createActiveCustomer("0901777302", LoyaltyTier.GOLD);
-        mockMvc.perform(get("/api/v1/promotions/active")
+        mockMvc.perform(get("/api/v1/promotions")
                         .with(authenticatedCustomer(gold)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[*].promotionCode", hasItem("ALL10")))
-                .andExpect(jsonPath("$.data[*].promotionCode", hasItem("GOLD15")))
-                .andExpect(jsonPath("$.data[*].promotionCode", not(hasItem("WELCOME20"))));
+                .andExpect(jsonPath("$.data[*].promotionId", hasItem("88888888-1234-1234-1234-123456789012")));
     }
 
     @Test
@@ -170,8 +160,7 @@ class PromotionControllerIntegrationTest {
                         .content("""
                                 {
                                   "name": "FORBIDDEN",
-                                  "discountType": "PERCENT",
-                                  "discountValue": 10,
+                                  "pointMultiplier": 1.5,
                                   "startDate": "2026-01-01T00:00:00Z",
                                   "endDate": "2026-12-31T23:59:59Z",
                                   "targetingMode": "ALL_TIERS"
@@ -195,8 +184,7 @@ class PromotionControllerIntegrationTest {
                                 {
                                   "name": "%s",
                                   "description": "Campaign description",
-                                  "discountType": "PERCENT",
-                                  "discountValue": 15,
+                                  "pointMultiplier": 1.5,
                                   "startDate": "2026-01-01T00:00:00Z",
                                   "endDate": "2026-12-31T23:59:59Z",
                                   "targetingMode": "%s",

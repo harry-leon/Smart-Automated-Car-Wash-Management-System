@@ -6,11 +6,7 @@ import {
 } from "./login-identifier.ts";
 
 test("normalizes whitespace from login identifiers", () => {
-  assert.equal(normalizeLoginIdentifier(" 0981 641 622 "), "0981641622");
-});
-
-test("accepts Vietnamese phone numbers", () => {
-  assert.equal(getLoginIdentifierValidationMessage("0981641622"), null);
+  assert.equal(normalizeLoginIdentifier(" customer@gmail.com "), "customer@gmail.com");
 });
 
 test("accepts email addresses", () => {
@@ -20,6 +16,6 @@ test("accepts email addresses", () => {
 test("rejects invalid login identifiers", () => {
   assert.equal(
     getLoginIdentifierValidationMessage("invalid-identifier"),
-    "Enter a valid Vietnamese phone number or email address.",
+    "Enter a valid email address.",
   );
 });

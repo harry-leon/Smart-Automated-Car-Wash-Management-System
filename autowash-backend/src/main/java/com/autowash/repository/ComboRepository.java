@@ -1,6 +1,5 @@
 package com.autowash.repository;
 
-import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.Combo;
 import java.util.List;
 import java.util.Optional;

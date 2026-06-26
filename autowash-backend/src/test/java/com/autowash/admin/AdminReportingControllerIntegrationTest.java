@@ -71,7 +71,7 @@ class AdminReportingControllerIntegrationTest {
                         .param("limit", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].bookingId").value("ADMIN_BK_001"))
+                .andExpect(jsonPath("$.data[0].bookingId").value(matching.getId().toString()))
                 .andExpect(jsonPath("$.data[0].customerId").value(matching.getCustomer().getId().toString()))
                 .andExpect(jsonPath("$.data[0].servicePackageName").value("Basic Wash"))
                 .andExpect(jsonPath("$.pagination.total").value(1));
@@ -171,7 +171,7 @@ class AdminReportingControllerIntegrationTest {
                         .with(user("admin").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].bookingId".formatted(sessionId)).value(contains("ADMIN_BK_003")))
+                .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].bookingId".formatted(sessionId)).value(contains(booking.getId().toString())))
                 .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].Package.name".formatted(sessionId)).value(contains("Basic Wash")))
                 .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].pointsAwarded".formatted(sessionId)).value(contains(27)))
                 .andExpect(jsonPath("$.data[?(@.sessionId == '%s')].status".formatted(pendingSessionId)).value(contains("PENDING")));
@@ -190,7 +190,7 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].type").value("EARN"))
                 .andExpect(jsonPath("$.data[0].points").value(27))
-                .andExpect(jsonPath("$.data[0].referenceId").value(sessionId));
+                .andExpect(jsonPath("$.data[0].referenceId").value(booking.getId().toString()));
 
         mockMvc.perform(get("/api/v1/admin/customers/{customerId}/tier-history", customerId)
                         .with(user("admin").roles("ADMIN")))
@@ -277,7 +277,7 @@ class AdminReportingControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.AdminBookingResponse.properties.bookingId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminCustomerDetailResponse.properties.customerId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.AdminCustomerVehicleResponse.properties.vehicleId.type").value("string"))
-                .andExpect(jsonPath("$.components.schemas.AdminTierHistoryResponse.properties.id.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.AdminTierHistoryResponse.properties.id.type").value("integer"))
                 .andExpect(jsonPath("$.components.schemas.AdminWashHistoryResponse.properties.sessionId.type").value("string"));
     }
 
@@ -356,7 +356,7 @@ class AdminReportingControllerIntegrationTest {
                 UUID.randomUUID(),
                 user,
                 vehicle,
-                UUID.randomUUID(),
+                UUID.fromString("12345678-1234-1234-1234-123456789012"),
                 null,
                 null,
                 bookingDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC),
