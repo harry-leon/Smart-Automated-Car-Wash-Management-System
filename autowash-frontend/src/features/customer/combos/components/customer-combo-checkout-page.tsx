@@ -295,6 +295,9 @@ export function CustomerComboCheckoutPage({ comboId }: CustomerComboCheckoutPage
             <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
               Thanh toán combo
             </h1>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+              Xem chi tiết gói combo, quyền lợi đi kèm và thông tin thanh toán riêng trước khi xác nhận.
+            </p>
           </div>
           <Button asChild variant="outline" className="rounded-full">
             <Link href="/customer/home">Quay lại trang chủ</Link>

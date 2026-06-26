@@ -25,6 +25,9 @@ export function CustomerLoyaltyHistoryPageContent() {
             <div className="space-y-4">
               <div>
                 <CardTitle>Point transaction history</CardTitle>
+                <CardDescription>
+                  This list refreshes after wash completion and shows earned points from live data.
+                </CardDescription>
               </div>
               <Button
                 type="button"

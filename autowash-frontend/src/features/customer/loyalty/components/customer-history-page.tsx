@@ -46,6 +46,9 @@ export function CustomerHistoryPageContent() {
           <CardHeader className="gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <CardTitle>Customer history</CardTitle>
+              <CardDescription>
+                Review booking history, completed wash sessions, and loyalty activity from real APIs.
+              </CardDescription>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button type="button" variant="outline" onClick={handleRefresh} disabled={isRefreshing}>

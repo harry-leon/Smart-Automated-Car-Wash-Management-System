@@ -18,7 +18,7 @@ export const BOOKING_TIME_SLOTS = ["08:00", "09:00", "10:00", "11:00", "13:00", 
 export function buildCreateBookingPayload(draft: BookingDraft): CreateBookingRequest {
   const payload: CreateBookingRequest = {
     vehicleId: draft.vehicleId,
-    options: draft.addonIds,
+    addons: draft.addonIds,
     bookingDate: draft.bookingDate,
     bookingTime: draft.bookingTime,
     paymentMethod: draft.paymentMethod ?? "CASH_AT_COUNTER",

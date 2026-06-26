@@ -141,6 +141,10 @@ export default function CustomerProfilePage() {
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
                   Manage your account profile.
                 </h1>
+                <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                  This page reads and updates your current profile through the real user-profile
+                  contract. Header data stays in sync after save.
+                </p>
               </div>
             </div>
 

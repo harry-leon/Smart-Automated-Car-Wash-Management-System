@@ -50,11 +50,11 @@ export function CustomerVehicleFormCard({
   extraActions?: React.ReactNode;
 }) {
   return (
-    <Card className="border-teal-100 bg-white shadow-[0_18px_44px_rgba(15,118,110,0.08)]">
+    <Card className="border-slate-200/80 bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
       <CardHeader className="border-b border-slate-200/70 bg-slate-50/80">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-md border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
               <ShieldCheck className="h-3.5 w-3.5" />
               Customer vehicles
             </div>
@@ -72,6 +72,7 @@ export function CustomerVehicleFormCard({
             onChange={(value) => onChange("plate", value.toUpperCase())}
             placeholder="30H-123456"
             error={errors.plate ?? null}
+            description="Backend requires exactly two digits, one capital letter, a dash, and six digits."
             disabled={disableIdentityFields}
           />
           <VehicleSelectField
@@ -124,7 +125,7 @@ export function CustomerVehicleFormCard({
           </Button>
           <Button
             type="button"
-            className="rounded-lg bg-teal-600 px-5 text-white hover:bg-teal-700"
+            className="rounded-xl bg-slate-900 px-5 text-white hover:bg-slate-800"
             onClick={onSubmit}
             disabled={isSubmitting}
           >
@@ -174,7 +175,7 @@ function VehicleTextField({
         placeholder={placeholder}
         inputMode={inputMode}
         disabled={disabled}
-        className="h-12 rounded-lg border-slate-200 bg-white px-4 text-sm text-slate-900 focus-visible:ring-teal-200"
+        className="h-12 rounded-2xl border-slate-200 bg-white px-4 text-sm text-slate-900 focus-visible:ring-sky-200"
       />
       {description ? <p className="text-xs text-slate-500">{description}</p> : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
@@ -205,7 +206,7 @@ function VehicleSelectField({
     <div className="space-y-2">
       <label className="text-sm font-semibold text-slate-900">{label}</label>
       <Select value={value} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger className={cn("h-12 rounded-lg border-slate-200 bg-white px-4 text-sm text-slate-900 focus-visible:ring-teal-200", !value && "text-slate-500")}>
+        <SelectTrigger className={cn("h-12 rounded-2xl border-slate-200 bg-white px-4 text-sm text-slate-900 focus-visible:ring-sky-200", !value && "text-slate-500")}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

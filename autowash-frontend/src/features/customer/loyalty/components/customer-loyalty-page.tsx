@@ -175,6 +175,9 @@ export function CustomerLoyaltyPageContent() {
                   <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
                     Loyalty wallet
                   </h1>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                    Redeem points for tier-based vouchers. Higher tiers unlock better rewards.
+                  </p>
                 </div>
               </div>
               <div className={cn("flex h-16 w-16 items-center justify-center rounded-3xl shadow-sm", tierIconClass(summary.tier))}>

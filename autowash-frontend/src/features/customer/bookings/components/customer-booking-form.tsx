@@ -217,7 +217,10 @@ export function CustomerBookingForm() {
 
   const selectedPackageAddons =
     draft.mode === "PACKAGE" && draft.packageId
-      ? addons.filter((addon) => addon.status === "ACTIVE")
+      ? addons.filter(
+          (addon) =>
+            addon.status === "ACTIVE" && addon.applicableToPackages.includes(draft.packageId),
+        )
       : [];
 
   const vehicleOptions = vehicles.map((vehicle) => ({

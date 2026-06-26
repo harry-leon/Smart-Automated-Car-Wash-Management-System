@@ -59,6 +59,10 @@ export function CustomerLoyaltyRedeemPageContent() {
           <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <CardTitle>Redeem loyalty points</CardTitle>
+              <CardDescription>
+                Redeem whole points within {MIN_REDEEM_POINTS}-{MAX_REDEEM_POINTS}. Current conversion: 1 point ={" "}
+                {VND_PER_POINT.toLocaleString("vi-VN")} VND.
+              </CardDescription>
             </div>
             <Button type="button" variant="outline" onClick={() => accountQuery.refetch()} disabled={accountQuery.isFetching}>
               <RefreshCcw className="mr-2 h-4 w-4" />
