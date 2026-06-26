@@ -1,17 +1,17 @@
 import type { AdminReportBreakdown, ReportAnalysisGroup, ReportRangeKey } from "@/features/admin/reports/admin-reporting.types";
 
-export const REPORT_RANGE_OPTIONS: Array<{ value: ReportRangeKey; label: string }> = [
-  { value: "LAST_7_DAYS", label: "Last 7 days" },
-  { value: "LAST_30_DAYS", label: "Last 30 days" },
-  { value: "THIS_MONTH", label: "This month" },
-  { value: "THIS_QUARTER", label: "This quarter" },
+export const REPORT_RANGE_OPTIONS: Array<{ value: ReportRangeKey; label: string; labelVi: string }> = [
+  { value: "LAST_7_DAYS", label: "Last 7 days", labelVi: "7 ngày qua" },
+  { value: "LAST_30_DAYS", label: "Last 30 days", labelVi: "30 ngày qua" },
+  { value: "THIS_MONTH", label: "This month", labelVi: "Tháng này" },
+  { value: "THIS_QUARTER", label: "This quarter", labelVi: "Quý này" },
 ];
 
-export const REPORT_GROUP_OPTIONS: Array<{ value: ReportAnalysisGroup; label: string }> = [
-  { value: "revenue", label: "Revenue" },
-  { value: "service", label: "Service" },
-  { value: "promotion", label: "Promotion" },
-  { value: "channel", label: "Channel" },
+export const REPORT_GROUP_OPTIONS: Array<{ value: ReportAnalysisGroup; label: string; labelVi: string }> = [
+  { value: "revenue", label: "Revenue", labelVi: "Doanh thu" },
+  { value: "service", label: "Service", labelVi: "Dịch vụ" },
+  { value: "promotion", label: "Promotion", labelVi: "Khuyến mãi" },
+  { value: "channel", label: "Channel", labelVi: "Kênh" },
 ];
 
 export function formatCurrency(value: number) {
