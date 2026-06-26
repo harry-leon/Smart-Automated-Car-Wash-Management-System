@@ -22,6 +22,8 @@ import { Badge } from "@/shared/components/ui/badge";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { useAdminBookings } from "@/features/admin/bookings/hooks/use-admin-bookings";
 
+import { useLanguageStore, translate } from "@/shared/store/language.store";
+
 const PAGE_LIMIT = 20;
 
 const STATUS_TONE: Record<string, string> = {
@@ -34,7 +36,21 @@ const STATUS_TONE: Record<string, string> = {
   PENDING: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
 };
 
+function translateStatus(status: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    PENDING: { vi: "Chờ xác nhận", en: "Pending" },
+    CONFIRMED: { vi: "Đã xác nhận", en: "Confirmed" },
+    CHECKED_IN: { vi: "Đã nhận xe", en: "Checked-in" },
+    IN_PROGRESS: { vi: "Đang rửa xe", en: "In progress" },
+    COMPLETED: { vi: "Hoàn thành", en: "Completed" },
+    CANCELLED: { vi: "Đã hủy", en: "Cancelled" },
+    NO_SHOW: { vi: "Vắng mặt", en: "No-show" },
+  };
+  return map[status]?.[lang] || status;
+}
+
 export function AdminBookingsPageContent() {
+  const { language } = useLanguageStore();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     status: "ALL",
@@ -74,7 +90,7 @@ export function AdminBookingsPageContent() {
                 htmlFor="filter-name"
                 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
               >
-                Customer name
+                {translate(language, "Tên khách hàng", "Customer name")}
               </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -82,7 +98,7 @@ export function AdminBookingsPageContent() {
                   id="filter-name"
                   value={filters.customerName}
                   onChange={(event) => setFilters({ ...filters, customerName: event.target.value })}
-                  placeholder="Search by customer name or plate"
+                  placeholder={translate(language, "Tìm theo tên khách hàng hoặc biển số", "Search by customer name or plate")}
                   className="pl-9"
                 />
               </div>
@@ -93,24 +109,24 @@ export function AdminBookingsPageContent() {
                 htmlFor="filter-status"
                 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
               >
-                Status
+                {translate(language, "Trạng thái", "Status")}
               </Label>
               <Select
                 value={filters.status}
                 onValueChange={(next) => setFilters({ ...filters, status: next })}
               >
                 <SelectTrigger id="filter-status">
-                  <SelectValue placeholder="All status" />
+                  <SelectValue placeholder={translate(language, "Tất cả trạng thái", "All status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All status</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                  <SelectItem value="CHECKED_IN">Checked-in</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In progress</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  <SelectItem value="NO_SHOW">No-show</SelectItem>
+                  <SelectItem value="ALL">{translate(language, "Tất cả trạng thái", "All status")}</SelectItem>
+                  <SelectItem value="PENDING">{translate(language, "Chờ xác nhận", "Pending")}</SelectItem>
+                  <SelectItem value="CONFIRMED">{translate(language, "Đã xác nhận", "Confirmed")}</SelectItem>
+                  <SelectItem value="CHECKED_IN">{translate(language, "Đã nhận xe", "Checked-in")}</SelectItem>
+                  <SelectItem value="IN_PROGRESS">{translate(language, "Đang rửa xe", "In progress")}</SelectItem>
+                  <SelectItem value="COMPLETED">{translate(language, "Hoàn thành", "Completed")}</SelectItem>
+                  <SelectItem value="CANCELLED">{translate(language, "Đã hủy", "Cancelled")}</SelectItem>
+                  <SelectItem value="NO_SHOW">{translate(language, "Vắng mặt", "No-show")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -120,7 +136,7 @@ export function AdminBookingsPageContent() {
                 htmlFor="filter-date"
                 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
               >
-                Scheduled date
+                {translate(language, "Ngày đặt lịch", "Scheduled date")}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -135,10 +151,10 @@ export function AdminBookingsPageContent() {
                     {filters.date ? (
                       (() => {
                         const d = new Date(filters.date);
-                        return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                        return d.toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", { year: "numeric", month: "short", day: "numeric" });
                       })()
                     ) : (
-                      <span>Pick a date</span>
+                      <span>{translate(language, "Chọn ngày", "Pick a date")}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -163,7 +179,7 @@ export function AdminBookingsPageContent() {
 
             <div className="flex items-center gap-2 pb-0.5">
               <Button type="button" variant="outline" onClick={handleResetFilters} className="gap-1.5">
-                <X className="h-3.5 w-3.5" /> Reset
+                <X className="h-3.5 w-3.5" /> {translate(language, "Đặt lại", "Reset")}
               </Button>
               <Button
                 type="button"
@@ -180,7 +196,7 @@ export function AdminBookingsPageContent() {
         {bookingsQuery.isPending ? (
           <Card className="border-border/50 bg-card/60 p-10 text-center text-sm text-muted-foreground backdrop-blur-xl">
             <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-            Loading bookings...
+            {translate(language, "Đang tải danh sách đặt lịch...", "Loading bookings...")}
           </Card>
         ) : bookingsQuery.isError ? (
           <Card className="border-rose-200 bg-rose-50 p-10 text-center text-sm text-rose-700">
@@ -188,20 +204,20 @@ export function AdminBookingsPageContent() {
           </Card>
         ) : !bookingsQuery.data || bookingsQuery.data.items.length === 0 ? (
           <Card className="border-border/50 bg-card/60 p-10 text-center text-sm text-muted-foreground backdrop-blur-xl">
-            No booking data found.
+            {translate(language, "Không tìm thấy dữ liệu đặt lịch.", "No booking data found.")}
           </Card>
         ) : (
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm border border-slate-100">
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow>
-                  <TableHead>Customer name</TableHead>
-                  <TableHead>Vehicle plate</TableHead>
-                  <TableHead>Service package</TableHead>
-                  <TableHead>Scheduled time</TableHead>
-                  <TableHead>Staff</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead>{translate(language, "Tên khách hàng", "Customer name")}</TableHead>
+                  <TableHead>{translate(language, "Biển số xe", "Vehicle plate")}</TableHead>
+                  <TableHead>{translate(language, "Gói dịch vụ", "Service package")}</TableHead>
+                  <TableHead>{translate(language, "Thời gian đặt", "Scheduled time")}</TableHead>
+                  <TableHead>{translate(language, "Nhân viên", "Staff")}</TableHead>
+                  <TableHead>{translate(language, "Trạng thái", "Status")}</TableHead>
+                  <TableHead className="text-right">{translate(language, "Thao tác", "Action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -213,29 +229,29 @@ export function AdminBookingsPageContent() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">{row.vehiclePlate}</TableCell>
                     <TableCell>
-                      <div className="text-sm">{row.servicePackageName || "Custom Service"}</div>
+                      <div className="text-sm">{row.servicePackageName || translate(language, "Dịch vụ tùy chỉnh", "Custom Service")}</div>
                       <div className="text-xs font-medium text-slate-700">
                         {row.finalAmount.toLocaleString("vi-VN")} VND
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">{formatDate(row.bookingDate)}</div>
+                      <div className="text-sm">{formatDate(row.bookingDate, language as "vi" | "en")}</div>
                       <div className="text-xs text-muted-foreground">{row.bookingTime}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-xs font-medium text-slate-500">{row.staffName || "Not assigned"}</div>
+                      <div className="text-xs font-medium text-slate-500">{row.staffName || translate(language, "Chưa phân công", "Not assigned")}</div>
                     </TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
                         className={`border font-semibold rounded-full px-3 py-0.5 ${STATUS_TONE[row.status] || "bg-slate-100 text-slate-600"}`}
                       >
-                        {row.status}
+                        {translateStatus(row.status, language as "vi" | "en")}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Link href={`/admin/bookings/${row.bookingId}`} className="text-sm font-medium hover:underline text-slate-700">
-                        View
+                        {translate(language, "Xem", "View")}
                       </Link>
                     </TableCell>
                   </TableRow>
@@ -254,10 +270,10 @@ export function AdminBookingsPageContent() {
                 onClick={() => setPage((value) => Math.max(1, value - 1))}
                 className="h-10 rounded-full px-6 text-sm font-medium text-slate-500 hover:text-slate-900 border-border/40"
               >
-                Prev
+                {translate(language, "Trước", "Prev")}
               </Button>
               <span className="text-sm font-semibold text-slate-600 px-2 min-w-[80px] text-center">
-                Page {page} / {totalPages}
+                {translate(language, `Trang ${page} / ${totalPages}`, `Page ${page} / ${totalPages}`)}
               </span>
               <Button
                 variant="outline"
@@ -265,7 +281,7 @@ export function AdminBookingsPageContent() {
                 onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
                 className="h-10 rounded-full px-6 text-sm font-medium text-slate-500 hover:text-slate-900 border-border/40"
               >
-                Next
+                {translate(language, "Sau", "Next")}
               </Button>
             </div>
           </div>
@@ -275,9 +291,9 @@ export function AdminBookingsPageContent() {
   );
 }
 
-function formatDate(dateString: string) {
+function formatDate(dateString: string, language: "vi" | "en") {
   try {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",

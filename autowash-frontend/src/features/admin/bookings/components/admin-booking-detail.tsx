@@ -1,29 +1,60 @@
 "use client";
 
-import { useAdminBookingDetail } from "@/features/admin/bookings/hooks/use-admin-booking-detail";
-import { Badge } from "@/shared/components/ui/badge";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Loader2, ArrowLeft, Calendar, Clock, CreditCard, User, Car, CheckCircle, XCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
+
+function translateStatus(st: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    PENDING: { vi: "Chờ xác nhận", en: "Pending" },
+    CONFIRMED: { vi: "Đã xác nhận", en: "Confirmed" },
+    CHECKED_IN: { vi: "Đã nhận xe", en: "Checked-in" },
+    IN_PROGRESS: { vi: "Đang rửa xe", en: "In progress" },
+    COMPLETED: { vi: "Hoàn thành", en: "Completed" },
+    CANCELLED: { vi: "Đã hủy", en: "Cancelled" },
+    NO_SHOW: { vi: "Vắng mặt", en: "No-show" },
+  };
+  return map[st]?.[lang] || st;
+}
+
+function translatePaymentMethod(method: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    VNPAY: { vi: "Cổng thanh toán VNPAY", en: "VNPAY Gate" },
+    CASH: { vi: "Tiền mặt", en: "Cash" },
+    PAYMENT_LINK: { vi: "Link thanh toán", en: "Payment Link" },
+  };
+  return map[method]?.[lang] || method.replace(/_/g, " ");
+}
+
+function translatePaymentStatus(status: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    UNPAID: { vi: "Chưa thanh toán", en: "Unpaid" },
+    PAID: { vi: "Đã thanh toán", en: "Paid" },
+    FAILED: { vi: "Thanh toán lỗi", en: "Failed" },
+    REFUNDED: { vi: "Đã hoàn tiền", en: "Refunded" },
+  };
+  return map[status]?.[lang] || status;
+}
+
+function translateWashStatus(status: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    NOT_STARTED: { vi: "Chưa bắt đầu", en: "Not started" },
+    PREPARING: { vi: "Chuẩn bị", en: "Preparing" },
+    WASHING: { vi: "Đang rửa", en: "Washing" },
+    DRYING: { vi: "Đang sấy khô", en: "Drying" },
+    COMPLETED: { vi: "Hoàn thành", en: "Completed" },
+  };
+  return map[status]?.[lang] || status;
+}
 
 export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   const router = useRouter();
+  const { language } = useLanguageStore();
   const { data: booking, isPending, isError, error } = useAdminBookingDetail(bookingId);
 
   if (isPending) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-500">
         <Loader2 className="h-8 w-8 animate-spin mb-4" />
-        <p>Loading booking details...</p>
+        <p>{translate(language, "Đang tải chi tiết lịch đặt...", "Loading booking details...")}</p>
       </div>
     );
   }
@@ -31,10 +62,10 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   if (isError) {
     return (
       <div className="rounded-md border border-rose-200 bg-rose-50 p-6 text-rose-700 m-8">
-        <h2 className="text-lg font-bold mb-2">Error Loading Booking</h2>
+        <h2 className="text-lg font-bold mb-2">{translate(language, "Lỗi khi tải lịch đặt", "Error Loading Booking")}</h2>
         <p>{getDisplayErrorMessage(error)}</p>
         <Button onClick={() => router.back()} variant="outline" className="mt-4">
-          Go Back
+          {translate(language, "Quay lại", "Go Back")}
         </Button>
       </div>
     );
@@ -43,7 +74,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
   if (!booking) {
     return (
       <div className="text-center p-8 text-slate-500">
-        Booking not found.
+        {translate(language, "Không tìm thấy lịch đặt.", "Booking not found.")}
       </div>
     );
   }
@@ -89,10 +120,10 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
     <div className="px-4 py-6 sm:px-6 lg:px-8 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center gap-4 mb-4">
         <Button variant="outline" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Bookings
+          <ArrowLeft className="mr-2 h-4 w-4" /> {translate(language, "Quay lại danh sách", "Back to Bookings")}
         </Button>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Booking #{booking.confirmationNumber}
+          {translate(language, "Lịch đặt", "Booking")} #{booking.confirmationNumber}
         </h1>
         <div className="ml-4">
           <Select defaultValue={booking.status} disabled={isTerminalState}>
@@ -102,7 +133,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
             <SelectContent>
               {availableStatuses.map((st) => (
                 <SelectItem key={st} value={st}>
-                  {st.replace("_", " ")}
+                  {translateStatus(st, language as "vi" | "en")}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -115,14 +146,14 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
           {/* Service Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Service Details</CardTitle>
+              <CardTitle>{translate(language, "Chi tiết dịch vụ", "Service Details")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="mb-4 pb-4 border-b">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium text-lg">{booking.packageName || "Custom Service"}</h3>
-                    <p className="text-sm text-slate-500">Duration: ~{booking.scheduling.estimatedDuration} mins</p>
+                    <h3 className="font-medium text-lg">{booking.packageName || translate(language, "Dịch vụ tùy chỉnh", "Custom Service")}</h3>
+                    <p className="text-sm text-slate-500">{translate(language, "Thời lượng", "Duration")}: ~{booking.scheduling.estimatedDuration} {translate(language, "phút", "mins")}</p>
                   </div>
                   <div className="font-bold text-lg">{formatCurrency(booking.pricing.basePrice)}</div>
                 </div>
@@ -130,7 +161,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
 
               {booking.addons && booking.addons.length > 0 && (
                 <div className="mb-4 pb-4 border-b">
-                  <h4 className="font-medium mb-3 text-slate-700">Add-ons</h4>
+                  <h4 className="font-medium mb-3 text-slate-700">{translate(language, "Dịch vụ thêm", "Add-ons")}</h4>
                   <ul className="space-y-2">
                     {booking.addons.map((addon) => (
                       <li key={addon.addonId} className="flex justify-between text-sm">
@@ -144,17 +175,17 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
 
               <div className="space-y-2 pt-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Subtotal</span>
+                  <span className="text-slate-500">{translate(language, "Tạm tính", "Subtotal")}</span>
                   <span>{formatCurrency(booking.pricing.subtotal)}</span>
                 </div>
                 {booking.pricing.voucherDiscount > 0 && (
                   <div className="flex justify-between text-sm text-emerald-600">
-                    <span>Discount ({booking.pricing.voucherCode})</span>
+                    <span>{translate(language, "Giảm giá", "Discount")} ({booking.pricing.voucherCode})</span>
                     <span>-{formatCurrency(booking.pricing.voucherDiscount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg pt-4 border-t mt-4">
-                  <span>Total</span>
+                  <span>{translate(language, "Tổng cộng", "Total")}</span>
                   <span className="text-blue-600">{formatCurrency(booking.pricing.finalAmount)}</span>
                 </div>
               </div>
@@ -164,21 +195,21 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
           {/* Schedule Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Schedule & Operations</CardTitle>
+              <CardTitle>{translate(language, "Lịch trình & Hoạt động", "Schedule & Operations")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
                   <Calendar className="h-5 w-5 text-slate-400" />
                   <div>
-                    <p className="text-sm font-medium">Date</p>
-                    <p className="text-sm text-slate-600">{new Date(booking.scheduling.bookingDate).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium">{translate(language, "Ngày", "Date")}</p>
+                    <p className="text-sm text-slate-600">{new Date(booking.scheduling.bookingDate).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US")}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="h-5 w-5 text-slate-400" />
                   <div>
-                    <p className="text-sm font-medium">Time</p>
+                    <p className="text-sm font-medium">{translate(language, "Giờ", "Time")}</p>
                     <p className="text-sm text-slate-600">
                       {booking.scheduling.bookingTime.substring(0, 5)} - {booking.scheduling.estimatedEndTime}
                     </p>
@@ -189,9 +220,9 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
               {booking.washStatus && (
                 <div className="mt-4 pt-4 border-t flex justify-between items-center">
                   <div>
-                    <p className="text-sm font-medium">Wash Session Status</p>
+                    <p className="text-sm font-medium">{translate(language, "Trạng thái phiên rửa", "Wash Session Status")}</p>
                   </div>
-                  <Badge variant="secondary">{booking.washStatus}</Badge>
+                  <Badge variant="secondary">{translateWashStatus(booking.washStatus, language as "vi" | "en")}</Badge>
                 </div>
               )}
             </CardContent>
@@ -202,7 +233,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
           {/* Customer Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Customer Information</CardTitle>
+              <CardTitle>{translate(language, "Thông tin khách hàng", "Customer Information")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
@@ -218,7 +249,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
           {/* Vehicle Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Vehicle Details</CardTitle>
+              <CardTitle>{translate(language, "Thông tin xe", "Vehicle Details")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
@@ -234,13 +265,13 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
           {/* Payment Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Payment Status</CardTitle>
+              <CardTitle>{translate(language, "Trạng thái thanh toán", "Payment Status")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
                 <CreditCard className="h-5 w-5 text-slate-400" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium uppercase">{booking.payment.method.replace(/_/g, " ")}</p>
+                  <p className="text-sm font-medium uppercase">{translatePaymentMethod(booking.payment.method, language as "vi" | "en")}</p>
                   <p className="text-xs text-slate-500">{booking.payment.transactionId}</p>
                 </div>
                 {booking.payment.status === "PAID" || booking.payment.status === "CONFIRMED" ? (
@@ -251,7 +282,7 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
               </div>
               <div className="pt-2 border-t mt-2">
                 <Badge variant={booking.payment.status === "PAID" ? "default" : "outline"} className={booking.payment.status === "PAID" ? "bg-emerald-100 text-emerald-800" : ""}>
-                  {booking.payment.status}
+                  {translatePaymentStatus(booking.payment.status, language as "vi" | "en")}
                 </Badge>
               </div>
             </CardContent>

@@ -310,33 +310,31 @@ function translateInsight(title: string, summary: string, lang: "vi" | "en"): { 
   else if (title === "Top service contributor") translatedTitle = "Dịch vụ đóng góp hàng đầu";
   else if (title === "Cancellation pressure") translatedTitle = "Áp lực hủy lịch";
   else if (title === "Promotion visibility") translatedTitle = "Hiệu quả khuyến mãi";
+  else translatedTitle = translateText(title, lang);
 
-  if (summary.startsWith("Revenue is up ") && summary.endsWith(" compared with the previous period.")) {
-    const rate = summary.replace("Revenue is up ", "").replace("% compared with the previous period.", "");
-    translatedSummary = `Doanh thu tăng ${rate}% so với kỳ trước.`;
-  } else if (summary.startsWith("Revenue is down ") && summary.endsWith(" compared with the previous period.")) {
-    const rate = summary.replace("Revenue is down ", "").replace("% compared with the previous period.", "");
-    translatedSummary = `Doanh thu giảm ${rate}% so với kỳ trước.`;
-  } else if (summary.includes(" is leading revenue contribution with ") && summary.includes(" bookings in the selected period.")) {
-    const regex = /^(.*) is leading revenue contribution with (\d+) bookings in the selected period\.$/;
-    const match = summary.match(regex);
-    if (match) {
-      const serviceName = translateText(match[1], lang);
-      const bookings = match[2];
-      translatedSummary = `Dịch vụ ${serviceName} đang dẫn đầu đóng góp doanh thu với ${bookings} lịch đặt trong kỳ báo cáo.`;
-    }
-  } else if (summary.startsWith("Cancellation rate increased by ") && summary.endsWith(" percentage points versus the previous period.")) {
-    const pts = summary.replace("Cancellation rate increased by ", "").replace(" percentage points versus the previous period.", "");
-    translatedSummary = `Tỷ lệ hủy lịch tăng ${pts} điểm phần trăm so với kỳ trước.`;
-  } else if (summary.startsWith("Cancellation rate improved by ") && summary.endsWith(" percentage points versus the previous period.")) {
-    const pts = summary.replace("Cancellation rate improved by ", "").replace(" percentage points versus the previous period.", "");
-    translatedSummary = `Tỷ lệ hủy lịch cải thiện ${pts} điểm phần trăm so với kỳ trước.`;
-  } else if (summary.startsWith("Discount-assisted bookings contributed ") && summary.endsWith(" of total revenue.")) {
-    const rate = summary.replace("Discount-assisted bookings contributed ", "").replace(" of total revenue.", "");
-    translatedSummary = `Các lịch đặt có giảm giá đóng góp ${rate} vào tổng doanh thu.`;
-  } else if (summary.startsWith("Voucher-assisted bookings contributed ") && summary.endsWith(" of total revenue.")) {
-    const rate = summary.replace("Voucher-assisted bookings contributed ", "").replace(" of total revenue.", "");
-    translatedSummary = `Các lịch đặt sử dụng voucher đóng góp ${rate} vào tổng doanh thu.`;
+  const revUpMatch = summary.match(/Revenue is up ([0-9.]+)% compared with the previous period/i);
+  if (revUpMatch) translatedSummary = `Doanh thu tăng ${revUpMatch[1]}% so với kỳ trước.`;
+
+  const revDownMatch = summary.match(/Revenue is down ([0-9.]+)% compared with the previous period/i);
+  if (revDownMatch) translatedSummary = `Doanh thu giảm ${revDownMatch[1]}% so với kỳ trước.`;
+
+  const topServiceMatch = summary.match(/^(.*?) is leading revenue contribution with (\d+) bookings in the selected period/i);
+  if (topServiceMatch) {
+    const serviceName = translateText(topServiceMatch[1], lang);
+    translatedSummary = `Dịch vụ ${serviceName} đang dẫn đầu đóng góp doanh thu với ${topServiceMatch[2]} lịch đặt trong kỳ báo cáo.`;
+  }
+
+  const cancelIncMatch = summary.match(/Cancellation rate increased by ([0-9.]+) percentage points versus the previous period/i);
+  if (cancelIncMatch) translatedSummary = `Tỷ lệ hủy lịch tăng ${cancelIncMatch[1]} điểm phần trăm so với kỳ trước.`;
+
+  const cancelDecMatch = summary.match(/Cancellation rate improved by ([0-9.]+) percentage points versus the previous period/i);
+  if (cancelDecMatch) translatedSummary = `Tỷ lệ hủy lịch cải thiện ${cancelDecMatch[1]} điểm phần trăm so với kỳ trước.`;
+
+  const cancelStableMatch = summary.match(/Cancellation rate is stable versus the previous period/i);
+  if (cancelStableMatch) translatedSummary = `Tỷ lệ hủy lịch ổn định so với kỳ trước.`;
+
+  if (summary.includes("Discount-assisted bookings are tracked, but exact campaign attribution remains limited")) {
+    translatedSummary = "Các lịch đặt có giảm giá đã được ghi nhận, tuy nhiên việc phân bổ chính xác theo từng chiến dịch vẫn còn hạn chế.";
   }
 
   return { title: translatedTitle, summary: translatedSummary };
@@ -509,8 +507,8 @@ function AdminBusinessHealthReportView({
   useEffect(() => {
     // Reset messages with a greeting
     const greetingText = language === "vi" 
-      ? "Xin chào! Mình là Trợ lý phân tích 🌸 Dưới đây là nhận định tổng quan về tình hình kinh doanh của bạn:" 
-      : "Hello! I am the Analysis Assistant 🌸 Here is the overall performance assessment of your business:";
+      ? "Dưới đây là tổng quan dữ liệu về tình hình kinh doanh của bạn:" 
+      : "Here is the data overview of your business performance:";
     
     const initialMsgs = [
       {
@@ -871,16 +869,15 @@ function AdminBusinessHealthReportView({
               </div>
               <div>
                 <CardTitle className="text-sm font-extrabold text-slate-800 flex items-center gap-1.5 leading-none">
-                  {language === "vi" ? "Trợ lý phân tích" : "Analysis Assistant"}
+                  {language === "vi" ? "Tổng quan dữ liệu" : "Data Overview"}
                 </CardTitle>
-                <div className="text-[10px] text-teal-600 mt-1 font-medium">Luôn sẵn sàng giúp đỡ bạn 🌸</div>
               </div>
             </div>
             <button 
               onClick={() => {
                 const greetingText = language === "vi" 
-                  ? "Xin chào! Mình là Trợ lý phân tích 🌸 Dưới đây là nhận định tổng quan về tình hình kinh doanh của bạn:" 
-                  : "Hello! I am the Analysis Assistant 🌸 Here is the overall performance assessment of your business:";
+                  ? "Dưới đây là tổng quan dữ liệu về tình hình kinh doanh của bạn:" 
+                  : "Here is the data overview of your business performance:";
                 setMessages([{ id: "greeting", sender: "ai", text: greetingText, timestamp: new Date() }]);
               }}
               className="text-teal-400 hover:text-teal-600 transition-colors p-2 rounded-xl hover:bg-teal-100/50"
@@ -935,7 +932,7 @@ function AdminBusinessHealthReportView({
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div className="bg-white border border-teal-100 text-teal-500 px-4 py-3 rounded-[24px] rounded-tl-none flex items-center gap-2 shadow-sm">
-                  <span className="text-xs font-medium italic">{language === "vi" ? "Trợ lý đang suy nghĩ" : "Assistant is thinking"}</span>
+                  <span className="text-xs font-medium italic">{language === "vi" ? "Hệ thống đang xử lý" : "System is processing"}</span>
                   <div className="flex space-x-1 items-center h-4 ml-1">
                     <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
                     <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
@@ -971,7 +968,7 @@ function AdminBusinessHealthReportView({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder={language === "vi" ? "Hỏi Trợ lý phân tích..." : "Ask Analysis Assistant..."}
+              placeholder={language === "vi" ? "Nhập câu hỏi để xem chi tiết..." : "Enter a question for details..."}
               className="flex-1 bg-slate-50 border border-slate-100 rounded-full px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-300 focus:ring-2 focus:ring-teal-100 transition-all"
             />
             <button

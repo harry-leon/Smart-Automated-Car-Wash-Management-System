@@ -61,6 +61,7 @@ import type {
   PromotionTargetingMode,
 } from "@/features/admin/promotions/promotion.types";
 import type { LoyaltyTier } from "@/features/customer/loyalty/loyalty.types";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 type PromotionFormValues = {
   name: string;
@@ -99,6 +100,7 @@ const EMPTY_FORM: PromotionFormValues = {
 };
 
 export function AdminPromotionsPageContent() {
+  const { language } = useLanguageStore();
   const [displayPage, setDisplayPage] = useState(1);
   const [filters, setFilters] = useState<PromotionFilters>({ name: "", status: "ALL", date: "" });
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
@@ -116,7 +118,7 @@ export function AdminPromotionsPageContent() {
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const activeMutationError = (createMutation.error ?? updateMutation.error) as ApiErrorResponse | null;
-  const clientErrors = useMemo(() => validatePromotionForm(form), [form]);
+  const clientErrors = useMemo(() => validatePromotionForm(form, language), [form, language]);
   const displayErrors = mergeFormErrors(clientErrors, activeMutationError, showValidation);
 
   const filteredPromotions = useMemo(
@@ -152,32 +154,32 @@ export function AdminPromotionsPageContent() {
 
   const summaryCards = [
     {
-      label: "Total campaigns",
+      label: translate("Tổng chiến dịch", "Total campaigns", language),
       value: filteredPromotions.length,
-      description: "Visible in the current view",
+      description: translate("Hiển thị trong chế độ xem hiện tại", "Visible in the current view", language),
       icon: Layers3,
       tone: "from-slate-900 via-slate-800 to-slate-700 text-white shadow-slate-900/20",
     },
     {
-      label: "Running now",
+      label: translate("Đang chạy", "Running now", language),
       value: runningPromotions.length,
-      description: "Active and currently in date range",
+      description: translate("Đang hoạt động và trong khoảng thời gian hiện tại", "Active and currently in date range", language),
       icon: Flame,
       tone: "from-orange-500 via-amber-500 to-yellow-400 text-white shadow-orange-500/25",
     },
     {
-      label: "Active",
+      label: translate("Đang hoạt động", "Active", language),
       value: activePromotions.length,
-      description: "Ready to be applied by customers",
+      description: translate("Sẵn sàng áp dụng cho khách hàng", "Ready to be applied by customers", language),
       icon: BadgeCheck,
       tone: "from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-emerald-500/25",
     },
     {
-      label: "Ending soon",
+      label: translate("Sắp kết thúc", "Ending soon", language),
       value: expiringSoonPromotions.length,
-      description: "Need a quick review this week",
+      description: translate("Cần xem xét nhanh trong tuần này", "Need a quick review this week", language),
       icon: Clock3,
-      tone: "from-violet-500 via-fuchsia-500 to-pink-500 text-white shadow-violet-500/25",
+      tone: "from-rose-500 via-pink-500 to-fuchsia-500 text-white shadow-rose-500/25",
     },
   ];
 
@@ -214,22 +216,22 @@ export function AdminPromotionsPageContent() {
     try {
       if (editingPromotion) {
         await updateMutation.mutateAsync({ promotionId: editingPromotion.promotionId, payload });
-        toast.success("Promotion updated.");
+        toast.success(translate("Đã cập nhật chương trình khuyến mãi.", "Promotion updated.", language));
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success("Promotion created.");
+        toast.success(translate("Đã tạo chương trình khuyến mãi.", "Promotion created.", language));
       }
       handleResetForm();
       setIsModalOpen(false);
     } catch {
-      toast.error("Unable to save promotion.");
+      toast.error(translate("Không thể lưu chương trình khuyến mãi.", "Unable to save promotion.", language));
     }
   };
 
   const handleDelete = async (promotionId: string) => {
     try {
       await deleteMutation.mutateAsync(promotionId);
-      toast.success("Promotion deleted.");
+      toast.success(translate("Đã xoá chương trình khuyến mãi.", "Promotion deleted.", language));
       setConfirmDeleteId(null);
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
@@ -251,7 +253,7 @@ export function AdminPromotionsPageContent() {
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
-                    Promotions
+                    {translate("Khuyến mãi", "Promotions", language)}
                   </h1>
                 </div>
               </div>
@@ -267,7 +269,7 @@ export function AdminPromotionsPageContent() {
                 }}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Create promotion
+                {translate("Tạo khuyến mãi", "Create promotion", language)}
               </Button>
               <Button
                 type="button"
@@ -277,7 +279,7 @@ export function AdminPromotionsPageContent() {
                 disabled={promotionsQuery.isFetching}
               >
                 <RefreshCcw className={cn("mr-2 h-4 w-4", promotionsQuery.isFetching && "animate-spin")} />
-                Refresh
+                {translate("Tải lại", "Refresh", language)}
               </Button>
             </div>
           </div>
@@ -318,7 +320,7 @@ export function AdminPromotionsPageContent() {
                 htmlFor="filter-name"
                 className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500"
               >
-                Search campaign
+                {translate("Tìm kiếm chiến dịch", "Search campaign", language)}
               </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -326,7 +328,7 @@ export function AdminPromotionsPageContent() {
                   id="filter-name"
                   value={filters.name}
                   onChange={(event) => setFilters((prev) => ({ ...prev, name: event.target.value }))}
-                  placeholder="Search by promotion name..."
+                  placeholder={translate("Tìm theo tên khuyến mãi...", "Search by promotion name...", language)}
                   className="h-11 rounded-2xl border-slate-200 bg-slate-50/80 pl-10 shadow-inner shadow-slate-100/70 focus:bg-white"
                 />
               </div>
@@ -337,7 +339,7 @@ export function AdminPromotionsPageContent() {
                 htmlFor="filter-status"
                 className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500"
               >
-                Status
+                {translate("Trạng thái", "Status", language)}
               </Label>
               <Select
                 value={filters.status}
@@ -349,19 +351,19 @@ export function AdminPromotionsPageContent() {
                   id="filter-status"
                   className="h-11 rounded-2xl border-slate-200 bg-slate-50/80 shadow-inner shadow-slate-100/70"
                 >
-                  <SelectValue placeholder="All status" />
+                  <SelectValue placeholder={translate("Tất cả trạng thái", "All status", language)} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All status</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="ALL">{translate("Tất cả trạng thái", "All status", language)}</SelectItem>
+                  <SelectItem value="ACTIVE">{translate("Đang hoạt động", "Active", language)}</SelectItem>
+                  <SelectItem value="INACTIVE">{translate("Không hoạt động", "Inactive", language)}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex-1 space-y-1.5">
               <Label className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                Active on date
+                {translate("Hoạt động vào ngày", "Active on date", language)}
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -373,7 +375,7 @@ export function AdminPromotionsPageContent() {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.date ? formatFilterDate(filters.date) : "Pick a date"}
+                    {filters.date ? formatFilterDate(filters.date, language) : translate("Chọn ngày", "Pick a date", language)}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -404,7 +406,7 @@ export function AdminPromotionsPageContent() {
                 className="h-11 rounded-full border-slate-200 bg-white px-4 font-semibold text-slate-600"
               >
                 <X className="mr-1.5 h-3.5 w-3.5" />
-                Reset
+                {translate("Đặt lại", "Reset", language)}
               </Button>
             </div>
           </div>
@@ -420,17 +422,23 @@ export function AdminPromotionsPageContent() {
           <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-[28px] border border-white/70 bg-white/95 shadow-[0_30px_90px_rgba(15,23,42,0.16)]">
             <DialogHeader>
               <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">
-                {isEditing ? "Edit promotion" : "Create promotion"}
+                {isEditing
+                  ? translate("Chỉnh sửa khuyến mãi", "Edit promotion", language)
+                  : translate("Tạo khuyến mãi", "Create promotion", language)}
               </DialogTitle>
               <DialogDescription className="text-sm leading-6 text-slate-500">
-                Set discount details, active dates, and tier targeting before publishing.
+                {translate(
+                  "Thiết lập thông tin giảm giá, ngày áp dụng và đối tượng mục tiêu trước khi đăng.",
+                  "Set discount details, active dates, and tier targeting before publishing.",
+                  language,
+                )}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-5 py-2">
               {promotionDetailQuery.isFetching && editingPromotionId ? (
                 <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading latest promotion details...
+                  {translate("Đang tải chi tiết khuyến mãi...", "Loading latest promotion details...", language)}
                 </div>
               ) : null}
 
@@ -448,9 +456,9 @@ export function AdminPromotionsPageContent() {
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  Basic Information
+                  {translate("Thông tin cơ bản", "Basic Information", language)}
                 </p>
-                <FormField label="Name" error={displayErrors.name}>
+                <FormField label={translate("Tên", "Name", language)} error={displayErrors.name}>
                   <Input
                     value={form.name}
                     onChange={(event) =>
@@ -468,10 +476,10 @@ export function AdminPromotionsPageContent() {
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  Discount Setup
+                  {translate("Cài đặt giảm giá", "Discount Setup", language)}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="Discount type" error={displayErrors.discountType}>
+                  <FormField label={translate("Loại giảm giá", "Discount type", language)} error={displayErrors.discountType}>
                     <select
                       className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                       value={form.discountType}
@@ -479,18 +487,18 @@ export function AdminPromotionsPageContent() {
                         setForm((prev) => ({ ...prev, discountType: event.target.value as PromotionDiscountType }))
                       }
                     >
-                      <option value="PERCENT">Percent</option>
-                      <option value="FIXED">Fixed</option>
+                      <option value="PERCENT">{translate("Phần trăm", "Percent", language)}</option>
+                      <option value="FIXED">{translate("Cố định", "Fixed", language)}</option>
                     </select>
                   </FormField>
 
-                  <FormField label="Discount value" error={displayErrors.discountValue}>
+                  <FormField label={translate("Giá trị giảm giá", "Discount value", language)} error={displayErrors.discountValue}>
                     <Input
                       type="number"
                       min={1}
                       value={form.discountValue}
                       onChange={(event) => setForm((prev) => ({ ...prev, discountValue: event.target.value }))}
-                      placeholder={form.discountType === "PERCENT" ? "1 - 100" : "VND amount"}
+                      placeholder={form.discountType === "PERCENT" ? "1 - 100" : translate("Số tiền VND", "VND amount", language)}
                       className="h-11 rounded-2xl border-slate-200 bg-white"
                     />
                   </FormField>
@@ -499,10 +507,10 @@ export function AdminPromotionsPageContent() {
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  Availability
+                  {translate("Thời gian áp dụng", "Availability", language)}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="Start date" error={displayErrors.startDate}>
+                  <FormField label={translate("Ngày bắt đầu", "Start date", language)} error={displayErrors.startDate}>
                     <Input
                       type="datetime-local"
                       value={form.startDate}
@@ -511,7 +519,7 @@ export function AdminPromotionsPageContent() {
                     />
                   </FormField>
 
-                  <FormField label="End date" error={displayErrors.endDate}>
+                  <FormField label={translate("Ngày kết thúc", "End date", language)} error={displayErrors.endDate}>
                     <Input
                       type="datetime-local"
                       value={form.endDate}
@@ -524,9 +532,9 @@ export function AdminPromotionsPageContent() {
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  Audience Targeting
+                  {translate("Đối tượng mục tiêu", "Audience Targeting", language)}
                 </p>
-                <FormField label="Targeting mode" error={displayErrors.targetingMode}>
+                <FormField label={translate("Chế độ nhắm mục tiêu", "Targeting mode", language)} error={displayErrors.targetingMode}>
                   <select
                     className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                     value={form.targetingMode}
@@ -538,13 +546,13 @@ export function AdminPromotionsPageContent() {
                       }))
                     }
                   >
-                    <option value="ALL_TIERS">All tiers</option>
-                    <option value="SELECTED_TIERS">Selected tiers</option>
+                    <option value="ALL_TIERS">{translate("Tất cả các hạng", "All tiers", language)}</option>
+                    <option value="SELECTED_TIERS">{translate("Hạng được chọn", "Selected tiers", language)}</option>
                   </select>
                 </FormField>
 
                 {form.targetingMode === "SELECTED_TIERS" ? (
-                  <FormField label="Applicable tiers" error={displayErrors.applicableTiers}>
+                  <FormField label={translate("Các hạng được áp dụng", "Applicable tiers", language)} error={displayErrors.applicableTiers}>
                     <div className="grid grid-cols-2 gap-2">
                       {ALL_TIERS.map((tier) => (
                         <label
@@ -570,25 +578,25 @@ export function AdminPromotionsPageContent() {
                 ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label="Max usage / customer" error={displayErrors.maxUsagePerCustomer}>
+                  <FormField label={translate("Số lần dùng tối đa / khách", "Max usage / customer", language)} error={displayErrors.maxUsagePerCustomer}>
                     <Input
                       type="number"
                       min={1}
                       value={form.maxUsagePerCustomer}
                       onChange={(event) => setForm((prev) => ({ ...prev, maxUsagePerCustomer: event.target.value }))}
-                      placeholder="Optional"
+                      placeholder={translate("Tuỳ chọn", "Optional", language)}
                       className="h-11 rounded-2xl border-slate-200 bg-white"
                     />
                   </FormField>
 
-                  <FormField label="Status" error={displayErrors.status}>
+                  <FormField label={translate("Trạng thái", "Status", language)} error={displayErrors.status}>
                     <select
                       className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
                       value={form.status}
                       onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as PromotionStatus }))}
                     >
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="INACTIVE">INACTIVE</option>
+                      <option value="ACTIVE">{translate("Đang hoạt động", "Active", language)}</option>
+                      <option value="INACTIVE">{translate("Không hoạt động", "Inactive", language)}</option>
                     </select>
                   </FormField>
                 </div>
@@ -596,7 +604,7 @@ export function AdminPromotionsPageContent() {
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" className="rounded-full px-5" onClick={() => setIsModalOpen(false)}>
-                  Cancel
+                  {translate("Huỷ", "Cancel", language)}
                 </Button>
                 <Button
                   type="button"
@@ -605,7 +613,9 @@ export function AdminPromotionsPageContent() {
                   disabled={isSubmitting || promotionDetailQuery.isFetching}
                 >
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isEditing ? "Save changes" : "Create promotion"}
+                  {isEditing
+                    ? translate("Lưu thay đổi", "Save changes", language)
+                    : translate("Tạo khuyến mãi", "Create promotion", language)}
                 </Button>
               </div>
             </div>
@@ -617,17 +627,17 @@ export function AdminPromotionsPageContent() {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <CardTitle className="text-xl font-black tracking-tight text-slate-950">
-                  Promotion list
+                  {translate("Danh sách khuyến mãi", "Promotion list", language)}
                 </CardTitle>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {hasActiveFilters ? (
                   <Badge variant="outline" className="rounded-full border-orange-200 bg-orange-50 px-3 py-1 text-orange-700">
-                    Filters applied
+                    {translate("Đang lọc", "Filters applied", language)}
                   </Badge>
                 ) : null}
                 <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-slate-600">
-                  {activePromotions.length} active
+                  {activePromotions.length} {translate("đang hoạt động", "active", language)}
                 </Badge>
               </div>
             </div>
@@ -636,7 +646,7 @@ export function AdminPromotionsPageContent() {
             {promotionsQuery.isPending ? (
               <div className="flex items-center justify-center gap-2 p-12 text-sm text-slate-600">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Loading promotions...
+                {translate("Đang tải khuyến mãi...", "Loading promotions...", language)}
               </div>
             ) : promotionsQuery.isError ? (
               <div className="m-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
@@ -646,12 +656,14 @@ export function AdminPromotionsPageContent() {
               <div className="flex flex-col items-center justify-center gap-2 p-12 text-center">
                 <Megaphone className="h-10 w-10 text-slate-300" />
                 <p className="text-sm font-medium text-slate-600">
-                  {hasActiveFilters ? "No promotions match your filters." : "No promotions yet."}
+                  {hasActiveFilters
+                    ? translate("Không có khuyến mãi nào khớp với bộ lọc.", "No promotions match your filters.", language)
+                    : translate("Chưa có khuyến mãi nào.", "No promotions yet.", language)}
                 </p>
                 <p className="text-xs text-slate-400">
                   {hasActiveFilters
-                    ? "Try adjusting search or filter criteria."
-                    : "Create your first campaign to get started."}
+                    ? translate("Thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc.", "Try adjusting search or filter criteria.", language)
+                    : translate("Tạo chiến dịch đầu tiên để bắt đầu.", "Create your first campaign to get started.", language)}
                 </p>
               </div>
             ) : (
@@ -661,28 +673,29 @@ export function AdminPromotionsPageContent() {
                     <TableHeader className="bg-slate-50/90">
                       <TableRow className="hover:bg-transparent">
                         <TableHead className="pl-6 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          Campaign
+                          {translate("Chiến dịch", "Campaign", language)}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          Discount
+                          {translate("Giảm giá", "Discount", language)}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          Audience
+                          {translate("Đối tượng", "Audience", language)}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          Schedule
+                          {translate("Lịch trình", "Schedule", language)}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          Status
+                          {translate("Trạng thái", "Status", language)}
                         </TableHead>
                         <TableHead className="pr-6 text-right text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          Actions
+                          {translate("Hành động", "Actions", language)}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedPromotions.map((promotion) => {
                         const phase = getPromotionPhase(promotion);
+                        const phaseLabel = translatePhase(phase, language);
                         return (
                           <TableRow key={promotion.promotionId} className="group border-slate-100 hover:bg-orange-50/35">
                             <TableCell className="pl-6 py-4">
@@ -694,14 +707,14 @@ export function AdminPromotionsPageContent() {
                                 className={cn(
                                   "rounded-full border-0 px-3 py-1 font-bold shadow-sm",
                                   promotion.discountType === "PERCENT"
-                                    ? "bg-violet-100 text-violet-700"
-                                    : "bg-sky-100 text-sky-700",
+                                    ? "bg-sky-100 text-sky-700"
+                                    : "bg-teal-100 text-teal-700",
                                 )}
                               >
                                 {promotion.discountType === "PERCENT" ? (
                                   <Percent className="mr-1 inline h-3 w-3" />
                                 ) : null}
-                                {formatDiscount(promotion.discountType, promotion.discountValue)}
+                                {formatDiscount(promotion.discountType, promotion.discountValue, language)}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -710,7 +723,7 @@ export function AdminPromotionsPageContent() {
                                   variant="outline"
                                   className="rounded-full border-slate-200 bg-slate-100 px-3 py-1 text-slate-700"
                                 >
-                                  All tiers
+                                  {translate("Tất cả các hạng", "All tiers", language)}
                                 </Badge>
                               ) : (
                                 <div className="flex max-w-[220px] flex-wrap gap-1.5">
@@ -729,11 +742,11 @@ export function AdminPromotionsPageContent() {
                             <TableCell>
                               <div className="space-y-1">
                                 <div className="text-sm font-medium text-slate-700">
-                                  {formatDate(promotion.startDate)}
+                                  {formatDate(promotion.startDate, language)}
                                 </div>
                                 <div className="inline-flex items-center gap-1 text-xs text-slate-400">
                                   <ArrowRight className="h-3 w-3" />
-                                  {formatDate(promotion.endDate)}
+                                  {formatDate(promotion.endDate, language)}
                                 </div>
                               </div>
                             </TableCell>
@@ -748,9 +761,11 @@ export function AdminPromotionsPageContent() {
                                       : "bg-slate-100 text-slate-500",
                                   )}
                                 >
-                                  {promotion.status === "ACTIVE" ? "Active" : "Inactive"}
+                                  {promotion.status === "ACTIVE"
+                                    ? translate("Hoạt động", "Active", language)
+                                    : translate("Không hoạt động", "Inactive", language)}
                                 </Badge>
-                                <div className="text-xs font-medium text-slate-400">{phase}</div>
+                                <div className="text-xs font-medium text-slate-400">{phaseLabel}</div>
                               </div>
                             </TableCell>
                             <TableCell className="pr-6">
@@ -763,7 +778,7 @@ export function AdminPromotionsPageContent() {
                                   onClick={() => handleEdit(promotion)}
                                 >
                                   <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                                  Edit
+                                  {translate("Sửa", "Edit", language)}
                                 </Button>
                                 {confirmDeleteId === promotion.promotionId ? (
                                   <>
@@ -780,7 +795,7 @@ export function AdminPromotionsPageContent() {
                                       ) : (
                                         <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                                       )}
-                                      Confirm
+                                      {translate("Xác nhận", "Confirm", language)}
                                     </Button>
                                     <Button
                                       type="button"
@@ -789,7 +804,7 @@ export function AdminPromotionsPageContent() {
                                       className="h-9 rounded-full px-3.5"
                                       onClick={() => setConfirmDeleteId(null)}
                                     >
-                                      Cancel
+                                      {translate("Huỷ", "Cancel", language)}
                                     </Button>
                                   </>
                                 ) : (
@@ -801,7 +816,7 @@ export function AdminPromotionsPageContent() {
                                     onClick={() => setConfirmDeleteId(promotion.promotionId)}
                                   >
                                     <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                                    Delete
+                                    {translate("Xoá", "Delete", language)}
                                   </Button>
                                 )}
                               </div>
@@ -824,10 +839,10 @@ export function AdminPromotionsPageContent() {
                         disabled={!canGoPrev}
                         onClick={() => setDisplayPage((value) => Math.max(1, value - 1))}
                       >
-                        Previous
+                        {translate("Trước", "Previous", language)}
                       </Button>
                       <span className="min-w-[96px] px-2 text-center text-sm font-semibold text-slate-600">
-                        Page {displayPage} / {totalDisplayPages}
+                        {translate("Trang", "Page", language)} {displayPage} / {totalDisplayPages}
                       </span>
                       <Button
                         type="button"
@@ -837,7 +852,7 @@ export function AdminPromotionsPageContent() {
                         disabled={!canGoNext}
                         onClick={() => setDisplayPage((value) => Math.min(totalDisplayPages, value + 1))}
                       >
-                        Next
+                        {translate("Tiếp", "Next", language)}
                       </Button>
                     </div>
                   </div>
@@ -869,35 +884,35 @@ function FormField({
   );
 }
 
-function validatePromotionForm(form: PromotionFormValues): PromotionFormErrors {
+function validatePromotionForm(form: PromotionFormValues, language: "vi" | "en"): PromotionFormErrors {
   const errors: PromotionFormErrors = {};
   const discountValue = Number(form.discountValue);
   const maxUsage = form.maxUsagePerCustomer ? Number(form.maxUsagePerCustomer) : null;
 
   if (!form.name.trim()) {
-    errors.name = "Name is required.";
+    errors.name = translate("Tên là bắt buộc.", "Name is required.", language);
   }
   if (!form.discountValue || Number.isNaN(discountValue) || discountValue < 1) {
-    errors.discountValue = "Discount value must be at least 1.";
+    errors.discountValue = translate("Giá trị giảm giá phải ít nhất là 1.", "Discount value must be at least 1.", language);
   } else if (form.discountType === "PERCENT" && discountValue > 100) {
-    errors.discountValue = "Percent discount must be between 1 and 100.";
+    errors.discountValue = translate("Giảm giá theo % phải từ 1 đến 100.", "Percent discount must be between 1 and 100.", language);
   }
 
-  if (!form.startDate) errors.startDate = "Start date is required.";
-  if (!form.endDate) errors.endDate = "End date is required.";
+  if (!form.startDate) errors.startDate = translate("Ngày bắt đầu là bắt buộc.", "Start date is required.", language);
+  if (!form.endDate) errors.endDate = translate("Ngày kết thúc là bắt buộc.", "End date is required.", language);
 
   if (form.startDate && form.endDate) {
     const start = new Date(form.startDate).getTime();
     const end = new Date(form.endDate).getTime();
-    if (start > end) errors.startDate = "Start date must be before or equal to end date.";
+    if (start > end) errors.startDate = translate("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.", "Start date must be before or equal to end date.", language);
   }
 
   if (form.targetingMode === "SELECTED_TIERS" && form.applicableTiers.length === 0) {
-    errors.applicableTiers = "Select at least one tier.";
+    errors.applicableTiers = translate("Chọn ít nhất một hạng.", "Select at least one tier.", language);
   }
 
   if (maxUsage !== null && (!Number.isInteger(maxUsage) || maxUsage < 1)) {
-    errors.maxUsagePerCustomer = "Max usage must be an integer greater than 0.";
+    errors.maxUsagePerCustomer = translate("Số lần dùng tối đa phải là số nguyên lớn hơn 0.", "Max usage must be an integer greater than 0.", language);
   }
 
   return errors;
@@ -981,14 +996,18 @@ function toLocalDateTimeInputValue(value: string) {
   return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16);
 }
 
-function formatDate(value: string) {
+function formatDate(value: string, language: "vi" | "en") {
   const date = new Date(value);
-  return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return date.toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
-function formatFilterDate(value: string) {
+function formatFilterDate(value: string, language: "vi" | "en") {
   try {
-    return new Date(value).toLocaleDateString("vi-VN", {
+    return new Date(value).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -1027,8 +1046,11 @@ function filterPromotions(items: Promotion[], filters: PromotionFilters): Promot
   });
 }
 
-function formatDiscount(type: PromotionDiscountType, value: number) {
-  return type === "PERCENT" ? `${value}%` : `${value.toLocaleString("vi-VN")} VND`;
+function formatDiscount(type: PromotionDiscountType, value: number | undefined | null, language: "vi" | "en") {
+  if (value == null) return "0";
+  return type === "PERCENT"
+    ? `${value}%`
+    : `${value.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} VND`;
 }
 
 function getPromotionPhase(promotion: Promotion) {
@@ -1046,6 +1068,18 @@ function getPromotionPhase(promotion: Promotion) {
     return "Expired";
   }
   return "Running";
+}
+
+function translatePhase(phase: string, language: "vi" | "en"): string {
+  const map: Record<string, [string, string]> = {
+    Paused: ["Tạm dừng", "Paused"],
+    Upcoming: ["Sắp diễn ra", "Upcoming"],
+    Expired: ["Đã hết hạn", "Expired"],
+    Running: ["Đang chạy", "Running"],
+  };
+  const entry = map[phase];
+  if (!entry) return phase;
+  return language === "vi" ? entry[0] : entry[1];
 }
 
 function isPromotionExpiringSoon(promotion: Promotion) {

@@ -3,6 +3,7 @@ import { BellRing, Car, Clock, Eye, X } from "lucide-react";
 import { Booking, STATUS_STYLES, fmtBookingMoney, useBookings } from "@/features/customer/bookings/lib/booking-store";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,8 @@ import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
 
 export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
+  const { language } = useLanguageStore();
+  const locale = language === "vi" ? "vi-VN" : "en-US";
   const { bookings, transactions, updateStatus, setSelectedBookingId, setReminder } = useBookings();
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -63,15 +66,23 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
       }
       toast.success(
         minutes
-          ? `Reminder set ${minutes} minutes before check-in for ${booking.id}.`
-          : `Reminder removed for ${booking.id}.`,
+          ? translate(
+              `Đã đặt nhắc nhở trước ${minutes} phút cho mã ${booking.id}.`,
+              `Reminder set ${minutes} minutes before check-in for ${booking.id}.`,
+              language
+            )
+          : translate(
+              `Đã hủy nhắc nhở cho mã ${booking.id}.`,
+              `Reminder removed for ${booking.id}.`,
+              language
+            ),
       );
     };
 
     return (
       <Card
         key={booking.id}
-        className="group relative overflow-hidden rounded-[1.5rem] border-border/50 bg-card/60 p-6 backdrop-blur-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+        className="group relative overflow-hidden rounded-[1.5rem] border-border/55 bg-card/60 p-6 backdrop-blur-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         <div className="relative z-10 flex flex-wrap items-start justify-between gap-6">
@@ -108,7 +119,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
           <div className="flex flex-col sm:items-end gap-4 w-full sm:w-auto mt-2 sm:mt-0">
             <div className="text-left sm:text-right w-full sm:w-auto flex justify-between sm:block border-b border-border/50 pb-3 sm:border-0 sm:pb-0">
               <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Total
+                {translate("Tổng thanh toán", "Total", language)}
               </div>
               <div className="text-xl font-bold text-primary">
                 {fmtBookingMoney(booking.totalPrice)}
@@ -123,14 +134,14 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
                       aria-label={`Reminder for booking ${booking.id}`}
                     >
                       <BellRing className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                      <SelectValue placeholder="Reminder" />
+                      <SelectValue placeholder={translate("Nhắc nhở", "Reminder", language)} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="none">No reminder</SelectItem>
-                        <SelectItem value="15">15 min before</SelectItem>
-                        <SelectItem value="30">30 min before</SelectItem>
-                        <SelectItem value="60">60 min before</SelectItem>
+                        <SelectItem value="none">{translate("Không nhắc nhở", "No reminder", language)}</SelectItem>
+                        <SelectItem value="15">{translate("Trước 15 phút", "15 min before", language)}</SelectItem>
+                        <SelectItem value="30">{translate("Trước 30 phút", "30 min before", language)}</SelectItem>
+                        <SelectItem value="60">{translate("Trước 60 phút", "60 min before", language)}</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
@@ -142,7 +153,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
                 onClick={() => setDetailId(booking.id)}
                 className="rounded-xl font-semibold hover:bg-accent hover:text-foreground"
               >
-                <Eye className="mr-1.5 h-4 w-4" /> View
+                <Eye className="mr-1.5 h-4 w-4" /> {translate("Xem", "View", language)}
               </Button>
               <Button
                 variant="default"
@@ -154,7 +165,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
                 disabled={!trackable}
                 className="rounded-xl font-bold shadow-md shadow-primary/20"
               >
-                Track
+                {translate("Theo dõi", "Track", language)}
               </Button>
               {cancellable && (
                 <Button
@@ -163,7 +174,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
                   onClick={() => setCancelId(booking.id)}
                   className="rounded-xl border-rose-200/50 text-rose-600 font-semibold hover:bg-rose-500/10 hover:text-rose-700 hover:border-rose-300"
                 >
-                  <X className="mr-1.5 h-4 w-4" /> Cancel
+                  <X className="mr-1.5 h-4 w-4" /> {translate("Hủy lịch", "Cancel", language)}
                 </Button>
               )}
             </div>
@@ -177,7 +188,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
     <div className="space-y-10">
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Upcoming{" "}
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" /> {translate("SẮP TỚI", "UPCOMING", language)}{" "}
           <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full">
             {upcoming.length}
           </span>
@@ -185,7 +196,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
         <div className="space-y-4">
           {upcoming.length === 0 && (
             <p className="text-sm font-medium text-muted-foreground italic pl-4 border-l-2 border-border">
-              No upcoming bookings.
+              {translate("Không có lịch hẹn sắp tới.", "No upcoming bookings.", language)}
             </p>
           )}
           {upcoming.map(renderCard)}
@@ -193,13 +204,13 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
       </div>
       <div>
         <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" /> History{" "}
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" /> {translate("LỊCH SỬ", "HISTORY", language)}{" "}
           <span className="bg-accent px-2 py-0.5 rounded-full text-foreground">{past.length}</span>
         </h3>
         <div className="space-y-4">
           {past.length === 0 && (
             <p className="text-sm font-medium text-muted-foreground italic pl-4 border-l-2 border-border">
-              No booking history yet.
+              {translate("Chưa có lịch sử đặt xe.", "No booking history yet.", language)}
             </p>
           )}
           {past.map(renderCard)}
@@ -209,13 +220,13 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
       <AlertDialog open={!!cancelId} onOpenChange={(open: boolean) => !open && setCancelId(null)}>
         <AlertDialogContent className="rounded-[2rem] border-border/50 bg-card/90 backdrop-blur-2xl shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl">Cancel this booking?</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl">{translate("Hủy đặt lịch này?", "Cancel this booking?", language)}</AlertDialogTitle>
             <AlertDialogDescription className="text-base">
-              This will permanently cancel booking #{cancelId}. This action cannot be undone.
+              {translate(`Hành động này sẽ hủy vĩnh viễn lịch hẹn #${cancelId}. Không thể hoàn tác hành động này.`, `This will permanently cancel booking #${cancelId}. This action cannot be undone.`, language)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 gap-2">
-            <AlertDialogCancel className="rounded-xl font-semibold">Keep Booking</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl font-semibold">{translate("Giữ lịch hẹn", "Keep Booking", language)}</AlertDialogCancel>
             <AlertDialogAction
               className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20"
               onClick={() => {
@@ -223,15 +234,15 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
 
                 try {
                   updateStatus(cancelId, "Cancelled");
-                  toast.success(`Booking ${cancelId} cancelled`);
+                  toast.success(translate(`Lịch hẹn ${cancelId} đã bị hủy`, `Booking ${cancelId} cancelled`, language));
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to cancel booking.");
+                  toast.error(error instanceof Error ? error.message : translate("Không thể hủy lịch hẹn.", "Unable to cancel booking.", language));
                 } finally {
                   setCancelId(null);
                 }
               }}
             >
-              Yes, Cancel
+              {translate("Đúng, Hủy lịch", "Yes, Cancel", language)}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -243,7 +254,7 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
             <div className="p-8">
               <DialogHeader className="mb-6 border-b border-border/50 pb-6">
                 <DialogTitle className="text-2xl font-bold flex items-center gap-3">
-                  Booking <span className="text-primary">#{detailBooking.id}</span>
+                  {translate("Đặt lịch", "Booking", language)} <span className="text-primary">#{detailBooking.id}</span>
                 </DialogTitle>
                 <DialogDescription className="text-base font-medium mt-2 flex items-center gap-2">
                   <Car className="h-4 w-4" />
@@ -256,106 +267,106 @@ export function CustomerHistory({ onTrack }: { onTrack: () => void }) {
               <div className="space-y-6 text-sm">
                 <section className="grid gap-4 rounded-2xl border border-border/50 bg-background/50 p-5 sm:grid-cols-2 shadow-sm">
                   <Info
-                    label="Status"
+                    label={translate("Trạng thái", "Status", language)}
                     value={detailBooking.status}
                     badgeClass={STATUS_STYLES[detailBooking.status]}
                   />
-                  <Info label="Customer" value={detailBooking.customerName ?? "Current customer"} />
-                  <Info label="Phone" value={detailBooking.customerPhone ?? "-"} />
-                  <Info label="Vehicle type" value={detailBooking.vehicleType} />
-                  <Info label="Scheduled" value={detailBooking.scheduledAt} />
+                  <Info label={translate("Khách hàng", "Customer", language)} value={detailBooking.customerName ?? translate("Khách hàng hiện tại", "Current customer", language)} />
+                  <Info label={translate("Số điện thoại", "Phone", language)} value={detailBooking.customerPhone ?? "-"} />
+                  <Info label={translate("Loại xe", "Vehicle type", language)} value={detailBooking.vehicleType} />
+                  <Info label={translate("Lên lịch lúc", "Scheduled", language)} value={detailBooking.scheduledAt} />
                   <Info
-                    label="Reminder"
+                    label={translate("Nhắc nhở", "Reminder", language)}
                     value={
                       detailBooking.reminderMinutesBefore
-                        ? `${detailBooking.reminderMinutesBefore} minutes before check-in`
-                        : "None"
+                        ? translate(`Trước giờ hẹn ${detailBooking.reminderMinutesBefore} phút`, `${detailBooking.reminderMinutesBefore} minutes before check-in`, language)
+                        : translate("Không có", "None", language)
                     }
                   />
-                  <Info label="Services" value={detailBooking.services.join(", ")} />
+                  <Info label={translate("Dịch vụ", "Services", language)} value={detailBooking.services.join(", ")} />
                   <Info
-                    label="Booking total"
+                    label={translate("Tổng chi phí", "Booking total", language)}
                     value={fmtBookingMoney(detailBooking.totalPrice)}
                     highlight
                   />
-                  <Info label="Notes" value={detailBooking.notes || "None"} />
+                  <Info label={translate("Ghi chú", "Notes", language)} value={detailBooking.notes || translate("Không có", "None", language)} />
                 </section>
 
                 <section className="grid gap-4 rounded-2xl border border-border/50 bg-background/50 p-5 sm:grid-cols-2 shadow-sm">
                   <Info
-                    label="Check-in time"
+                    label={translate("Thời gian nhận xe", "Check-in time", language)}
                     value={
                       detailBooking.checkInAt
-                        ? new Date(detailBooking.checkInAt).toLocaleString()
-                        : "Not checked in"
+                        ? new Date(detailBooking.checkInAt).toLocaleString(locale)
+                        : translate("Chưa nhận xe", "Not checked in", language)
                     }
                   />
-                  <Info label="Wash session" value={detailBooking.washStatus ?? "Not started"} />
+                  <Info label={translate("Phiên rửa xe", "Wash session", language)} value={detailBooking.washStatus ?? translate("Chưa bắt đầu", "Not started", language)} />
                   <Info
-                    label="Completed at"
+                    label={translate("Hoàn thành lúc", "Completed at", language)}
                     value={
                       detailBooking.completedAt
-                        ? new Date(detailBooking.completedAt).toLocaleString()
-                        : "Not completed"
+                        ? new Date(detailBooking.completedAt).toLocaleString(locale)
+                        : translate("Chưa hoàn thành", "Not completed", language)
                     }
                   />
                   <Info
-                    label="Payment method"
-                    value={detailBooking.checkoutPaymentMethod ?? "Not paid"}
+                    label={translate("Phương thức thanh toán", "Payment method", language)}
+                    value={detailBooking.checkoutPaymentMethod ?? translate("Chưa thanh toán", "Not paid", language)}
                   />
                 </section>
 
                 <section className="rounded-2xl border border-border/50 bg-accent/10 p-5 shadow-sm">
                   <div className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
-                    Checkout Summary
+                    {translate("Tóm tắt thanh toán", "Checkout Summary", language)}
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Info
-                      label="Transaction"
-                      value={detailBooking.checkoutTransactionId ?? "Pending"}
+                      label={translate("Giao dịch", "Transaction", language)}
+                      value={detailBooking.checkoutTransactionId ?? translate("Chờ xử lý", "Pending", language)}
                     />
                     <Info
-                      label="Final amount"
+                      label={translate("Số tiền cuối cùng", "Final amount", language)}
                       highlight
                       value={
                         typeof detailBooking.checkoutAmount === "number"
                           ? fmtBookingMoney(detailBooking.checkoutAmount)
-                          : "Pending"
+                          : translate("Chờ xử lý", "Pending", language)
                       }
                     />
                     <Info
-                      label="Points redeemed"
+                      label={translate("Điểm đã đổi", "Points redeemed", language)}
                       value={String(detailBooking.checkoutPointsRedeemed ?? 0)}
                     />
                     <Info
-                      label="Points earned"
+                      label={translate("Điểm tích lũy được", "Points earned", language)}
                       value={String(detailBooking.checkoutPointsEarned ?? 0)}
                     />
-                    <Info label="Promo code" value={detailBooking.checkoutPromoCode ?? "None"} />
+                    <Info label={translate("Mã khuyến mãi", "Promo code", language)} value={detailBooking.checkoutPromoCode ?? translate("Không có", "None", language)} />
                   </div>
                 </section>
 
                 <section className="rounded-2xl border border-border/50 bg-accent/10 p-5 shadow-sm">
                   <div className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border/50 pb-2">
-                    Payment Transaction
+                    {translate("Thông tin giao dịch", "Payment Transaction", language)}
                   </div>
                   {detailTransaction ? (
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <Info label="Receipt ID" value={detailTransaction.id} />
+                      <Info label={translate("Mã biên lai", "Receipt ID", language)} value={detailTransaction.id} />
                       <Info
-                        label="Paid at"
-                        value={new Date(detailTransaction.date).toLocaleString()}
+                        label={translate("Thời gian thanh toán", "Paid at", language)}
+                        value={new Date(detailTransaction.date).toLocaleString(locale)}
                       />
-                      <Info label="Subtotal" value={fmtBookingMoney(detailTransaction.subtotal)} />
+                      <Info label={translate("Tạm tính", "Subtotal", language)} value={fmtBookingMoney(detailTransaction.subtotal)} />
                       <Info
-                        label="Total paid"
+                        label={translate("Tổng đã trả", "Total paid", language)}
                         value={fmtBookingMoney(detailTransaction.finalAmount)}
                         highlight
                       />
                     </div>
                   ) : (
                     <p className="text-sm font-medium text-muted-foreground italic py-2">
-                      No transaction recorded yet.
+                      {translate("Chưa ghi nhận giao dịch.", "No transaction recorded yet.", language)}
                     </p>
                   )}
                 </section>

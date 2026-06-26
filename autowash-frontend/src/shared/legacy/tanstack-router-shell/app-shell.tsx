@@ -121,7 +121,6 @@ const ADMIN_NAV: NavGroup[] = [
       { to: "/admin/loyalty", label: "Loyalty", labelVi: "Tích điểm", icon: Gift },
       { to: "/admin/promotions", label: "Promotions", labelVi: "Khuyến mãi", icon: Sparkles },
       { to: "/admin/reports", label: "Reports", labelVi: "Báo cáo", icon: BarChart3 },
-      { to: "/admin/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
     ],
   },
 ];

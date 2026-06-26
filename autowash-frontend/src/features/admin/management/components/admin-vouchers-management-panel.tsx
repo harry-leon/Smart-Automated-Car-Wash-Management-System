@@ -17,8 +17,10 @@ import {
 import { useAdminVoucherRedemptions, useAdminVouchers } from "@/features/admin/vouchers/hooks/use-admin-vouchers";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { WorkspaceEmptyState, WorkspaceErrorState } from "@/shared/components/workspace/workspace-page";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 export function AdminVouchersManagementPanel() {
+  const { language } = useLanguageStore();
   const [draftSearch, setDraftSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const vouchersQuery = useAdminVouchers();
@@ -30,11 +32,11 @@ export function AdminVouchersManagementPanel() {
         <CardHeader className="gap-3">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <CardTitle>Voucher catalogue</CardTitle>
+              <CardTitle>{translate("Danh mục voucher", "Voucher catalogue", language)}</CardTitle>
             </div>
             <Button type="button" variant="outline" onClick={() => vouchersQuery.refetch()}>
               <RefreshCcw className="mr-2 h-4 w-4" />
-              Refresh
+              {translate("Tải lại", "Refresh", language)}
             </Button>
           </div>
         </CardHeader>
@@ -47,14 +49,14 @@ export function AdminVouchersManagementPanel() {
             </div>
           ) : vouchersQuery.isError ? (
             <WorkspaceErrorState
-              title="Unable to load vouchers"
+              title={translate("Không thể tải danh mục voucher", "Unable to load vouchers", language)}
               description={getDisplayErrorMessage(vouchersQuery.error)}
               onRetry={() => vouchersQuery.refetch()}
             />
           ) : !vouchersQuery.data || vouchersQuery.data.length === 0 ? (
             <WorkspaceEmptyState
-              title="No vouchers available"
-              description="Voucher catalogue data is empty right now."
+              title={translate("Không có voucher nào", "No vouchers available", language)}
+              description={translate("Danh mục voucher hiện tại đang trống.", "Voucher catalogue data is empty right now.", language)}
             />
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -65,7 +67,7 @@ export function AdminVouchersManagementPanel() {
                       <div>
                         <div className="text-lg font-black text-slate-900">{voucher.code}</div>
                         <div className="mt-1 text-sm text-slate-500">
-                          Min order {formatCurrency(voucher.minAmount)}
+                          {translate("Đơn tối thiểu", "Min order", language)} {formatCurrency(voucher.minAmount, language)}
                         </div>
                       </div>
                       <Badge
@@ -75,35 +77,41 @@ export function AdminVouchersManagementPanel() {
                             : "bg-slate-100 text-slate-600 hover:bg-slate-100"
                         }
                       >
-                        {voucher.active ? "Active" : "Inactive"}
+                        {voucher.active 
+                          ? translate("Hoạt động", "Active", language) 
+                          : translate("Không hoạt động", "Inactive", language)}
                       </Badge>
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <div className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                        Discount
+                        {translate("Giảm giá", "Discount", language)}
                       </div>
                       <div className="mt-2 text-2xl font-black text-slate-900">
                         {voucher.discountType === "PERCENT"
                           ? `${voucher.discountValue}%`
-                          : formatCurrency(voucher.discountValue)}
+                          : formatCurrency(voucher.discountValue, language)}
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      {voucher.newCustomerOnly ? <Badge variant="outline">New customers only</Badge> : null}
+                      {voucher.newCustomerOnly ? (
+                        <Badge variant="outline">
+                          {translate("Chỉ khách hàng mới", "New customers only", language)}
+                        </Badge>
+                      ) : null}
                       {voucher.targetTiers.length > 0
                         ? voucher.targetTiers.map((tier) => (
                             <Badge key={tier} variant="outline">
                               {tier}
                             </Badge>
                           ))
-                        : <Badge variant="outline">All tiers</Badge>}
+                        : <Badge variant="outline">{translate("Tất cả các hạng", "All tiers", language)}</Badge>}
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-slate-500">
                       <Ticket className="h-4 w-4" />
-                      Expires {formatDate(voucher.expiresAt)}
+                      {translate("Hết hạn", "Expires", language)} {formatDate(voucher.expiresAt, language)}
                     </div>
                   </CardContent>
                 </Card>
@@ -117,7 +125,7 @@ export function AdminVouchersManagementPanel() {
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <CardTitle>Point-to-voucher redemption history</CardTitle>
+              <CardTitle>{translate("Lịch sử đổi điểm lấy voucher", "Point-to-voucher redemption history", language)}</CardTitle>
             </div>
             <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
               <div className="relative min-w-[240px]">
@@ -125,16 +133,16 @@ export function AdminVouchersManagementPanel() {
                 <Input
                   value={draftSearch}
                   onChange={(event) => setDraftSearch(event.target.value)}
-                  placeholder="Search voucher, name, or phone"
+                  placeholder={translate("Tìm kiếm voucher, tên hoặc SĐT", "Search voucher, name, or phone", language)}
                   className="pl-9"
                 />
               </div>
               <Button type="button" variant="outline" onClick={() => setSearchQuery(draftSearch.trim())}>
-                Search
+                {translate("Tìm kiếm", "Search", language)}
               </Button>
               <Button type="button" variant="outline" onClick={() => redemptionsQuery.refetch()}>
                 <RefreshCcw className="mr-2 h-4 w-4" />
-                Refresh
+                {translate("Tải lại", "Refresh", language)}
               </Button>
             </div>
           </div>
@@ -148,14 +156,14 @@ export function AdminVouchersManagementPanel() {
             </div>
           ) : redemptionsQuery.isError ? (
             <WorkspaceErrorState
-              title="Unable to load redemption history"
+              title={translate("Không thể tải lịch sử đổi voucher", "Unable to load redemption history", language)}
               description={getDisplayErrorMessage(redemptionsQuery.error)}
               onRetry={() => redemptionsQuery.refetch()}
             />
           ) : !redemptionsQuery.data || redemptionsQuery.data.items.length === 0 ? (
             <WorkspaceEmptyState
-              title="No redemption history yet"
-              description="Point-to-voucher activity will appear here after customers redeem loyalty points."
+              title={translate("Chưa có lịch sử đổi voucher", "No redemption history yet", language)}
+              description={translate("Hoạt động đổi điểm lấy voucher sẽ xuất hiện ở đây sau khi khách hàng đổi điểm.", "Point-to-voucher activity will appear here after customers redeem loyalty points.", language)}
             />
           ) : (
             <div className="space-y-4">
@@ -163,11 +171,11 @@ export function AdminVouchersManagementPanel() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Voucher</TableHead>
-                      <TableHead className="text-right">Points</TableHead>
-                      <TableHead className="text-right">Balance after</TableHead>
-                      <TableHead>Redeemed at</TableHead>
+                      <TableHead>{translate("Khách hàng", "Customer", language)}</TableHead>
+                      <TableHead>{translate("Voucher", "Voucher", language)}</TableHead>
+                      <TableHead className="text-right">{translate("Điểm", "Points", language)}</TableHead>
+                      <TableHead className="text-right">{translate("Số dư sau khi đổi", "Balance after", language)}</TableHead>
+                      <TableHead>{translate("Đổi lúc", "Redeemed at", language)}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -181,13 +189,13 @@ export function AdminVouchersManagementPanel() {
                           <Badge variant="outline">{item.voucherCode}</Badge>
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          {item.pointsRedeemed.toLocaleString("vi-VN")}
+                          {item.pointsRedeemed.toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {item.balanceAfter.toLocaleString("vi-VN")}
+                          {item.balanceAfter.toLocaleString(language === "vi" ? "vi-VN" : "en-US")}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {formatDateTime(item.redeemedAt)}
+                          {formatDateTime(item.redeemedAt, language)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -202,14 +210,14 @@ export function AdminVouchersManagementPanel() {
   );
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
+function formatCurrency(value: number, language: "vi" | "en") {
+  return `${value.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} VND`;
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("vi-VN");
+function formatDate(value: string, language: "vi" | "en") {
+  return new Date(value).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US");
 }
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("vi-VN");
+function formatDateTime(value: string, language: "vi" | "en") {
+  return new Date(value).toLocaleString(language === "vi" ? "vi-VN" : "en-US");
 }

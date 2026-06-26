@@ -40,6 +40,7 @@ import {
 } from "@/features/customer/loyalty/hooks/use-customer-loyalty";
 import { cn } from "@/shared/lib/utils";
 import type { RedeemPointsResponse, TierVoucherOffer } from "@/features/customer/loyalty/loyalty.types";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 type VoucherOfferState = TierVoucherOffer & {
   eligible: boolean;
@@ -60,6 +61,7 @@ const MAX_REDEEM_POINTS = 200;
 const VND_PER_POINT = 1_000;
 
 export function CustomerLoyaltyPageContent() {
+  const { language } = useLanguageStore();
   const accountQuery = useCustomerLoyaltyAccount();
   const transactionsQuery = useCustomerLoyaltyTransactions(1, 5);
   const redeemMutation = useCustomerRedeemPoints();
@@ -78,6 +80,7 @@ export function CustomerLoyaltyPageContent() {
     redeemPointsInput,
     redeemPoints,
     summary?.availablePoints ?? null,
+    language,
   );
   const previewVoucherValue = Number.isFinite(redeemPoints) ? Math.max(redeemPoints, 0) * VND_PER_POINT : 0;
   const previewRemainingBalance =
@@ -87,6 +90,8 @@ export function CustomerLoyaltyPageContent() {
     date.setDate(date.getDate() + 30);
     return date;
   }, []);
+
+  const locale = language === "vi" ? "vi-VN" : "en-US";
 
   const handleRedeem = () => {
     if (!selectedOffer || !summary) {
@@ -139,7 +144,7 @@ export function CustomerLoyaltyPageContent() {
       <div className="px-4 py-6 sm:px-6 lg:px-8">
         <Card className="mx-auto max-w-3xl rounded-lg border-rose-200 bg-white">
           <CardHeader>
-            <CardTitle>Unable to load loyalty account</CardTitle>
+            <CardTitle>{translate("Không thể tải tài khoản tích điểm", "Unable to load loyalty account", language)}</CardTitle>
             <CardDescription>{getDisplayErrorMessage(accountQuery.error)}</CardDescription>
           </CardHeader>
         </Card>
@@ -168,12 +173,12 @@ export function CustomerLoyaltyPageContent() {
                     {summary.tierLabel}
                   </Badge>
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Current tier
+                    {translate("Hạng hiện tại", "Current tier", language)}
                   </span>
                 </div>
                 <div>
                   <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                    Loyalty wallet
+                    {translate("Ví tích điểm", "Loyalty wallet", language)}
                   </h1>
                 </div>
               </div>
@@ -183,26 +188,30 @@ export function CustomerLoyaltyPageContent() {
             </div>
 
             <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              <MetricTile icon={Wallet} label="Available points" value={`${summary.availablePoints.toLocaleString("en-US")} pts`} />
-              <MetricTile icon={Sparkles} label="Lifetime points" value={`${summary.lifetimePoints.toLocaleString("en-US")} pts`} />
-              <MetricTile icon={ShieldCheck} label="Completed washes" value={String(summary.completedWashCount)} />
+              <MetricTile icon={Wallet} label={translate("Điểm khả dụng", "Available points", language)} value={`${summary.availablePoints.toLocaleString(locale)} pts`} />
+              <MetricTile icon={Sparkles} label={translate("Điểm tích lũy", "Lifetime points", language)} value={`${summary.lifetimePoints.toLocaleString(locale)} pts`} />
+              <MetricTile icon={ShieldCheck} label={translate("Lần rửa xe hoàn thành", "Completed washes", language)} value={String(summary.completedWashCount)} />
             </div>
 
             <div className="mt-7 rounded-3xl border border-slate-100 bg-slate-50 p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Lifetime tier progress</div>
-                  <div className="mt-2 text-lg font-black text-slate-950">{summary.progress.progressPercent}% complete</div>
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    {translate("Tiến trình nâng hạng", "Lifetime tier progress", language)}
+                  </div>
+                  <div className="mt-2 text-lg font-black text-slate-950">{summary.progress.progressPercent}% {translate("hoàn thành", "complete", language)}</div>
                   {summary.progress.nextTier ? (
                     <div className="mt-1 text-sm text-slate-600">
-                      {`${summary.lifetimePoints.toLocaleString("en-US")} / ${(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString("en-US")} lifetime pts`}
+                      {`${summary.lifetimePoints.toLocaleString(locale)} / ${(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString(locale)} lifetime pts`}
                     </div>
                   ) : (
-                    <div className="mt-1 text-sm text-slate-600">At the highest tier</div>
+                    <div className="mt-1 text-sm text-slate-600">{translate("Đạt hạng cao nhất", "At the highest tier", language)}</div>
                   )}
                 </div>
                 <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 shadow-sm">
-                  {summary.progress.nextTier ? `${formatTierLabel(summary.progress.nextTier)} next` : "Max tier"}
+                  {summary.progress.nextTier
+                    ? `${formatTierLabel(summary.progress.nextTier)} ${translate("tiếp theo", "next", language)}`
+                    : translate("Hạng tối đa", "Max tier", language)}
                 </div>
               </div>
 
@@ -212,12 +221,12 @@ export function CustomerLoyaltyPageContent() {
                   style={{ width: `${summary.progress.progressPercent}%` }}
                 />
                 <div className="relative flex h-full items-center justify-center text-sm font-semibold text-slate-950">
-                      {summary.progress.nextTier ? (
+                  {summary.progress.nextTier ? (
                     <span>
-                      {summary.lifetimePoints.toLocaleString("en-US")} / {(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString("en-US")} lifetime pts
+                      {summary.lifetimePoints.toLocaleString(locale)} / {(summary.lifetimePoints + summary.progress.pointsToNextTier).toLocaleString(locale)} lifetime pts
                     </span>
                   ) : (
-                    <span>At the highest tier</span>
+                    <span>{translate("Đạt hạng cao nhất", "At the highest tier", language)}</span>
                   )}
                 </div>
               </div>
@@ -231,11 +240,11 @@ export function CustomerLoyaltyPageContent() {
               <div>
                 <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" />
-                  Redemption successful
+                  {translate("Đổi điểm thành công", "Redemption successful", language)}
                 </div>
                 <div className="mt-2 text-2xl font-black tracking-tight">{successVoucher.voucherCode}</div>
                 <p className="mt-1 text-sm text-emerald-800">
-                  Your voucher is ready to use on a future booking.
+                  {translate("Voucher của bạn sẵn sàng sử dụng cho lần đặt tiếp theo.", "Your voucher is ready to use on a future booking.", language)}
                 </p>
               </div>
               <Badge className="w-fit border-emerald-200 bg-white text-emerald-700" variant="outline">
@@ -243,9 +252,9 @@ export function CustomerLoyaltyPageContent() {
               </Badge>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <SuccessVoucherMetric label="Points redeemed" value={`${successVoucher.pointsRedeemed.toLocaleString("en-US")} pts`} />
-              <SuccessVoucherMetric label="Voucher value" value={`${successVoucher.voucherValue.toLocaleString("en-US")} VND`} />
-              <SuccessVoucherMetric label="Expires" value={new Date(successVoucher.expiresAt).toLocaleDateString("en-US")} />
+              <SuccessVoucherMetric label={translate("Điểm đã đổi", "Points redeemed", language)} value={`${successVoucher.pointsRedeemed.toLocaleString(locale)} pts`} />
+              <SuccessVoucherMetric label={translate("Giá trị voucher", "Voucher value", language)} value={`${successVoucher.voucherValue.toLocaleString(locale)} VND`} />
+              <SuccessVoucherMetric label={translate("Hết hạn", "Expires", language)} value={new Date(successVoucher.expiresAt).toLocaleDateString(locale)} />
             </div>
           </div>
         ) : null}
@@ -260,19 +269,19 @@ export function CustomerLoyaltyPageContent() {
           <form onSubmit={handleCustomRedeem} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h2 className="text-xl font-black tracking-tight text-slate-950">Redeem points</h2>
+                <h2 className="text-xl font-black tracking-tight text-slate-950">{translate("Đổi điểm", "Redeem points", language)}</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Choose available points to convert into a fixed-value voucher.
+                  {translate("Chọn số điểm để đổi thành voucher có giá trị cố định.", "Choose available points to convert into a fixed-value voucher.", language)}
                 </p>
               </div>
               <Badge variant="outline" className="w-fit border-slate-200 bg-slate-50 text-slate-700">
-                {summary.availablePoints.toLocaleString("en-US")} pts available
+                {summary.availablePoints.toLocaleString(locale)} pts {translate("khả dụng", "available", language)}
               </Badge>
             </div>
 
             <div className="mt-5 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="loyalty-redeem-points">Points to redeem</Label>
+                <Label htmlFor="loyalty-redeem-points">{translate("Số điểm muốn đổi", "Points to redeem", language)}</Label>
                 <Input
                   id="loyalty-redeem-points"
                   type="number"
@@ -300,7 +309,7 @@ export function CustomerLoyaltyPageContent() {
 
               <Button type="submit" disabled={redeemMutation.isPending || Boolean(redemptionValidation)}>
                 {redeemMutation.isPending ? <Loader2 className="animate-spin" /> : <Gift />}
-                Confirm redemption
+                {translate("Xác nhận đổi điểm", "Confirm redemption", language)}
               </Button>
             </div>
           </form>
@@ -308,17 +317,17 @@ export function CustomerLoyaltyPageContent() {
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-base font-black text-slate-950">Voucher preview</h3>
-                <p className="mt-1 text-sm text-slate-600">Preview updates before confirmation.</p>
+                <h3 className="text-base font-black text-slate-950">{translate("Xem trước voucher", "Voucher preview", language)}</h3>
+                <p className="mt-1 text-sm text-slate-600">{translate("Xem trước trước khi xác nhận.", "Preview updates before confirmation.", language)}</p>
               </div>
               <TicketPercent className="h-5 w-5 text-slate-500" />
             </div>
 
             <div className="mt-5 space-y-3 text-sm">
-              <RuleRow label="Points selected" value={`${Number.isFinite(redeemPoints) ? Math.max(redeemPoints, 0).toLocaleString("en-US") : 0} pts`} />
-              <RuleRow label="Voucher value" value={`${previewVoucherValue.toLocaleString("en-US")} VND`} />
-              <RuleRow label="Balance after redemption" value={`${previewRemainingBalance.toLocaleString("en-US")} pts`} />
-              <RuleRow label="Estimated expiry" value={previewExpiresAt.toLocaleDateString("en-US")} />
+              <RuleRow label={translate("Điểm đã chọn", "Points selected", language)} value={`${Number.isFinite(redeemPoints) ? Math.max(redeemPoints, 0).toLocaleString(locale) : 0} pts`} />
+              <RuleRow label={translate("Giá trị voucher", "Voucher value", language)} value={`${previewVoucherValue.toLocaleString(locale)} VND`} />
+              <RuleRow label={translate("Số dư sau đổi", "Balance after redemption", language)} value={`${previewRemainingBalance.toLocaleString(locale)} pts`} />
+              <RuleRow label={translate("Dự kiến hết hạn", "Estimated expiry", language)} value={previewExpiresAt.toLocaleDateString(locale)} />
             </div>
           </div>
         </section>
@@ -327,8 +336,8 @@ export function CustomerLoyaltyPageContent() {
           <div className="space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-xl font-black tracking-tight text-slate-950">Voucher exchange</h2>
-                <p className="text-sm text-slate-600">Choose a voucher available for your current membership tier.</p>
+                <h2 className="text-xl font-black tracking-tight text-slate-950">{translate("Đổi voucher", "Voucher exchange", language)}</h2>
+                <p className="text-sm text-slate-600">{translate("Chọn voucher phù hợp với hạng thành viên hiện tại của bạn.", "Choose a voucher available for your current membership tier.", language)}</p>
               </div>
             </div>
 
@@ -355,22 +364,26 @@ export function CustomerLoyaltyPageContent() {
                     <div className="mt-4 flex-1">
                       <h3 className="text-base font-black text-slate-950">{offer.title}</h3>
                       <p className="mt-2 text-sm leading-6 text-slate-600">
-                        {offer.voucherValue.toLocaleString("en-US")} VND voucher for {formatTierLabel(offer.minTier)} members and above.
+                        {offer.voucherValue.toLocaleString(locale)} VND voucher {translate("cho thành viên", "for", language)} {formatTierLabel(offer.minTier)} {translate("trở lên", "members and above", language)}.
                       </p>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-xs font-semibold uppercase text-slate-500">Cost</div>
+                        <div className="text-xs font-semibold uppercase text-slate-500">{translate("Chi phí", "Cost", language)}</div>
                         <div className="text-lg font-black text-slate-950">{offer.pointsCost} pts</div>
                       </div>
                       <Button
                         type="button"
                         disabled={disabled}
                         onClick={() => setSelectedOffer(offer)}
-                        title={!offer.eligible ? "Your current tier is not eligible yet" : !offer.affordable ? "Not enough points" : undefined}
+                        title={!offer.eligible ? translate("Hạng hiện tại chưa đủ điều kiện", "Your current tier is not eligible yet", language) : !offer.affordable ? translate("Không đủ điểm", "Not enough points", language) : undefined}
                       >
-                        {!offer.eligible ? "Locked" : !offer.affordable ? "Not enough" : "Redeem"}
+                        {!offer.eligible
+                          ? translate("Chưa mở khóa", "Locked", language)
+                          : !offer.affordable
+                            ? translate("Không đủ điểm", "Not enough", language)
+                            : translate("Đổi ngay", "Redeem", language)}
                       </Button>
                     </div>
                   </div>
@@ -381,9 +394,9 @@ export function CustomerLoyaltyPageContent() {
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
               <div className="flex items-center gap-3 text-sm font-semibold text-slate-950">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700">i</span>
-                <span>Redeem rules</span>
+                <span>{translate("Quy tắc đổi điểm", "Redeem rules", language)}</span>
               </div>
-              <p className="mt-2 text-sm text-slate-600">Voucher value uses a fixed conversion of 1 point to 1,000 VND.</p>
+              <p className="mt-2 text-sm text-slate-600">{translate("Giá trị voucher quy đổi cố định: 1 điểm = 1.000 VND.", "Voucher value uses a fixed conversion of 1 point to 1,000 VND.", language)}</p>
 
               <div className="mt-5 space-y-3 text-sm text-slate-700">
                 {REDEEM_RULES.map((rule) => (
@@ -395,7 +408,7 @@ export function CustomerLoyaltyPageContent() {
                       {rule.tier}
                     </span>
                     <div>
-                      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Redeem value</div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{translate("Giá trị đổi", "Redeem value", language)}</div>
                       <div className="mt-1 text-sm font-black text-slate-950">{rule.value}</div>
                     </div>
                   </div>
@@ -403,7 +416,7 @@ export function CustomerLoyaltyPageContent() {
               </div>
 
               <div className="mt-4 rounded-2xl bg-white p-4 text-sm italic text-slate-600">
-                Available points can be redeemed for rewards unlocked by your current tier.
+                {translate("Điểm khả dụng có thể đổi lấy phần thưởng được mở khóa theo hạng thành viên hiện tại.", "Available points can be redeemed for rewards unlocked by your current tier.", language)}
               </div>
             </div>
           </div>
@@ -414,8 +427,8 @@ export function CustomerLoyaltyPageContent() {
             <CardHeader className="border-b border-slate-200">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>Recent point activity</CardTitle>
-                  <CardDescription>Latest earned-point entries after wash completion.</CardDescription>
+                  <CardTitle>{translate("Hoạt động điểm gần đây", "Recent point activity", language)}</CardTitle>
+                  <CardDescription>{translate("Các lần tích điểm mới nhất sau khi hoàn thành rửa xe.", "Latest earned-point entries after wash completion.", language)}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -428,7 +441,7 @@ export function CustomerLoyaltyPageContent() {
                 </div>
               ) : !transactionsQuery.data || transactionsQuery.data.items.length === 0 ? (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
-                  No point transactions yet.
+                  {translate("Chưa có giao dịch điểm nào.", "No point transactions yet.", language)}
                 </div>
               ) : (
                 <>
@@ -441,13 +454,13 @@ export function CustomerLoyaltyPageContent() {
                         </div>
                       </div>
                       <div className="mt-1 text-sm text-slate-600">{item.description}</div>
-                      <div className="mt-2 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString("en-US")}</div>
+                      <div className="mt-2 text-xs text-slate-500">{new Date(item.createdAt).toLocaleString(locale)}</div>
                     </div>
                   ))}
                   {transactionsQuery.data.items.length > 3 ? (
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0 text-sm text-slate-500">
-                        Showing {showAllTransactions ? transactionsQuery.data.items.length : 3} of {transactionsQuery.data.items.length} history entries
+                        {translate("Đang hiển thị", "Showing", language)} {showAllTransactions ? transactionsQuery.data.items.length : 3} {translate("trong số", "of", language)} {transactionsQuery.data.items.length} {translate("giao dịch", "history entries", language)}
                       </div>
                       <div className="flex items-center gap-2 whitespace-nowrap">
                         <Button
@@ -457,7 +470,7 @@ export function CustomerLoyaltyPageContent() {
                           onClick={() => setShowAllTransactions(true)}
                           disabled={showAllTransactions}
                         >
-                          Show all
+                          {translate("Xem tất cả", "Show all", language)}
                         </Button>
                         <Button
                           type="button"
@@ -466,13 +479,13 @@ export function CustomerLoyaltyPageContent() {
                           onClick={() => setShowAllTransactions(false)}
                           disabled={!showAllTransactions}
                         >
-                          Show less
+                          {translate("Thu gọn", "Show less", language)}
                         </Button>
                         <Link
                           href="/customer/loyalty/history"
                           className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
                         >
-                          View full history
+                          {translate("Xem lịch sử đầy đủ", "View full history", language)}
                         </Link>
                       </div>
                     </div>
@@ -487,29 +500,33 @@ export function CustomerLoyaltyPageContent() {
       <Dialog open={Boolean(selectedOffer)} onOpenChange={(open: boolean) => !open && setSelectedOffer(null)}>
         <DialogContent className="rounded-lg">
           <DialogHeader>
-            <DialogTitle>Confirm voucher redemption?</DialogTitle>
+            <DialogTitle>{translate("Xác nhận đổi voucher?", "Confirm voucher redemption?", language)}</DialogTitle>
             <DialogDescription>
               {selectedOffer
-                ? `You will spend ${selectedOffer.pointsCost.toLocaleString("en-US")} points to redeem ${selectedOffer.title}, worth ${selectedOffer.voucherValue.toLocaleString("en-US")} VND.`
+                ? translate(
+                    `Bạn sẽ dùng ${selectedOffer.pointsCost.toLocaleString("vi-VN")} điểm để đổi ${selectedOffer.title}, trị giá ${selectedOffer.voucherValue.toLocaleString("vi-VN")} VND.`,
+                    `You will spend ${selectedOffer.pointsCost.toLocaleString("en-US")} points to redeem ${selectedOffer.title}, worth ${selectedOffer.voucherValue.toLocaleString("en-US")} VND.`,
+                    language,
+                  )
                 : ""}
             </DialogDescription>
           </DialogHeader>
 
           {selectedOffer ? (
             <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-              <RuleRow label="Available points" value={`${summary.availablePoints.toLocaleString("en-US")} pts`} />
-              <RuleRow label="Points used" value={`${selectedOffer.pointsCost.toLocaleString("en-US")} pts`} />
-              <RuleRow label="Balance after redemption" value={`${selectedRemainingPoints.toLocaleString("en-US")} pts`} />
+              <RuleRow label={translate("Điểm khả dụng", "Available points", language)} value={`${summary.availablePoints.toLocaleString(locale)} pts`} />
+              <RuleRow label={translate("Điểm sử dụng", "Points used", language)} value={`${selectedOffer.pointsCost.toLocaleString(locale)} pts`} />
+              <RuleRow label={translate("Số dư sau đổi", "Balance after redemption", language)} value={`${selectedRemainingPoints.toLocaleString(locale)} pts`} />
             </div>
           ) : null}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setSelectedOffer(null)} disabled={redeemMutation.isPending}>
-              Cancel
+              {translate("Huỷ", "Cancel", language)}
             </Button>
             <Button type="button" onClick={handleRedeem} disabled={redeemMutation.isPending}>
               {redeemMutation.isPending ? <Loader2 className="animate-spin" /> : <Gift />}
-              Confirm redemption
+              {translate("Xác nhận đổi điểm", "Confirm redemption", language)}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -560,24 +577,29 @@ function RuleRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getRedemptionValidationMessage(pointsInput: string, points: number, availablePoints: number | null) {
+function getRedemptionValidationMessage(
+  pointsInput: string,
+  points: number,
+  availablePoints: number | null,
+  language: "vi" | "en",
+) {
   if (!pointsInput.trim()) {
-    return "Please enter points to redeem.";
+    return translate("Vui lòng nhập số điểm muốn đổi.", "Please enter points to redeem.", language);
   }
   if (!Number.isFinite(points)) {
-    return "Points must be a valid number.";
+    return translate("Số điểm phải là số hợp lệ.", "Points must be a valid number.", language);
   }
   if (!Number.isInteger(points)) {
-    return "Only whole points can be redeemed.";
+    return translate("Chỉ có thể đổi số điểm nguyên.", "Only whole points can be redeemed.", language);
   }
   if (points < MIN_REDEEM_POINTS) {
-    return `Minimum redemption is ${MIN_REDEEM_POINTS} points.`;
+    return translate(`Tối thiểu ${MIN_REDEEM_POINTS} điểm.`, `Minimum redemption is ${MIN_REDEEM_POINTS} points.`, language);
   }
   if (points > MAX_REDEEM_POINTS) {
-    return `Maximum redemption is ${MAX_REDEEM_POINTS} points.`;
+    return translate(`Tối đa ${MAX_REDEEM_POINTS} điểm.`, `Maximum redemption is ${MAX_REDEEM_POINTS} points.`, language);
   }
   if (availablePoints != null && points > availablePoints) {
-    return "Insufficient available points for this redemption.";
+    return translate("Không đủ điểm để đổi.", "Insufficient available points for this redemption.", language);
   }
   return null;
 }
@@ -585,48 +607,48 @@ function getRedemptionValidationMessage(pointsInput: string, points: number, ava
 function tierBadgeClass(tier: string) {
   if (tier === "PLATINUM") return "border-rose-200 bg-rose-50 text-rose-700";
   if (tier === "GOLD") return "border-amber-200 bg-amber-50 text-amber-700";
-  if (tier === "SILVER") return "border-violet-200 bg-violet-50 text-violet-700";
+  if (tier === "SILVER") return "border-sky-200 bg-sky-50 text-sky-700";
   return "border-sky-200 bg-sky-50 text-sky-700";
 }
 
 function tierIconClass(tier: string) {
   if (tier === "PLATINUM") return "bg-rose-50 text-rose-700";
   if (tier === "GOLD") return "bg-amber-50 text-amber-700";
-  if (tier === "SILVER") return "bg-violet-50 text-violet-700";
+  if (tier === "SILVER") return "bg-sky-50 text-sky-700";
   return "bg-sky-50 text-sky-700";
 }
 
 function tierProgressClass(tier: string) {
   if (tier === "PLATINUM") return "bg-rose-500";
   if (tier === "GOLD") return "bg-amber-500";
-  if (tier === "SILVER") return "bg-violet-500";
+  if (tier === "SILVER") return "bg-sky-500";
   return "bg-sky-500";
 }
 
 function offerBorderClass(accent: TierVoucherOffer["accent"]) {
   if (accent === "rose") return "border-rose-200 hover:border-rose-300";
   if (accent === "amber") return "border-amber-200 hover:border-amber-300";
-  if (accent === "violet") return "border-violet-200 hover:border-violet-300";
+  if (accent === "violet") return "border-sky-200 hover:border-sky-300";
   return "border-sky-200 hover:border-sky-300";
 }
 
 function offerIconClass(accent: TierVoucherOffer["accent"]) {
   if (accent === "rose") return "bg-rose-50 text-rose-700";
   if (accent === "amber") return "bg-amber-50 text-amber-700";
-  if (accent === "violet") return "bg-violet-50 text-violet-700";
+  if (accent === "violet") return "bg-sky-50 text-sky-700";
   return "bg-sky-50 text-sky-700";
 }
 
 function offerBadgeClass(accent: TierVoucherOffer["accent"]) {
   if (accent === "rose") return "border-rose-200 bg-rose-50 text-rose-700";
   if (accent === "amber") return "border-amber-200 bg-amber-50 text-amber-700";
-  if (accent === "violet") return "border-violet-200 bg-violet-50 text-violet-700";
+  if (accent === "violet") return "border-sky-200 bg-sky-50 text-sky-700";
   return "border-sky-200 bg-sky-50 text-sky-700";
 }
 
 function tierRuleBadgeClass(tier: string) {
   if (tier === "PLATINUM") return "border-rose-200 bg-rose-50 text-rose-700";
   if (tier === "GOLD") return "border-amber-200 bg-amber-50 text-amber-700";
-  if (tier === "SILVER") return "border-violet-200 bg-violet-50 text-violet-700";
+  if (tier === "SILVER") return "border-sky-200 bg-sky-50 text-sky-700";
   return "border-sky-200 bg-sky-50 text-sky-700";
 }

@@ -29,6 +29,7 @@ import type {
   AdminAccountsFilters,
   CreateAdminStaffPayload,
 } from "@/features/admin/reports/admin-reporting.types";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 const PAGE_LIMIT = 20;
 const ROLE_OPTIONS: AdminAccountRole[] = ["CUSTOMER", "STAFF", "ADMIN", "GUEST"];
@@ -41,8 +42,39 @@ const EMPTY_STAFF_FORM: CreateAdminStaffPayload = {
   password: "",
 };
 
+function translateRole(role: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    CUSTOMER: { vi: "Khách hàng", en: "Customer" },
+    STAFF: { vi: "Nhân viên", en: "Staff" },
+    ADMIN: { vi: "Quản trị viên", en: "Admin" },
+    GUEST: { vi: "Khách vãng lai", en: "Guest" },
+  };
+  return map[role]?.[lang] || role;
+}
+
+function translateStatus(status: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    PENDING: { vi: "Chờ duyệt", en: "Pending" },
+    ACTIVE: { vi: "Hoạt động", en: "Active" },
+    BLOCKED: { vi: "Đã khóa", en: "Blocked" },
+    SUSPENDED: { vi: "Tạm ngưng", en: "Suspended" },
+    DELETED: { vi: "Đã xóa", en: "Deleted" },
+  };
+  return map[status]?.[lang] || status;
+}
+
+function translateTier(tier: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    SILVER: { vi: "Bạc", en: "Silver" },
+    GOLD: { vi: "Vàng", en: "Gold" },
+    PLATINUM: { vi: "Bạch kim", en: "Platinum" },
+  };
+  return map[tier]?.[lang] || tier;
+}
+
 export function AdminAccountsPageContent() {
   const router = useRouter();
+  const { language } = useLanguageStore();
   const [activeTab, setActiveTab] = useState<"customers" | "staff_admin">("customers");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<AdminAccountsFilters>({});
@@ -118,7 +150,7 @@ export function AdminAccountsPageContent() {
     setPage(1);
   };
 
-  const createFormErrors = useMemo(() => validateCreateStaffForm(createForm), [createForm]);
+  const createFormErrors = useMemo(() => validateCreateStaffForm(createForm, language as "vi" | "en"), [createForm, language]);
   const canSubmitCreateForm =
     Object.values(createFormErrors).every((value) => value === null) && !createStaffMutation.isPending;
 
@@ -143,7 +175,7 @@ export function AdminAccountsPageContent() {
 
     try {
       await createStaffMutation.mutateAsync(createForm);
-      toast.success("Staff account created successfully.");
+      toast.success(translate(language, "Tạo tài khoản nhân viên thành công.", "Staff account created successfully."));
       setIsCreateDialogOpen(false);
       resetCreateDialog();
       setPage(1);
@@ -158,9 +190,11 @@ export function AdminAccountsPageContent() {
       <div className="mx-auto flex max-w-6xl flex-col gap-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Admin / Accounts</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{translate(language, "Admin / Tài khoản", "Admin / Accounts")}</p>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-              {activeTab === "customers" ? "Customer directory" : "Staff & Admin directory"}
+              {activeTab === "customers" 
+                ? translate(language, "Danh mục khách hàng", "Customer directory") 
+                : translate(language, "Danh mục Nhân viên & Admin", "Staff & Admin directory")}
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -171,7 +205,7 @@ export function AdminAccountsPageContent() {
                 onClick={() => setIsCreateDialogOpen(true)}
               >
                 <Plus className="h-4 w-4" />
-                Add account
+                {translate(language, "Thêm tài khoản", "Add account")}
               </Button>
             )}
             <Button
@@ -182,7 +216,7 @@ export function AdminAccountsPageContent() {
               disabled={accountsQuery.isFetching}
             >
               <RefreshCcw className={`h-4 w-4 ${accountsQuery.isFetching ? "animate-spin" : ""}`} />
-              Refresh
+              {translate(language, "Làm mới", "Refresh")}
             </Button>
           </div>
         </div>
@@ -197,7 +231,7 @@ export function AdminAccountsPageContent() {
             }`}
             onClick={() => handleTabChange("customers")}
           >
-            Customers
+            {translate(language, "Khách hàng", "Customers")}
           </button>
           <button
             type="button"
@@ -208,7 +242,7 @@ export function AdminAccountsPageContent() {
             }`}
             onClick={() => handleTabChange("staff_admin")}
           >
-            Staff & Admin
+            {translate(language, "Nhân viên & Admin", "Staff & Admin")}
           </button>
         </div>
 
@@ -216,12 +250,12 @@ export function AdminAccountsPageContent() {
           <CardContent className="space-y-4 p-5">
             <div className={`grid gap-3 ${activeTab === "customers" ? "md:grid-cols-[minmax(0,1fr)_160px_auto_auto]" : "md:grid-cols-[minmax(0,1fr)_160px_160px_auto_auto]"} md:items-end`}>
               <label className="space-y-1.5">
-                <span className="text-xs font-medium text-slate-500">Search name</span>
+                <span className="text-xs font-medium text-slate-500">{translate(language, "Tìm kiếm tên", "Search name")}</span>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
                     className="h-9 pl-9"
-                    placeholder="Search by name, phone, or email"
+                    placeholder={translate(language, "Tìm theo tên, điện thoại, hoặc email", "Search by name, phone, or email")}
                     value={draftFilters.searchQuery}
                     onChange={(event) =>
                       setDraftFilters((previous) => ({ ...previous, searchQuery: event.target.value }))
@@ -237,16 +271,16 @@ export function AdminAccountsPageContent() {
 
               {activeTab === "staff_admin" && (
                 <label className="space-y-1.5">
-                  <span className="text-xs font-medium text-slate-500">Role</span>
+                  <span className="text-xs font-medium text-slate-500">{translate(language, "Vai trò", "Role")}</span>
                   <select
                     className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
                     value={draftFilters.role}
                     onChange={(event) => setDraftFilters((previous) => ({ ...previous, role: event.target.value }))}
                   >
-                    <option value="">All Staff & Admin</option>
+                    <option value="">{translate(language, "Tất cả Nhân viên & Admin", "All Staff & Admin")}</option>
                     {STAFF_ROLE_OPTIONS.map((role) => (
                       <option key={role} value={role}>
-                        {formatEnumLabel(role)}
+                        {translateRole(role, language as "vi" | "en")}
                       </option>
                     ))}
                   </select>
@@ -254,64 +288,66 @@ export function AdminAccountsPageContent() {
               )}
 
               <label className="space-y-1.5">
-                <span className="text-xs font-medium text-slate-500">Status</span>
+                <span className="text-xs font-medium text-slate-500">{translate(language, "Trạng thái", "Status")}</span>
                 <select
                   className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
                   value={draftFilters.status}
                   onChange={(event) => setDraftFilters((previous) => ({ ...previous, status: event.target.value }))}
                 >
-                  <option value="">All status</option>
+                  <option value="">{translate(language, "Tất cả trạng thái", "All status")}</option>
                   {STATUS_OPTIONS.map((status) => (
                     <option key={status} value={status}>
-                      {formatEnumLabel(status)}
+                      {translateStatus(status, language as "vi" | "en")}
                     </option>
                   ))}
                 </select>
               </label>
 
               <Button type="button" className="h-9" onClick={applyFilters}>
-                Apply
+                {translate(language, "Áp dụng", "Apply")}
               </Button>
               <Button type="button" variant="outline" className="h-9" onClick={clearFilters}>
-                Clear
+                {translate(language, "Xóa bộ lọc", "Clear")}
               </Button>
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-950">
-                  {activeTab === "customers" ? "Customer list" : "Staff & Admin list"}
+                  {activeTab === "customers" 
+                    ? translate(language, "Danh sách khách hàng", "Customer list") 
+                    : translate(language, "Danh sách Nhân viên & Admin", "Staff & Admin list")}
                 </h2>
                 <p className="text-xs text-slate-500">
                   {isStaffClientFiltering
-                    ? `${accounts.length.toLocaleString("en-US")} records`
+                    ? `${accounts.length.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} ${translate(language, "bản ghi", "records")}`
                     : pagination
-                    ? `${pagination.total.toLocaleString("en-US")} records`
-                    : "Loading records"}
+                    ? `${pagination.total.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} ${translate(language, "bản ghi", "records")}`
+                    : translate(language, "Đang tải bản ghi", "Loading records")}
                 </p>
               </div>
 
               <div className="overflow-hidden rounded-md border border-slate-200">
                 {accountsQuery.isPending ? (
-                  <StatePanel icon={<Loader2 className="h-4 w-4 animate-spin" />} message="Loading accounts..." />
+                  <StatePanel icon={<Loader2 className="h-4 w-4 animate-spin" />} message={translate(language, "Đang tải danh sách tài khoản...", "Loading accounts...")} />
                 ) : accountsQuery.isError ? (
                   <StatePanel tone="danger" message={getDisplayErrorMessage(accountsQuery.error)} />
                 ) : accounts.length === 0 ? (
-                  <StatePanel message="No accounts match the current filters." />
+                  <StatePanel message={translate(language, "Không tìm thấy tài khoản nào khớp với bộ lọc.", "No accounts match the current filters.")} />
                 ) : (
                   <Table>
                     <TableHeader className="bg-slate-50">
                       <TableRow>
-                        <TableHead>{activeTab === "customers" ? "Customer name" : "Name"}</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Phone</TableHead>
+                        <TableHead>{activeTab === "customers" ? translate(language, "Tên khách hàng", "Customer name") : translate(language, "Họ tên", "Name")}</TableHead>
+                        <TableHead>{translate(language, "Email", "Email")}</TableHead>
+                        <TableHead>{translate(language, "Điện thoại", "Phone")}</TableHead>
                         {activeTab === "customers" ? (
-                          <TableHead>Tier</TableHead>
+                          <TableHead>{translate(language, "Hạng", "Tier")}</TableHead>
                         ) : (
-                          <TableHead>Role</TableHead>
+                          <TableHead>{translate(language, "Vai trò", "Role")}</TableHead>
                         )}
-                        <TableHead>Joined date</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>{translate(language, "Ngày tham gia", "Joined date")}</TableHead>
+                        <TableHead>{translate(language, "Trạng thái", "Status")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -332,18 +368,18 @@ export function AdminAccountsPageContent() {
                           <TableCell>
                             <div className="font-medium text-slate-950">{account.fullName}</div>
                           </TableCell>
-                          <TableCell className="text-slate-600">{account.email ?? "No email"}</TableCell>
+                          <TableCell className="text-slate-600">{account.email ?? translate(language, "Không có email", "No email")}</TableCell>
                           <TableCell className="font-medium text-slate-700">{account.phone}</TableCell>
                           {activeTab === "customers" ? (
-                            <TableCell>{formatEnumLabel(account.tier)}</TableCell>
+                            <TableCell>{translateTier(account.tier, language as "vi" | "en")}</TableCell>
                           ) : (
                             <TableCell>
-                              <RoleBadge role={account.role} />
+                              <RoleBadge role={account.role} language={language as "vi" | "en"} />
                             </TableCell>
                           )}
-                          <TableCell>{formatDate(account.createdAt)}</TableCell>
+                          <TableCell>{formatDate(account.createdAt, language as "vi" | "en")}</TableCell>
                           <TableCell>
-                            <StatusBadge status={account.status} />
+                            <StatusBadge status={account.status} language={language as "vi" | "en"} />
                           </TableCell>
                         </TableRow>
                       ))}
@@ -356,7 +392,7 @@ export function AdminAccountsPageContent() {
             {showPagination && pagination ? (
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-500">
-                  Page {pagination.page} of {Math.max(pagination.totalPages, 1)}
+                  {translate(language, `Trang ${pagination.page} / ${Math.max(pagination.totalPages, 1)}`, `Page ${pagination.page} of ${Math.max(pagination.totalPages, 1)}`)}
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -368,7 +404,7 @@ export function AdminAccountsPageContent() {
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    {translate(language, "Trước", "Previous")}
                   </Button>
                   <Button
                     type="button"
@@ -378,7 +414,7 @@ export function AdminAccountsPageContent() {
                     disabled={!pagination.hasMore}
                     onClick={() => setPage((current) => current + 1)}
                   >
-                    Next
+                    {translate(language, "Sau", "Next")}
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -401,47 +437,47 @@ export function AdminAccountsPageContent() {
           <div className="space-y-6 p-6">
             <DialogHeader className="space-y-2 text-left">
               <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">
-                Add staff account
+                {translate(language, "Thêm tài khoản nhân viên", "Add staff account")}
               </DialogTitle>
               <DialogDescription className="text-sm leading-6 text-slate-500">
-                Backend currently supports creating staff accounts from the admin directory. The new account will appear in the list right after creation.
+                {translate(language, "Hệ thống hiện tại hỗ trợ tạo tài khoản nhân viên từ danh mục admin. Tài khoản mới sẽ hiển thị trong danh sách ngay sau khi tạo.", "Backend currently supports creating staff accounts from the admin directory. The new account will appear in the list right after creation.")}
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
-                label="Full name"
+                label={translate(language, "Họ tên", "Full name")}
                 value={createForm.fullName}
                 onChange={handleCreateFieldChange("fullName")}
-                placeholder="Nguyen Van A"
+                placeholder={translate(language, "Nguyễn Văn A", "Nguyen Van A")}
                 error={resolveFormError("fullName", createFormErrors.fullName, createStaffMutation.error)}
               />
               <FormField
-                label="Phone"
+                label={translate(language, "Điện thoại", "Phone")}
                 value={createForm.phone}
                 onChange={handleCreateFieldChange("phone")}
                 placeholder="0901234567"
                 error={resolveFormError("phone", createFormErrors.phone, createStaffMutation.error)}
               />
               <FormField
-                label="Email"
+                label={translate(language, "Email", "Email")}
                 value={createForm.email}
                 onChange={handleCreateFieldChange("email")}
                 placeholder="staff@auracarcare.vn"
                 error={resolveFormError("email", createFormErrors.email, createStaffMutation.error)}
               />
               <FormField
-                label="Password"
+                label={translate(language, "Mật khẩu", "Password")}
                 value={createForm.password}
                 onChange={handleCreateFieldChange("password")}
-                placeholder="At least 8 characters"
+                placeholder={translate(language, "Tối thiểu 8 ký tự", "At least 8 characters")}
                 type="password"
                 error={resolveFormError("password", createFormErrors.password, createStaffMutation.error)}
               />
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              This action creates a live <span className="font-semibold text-slate-900">staff</span> account through `POST /api/v1/admin/staff`.
+              {translate(language, "Hành động này sẽ tạo tài khoản nhân viên thực tế qua `POST /api/v1/admin/staff`.", "This action creates a live staff account through `POST /api/v1/admin/staff`.")}
             </div>
 
             {createStaffMutation.isError ? (
@@ -459,11 +495,11 @@ export function AdminAccountsPageContent() {
                   resetCreateDialog();
                 }}
               >
-                Cancel
+                {translate(language, "Hủy", "Cancel")}
               </Button>
               <Button type="button" onClick={handleCreateStaff} disabled={!canSubmitCreateForm}>
                 {createStaffMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                Create staff
+                {translate(language, "Tạo nhân viên", "Create staff")}
               </Button>
             </DialogFooter>
           </div>
@@ -496,20 +532,20 @@ function StatePanel({
   );
 }
 
-function RoleBadge({ role }: { role: AdminAccount["role"] }) {
+function RoleBadge({ role, language }: { role: AdminAccount["role"]; language: "vi" | "en" }) {
   return (
     <Badge className={ROLE_TONE[role]} variant="outline">
-      {formatEnumLabel(role)}
+      {translateRole(role, language)}
     </Badge>
   );
 }
 
-function StatusBadge({ status }: { status: AdminAccount["status"] }) {
+function StatusBadge({ status, language }: { status: AdminAccount["status"]; language: "vi" | "en" }) {
   const tone = STATUS_TONE[status] ?? "border-slate-300 bg-slate-100 text-slate-700";
 
   return (
     <Badge className={tone} variant="outline">
-      {formatEnumLabel(status)}
+      {translateStatus(status, language)}
     </Badge>
   );
 }
@@ -518,27 +554,28 @@ function shortId(value: string) {
   return value.length > 12 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
+function formatDate(value: string, language: "vi" | "en") {
+  return new Date(value).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", {
     year: "numeric",
     month: "short",
     day: "2-digit",
   });
 }
 
-function formatEnumLabel(value: string) {
-  return value
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(" ");
-}
-
-function validateCreateStaffForm(form: CreateAdminStaffPayload) {
+function validateCreateStaffForm(form: CreateAdminStaffPayload, language: "vi" | "en") {
   return {
-    fullName: form.fullName.trim().length === 0 ? "Full name is required." : null,
-    phone: /^0[0-9]{9}$/.test(form.phone.trim()) ? null : "Phone must start with 0 and contain 10 digits.",
-    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) ? null : "Email must be valid.",
-    password: form.password.length >= 8 ? null : "Password must be at least 8 characters.",
+    fullName: form.fullName.trim().length === 0 
+      ? translate(language, "Vui lòng nhập họ tên.", "Full name is required.") 
+      : null,
+    phone: /^0[0-9]{9}$/.test(form.phone.trim()) 
+      ? null 
+      : translate(language, "Số điện thoại phải bắt đầu bằng số 0 và gồm 10 chữ số.", "Phone must start with 0 and contain 10 digits."),
+    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) 
+      ? null 
+      : translate(language, "Email không hợp lệ.", "Email must be valid."),
+    password: form.password.length >= 8 
+      ? null 
+      : translate(language, "Mật khẩu phải chứa ít nhất 8 ký tự.", "Password must be at least 8 characters."),
   };
 }
 
