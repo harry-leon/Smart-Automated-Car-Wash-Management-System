@@ -1,0 +1,160 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import {
+  createAdminCombo,
+  createAdminPackage,
+  createAdminService,
+  deleteAdminCombo,
+  deleteAdminPackage,
+  deleteAdminService,
+  listAdminCatalogPackages,
+  listAdminCatalogServices,
+  listAdminCombos,
+} from "@/features/admin/management/lib/admin-service-management-service";
+import type { ApiErrorResponse } from "@/shared/types/api.types";
+import type {
+  AdminCatalogPackage,
+  AdminCatalogService,
+  AdminCombo,
+  AdminComboForm,
+  AdminPackageForm,
+  AdminServiceForm,
+} from "@/features/admin/management/management.types";
+
+function useAdminManagementContext() {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  const userId = user?.userId ?? null;
+  const enabled = Boolean(accessToken && userId && user?.role === "ADMIN");
+
+  return { userId, enabled };
+}
+
+function adminManagementScope(userId: string | null) {
+  return ["admin-service-management", userId] as const;
+}
+
+export function useAdminCatalogServices() {
+  const { userId, enabled } = useAdminManagementContext();
+
+  return useQuery<AdminCatalogService[], ApiErrorResponse>({
+    queryKey: [...adminManagementScope(userId), "services"],
+    queryFn: listAdminCatalogServices,
+    enabled,
+  });
+}
+
+export function useAdminCatalogPackages() {
+  const { userId, enabled } = useAdminManagementContext();
+
+  return useQuery<AdminCatalogPackage[], ApiErrorResponse>({
+    queryKey: [...adminManagementScope(userId), "packages"],
+    queryFn: listAdminCatalogPackages,
+    enabled,
+  });
+}
+
+export function useAdminCombosCatalog() {
+  const { userId, enabled } = useAdminManagementContext();
+
+  return useQuery<AdminCombo[], ApiErrorResponse>({
+    queryKey: [...adminManagementScope(userId), "combos"],
+    queryFn: listAdminCombos,
+    enabled,
+  });
+}
+
+export function useCreateAdminCombo() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<AdminCombo, ApiErrorResponse, AdminComboForm>({
+    mutationFn: createAdminCombo,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
+
+export function useDeleteAdminCombo() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<AdminCombo, ApiErrorResponse, string>({
+    mutationFn: deleteAdminCombo,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
+
+export function useCreateAdminService() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<AdminCatalogService, ApiErrorResponse, AdminServiceForm>({
+    mutationFn: async (form) => {
+      return createAdminService({
+        name: form.name,
+        description: form.description,
+        price: Number(form.price),
+        duration: Number(form.duration),
+        status: form.status,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
+
+export function useDeleteAdminService() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<void, ApiErrorResponse, string>({
+    mutationFn: deleteAdminService,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
+
+export function useCreateAdminPackage() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<AdminCatalogPackage, ApiErrorResponse, AdminPackageForm>({
+    mutationFn: async (form) => {
+      const features = form.features
+        ? form.features.split(",").map((f) => f.trim()).filter(Boolean)
+        : [];
+      return createAdminPackage({
+        name: form.name,
+        description: form.description,
+        basePrice: Number(form.basePrice),
+        duration: Number(form.duration),
+        category: form.category,
+        features,
+        status: form.status,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
+
+export function useDeleteAdminPackage() {
+  const queryClient = useQueryClient();
+  const { userId } = useAdminManagementContext();
+
+  return useMutation<void, ApiErrorResponse, string>({
+    mutationFn: deleteAdminPackage,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
+    },
+  });
+}
