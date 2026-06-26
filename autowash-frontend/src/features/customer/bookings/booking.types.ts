@@ -114,9 +114,11 @@ export type CreateBookingResponse = {
   vehiclePlate: string;
   packageId: string | null;
   packageName: string;
-  addons: BookingAddonSelection[];
+  addons?: BookingAddonSelection[];
+  options?: BookingAddonSelection[];
   basePrice: number;
-  addonsTotal: number;
+  addonsTotal?: number;
+  optionsTotal?: number;
   voucherDiscount: number;
   finalAmount: number;
   bookingDate: string;
@@ -126,24 +128,11 @@ export type CreateBookingResponse = {
   paymentStatus: string;
   status: BookingStatus;
   confirmationStatus: BookingConfirmationStatus;
-  otpExpiresIn: number;
-  otpExpiresAt: string;
   createdAt: string;
   confirmationNumber: string;
   comboId: string | null;
   customerComboId: string | null;
   comboPurchased: boolean;
-  devOtp?: string;
-};
-
-export type BookingOtpResponse = {
-  bookingId: string;
-  status: BookingStatus;
-  confirmationStatus: BookingConfirmationStatus;
-  otpExpiresIn: number;
-  expiresAt: string;
-  message: string;
-  devOtp?: string;
 };
 
 export type BookingListItem = {
@@ -171,10 +160,12 @@ export type BookingDetail = {
   vehicleModel: string;
   packageId: string | null;
   packageName: string | null;
-  addons: BookingAddonSelection[];
+  addons?: BookingAddonSelection[];
+  options?: BookingAddonSelection[];
   pricing: {
     basePrice: number;
-    addonsTotal: number;
+    addonsTotal?: number;
+    optionsTotal?: number;
     subtotal: number;
     voucherCode: string | null;
     voucherDiscount: number;
@@ -203,7 +194,6 @@ export type BookingDetail = {
   washStatus: string | null;
   notes: string | null;
   createdAt: string;
-  devOtp?: string;
 };
 
 export type BookingListPage = {

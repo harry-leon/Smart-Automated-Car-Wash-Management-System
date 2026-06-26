@@ -100,7 +100,7 @@ test("builds a package booking payload with trimmed note and voucher code", () =
   assert.deepEqual(buildCreateBookingPayload(draft), {
     vehicleId: "vehicle_001",
     packageId: "pkg_001",
-    addons: ["addon_001"],
+    options: ["addon_001"],
     bookingDate: "2026-06-10",
     bookingTime: "14:00",
     voucherCode: "WELCOME20",
@@ -124,7 +124,7 @@ test("builds a combo booking payload without package id", () => {
   assert.deepEqual(buildCreateBookingPayload(draft), {
     vehicleId: "vehicle_001",
     comboId: "combo_001",
-    addons: [],
+    options: [],
     bookingDate: "2026-06-10",
     bookingTime: "10:00",
     paymentMethod: "CASH_AT_COUNTER",

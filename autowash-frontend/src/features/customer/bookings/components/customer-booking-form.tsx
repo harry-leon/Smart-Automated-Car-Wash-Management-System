@@ -274,9 +274,7 @@ export function CustomerBookingForm() {
     try {
       const booking = await createBookingMutation.mutateAsync(draft);
       toast.success("Booking created successfully.");
-      router.push(
-        `/customer/bookings/success?bookingId=${booking.bookingId}&otpExpiresAt=${encodeURIComponent(booking.otpExpiresAt)}`,
-      );
+      router.push(`/customer/bookings/success?bookingId=${booking.bookingId}`);
     } catch (error) {
       toast.error(getDisplayErrorMessage(error));
     }
