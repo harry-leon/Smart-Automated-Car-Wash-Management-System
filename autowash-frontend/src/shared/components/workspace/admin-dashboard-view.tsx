@@ -146,9 +146,6 @@ export function AdminDashboardView() {
         <Card className="border-border/70 bg-card/95 p-8 shadow-sm">
           <div className="text-center sm:text-left">
             <h2 className="text-lg font-bold">Quick actions</h2>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Jump into the most common admin workflows without changing the existing routes.
-            </p>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
             {QUICK_LINKS.map((link) => {

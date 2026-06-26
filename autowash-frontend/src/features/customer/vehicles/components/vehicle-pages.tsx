@@ -72,10 +72,6 @@ export function CustomerVehiclesListClientPage() {
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
                   Manage saved vehicles.
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                  This page reads the real customer vehicle list and lets you inspect, set the
-                  primary vehicle, or remove an entry.
-                </p>
               </div>
             </div>
 

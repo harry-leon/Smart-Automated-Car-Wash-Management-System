@@ -253,10 +253,6 @@ export function AdminPromotionsPageContent() {
                   <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
                     Promotions
                   </h1>
-                  <p className="max-w-2xl text-sm leading-6 text-slate-600 md:text-[15px]">
-                    Shape how customers discover and redeem campaigns. Review what is live,
-                    what is ending soon, and where you may want to refresh targeting.
-                  </p>
                 </div>
               </div>
             </div>
@@ -623,11 +619,6 @@ export function AdminPromotionsPageContent() {
                 <CardTitle className="text-xl font-black tracking-tight text-slate-950">
                   Promotion list
                 </CardTitle>
-                <CardDescription className="mt-1 text-sm leading-6 text-slate-500">
-                  {promotionsQuery.data
-                    ? `Showing ${paginatedPromotions.length} of ${filteredPromotions.length} promotion${filteredPromotions.length !== 1 ? "s" : ""}`
-                    : "All active and inactive campaigns"}
-                </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {hasActiveFilters ? (

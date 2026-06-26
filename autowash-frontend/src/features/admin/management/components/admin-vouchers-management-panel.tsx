@@ -31,10 +31,6 @@ export function AdminVouchersManagementPanel() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <CardTitle>Voucher catalogue</CardTitle>
-              <CardDescription>
-                Review active voucher rules and tier targeting inside the grouped offers
-                management area.
-              </CardDescription>
             </div>
             <Button type="button" variant="outline" onClick={() => vouchersQuery.refetch()}>
               <RefreshCcw className="mr-2 h-4 w-4" />
@@ -122,10 +118,6 @@ export function AdminVouchersManagementPanel() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <CardTitle>Point-to-voucher redemption history</CardTitle>
-              <CardDescription>
-                Track which customers exchanged loyalty points for voucher rewards so admin can
-                reconcile offers more easily.
-              </CardDescription>
             </div>
             <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
               <div className="relative min-w-[240px]">
@@ -201,10 +193,6 @@ export function AdminVouchersManagementPanel() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Showing {redemptionsQuery.data.items.length} of {redemptionsQuery.data.pagination.total} redemption
-                records.
               </div>
             </div>
           )}
