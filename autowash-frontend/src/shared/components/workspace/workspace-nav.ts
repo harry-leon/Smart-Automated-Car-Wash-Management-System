@@ -9,12 +9,9 @@ import {
   History,
   LayoutDashboard,
   Layers3,
-  Package,
   Radar,
   Settings2,
-  Sparkles,
   Tag,
-  Ticket,
   Users,
   Wrench,
 } from "lucide-react";
@@ -23,13 +20,16 @@ import type { UserRole } from "@/features/auth/auth.types";
 export type WorkspaceNavItem = {
   href: string;
   label: string;
+  labelVi?: string;
   icon: LucideIcon;
   exact?: boolean;
 };
 
 export type WorkspaceTheme = {
   label: string;
+  labelVi?: string;
   description: string;
+  descriptionVi?: string;
   accent: string;
   accentSoft: string;
   activeNav: string;
@@ -39,58 +39,64 @@ export type WorkspaceTheme = {
 export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
   CUSTOMER: {
     label: "Customer Portal",
+    labelVi: "Cổng khách hàng",
     description: "Bookings and wash tracking",
-    accent: "bg-sky-600 text-white shadow-sky-600/20",
-    accentSoft: "border-sky-200 bg-sky-50 text-sky-700",
-    activeNav: "bg-sky-600 text-white shadow-sm shadow-sky-600/20",
-    mobileActive: "bg-sky-50 text-sky-700",
+    descriptionVi: "Đặt lịch & Theo dõi rửa xe",
+    accent: "bg-teal-600 text-white shadow-teal-600/20",
+    accentSoft: "border-teal-200 bg-teal-50 text-teal-700",
+    activeNav: "bg-teal-600 text-white shadow-sm shadow-teal-600/20",
+    mobileActive: "bg-teal-50 text-teal-700",
   },
   STAFF: {
     label: "Staff Operations",
+    labelVi: "Nghiệp vụ nhân viên",
     description: "Check-in and wash flow",
-    accent: "bg-violet-600 text-white shadow-violet-600/20",
-    accentSoft: "border-violet-200 bg-violet-50 text-violet-700",
-    activeNav: "bg-violet-600 text-white shadow-sm shadow-violet-600/20",
-    mobileActive: "bg-violet-50 text-violet-700",
+    descriptionVi: "Duyệt check-in & Quy trình",
+    accent: "bg-teal-600 text-white shadow-teal-600/20",
+    accentSoft: "border-teal-200 bg-teal-50 text-teal-700",
+    activeNav: "bg-teal-600 text-white shadow-sm shadow-teal-600/20",
+    mobileActive: "bg-teal-50 text-teal-700",
   },
   ADMIN: {
     label: "Admin Dashboard",
+    labelVi: "Bảng quản trị",
     description: "System control center",
-    accent: "bg-orange-600 text-white shadow-orange-600/20",
-    accentSoft: "border-orange-200 bg-orange-50 text-orange-700",
-    activeNav: "bg-orange-600 text-white shadow-sm shadow-orange-600/20",
-    mobileActive: "bg-orange-50 text-orange-700",
+    descriptionVi: "Trung tâm quản trị hệ thống",
+    accent: "bg-teal-600 text-white shadow-teal-600/20",
+    accentSoft: "border-teal-200 bg-teal-50 text-teal-700",
+    activeNav: "bg-teal-600 text-white shadow-sm shadow-teal-600/20",
+    mobileActive: "bg-teal-50 text-teal-700",
   },
 };
 
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
-  { href: "/customer/home", label: "Home", icon: LayoutDashboard, exact: true },
-  { href: "/customer/bookings", label: "Bookings", icon: ClipboardList },
-  { href: "/customer/wash-tracking", label: "Wash Tracking", icon: Radar },
-  { href: "/customer/vehicles", label: "Vehicles", icon: CarFront },
-  { href: "/customer/history", label: "History", icon: History },
-  { href: "/customer/loyalty", label: "Loyalty", icon: Gift },
-  { href: "/customer/promotions", label: "Promotions", icon: Tag },
-  { href: "/customer/notifications", label: "Notifications", icon: Bell },
-  { href: "/customer/settings", label: "Settings", icon: Settings2 },
+  { href: "/customer/home", label: "Home", labelVi: "Trang chủ", icon: LayoutDashboard, exact: true },
+  { href: "/customer/bookings", label: "Bookings", labelVi: "Lịch đặt", icon: ClipboardList },
+  { href: "/customer/wash-tracking", label: "Wash Tracking", labelVi: "Theo dõi rửa xe", icon: Radar },
+  { href: "/customer/vehicles", label: "Vehicles", labelVi: "Phương tiện", icon: CarFront },
+  { href: "/customer/history", label: "History", labelVi: "Lịch sử", icon: History },
+  { href: "/customer/loyalty", label: "Loyalty", labelVi: "Tích điểm", icon: Gift },
+  { href: "/customer/promotions", label: "Promotions", labelVi: "Khuyến mãi", icon: Tag },
+  { href: "/customer/notifications", label: "Notifications", labelVi: "Thông báo", icon: Bell },
+  { href: "/customer/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [
-  { href: "/staff/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/staff/operations", label: "Operations", icon: ClipboardList },
-  { href: "/staff/check-in", label: "Check-in", icon: Wrench },
-  { href: "/staff/sessions/history", label: "History", icon: History },
+  { href: "/staff/dashboard", label: "Dashboard", labelVi: "Trang chủ", icon: LayoutDashboard, exact: true },
+  { href: "/staff/operations", label: "Operations", labelVi: "Vận hành", icon: ClipboardList },
+  { href: "/staff/check-in", label: "Check-in", labelVi: "Duyệt check-in", icon: Wrench },
+  { href: "/staff/sessions/history", label: "History", labelVi: "Lịch sử", icon: History },
 ];
 
 const ADMIN_NAV: WorkspaceNavItem[] = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/bookings", label: "Bookings", icon: ClipboardList },
-  { href: "/admin/accounts", label: "Accounts", icon: Users },
-  { href: "/admin/services", label: "Service Management", icon: Layers3 },
-  { href: "/admin/offers", label: "Offers Management", icon: Gift },
-  { href: "/admin/operations", label: "Operations", icon: Wrench },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
-  { href: "/admin/settings", label: "Settings", icon: Settings2 },
+  { href: "/admin/dashboard", label: "Dashboard", labelVi: "Trang chủ", icon: LayoutDashboard, exact: true },
+  { href: "/admin/bookings", label: "Bookings", labelVi: "Quản lý đặt lịch", icon: ClipboardList },
+  { href: "/admin/accounts", label: "Accounts", labelVi: "Tài khoản", icon: Users },
+  { href: "/admin/services", label: "Service Management", labelVi: "Quản lý dịch vụ", icon: Layers3 },
+  { href: "/admin/offers?tab=promotions", label: "Offers Management", labelVi: "Ưu đãi & Voucher", icon: Gift },
+  { href: "/admin/operations", label: "Operations", labelVi: "Vận hành", icon: Wrench },
+  { href: "/admin/reports", label: "Reports", labelVi: "Báo cáo", icon: BarChart3 },
+  { href: "/admin/settings", label: "Settings", labelVi: "Cài đặt hệ thống", icon: Settings2 },
 ];
 
 export const SHELL_EXCLUDED_PATHS = ["/admin/login"];

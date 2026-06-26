@@ -25,10 +25,6 @@ export function AdminOffersManagementPage() {
             </div>
             <div>
               <CardTitle>Offers Management</CardTitle>
-              <CardDescription>
-                Manage promotions and vouchers together so campaign setup and redemption
-                reconciliation stay in one admin workflow.
-              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -70,18 +66,7 @@ export function AdminOffersManagementPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <SummaryCard
-          icon={BadgePercent}
-          title="Promotions"
-          description="Keep the existing promotion CRUD flow intact while moving it under the shared offers shell."
-        />
-        <SummaryCard
-          icon={Gift}
-          title="Vouchers"
-          description="Expose voucher catalogue and redemption oversight without scattering admin tooling across separate pages."
-        />
-      </div>
+
     </WorkspacePage>
   );
 }

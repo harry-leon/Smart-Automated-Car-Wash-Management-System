@@ -114,7 +114,7 @@ const HOME_COPY = {
     navContact: "Contact",
     login: "Login",
     register: "Sign Up",
-    tagline: "Next-gen car care platform",
+    tagline: "",
     heroTitle: "Professional car wash with modern technology in HCMC.",
     heroSubtitle: "Book in 30 seconds. Skip the line. Premium finish, fully transparent.",
     bookNow: "Book Now",
@@ -237,7 +237,7 @@ export function HomePageView() {
   }, [language]);
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_32%),linear-gradient(180deg,#f8fbff_0%,#f5f9ff_30%,#ffffff_72%,#eff6ff_100%)] text-slate-950">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_18%_8%,rgba(20,184,166,0.10),transparent_30%),radial-gradient(circle_at_82%_4%,rgba(45,212,191,0.08),transparent_28%),linear-gradient(180deg,#f8fbfb_0%,#ffffff_44%,#f6fbfa_72%,#f1faf7_100%)] text-slate-950">
       <MotionStyles />
       <PublicHeader onOpenAuth={handleOpenAuth} language={language} onChangeLanguage={setLanguage} copy={copy} />
       <HeroSection onOpenAuth={handleOpenAuth} copy={copy} />
@@ -296,19 +296,19 @@ function PublicHeader({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 border-b transition-all duration-300",
+        "fixed inset-x-0 top-0 z-50 border-b transition-all duration-300",
         isScrolled
-          ? "border-sky-100/80 bg-white/92 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl"
+          ? "border-teal-100/80 bg-white/92 shadow-[0_12px_40px_rgba(15,23,42,0.07)] backdrop-blur-xl"
           : "border-transparent bg-white/70 backdrop-blur-md",
       )}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_rgba(59,130,246,0.18)] ring-1 ring-sky-100 transition-transform duration-300 hover:scale-105">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-[0_10px_30px_rgba(15,118,110,0.12)] ring-1 ring-teal-100 transition-transform duration-300 hover:scale-105">
             <img src="/logo.png" alt="AutoWash Pro" className="h-9 w-9 rounded-xl object-cover" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[0.64rem] font-semibold uppercase tracking-[0.22em] text-sky-700 sm:text-[0.7rem] sm:tracking-[0.28em]">
+            <p className="truncate text-[0.64rem] font-semibold uppercase tracking-[0.22em] text-teal-700 sm:text-[0.7rem] sm:tracking-[0.28em]">
               AutoWash Pro
             </p>
             <p className="truncate text-sm font-semibold text-slate-900">Aura Car Care</p>
@@ -329,7 +329,7 @@ function PublicHeader({
 
         <div className="hidden items-center gap-3 lg:flex">
           {/* Aesthetic Language Switcher Capsule */}
-          <div className="flex rounded-full border border-sky-100/80 bg-sky-50/50 p-1 shadow-inner backdrop-blur-sm mr-2 transition-all duration-300">
+          <div className="mr-2 flex rounded-full border border-teal-100/80 bg-teal-50/50 p-1 shadow-inner backdrop-blur-sm transition-all duration-300">
             {(["vi", "en"] as const).map((item) => (
               <button
                 key={item}
@@ -338,7 +338,7 @@ function PublicHeader({
                 className={cn(
                   "rounded-full px-3 py-1.5 text-[11px] font-black uppercase transition-all duration-300",
                   language === item
-                    ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-md shadow-blue-500/25 scale-105"
+                    ? "scale-105 bg-teal-600 text-white shadow-md shadow-teal-600/20"
                     : "text-slate-500 hover:text-slate-950"
                 )}
               >
@@ -355,7 +355,7 @@ function PublicHeader({
             {copy.login}
           </Button>
           <Button
-            className="rounded-full px-5 text-sm font-semibold shadow-[0_12px_32px_rgba(37,99,235,0.24)] transition-transform duration-300 hover:scale-[1.02]"
+            className="rounded-full px-5 text-sm font-semibold shadow-[0_12px_32px_rgba(15,118,110,0.22)] transition-transform duration-300 hover:scale-[1.02]"
             onClick={() => onOpenAuth("register")}
           >
             {copy.register}
@@ -364,7 +364,7 @@ function PublicHeader({
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-sky-100 bg-white text-slate-900 shadow-sm transition-transform duration-300 hover:scale-105 lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-teal-100 bg-white text-slate-900 shadow-sm transition-transform duration-300 hover:scale-105 lg:hidden"
           onClick={() => setIsOpen((value) => !value)}
           aria-label={isOpen ? "Close menu" : "Open menu"}
         >
@@ -373,13 +373,13 @@ function PublicHeader({
       </div>
 
       {isOpen ? (
-        <div className="animate-in fade-in slide-in-from-top-2 border-t border-sky-100 bg-white px-4 py-4 shadow-[0_12px_24px_rgba(15,23,42,0.08)] duration-300 lg:hidden">
+        <div className="animate-in fade-in slide-in-from-top-2 border-t border-teal-100 bg-white px-4 py-4 shadow-[0_12px_24px_rgba(15,23,42,0.08)] duration-300 lg:hidden">
           <nav className="flex flex-col gap-2">
             {navItems.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-sky-50 hover:text-slate-950"
+                className="rounded-2xl px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-teal-50 hover:text-slate-950"
                 onClick={() => setIsOpen(false)}
               >
                 {item.label}
@@ -388,7 +388,7 @@ function PublicHeader({
           </nav>
           
           <div className="mt-4 flex justify-center">
-            <div className="flex rounded-full border border-sky-100 bg-sky-50/50 p-1 shadow-sm w-fit">
+            <div className="flex w-fit rounded-full border border-teal-100 bg-teal-50/50 p-1 shadow-sm">
               {(["vi", "en"] as const).map((item) => (
                 <button
                   key={item}
@@ -398,7 +398,7 @@ function PublicHeader({
                   }}
                   className={cn(
                     "rounded-full px-4 py-1.5 text-xs font-black uppercase transition",
-                    language === item ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900",
+                    language === item ? "bg-teal-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900",
                   )}
                 >
                   {item.toUpperCase()}
@@ -423,34 +423,28 @@ function PublicHeader({
 
 function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "register") => void; copy: Record<string, string> }) {
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-x-0 top-0 h-[36rem] animate-[heroGlow_14s_ease-in-out_infinite] bg-[radial-gradient(circle_at_10%_10%,rgba(191,219,254,0.7),transparent_32%),radial-gradient(circle_at_100%_0%,rgba(59,130,246,0.14),transparent_28%)]" />
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 pb-20 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-8 lg:pb-24">
+    <section className="relative overflow-hidden pt-20">
+      <div className="absolute inset-x-0 top-0 h-[44rem] animate-[heroGlow_14s_ease-in-out_infinite] bg-[radial-gradient(circle_at_14%_10%,rgba(153,246,228,0.42),transparent_34%),radial-gradient(circle_at_100%_0%,rgba(125,211,252,0.26),transparent_30%)]" />
+      <div className="absolute left-1/2 top-20 h-px w-[min(72rem,80vw)] -translate-x-1/2 bg-gradient-to-r from-transparent via-teal-200/70 to-transparent" />
+      <div className="mx-auto grid max-w-7xl gap-14 px-4 pb-24 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-[0.96fr_1.04fr] lg:items-center lg:px-8 lg:pb-28">
         <div className="relative z-10">
-          <FadeIn delay={0}>
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/80 px-4 py-2 text-sm font-semibold text-sky-800 shadow-sm backdrop-blur">
-              <Sparkles className="h-4 w-4" />
-              {copy.tagline}
-            </div>
-          </FadeIn>
-
           <FadeIn delay={100}>
-            <h1 className="mt-6 max-w-3xl break-words text-[clamp(2rem,9vw,5.4rem)] font-black leading-[0.98] tracking-[-0.04em] text-slate-950 sm:text-[clamp(2.8rem,6vw,5.4rem)]">
+            <h1 className="max-w-3xl break-words text-[clamp(2.35rem,8vw,5.65rem)] font-black leading-[0.95] tracking-[-0.045em] text-slate-950 sm:text-[clamp(3rem,6vw,5.65rem)]">
               {copy.heroTitle}
             </h1>
           </FadeIn>
 
           <FadeIn delay={180}>
-            <p className="mt-6 max-w-2xl break-words text-lg leading-8 text-slate-600 sm:text-xl">
+            <p className="mt-7 max-w-xl break-words text-lg leading-8 text-slate-600 sm:text-xl">
               {copy.heroSubtitle}
             </p>
           </FadeIn>
 
           <FadeIn delay={260}>
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-9 flex flex-col gap-4 sm:flex-row">
               <Button
                 size="lg"
-                className="h-12 rounded-full px-7 text-sm font-semibold shadow-[0_14px_34px_rgba(37,99,235,0.28)] transition-transform duration-300 hover:scale-[1.02]"
+                className="h-12 rounded-full bg-teal-600 px-7 text-sm font-semibold shadow-[0_18px_40px_rgba(15,118,110,0.28)] transition-transform duration-300 hover:scale-[1.02] hover:bg-teal-700"
                 onClick={() => onOpenAuth("login")}
               >
                 {copy.bookNow}
@@ -467,7 +461,7 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
             </div>
           </FadeIn>
 
-          <div className="mt-10 grid gap-3 sm:grid-cols-3">
+          <div className="mt-12 grid gap-3 sm:grid-cols-3">
             <FadeIn delay={340}>
               <TrustItem icon={Clock3} title={copy.featureBookingTitle} description={copy.featureBookingDesc} />
             </FadeIn>
@@ -480,61 +474,61 @@ function HeroSection({ onOpenAuth, copy }: { onOpenAuth: (mode: "login" | "regis
           </div>
         </div>
 
-        <FadeIn delay={180} className="relative z-10" yClass="translate-y-10 md:translate-y-0 md:translate-x-8">
-          <div className="absolute inset-x-10 top-0 h-32 animate-[floatSoft_9s_ease-in-out_infinite] rounded-full bg-sky-200/40 blur-3xl" />
-          <div className="grid gap-4 sm:grid-cols-[1.15fr_0.85fr]">
-            <div className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/80 shadow-[0_24px_60px_rgba(15,23,42,0.14)] backdrop-blur transition-transform duration-500 hover:-translate-y-1">
+        <FadeIn delay={180} className="relative z-10" yClass="translate-y-10 md:translate-y-0 md:translate-x-4">
+          <div className="absolute -inset-x-6 top-8 h-64 animate-[floatSoft_9s_ease-in-out_infinite] rounded-full bg-teal-200/32 blur-3xl" />
+          <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+            <div className="relative min-h-[30rem] overflow-hidden rounded-[1.35rem] border border-white/80 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.16)] transition-transform duration-500 hover:-translate-y-1">
               <img
                 src={homeGallery[0].src}
                 alt={homeGallery[0].alt}
-                className="h-[21rem] w-full object-cover transition-transform duration-700 hover:scale-[1.03] sm:h-[26rem]"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-[1.03]"
               />
-              <div className="space-y-4 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
-                      {copy.navServices === "Dịch vụ" ? "Không gian AURA" : "AURA Facility"}
-                    </p>
-                    <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950">
-                      {copy.navServices === "Dịch vụ" ? "Rửa bọt không chạm với hoàn thiện cao cấp" : "Touchless foam wash with premium finish"}
-                    </h2>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
-                  <StatItem value="5000+" label={copy.navServices === "Dịch vụ" ? "Khách hàng" : "Happy clients"} />
-                  <StatItem value="98%" label={copy.navServices === "Dịch vụ" ? "Hài lòng" : "Satisfaction"} />
-                  <StatItem value="3 min" label={copy.navServices === "Dịch vụ" ? "Chờ trung bình" : "Avg. wait"} />
-                </div>
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/62 via-slate-950/14 to-transparent p-6 text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-100">
+                  {copy.navServices === "Dịch vụ" ? "Không gian AURA" : "AURA Facility"}
+                </p>
+                <h2 className="mt-2 max-w-sm text-2xl font-bold tracking-tight">
+                  {copy.navServices === "Dịch vụ" ? "Rửa bọt không chạm với hoàn thiện cao cấp" : "Touchless foam wash with premium finish"}
+                </h2>
               </div>
             </div>
 
-            <div className="grid gap-4">
-              <div className="animate-[floatSoft_10s_ease-in-out_infinite]">
-                <MiniFeatureCard
-                  title={copy.navServices === "Dịch vụ" ? "Tại sao chọn chúng tôi" : "Why drivers choose us"}
-                  items={
-                    copy.navServices === "Dịch vụ"
-                      ? [
-                          "Rửa không chạm bảo vệ bề mặt sơn",
-                          "Đặt lịch thời gian thực với khung giờ rõ ràng",
-                          "Tích điểm thưởng sau mỗi lần rửa",
-                        ]
-                      : [
-                          "Touchless wash protects paint surface",
-                          "Real-time booking with clear time slots",
-                          "Loyalty rewards every visit",
-                        ]
-                  }
-                />
+            <div className="grid content-start gap-4">
+              <div className="rounded-[1.15rem] border border-white/80 bg-white/[0.88] p-5 shadow-[0_24px_70px_rgba(15,118,110,0.14)] backdrop-blur-xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">
+                  {copy.navServices === "Dịch vụ" ? "Tại sao chọn chúng tôi" : "Why drivers choose us"}
+                </p>
+                <div className="mt-5 grid gap-3">
+                  {(copy.navServices === "Dịch vụ"
+                    ? [
+                        "Rửa không chạm bảo vệ bề mặt sơn",
+                        "Đặt lịch thời gian thực với khung giờ rõ ràng",
+                        "Tích điểm thưởng sau mỗi lần rửa",
+                      ]
+                    : [
+                        "Touchless wash protects paint surface",
+                        "Real-time booking with clear time slots",
+                        "Loyalty rewards every visit",
+                      ]
+                  ).map((item) => (
+                    <div key={item} className="flex items-start gap-3 rounded-lg bg-teal-50/70 px-3 py-3">
+                      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-teal-700 shadow-sm">
+                        <Check className="h-3.5 w-3.5" />
+                      </div>
+                      <p className="text-sm font-semibold leading-6 text-slate-700">{item}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-slate-950 shadow-[0_22px_44px_rgba(15,23,42,0.18)] transition-transform duration-500 hover:-translate-y-1">
+
+              <div className="overflow-hidden rounded-[1.15rem] border border-white/80 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.14)] transition-transform duration-500 hover:-translate-y-1">
                 <img
                   src={homeGallery[2].src}
                   alt={homeGallery[2].alt}
-                  className="h-48 w-full object-cover opacity-85 transition-transform duration-700 hover:scale-[1.03]"
+                  className="h-40 w-full object-cover transition-transform duration-700 hover:scale-[1.03]"
                 />
-                <div className="space-y-2 p-5 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-200">
+                <div className="space-y-2 p-5 text-slate-950">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">
                     ECO-FRIENDLY
                   </p>
                   <h3 className="text-lg font-bold tracking-tight">
@@ -561,7 +555,7 @@ function FacilitySection({ copy }: { copy: Record<string, string> }) {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <BeforeAfterCard image={homeGallery[1].src} title={copy.beforeLabel} tone="bg-rose-100 text-rose-800 border border-rose-200" copy={copy} />
         <BeforeAfterCard image={homeGallery[3].src} title={copy.afterLabel} tone="bg-emerald-100 text-emerald-800 border border-emerald-200" copy={copy} />
-        <div className="rounded-[2rem] border border-sky-100 bg-sky-50/50 p-7 shadow-[0_20px_50px_rgba(15,23,42,0.04)] transition-transform duration-500 hover:-translate-y-1 flex flex-col justify-between min-h-[340px]">
+        <div className="flex min-h-[340px] flex-col justify-between rounded-[1.15rem] border border-teal-100 bg-[linear-gradient(180deg,#ffffff_0%,#f0fdfa_100%)] p-7 shadow-[0_22px_60px_rgba(15,118,110,0.10)] transition-transform duration-500 hover:-translate-y-1">
           <div>
             <span className="text-3xl">☕</span>
             <h3 className="mt-5 text-xl font-bold tracking-tight text-slate-950">
@@ -571,8 +565,8 @@ function FacilitySection({ copy }: { copy: Record<string, string> }) {
               {copy.loungeDesc}
             </p>
           </div>
-          <div className="border-t border-sky-200/50 pt-5 mt-5">
-            <p className="text-xs font-bold text-sky-800 uppercase tracking-widest">{copy.loungeTag}</p>
+          <div className="mt-5 border-t border-teal-100 pt-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-teal-800">{copy.loungeTag}</p>
           </div>
         </div>
       </div>
@@ -607,30 +601,30 @@ function ServicesSection({
 
 function ResultsSection({ copy }: { copy: Record<string, string> }) {
   return (
-    <section className="relative overflow-hidden bg-slate-950 py-24 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1),transparent_40%)]" />
+    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f7fbfb_100%)] py-24 text-slate-950">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(20,184,166,0.10),transparent_40%)]" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-400">{copy.resultsEyebrow}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">{copy.resultsEyebrow}</p>
             <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
               {copy.resultsTitle}
             </h2>
-            <p className="mt-4 text-base leading-7 text-slate-300">
+            <p className="mt-4 text-base leading-7 text-slate-600">
               {copy.resultsDesc}
             </p>
             <div className="mt-8 grid grid-cols-2 gap-4">
-              <div className="border-l-2 border-sky-400 pl-4">
-                <p className="text-2xl font-black tracking-tight text-white">100%</p>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mt-1">{copy.resultsTouchless}</p>
+              <div className="border-l-2 border-teal-400 pl-4">
+                <p className="text-2xl font-black tracking-tight text-slate-950">100%</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mt-1">{copy.resultsTouchless}</p>
               </div>
-              <div className="border-l-2 border-sky-400 pl-4">
-                <p className="text-2xl font-black tracking-tight text-white">0%</p>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mt-1">{copy.resultsScratches}</p>
+              <div className="border-l-2 border-teal-400 pl-4">
+                <p className="text-2xl font-black tracking-tight text-slate-950">0%</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 mt-1">{copy.resultsScratches}</p>
               </div>
             </div>
           </div>
-          <div className="overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_24px_50px_rgba(0,0,0,0.4)]">
+          <div className="overflow-hidden rounded-[1.15rem] border border-white bg-white shadow-[0_30px_80px_rgba(15,23,42,0.13),0_0_0_1px_rgba(20,184,166,0.08)]">
             <img
               src={homeGallery[3]?.src || homeGallery[0]?.src}
               alt="Diagnostics check"
@@ -658,8 +652,7 @@ function CombosSection({
       eyebrow={copy.combosEyebrow}
       title={copy.combosTitle}
       description={copy.combosDesc}
-      className="bg-slate-900 py-24 text-white"
-      invert
+      className="bg-[linear-gradient(180deg,#f0fdfa_0%,#ffffff_100%)] py-24"
     >
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {combos.map((combo) => (
@@ -686,16 +679,16 @@ function ReviewsSection({
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {testimonials.map((testimonial, index) => (
-          <div key={index} className="rounded-[2rem] border border-sky-100 bg-white p-7 shadow-[0_16px_40px_rgba(15,23,42,0.04)] flex flex-col justify-between">
+          <div key={index} className="flex flex-col justify-between rounded-[1.15rem] border border-teal-100 bg-white p-7 shadow-[0_18px_50px_rgba(15,118,110,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(15,118,110,0.13)]">
             <div>
-              <Quote className="h-6 w-6 text-sky-100" />
+              <Quote className="h-6 w-6 text-teal-100" />
               <p className="mt-4 text-sm leading-7 text-slate-700 italic">
                 &ldquo;{testimonial.content}&rdquo;
               </p>
             </div>
             <div className="mt-6 flex items-center gap-3 border-t border-slate-100 pt-5">
-              <div className="h-10 w-10 overflow-hidden rounded-full border border-sky-100 bg-slate-100">
-                <div className="flex h-full w-full items-center justify-center font-bold text-sky-700 bg-sky-50 text-xs">
+              <div className="h-10 w-10 overflow-hidden rounded-full border border-teal-100 bg-slate-100">
+                <div className="flex h-full w-full items-center justify-center bg-teal-50 text-xs font-bold text-teal-700">
                   {testimonial.name[0]}
                 </div>
               </div>
@@ -723,20 +716,20 @@ function CallToActionSection({
   copy: Record<string, string>;
 }) {
   return (
-    <section className="px-4 py-24 sm:px-6 lg:px-8 relative overflow-hidden bg-slate-900 text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(59,130,246,0.14),transparent_42%)]" />
-      <div className="mx-auto max-w-4xl text-center relative z-10">
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-sky-400">{copy.ctaEyebrow}</p>
+    <section className="relative overflow-hidden bg-white px-4 py-24 text-slate-950 sm:px-6 lg:px-8">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(20,184,166,0.12),transparent_42%)]" />
+      <div className="relative z-10 mx-auto max-w-5xl rounded-[1.35rem] border border-teal-100 bg-[linear-gradient(135deg,#ffffff_0%,#f0fdfa_100%)] px-6 py-14 text-center shadow-[0_32px_90px_rgba(15,118,110,0.14)] sm:px-10">
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-teal-700">{copy.ctaEyebrow}</p>
         <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">
           {copy.ctaTitle}
         </h2>
-        <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-300">
+        <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-slate-600">
           {copy.ctaDesc}
         </p>
         <div className="mt-8 flex justify-center">
           <Button
             size="lg"
-            className="h-12 rounded-full px-8 text-sm font-semibold shadow-[0_12px_32px_rgba(37,99,235,0.28)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+            className="h-12 rounded-full bg-teal-600 px-8 text-sm font-semibold shadow-[0_16px_40px_rgba(15,118,110,0.24)] transition-all hover:scale-[1.02] hover:bg-teal-700 active:scale-[0.98]"
             onClick={() => onOpenAuth("login")}
           >
             {copy.ctaButton}
@@ -750,43 +743,68 @@ function CallToActionSection({
 
 function PublicFooter({ copy }: { copy: Record<string, string> }) {
   return (
-    <footer className="border-t border-slate-100 bg-slate-50">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow ring-1 ring-sky-100/50">
-              <img src="/logo.png" alt="AutoWash Pro" className="h-7 w-7 rounded-lg object-cover" />
+    <footer className="relative overflow-hidden border-t border-teal-100/80 bg-[#f7fbfa]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-200 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_18%_0%,rgba(20,184,166,0.08),transparent_30%),radial-gradient(circle_at_84%_0%,rgba(20,184,166,0.06),transparent_28%)]" />
+      <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.7fr_1fr] lg:items-start">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-[0_10px_26px_rgba(15,118,110,0.08)] ring-1 ring-teal-100">
+                <img src="/logo.png" alt="AutoWash Pro" className="h-8 w-8 rounded-lg object-cover" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-teal-700">AutoWash Pro</p>
+                <h2 className="text-lg font-black tracking-tight text-slate-950">Aura Car Care</h2>
+              </div>
             </div>
-            <p className="text-sm font-bold text-slate-950">Aura Car Care</p>
+            <p className="mt-5 max-w-lg text-sm leading-7 text-slate-600">
+              {copy.footerDesc}
+            </p>
           </div>
-          <p className="text-xs leading-6 text-slate-500">
-            {copy.footerDesc}
-          </p>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-teal-700">{copy.footerQuickLinks}</p>
+            <nav className="mt-5 grid gap-2.5 text-sm">
+              {navigationItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="w-fit font-medium text-slate-600 transition hover:text-teal-800"
+                >
+                  {item.label === "Services" ? copy.navServices : item.label === "Packages" ? copy.navCombos : item.label === "Reviews" ? copy.navReviews : copy.navContact}
+                </a>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-teal-700">{copy.footerContact}</p>
+            <div className="mt-5 grid gap-2.5 text-sm leading-7 text-slate-600">
+              <p className="font-medium text-slate-800">{copy.footerAddress}</p>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <a className="font-medium text-slate-700 transition hover:text-teal-800" href={`tel:${copy.footerPhone.replace(/\s/g, "")}`}>
+                  {copy.footerPhone}
+                </a>
+                <a className="break-all font-medium text-slate-700 transition hover:text-teal-800" href={`mailto:${copy.footerEmail}`}>
+                  {copy.footerEmail}
+                </a>
+              </div>
+              <p className="font-medium text-slate-500">{copy.footerHours}</p>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">{copy.footerQuickLinks}</p>
-          <div className="mt-5 grid gap-3 text-sm text-slate-600">
-            {navigationItems.map((item) => (
-              <a key={item.href} href={item.href} className="transition hover:text-slate-950">
-                {item.label === "Services" ? copy.navServices : item.label === "Packages" ? copy.navCombos : item.label === "Reviews" ? copy.navReviews : copy.navContact}
-              </a>
-            ))}
+        <div className="mt-12 flex flex-col gap-4 border-t border-teal-100/80 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} {copy.footerRights}</p>
+          <div className="flex flex-wrap gap-3 text-slate-500">
+            <span>Light theme</span>
+            <span className="text-teal-600">/</span>
+            <span>Touchless wash</span>
+            <span className="text-teal-600">/</span>
+            <span>Real-time booking</span>
           </div>
         </div>
-
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">{copy.footerContact}</p>
-          <div className="mt-5 grid gap-3 text-sm leading-7 text-slate-600">
-            <p>{copy.footerAddress}</p>
-            <p>{copy.footerPhone}</p>
-            <p>{copy.footerEmail}</p>
-            <p>{copy.footerHours}</p>
-          </div>
-        </div>
-      </div>
-      <div className="border-t border-slate-100 px-4 py-5 text-center text-xs text-slate-500 sm:px-6 lg:px-8">
-        © {new Date().getFullYear()} {copy.footerRights}
       </div>
     </footer>
   );
@@ -901,7 +919,7 @@ function SectionShell({
           <p
             className={cn(
               "text-sm font-semibold uppercase tracking-[0.24em]",
-              invert ? "text-sky-300" : "text-sky-700",
+              invert ? "text-teal-300" : "text-teal-700",
             )}
           >
             {eyebrow}
@@ -934,8 +952,8 @@ function TrustItem({
   description: string;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur transition-transform duration-300 hover:-translate-y-1">
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+    <div className="rounded-[1rem] border border-white/80 bg-white/85 p-4 shadow-[0_18px_46px_rgba(15,118,110,0.10)] backdrop-blur transition-transform duration-300 hover:-translate-y-1">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
         <Icon className="h-5 w-5" />
       </div>
       <p className="mt-4 font-semibold text-slate-950">{title}</p>
@@ -957,11 +975,11 @@ function StatItem({ value, label }: { value: string; label: string }) {
 
 function MiniFeatureCard({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-[2rem] border border-white/70 bg-white/80 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur transition-transform duration-500 hover:-translate-y-1">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">{title}</p>
+    <div className="rounded-[1.15rem] border border-white/80 bg-white/85 p-6 shadow-[0_20px_56px_rgba(15,118,110,0.12)] backdrop-blur transition-transform duration-500 hover:-translate-y-1">
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-700">{title}</p>
       <div className="mt-4 grid gap-3">
         {items.map((item) => (
-          <div key={item} className="flex items-start gap-3 rounded-2xl bg-sky-50/70 px-4 py-3 transition duration-300 hover:bg-sky-100/70">
+          <div key={item} className="flex items-start gap-3 rounded-lg bg-teal-50/70 px-4 py-3 transition duration-300 hover:bg-teal-100/70">
             <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Check className="h-3.5 w-3.5" />
             </div>
@@ -983,10 +1001,10 @@ function ServiceCard({
   copy: Record<string, string>;
 }) {
   return (
-    <article className="group rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_60px_rgba(15,23,42,0.12)]">
+    <article className="group rounded-[1.15rem] border border-teal-100 bg-white p-6 shadow-[0_18px_50px_rgba(15,118,110,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_76px_rgba(15,118,110,0.14)]">
       <div className="flex items-center justify-between">
         <span className="text-3xl transition-transform duration-300 group-hover:scale-110">{service.icon}</span>
-        <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+        <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
           {service.duration}
         </span>
       </div>
@@ -1025,7 +1043,7 @@ function BeforeAfterCard({
   const isVi = copy.navServices === "Dịch vụ";
   const isBefore = title === copy.beforeLabel;
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-sky-100 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-transform duration-500 hover:-translate-y-1">
+    <div className="overflow-hidden rounded-[1.15rem] border border-teal-100 bg-white shadow-[0_22px_60px_rgba(15,118,110,0.10)] transition-transform duration-500 hover:-translate-y-1">
       <div className="relative">
         <img
           src={image}
@@ -1064,17 +1082,17 @@ function ComboCard({
   return (
     <article
       className={cn(
-        "relative rounded-[2rem] border p-7 shadow-[0_24px_60px_rgba(2,6,23,0.28)] transition-transform duration-500 hover:-translate-y-1",
+        "relative rounded-lg border p-7 shadow-[0_18px_44px_rgba(15,118,110,0.10)] transition-transform duration-500 hover:-translate-y-1",
         combo.highlight
-          ? "border-sky-300 bg-[linear-gradient(180deg,rgba(37,99,235,0.22)_0%,rgba(15,23,42,0.95)_100%)]"
-          : "border-white/10 bg-white/5 backdrop-blur-sm",
+          ? "border-teal-300 bg-white"
+          : "border-teal-100 bg-white backdrop-blur-sm",
       )}
     >
       {combo.badge ? (
         <span
           className={cn(
             "absolute left-7 top-0 -translate-y-1/2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em]",
-            combo.highlight ? "bg-white text-slate-950" : "bg-sky-400 text-slate-950",
+            combo.highlight ? "bg-teal-600 text-white" : "bg-teal-100 text-teal-800",
           )}
         >
           {combo.badge}
@@ -1082,19 +1100,19 @@ function ComboCard({
       ) : null}
 
       <div className="pt-2">
-        <h3 className="text-2xl font-bold tracking-tight text-white">{combo.name}</h3>
-        <p className="mt-3 text-sm leading-7 text-slate-300">{combo.description}</p>
+        <h3 className="text-2xl font-bold tracking-tight text-slate-950">{combo.name}</h3>
+        <p className="mt-3 text-sm leading-7 text-slate-600">{combo.description}</p>
       </div>
 
-      <div className="mt-6 border-y border-white/10 py-6">
-        <p className="text-3xl font-black tracking-tight text-white">
+      <div className="mt-6 border-y border-teal-100 py-6">
+        <p className="text-3xl font-black tracking-tight text-slate-950">
           {formatBookingCurrency(combo.comboPrice)}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
           <span className="text-slate-400 line-through">
             {formatBookingCurrency(combo.originalPrice)}
           </span>
-          <span className="rounded-full bg-emerald-400/20 px-3 py-1 font-semibold text-emerald-300">
+          <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">
             {copy.savingsLabel} {formatBookingCurrency(savings)}
           </span>
         </div>
@@ -1102,8 +1120,8 @@ function ComboCard({
 
       <ul className="mt-6 grid gap-3">
         {combo.services.map((item) => (
-          <li key={item} className="flex items-start gap-3 text-sm leading-6 text-slate-200">
-            <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-sky-400/20 text-sky-200">
+          <li key={item} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+            <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-teal-50 text-teal-700">
               <Check className="h-3.5 w-3.5" />
             </span>
             {item}
@@ -1117,8 +1135,8 @@ function ComboCard({
         className={cn(
           "mt-8 h-12 w-full rounded-full text-sm font-semibold transition-transform duration-300 hover:scale-[1.02]",
           combo.highlight
-            ? "bg-white text-slate-950 hover:bg-slate-100"
-            : "bg-white/10 text-white hover:bg-white/15",
+            ? "bg-teal-600 text-white hover:bg-teal-700"
+            : "bg-teal-50 text-teal-800 hover:bg-teal-100",
         )}
         onClick={() => onOpenAuth("login")}
       >

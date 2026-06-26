@@ -23,7 +23,7 @@ export function WorkspacePage({ children, className, compact }: WorkspacePagePro
   );
 }
 
-export function WorkspaceLoadingState({ message = "Đang tải khu vực làm việc..." }: { message?: string }) {
+export function WorkspaceLoadingState({ message = "Loading workspace..." }: { message?: string }) {
   return (
     <WorkspacePage>
       <Card className="flex min-h-[260px] items-center justify-center border-dashed border-border/70 bg-card/80 p-8">
@@ -43,7 +43,7 @@ export function WorkspaceEmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
       <h3 className="text-base font-bold text-foreground">{title}</h3>
       <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">{description}</p>
       {action ? <div className="mt-5">{action}</div> : null}
@@ -63,7 +63,7 @@ export function WorkspaceErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
+    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
       <h3 className="text-base font-bold text-destructive">{title}</h3>
       <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">{description}</p>
       {onRetry ? (

@@ -94,7 +94,7 @@ export type CreateBookingRequest = {
   vehicleId: string;
   packageId?: string;
   comboId?: string;
-  addons: string[];
+  options: string[];
   bookingDate: string;
   bookingTime: string;
   voucherCode?: string;
