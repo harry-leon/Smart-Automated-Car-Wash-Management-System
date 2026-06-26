@@ -14,14 +14,17 @@ import {
   useCustomerLoyaltyTransactions,
   useCustomerWashHistory,
 } from "@/features/customer/loyalty/hooks/use-customer-loyalty";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 export function CustomerHistoryPageContent() {
+  const { language } = useLanguageStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"bookings" | "washes" | "points">("bookings");
   const bookingsQuery = useCustomerBookings({ page: 1, limit: 50 });
   const washHistoryQuery = useCustomerWashHistory(1, 50);
   const transactionsQuery = useCustomerLoyaltyTransactions(1, 50);
   const accountQuery = useCustomerLoyaltyAccount();
+  const locale = language === "vi" ? "vi-VN" : "en-US";
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -45,15 +48,15 @@ export function CustomerHistoryPageContent() {
         <Card className="border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
           <CardHeader className="gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <CardTitle>Customer history</CardTitle>
+              <CardTitle>{translate("Lịch sử khách hàng", "Customer history", language)}</CardTitle>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button type="button" variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
                 <RefreshCcw className="mr-2 h-4 w-4" />
-                {isRefreshing ? "Refreshing..." : "Refresh"}
+                {isRefreshing ? translate("Đang tải lại...", "Refreshing...", language) : translate("Tải lại", "Refresh", language)}
               </Button>
               <Button asChild>
-                <Link href="/customer/loyalty/history">Open point history</Link>
+                <Link href="/customer/loyalty/history">{translate("Xem lịch sử điểm", "Open point history", language)}</Link>
               </Button>
             </div>
           </CardHeader>
@@ -61,14 +64,14 @@ export function CustomerHistoryPageContent() {
 
         {summary ? (
           <section className="grid gap-4 md:grid-cols-3">
-            <StatCard label="Available points" value={summary.availablePoints.toLocaleString("vi-VN")} />
-            <StatCard label="Lifetime points" value={summary.lifetimePoints.toLocaleString("vi-VN")} />
+            <StatCard label={translate("Điểm khả dụng", "Available points", language)} value={summary.availablePoints.toLocaleString(locale)} />
+            <StatCard label={translate("Điểm tích lũy", "Lifetime points", language)} value={summary.lifetimePoints.toLocaleString(locale)} />
             <StatCard
-              label="Tier progress"
+              label={translate("Tiến trình hạng", "Tier progress", language)}
               value={
                 summary.progress.nextTier
-                  ? `${summary.progress.progressPercent}% to ${summary.progress.nextTier}`
-                  : "Top tier reached"
+                  ? `${summary.progress.progressPercent}% ${translate("đến", "to", language)} ${summary.progress.nextTier}`
+                  : translate("Đạt hạng cao nhất", "Top tier reached", language)
               }
             />
           </section>
@@ -77,20 +80,20 @@ export function CustomerHistoryPageContent() {
         <div className="space-y-4">
           <div className="grid w-full max-w-xl grid-cols-3 rounded-xl bg-white/80 p-1 shadow-sm">
             <TabButton active={activeTab === "bookings"} onClick={() => setActiveTab("bookings")}>
-              Bookings
+              {translate("Đặt lịch", "Bookings", language)}
             </TabButton>
             <TabButton active={activeTab === "washes"} onClick={() => setActiveTab("washes")}>
-              Wash history
+              {translate("Lịch sử rửa xe", "Wash history", language)}
             </TabButton>
             <TabButton active={activeTab === "points"} onClick={() => setActiveTab("points")}>
-              Point history
+              {translate("Lịch sử điểm", "Point history", language)}
             </TabButton>
           </div>
 
           {activeTab === "bookings" ? (
             <HistorySection
-              title="Booking history"
-              description="Upcoming and completed bookings created through the booking flow."
+              title={translate("Lịch sử đặt lịch", "Booking history", language)}
+              description={translate("Các lịch hẹn sắp tới và đã hoàn thành.", "Upcoming and completed bookings created through the booking flow.", language)}
               isPending={bookingsQuery.isPending}
               isError={bookingsQuery.isError}
               error={bookingsQuery.error}
@@ -103,21 +106,21 @@ export function CustomerHistoryPageContent() {
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-black text-slate-900">
-                            {booking.packageName ?? "Booking"}
+                            {booking.packageName ?? translate("Đặt lịch", "Booking", language)}
                           </h3>
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                             {getBookingStatusLabel(booking.status)}
                           </span>
                         </div>
                         <div className="grid gap-1 text-sm text-slate-600 md:grid-cols-2">
-                          <p>Vehicle: <span className="font-medium text-slate-900">{booking.vehiclePlate}</span></p>
-                          <p>Service: <span className="font-medium text-slate-900">{booking.packageName ?? "--"}</span></p>
-                          <p>Schedule: <span className="font-medium text-slate-900">{formatSchedule(booking.bookingDate, booking.bookingTime)}</span></p>
-                          <p>Wash: <span className="font-medium text-slate-900">{booking.washStatus ? humanizeCode(booking.washStatus) : "Not started"}</span></p>
+                          <p>{translate("Xe", "Vehicle", language)}: <span className="font-medium text-slate-900">{booking.vehiclePlate}</span></p>
+                          <p>{translate("Dịch vụ", "Service", language)}: <span className="font-medium text-slate-900">{booking.packageName ?? "--"}</span></p>
+                          <p>{translate("Lịch hẹn", "Schedule", language)}: <span className="font-medium text-slate-900">{formatSchedule(booking.bookingDate, booking.bookingTime)}</span></p>
+                          <p>{translate("Rửa xe", "Wash", language)}: <span className="font-medium text-slate-900">{booking.washStatus ? humanizeCode(booking.washStatus) : translate("Chưa bắt đầu", "Not started", language)}</span></p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Final amount</div>
+                        <div className="text-xs uppercase tracking-[0.2em] text-slate-500">{translate("Tổng thanh toán", "Final amount", language)}</div>
                         <div className="text-xl font-black text-slate-900">{formatBookingCurrency(booking.finalAmount)}</div>
                       </div>
                     </CardContent>
@@ -129,8 +132,8 @@ export function CustomerHistoryPageContent() {
 
           {activeTab === "washes" ? (
             <HistorySection
-              title="Wash history"
-              description="Completed wash sessions and points earned after staff completes the wash."
+              title={translate("Lịch sử rửa xe", "Wash history", language)}
+              description={translate("Các lần rửa xe đã hoàn thành và điểm được tích.", "Completed wash sessions and points earned after staff completes the wash.", language)}
               isPending={washHistoryQuery.isPending}
               isError={washHistoryQuery.isError}
               error={washHistoryQuery.error}
@@ -143,26 +146,26 @@ export function CustomerHistoryPageContent() {
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-base font-black text-slate-900">
-                            {wash.packageName ?? "Wash session"}
+                            {wash.packageName ?? translate("Phiên rửa xe", "Wash session", language)}
                           </h3>
                           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                             {humanizeCode(wash.status)}
                           </span>
                         </div>
                         <div className="grid gap-1 text-sm text-slate-600 md:grid-cols-2">
-                          <p>Vehicle: <span className="font-medium text-slate-900">{wash.vehiclePlate}</span></p>
-                          <p>Service: <span className="font-medium text-slate-900">{wash.packageName ?? "--"}</span></p>
-                          <p>Booked for: <span className="font-medium text-slate-900">{formatSchedule(wash.bookingDate, wash.bookingTime)}</span></p>
-                          <p>Completed: <span className="font-medium text-slate-900">{formatDateTime(wash.completedAt)}</span></p>
+                          <p>{translate("Xe", "Vehicle", language)}: <span className="font-medium text-slate-900">{wash.vehiclePlate}</span></p>
+                          <p>{translate("Dịch vụ", "Service", language)}: <span className="font-medium text-slate-900">{wash.packageName ?? "--"}</span></p>
+                          <p>{translate("Lịch hẹn", "Booked for", language)}: <span className="font-medium text-slate-900">{formatSchedule(wash.bookingDate, wash.bookingTime)}</span></p>
+                          <p>{translate("Hoàn thành", "Completed", language)}: <span className="font-medium text-slate-900">{formatDateTime(wash.completedAt, locale)}</span></p>
                         </div>
                       </div>
                       <div className="space-y-2 text-right">
                         <div>
-                          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Paid</div>
+                          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">{translate("Đã thanh toán", "Paid", language)}</div>
                           <div className="text-xl font-black text-slate-900">{formatBookingCurrency(wash.finalAmount)}</div>
                         </div>
                         <div className="text-sm font-semibold text-emerald-700">
-                          +{wash.awardedPoints.toLocaleString("vi-VN")} pts
+                          +{wash.awardedPoints.toLocaleString(locale)} pts
                         </div>
                       </div>
                     </CardContent>
@@ -174,8 +177,8 @@ export function CustomerHistoryPageContent() {
 
           {activeTab === "points" ? (
             <HistorySection
-              title="Point transactions"
-              description="Mandatory-first loyalty activity derived from completed wash sessions."
+              title={translate("Giao dịch điểm", "Point transactions", language)}
+              description={translate("Hoạt động tích điểm từ các lần rửa xe hoàn thành.", "Mandatory-first loyalty activity derived from completed wash sessions.", language)}
               isPending={transactionsQuery.isPending}
               isError={transactionsQuery.isError}
               error={transactionsQuery.error}
@@ -189,7 +192,7 @@ export function CustomerHistoryPageContent() {
                         <div className="text-base font-black text-slate-900">{formatLoyaltyTransactionType(item.type)}</div>
                         <div className="mt-1 text-sm text-slate-600">{item.description}</div>
                         <div className="mt-2 text-xs text-slate-500">
-                          {new Date(item.createdAt).toLocaleString("vi-VN")}
+                          {new Date(item.createdAt).toLocaleString(locale)}
                         </div>
                       </div>
                       <div className={item.points >= 0 ? "text-right text-lg font-black text-emerald-700" : "text-right text-lg font-black text-rose-700"}>
@@ -207,18 +210,16 @@ export function CustomerHistoryPageContent() {
   );
 }
 
-/** Format "2026-06-24" + "09:02:24.787450" → "24/06/2026 09:02" */
 function formatSchedule(date: string, time: string) {
   const [year, month, day] = date.split("-");
   const timePart = time.split(":").slice(0, 2).join(":");
   return `${day}/${month}/${year} ${timePart}`;
 }
 
-/** Format ISO timestamp → "24/06/2026 09:02" */
-function formatDateTime(iso: string) {
+function formatDateTime(iso: string, locale: string) {
   try {
     const d = new Date(iso);
-    return d.toLocaleString("vi-VN", {
+    return d.toLocaleString(locale, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -279,7 +280,7 @@ function HistorySection({
     return (
       <Card className="border-rose-200 bg-white">
         <CardHeader>
-          <CardTitle>{title} unavailable</CardTitle>
+          <CardTitle>{title}</CardTitle>
           <CardDescription>{getDisplayErrorMessage(error)}</CardDescription>
         </CardHeader>
       </Card>
@@ -290,7 +291,7 @@ function HistorySection({
     return (
       <Card className="border-slate-200 bg-white">
         <CardHeader>
-          <CardTitle>{title} is empty</CardTitle>
+          <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
       </Card>

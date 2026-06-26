@@ -30,8 +30,10 @@ import type {
   CustomerVehicleListItem,
 } from "@/features/customer/vehicles/vehicle.types";
 import { CustomerVehicleFormCard } from "@/features/customer/vehicles/components/vehicle-form";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 export function CustomerVehiclesListClientPage() {
+  const { language } = useLanguageStore();
   const vehiclesQuery = useCustomerVehicles();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -42,15 +44,16 @@ export function CustomerVehiclesListClientPage() {
   if (vehiclesQuery.isError) {
     return (
       <VehiclePageErrorState
-        title="Unable to load vehicles"
+        title={translate("Không thể tải danh sách xe", "Unable to load vehicles", language)}
         description={getDisplayErrorMessage(vehiclesQuery.error)}
         onRetry={() => vehiclesQuery.refetch()}
+        language={language}
       />
     );
   }
 
   if (!vehiclesQuery.data || vehiclesQuery.data.items.length === 0) {
-    return <VehicleEmptyState />;
+    return <VehicleEmptyState language={language} />;
   }
 
   return (
@@ -66,11 +69,11 @@ export function CustomerVehiclesListClientPage() {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
                 <CarFront className="h-3.5 w-3.5" />
-                Customer vehicles
+                {translate("Xe của khách hàng", "Customer vehicles", language)}
               </div>
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                  Manage saved vehicles.
+                  {translate("Quản lý xe đã lưu.", "Manage saved vehicles.", language)}
                 </h1>
               </div>
             </div>
@@ -78,7 +81,7 @@ export function CustomerVehiclesListClientPage() {
             <Button asChild className="h-11 rounded-xl bg-slate-900 px-5 text-white hover:bg-slate-800">
               <Link href="/customer/vehicles/add">
                 <Plus className="mr-2 h-4 w-4" />
-                Add vehicle
+                {translate("Thêm xe", "Add vehicle", language)}
               </Link>
             </Button>
           </div>
@@ -91,6 +94,7 @@ export function CustomerVehiclesListClientPage() {
               vehicle={vehicle}
               isDeleting={deleteId === vehicle.vehicleId}
               onDeleteChange={setDeleteId}
+              language={language}
             />
           ))}
         </section>
@@ -100,6 +104,7 @@ export function CustomerVehiclesListClientPage() {
 }
 
 export function CustomerVehicleCreateClientPage() {
+  const { language } = useLanguageStore();
   const router = useRouter();
   const createVehicleMutation = useCreateCustomerVehicle();
   const [form, setForm] = useState<CustomerVehicleFormValues>(EMPTY_CUSTOMER_VEHICLE_FORM);
@@ -122,29 +127,29 @@ export function CustomerVehicleCreateClientPage() {
       const createdVehicle = await createVehicleMutation.mutateAsync(
         buildCreateCustomerVehicleRequest(form),
       );
-      toast.success("Vehicle created successfully.");
+      toast.success(translate("Xe đã được tạo thành công.", "Vehicle created successfully.", language));
       router.push(`/customer/vehicles/${createdVehicle.vehicleId}`);
     } catch {
-      toast.error("Unable to create vehicle.");
+      toast.error(translate("Không thể tạo xe.", "Unable to create vehicle.", language));
     }
   };
 
   return (
     <VehicleFormPageShell
       backHref="/customer/vehicles"
-      backLabel="Back to vehicles"
+      backLabel={translate("Quay lại danh sách xe", "Back to vehicles", language)}
       notice={
         createVehicleMutation.isError
           ? getDisplayErrorMessage(createVehicleMutation.error)
-          : "Create a vehicle using the live customer vehicle contract."
+          : translate("Thêm xe mới của bạn.", "Create a vehicle using the live customer vehicle contract.", language)
       }
     >
       <CustomerVehicleFormCard
-        title="Add a new vehicle"
-        description="The UI stays close to the prototype, but all values now go through the real backend contract."
+        title={translate("Thêm xe mới", "Add a new vehicle", language)}
+        description={translate("Điền thông tin xe để lưu vào tài khoản của bạn.", "The UI stays close to the prototype, but all values now go through the real backend contract.", language)}
         form={form}
         errors={submitErrors}
-        submitLabel="Create vehicle"
+        submitLabel={translate("Tạo xe", "Create vehicle", language)}
         isSubmitting={createVehicleMutation.isPending}
         onChange={(field, value) => {
           setForm((current) => ({ ...current, [field]: value }));
@@ -160,6 +165,7 @@ export function CustomerVehicleCreateClientPage() {
 }
 
 export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: string }) {
+  const { language } = useLanguageStore();
   const router = useRouter();
   const vehicleQuery = useCustomerVehicleDetail(vehicleId);
   const updateMutation = useUpdateCustomerVehicle(vehicleId);
@@ -167,6 +173,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   const deleteMutation = useDeleteCustomerVehicle(vehicleId);
   const [form, setForm] = useState<CustomerVehicleFormValues>(EMPTY_CUSTOMER_VEHICLE_FORM);
   const [showValidation, setShowValidation] = useState(false);
+  const locale = language === "vi" ? "vi-VN" : "en-US";
 
   useEffect(() => {
     if (!vehicleQuery.data) {
@@ -190,9 +197,10 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   if (vehicleQuery.isError) {
     return (
       <VehiclePageErrorState
-        title="Unable to load vehicle"
+        title={translate("Không thể tải xe", "Unable to load vehicle", language)}
         description={getDisplayErrorMessage(vehicleQuery.error)}
         onRetry={() => vehicleQuery.refetch()}
+        language={language}
       />
     );
   }
@@ -200,9 +208,10 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
   if (!vehicleQuery.data) {
     return (
       <VehiclePageErrorState
-        title="Vehicle not found"
-        description="The contract returned no vehicle payload for this identifier."
+        title={translate("Không tìm thấy xe", "Vehicle not found", language)}
+        description={translate("Không có dữ liệu xe nào được trả về cho mã này.", "The contract returned no vehicle payload for this identifier.", language)}
         onRetry={() => router.push("/customer/vehicles")}
+        language={language}
       />
     );
   }
@@ -224,43 +233,43 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
 
     try {
       await updateMutation.mutateAsync(buildUpdateCustomerVehicleRequest(form));
-      toast.success("Vehicle updated successfully.");
+      toast.success(translate("Xe đã được cập nhật thành công.", "Vehicle updated successfully.", language));
     } catch {
-      toast.error("Unable to update vehicle.");
+      toast.error(translate("Không thể cập nhật xe.", "Unable to update vehicle.", language));
     }
   };
 
   const handleSetPrimary = async () => {
     try {
       await setPrimaryMutation.mutateAsync();
-      toast.success("Primary vehicle updated.");
+      toast.success(translate("Xe chính đã được cập nhật.", "Primary vehicle updated.", language));
     } catch {
-      toast.error("Unable to set primary vehicle.");
+      toast.error(translate("Không thể đặt xe chính.", "Unable to set primary vehicle.", language));
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync();
-      toast.success("Vehicle removed.");
+      toast.success(translate("Xe đã được xóa.", "Vehicle removed.", language));
       router.push("/customer/vehicles");
     } catch {
-      toast.error("Unable to delete vehicle.");
+      toast.error(translate("Không thể xóa xe.", "Unable to delete vehicle.", language));
     }
   };
 
   return (
     <VehicleFormPageShell
       backHref="/customer/vehicles"
-      backLabel="Back to vehicles"
-      notice={`Vehicle created ${formatDateTime(vehicle.createdAt)} and currently marked as ${vehicle.status.toLowerCase()}.`}
+      backLabel={translate("Quay lại danh sách xe", "Back to vehicles", language)}
+      notice={`${translate("Xe đã tạo vào", "Vehicle created", language)} ${formatDateTime(vehicle.createdAt, locale)} ${translate("và hiện có trạng thái", "and currently marked as", language)} ${vehicle.status.toLowerCase()}.`}
     >
       <CustomerVehicleFormCard
         title={`${vehicle.brand} ${vehicle.model}`}
-        description="Update editable vehicle fields. Plate and type stay read-only because the backend update contract excludes them."
+        description={translate("Cập nhật các trường xe có thể chỉnh sửa. Biển số và loại xe chỉ đọc.", "Update editable vehicle fields. Plate and type stay read-only because the backend update contract excludes them.", language)}
         form={form}
         errors={submitErrors}
-        submitLabel="Save changes"
+        submitLabel={translate("Lưu thay đổi", "Save changes", language)}
         isSubmitting={updateMutation.isPending}
         disableIdentityFields
         onChange={(field, value) => {
@@ -276,7 +285,7 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
             {vehicle.isPrimary ? (
               <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
                 <Star className="mr-1 h-3.5 w-3.5" />
-                Primary vehicle
+                {translate("Xe chính", "Primary vehicle", language)}
               </span>
             ) : (
               <Button
@@ -289,12 +298,12 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
                 {setPrimaryMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
+                    {translate("Đang cập nhật...", "Updating...", language)}
                   </>
                 ) : (
                   <>
                     <Star className="mr-2 h-4 w-4" />
-                    Set primary
+                    {translate("Đặt làm xe chính", "Set primary", language)}
                   </>
                 )}
               </Button>
@@ -309,12 +318,12 @@ export function CustomerVehicleDetailClientPage({ vehicleId }: { vehicleId: stri
               {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Removing...
+                  {translate("Đang xóa...", "Removing...", language)}
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {translate("Xóa", "Delete", language)}
                 </>
               )}
             </Button>
@@ -364,10 +373,12 @@ function VehicleListCard({
   vehicle,
   isDeleting,
   onDeleteChange,
+  language,
 }: {
   vehicle: CustomerVehicleListItem;
   isDeleting: boolean;
   onDeleteChange: (vehicleId: string | null) => void;
+  language: "vi" | "en";
 }) {
   const router = useRouter();
   const setPrimaryMutation = useSetPrimaryCustomerVehicle(vehicle.vehicleId);
@@ -376,19 +387,19 @@ function VehicleListCard({
   const handleSetPrimary = async () => {
     try {
       await setPrimaryMutation.mutateAsync();
-      toast.success("Primary vehicle updated.");
+      toast.success(translate("Xe chính đã được cập nhật.", "Primary vehicle updated.", language));
     } catch {
-      toast.error("Unable to update primary vehicle.");
+      toast.error(translate("Không thể cập nhật xe chính.", "Unable to update primary vehicle.", language));
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync();
-      toast.success("Vehicle removed.");
+      toast.success(translate("Xe đã được xóa.", "Vehicle removed.", language));
       onDeleteChange(null);
     } catch {
-      toast.error("Unable to delete vehicle.");
+      toast.error(translate("Không thể xóa xe.", "Unable to delete vehicle.", language));
     }
   };
 
@@ -411,7 +422,7 @@ function VehicleListCard({
               {vehicle.isPrimary ? (
                 <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
                   <Star className="mr-1 h-3.5 w-3.5" />
-                  Primary
+                  {translate("Xe chính", "Primary", language)}
                 </span>
               ) : null}
             </div>
@@ -419,7 +430,7 @@ function VehicleListCard({
               {vehicle.brand} {vehicle.model}
             </div>
             <div className="text-sm text-slate-500">
-              Color: {vehicle.color ?? "Not provided"}
+              {translate("Màu sắc", "Color", language)}: {vehicle.color ?? translate("Chưa cung cấp", "Not provided", language)}
             </div>
           </div>
         </div>
@@ -431,7 +442,7 @@ function VehicleListCard({
             className="rounded-xl"
             onClick={() => router.push(`/customer/vehicles/${vehicle.vehicleId}`)}
           >
-            View details
+            {translate("Xem chi tiết", "View details", language)}
           </Button>
           <Button
             type="button"
@@ -443,12 +454,12 @@ function VehicleListCard({
             {setPrimaryMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
+                {translate("Đang cập nhật...", "Updating...", language)}
               </>
             ) : (
               <>
                 <Star className="mr-2 h-4 w-4" />
-                {vehicle.isPrimary ? "Primary" : "Set primary"}
+                {vehicle.isPrimary ? translate("Xe chính", "Primary", language) : translate("Đặt làm xe chính", "Set primary", language)}
               </>
             )}
           </Button>
@@ -464,10 +475,10 @@ function VehicleListCard({
                 {deleteMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Removing...
+                    {translate("Đang xóa...", "Removing...", language)}
                   </>
                 ) : (
-                  "Confirm delete"
+                  translate("Xác nhận xóa", "Confirm delete", language)
                 )}
               </Button>
               <Button
@@ -476,7 +487,7 @@ function VehicleListCard({
                 className="rounded-xl"
                 onClick={() => onDeleteChange(null)}
               >
-                Cancel
+                {translate("Huỷ", "Cancel", language)}
               </Button>
             </>
           ) : (
@@ -487,7 +498,7 @@ function VehicleListCard({
               onClick={() => onDeleteChange(vehicle.vehicleId)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {translate("Xóa", "Delete", language)}
             </Button>
           )}
         </div>
@@ -512,10 +523,12 @@ function VehiclePageErrorState({
   title,
   description,
   onRetry,
+  language,
 }: {
   title: string;
   description: string;
   onRetry: () => void;
+  language: "vi" | "en";
 }) {
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -527,7 +540,7 @@ function VehiclePageErrorState({
         <CardContent>
           <Button type="button" onClick={onRetry} variant="outline" className="rounded-xl">
             <RefreshCcw className="mr-2 h-4 w-4" />
-            Thử lại
+            {translate("Thử lại", "Retry", language)}
           </Button>
         </CardContent>
       </Card>
@@ -535,22 +548,21 @@ function VehiclePageErrorState({
   );
 }
 
-function VehicleEmptyState() {
+function VehicleEmptyState({ language }: { language: "vi" | "en" }) {
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <Card className="mx-auto max-w-4xl border-slate-200 bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
         <CardHeader>
-          <CardTitle className="text-slate-900">No vehicles saved yet</CardTitle>
+          <CardTitle className="text-slate-900">{translate("Chưa có xe nào được lưu", "No vehicles saved yet", language)}</CardTitle>
           <CardDescription>
-            The page stays connected to the real API and keeps the empty state explicit instead of
-            falling back to mock data.
+            {translate("Thêm xe của bạn để đặt lịch rửa xe nhanh hơn.", "The page stays connected to the real API and keeps the empty state explicit instead of falling back to mock data.", language)}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button asChild className="rounded-xl bg-slate-900 text-white hover:bg-slate-800">
             <Link href="/customer/vehicles/add">
               <Plus className="mr-2 h-4 w-4" />
-              Add first vehicle
+              {translate("Thêm xe đầu tiên", "Add first vehicle", language)}
             </Link>
           </Button>
         </CardContent>
@@ -583,8 +595,8 @@ function getSubmitErrors(
   return mergedErrors;
 }
 
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleDateString("vi-VN", {
+function formatDateTime(value: string, locale: string) {
+  return new Date(value).toLocaleDateString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

@@ -27,6 +27,46 @@ export async function registerCustomer(payload: RegisterRequest) {
 }
 
 export async function loginCustomer(payload: LoginRequest) {
+  // --- MOCK DEMO ACCOUNTS ---
+  const demoAccounts: Record<string, any> = {
+    "admin@demo.com": {
+      userId: "admin-id-demo",
+      fullName: "Admin Demo",
+      phone: "0123456789",
+      email: "admin@demo.com",
+      role: "ADMIN",
+      status: "ACTIVE",
+      accessToken: "mock-token-admin",
+      expiresIn: 3600 * 24
+    },
+    "staff@demo.com": {
+      userId: "staff-id-demo",
+      fullName: "Staff Demo",
+      phone: "0123456788",
+      email: "staff@demo.com",
+      role: "STAFF",
+      status: "ACTIVE",
+      accessToken: "mock-token-staff",
+      expiresIn: 3600 * 24
+    },
+    "customer@demo.com": {
+      userId: "customer-id-demo",
+      fullName: "Customer Demo",
+      phone: "0123456787",
+      email: "customer@demo.com",
+      role: "CUSTOMER",
+      status: "ACTIVE",
+      accessToken: "mock-token-customer",
+      expiresIn: 3600 * 24
+    }
+  };
+
+  if (demoAccounts[payload.email]) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return demoAccounts[payload.email] as LoginResponseData;
+  }
+  // --- END MOCK ---
+
   try {
     return await apiRequest<LoginResponseData, LoginRequest>({
       method: "POST",

@@ -25,14 +25,15 @@ import {
 import { useCustomerBookingDetail } from "@/features/customer/bookings/hooks/use-bookings";
 import { useCustomerProfile } from "@/features/customer/profile/hooks/use-customer-profile";
 import type { BookingAddonSelection, BookingDetail } from "@/features/customer/bookings/booking.types";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
   return booking.addons ?? booking.options ?? [];
 }
 
-function formatDisplayDate(value: string) {
+function formatDisplayDate(value: string, locale: string) {
   const [year, month, day] = value.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -41,20 +42,22 @@ function formatDisplayDate(value: string) {
 }
 
 export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string }) {
+  const { language } = useLanguageStore();
   const bookingQuery = useCustomerBookingDetail(bookingId);
   const profileQuery = useCustomerProfile();
+  const locale = language === "vi" ? "vi-VN" : "en-US";
 
   if (!bookingId) {
     return (
       <div className="px-4 py-6 sm:px-6 lg:px-8">
         <Card className="mx-auto max-w-3xl border-rose-200 bg-white">
           <CardHeader>
-            <CardTitle>Missing booking reference</CardTitle>
-            <CardDescription>No booking ID was provided for the success page.</CardDescription>
+            <CardTitle>{translate("Thiếu mã đặt lịch", "Missing booking reference", language)}</CardTitle>
+            <CardDescription>{translate("Không có mã đặt lịch nào được cung cấp.", "No booking ID was provided for the success page.", language)}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href="/customer/bookings/new">Create a booking</Link>
+              <Link href="/customer/bookings/new">{translate("Tạo đặt lịch", "Create a booking", language)}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -77,17 +80,17 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
       <div className="px-4 py-6 sm:px-6 lg:px-8">
         <Card className="mx-auto max-w-3xl border-rose-200 bg-white">
           <CardHeader>
-            <CardTitle>Unable to load booking success details</CardTitle>
+            <CardTitle>{translate("Không thể tải thông tin đặt lịch", "Unable to load booking success details", language)}</CardTitle>
             <CardDescription>
-              {bookingQuery.isError ? getDisplayErrorMessage(bookingQuery.error) : "Booking not found."}
+              {bookingQuery.isError ? getDisplayErrorMessage(bookingQuery.error) : translate("Không tìm thấy đặt lịch.", "Booking not found.", language)}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button asChild variant="outline">
-              <Link href="/customer/home">Go home</Link>
+              <Link href="/customer/home">{translate("Về trang chủ", "Go home", language)}</Link>
             </Button>
             <Button asChild>
-              <Link href="/customer/bookings/new">Create another booking</Link>
+              <Link href="/customer/bookings/new">{translate("Tạo đặt lịch mới", "Create another booking", language)}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -97,22 +100,22 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
 
   const booking = bookingQuery.data;
   const bookingOptions = getBookingOptions(booking);
-  const customerName = booking.customerName || profileQuery.data?.fullName || "Customer";
-  const customerPhone = booking.customerPhone || profileQuery.data?.phone || "No phone number";
-  const customerEmail = profileQuery.data?.email || "your email";
-  const placedDate = new Date(booking.createdAt || Date.now()).toLocaleDateString("en-US", {
+  const customerName = booking.customerName || profileQuery.data?.fullName || translate("Khách hàng", "Customer", language);
+  const customerPhone = booking.customerPhone || profileQuery.data?.phone || translate("Chưa có số điện thoại", "No phone number", language);
+  const customerEmail = profileQuery.data?.email || translate("email của bạn", "your email", language);
+  const placedDate = new Date(booking.createdAt || Date.now()).toLocaleDateString(locale, {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-  const expectedDate = formatDisplayDate(booking.scheduling.bookingDate);
+  const expectedDate = formatDisplayDate(booking.scheduling.bookingDate, locale);
 
   const progressSteps = [
-    { number: 1, title: "BOOKING CREATED", subtitle: "Email sent", active: true },
-    { number: 2, title: "CHECKED IN", subtitle: "Vehicle at bay", active: false },
-    { number: 3, title: "WASHING", subtitle: "In progress", active: false },
-    { number: 4, title: "QUALITY CHECK", subtitle: "Inspection", active: false },
-    { number: 5, title: "COMPLETED", subtitle: "Ready for pickup", active: false },
+    { number: 1, title: translate("ĐẶT LỊCH THÀNH CÔNG", "BOOKING CREATED", language), subtitle: translate("Email đã gửi", "Email sent", language), active: true },
+    { number: 2, title: translate("ĐÃ NHẬN XE", "CHECKED IN", language), subtitle: translate("Xe tại vịnh rửa", "Vehicle at bay", language), active: false },
+    { number: 3, title: translate("ĐANG RỬA", "WASHING", language), subtitle: translate("Đang thực hiện", "In progress", language), active: false },
+    { number: 4, title: translate("KIỂM TRA CHẤT LƯỢNG", "QUALITY CHECK", language), subtitle: translate("Kiểm tra", "Inspection", language), active: false },
+    { number: 5, title: translate("HOÀN THÀNH", "COMPLETED", language), subtitle: translate("Sẵn sàng nhận xe", "Ready for pickup", language), active: false },
   ];
 
   return (
@@ -122,9 +125,9 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
           <div className="flex items-center gap-6">
             <span className="text-xl font-black tracking-wider text-slate-800">AUTOWASH</span>
             <div className="hidden space-x-4 text-xs font-semibold uppercase tracking-wider text-slate-500 sm:flex">
-              <span>Services</span>
-              <span>Combos</span>
-              <span>Promotions</span>
+              <span>{translate("Dịch vụ", "Services", language)}</span>
+              <span>{translate("Combo", "Combos", language)}</span>
+              <span>{translate("Khuyến mãi", "Promotions", language)}</span>
             </div>
           </div>
           <span className="text-sm font-medium text-slate-600">{customerName}</span>
@@ -139,13 +142,16 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white text-emerald-600 shadow-xl">
                   <Check className="h-12 w-12 stroke-[4]" />
                 </div>
-                <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/75">Thank You</p>
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/75">{translate("Cảm ơn bạn", "Thank You", language)}</p>
                 <h1 className="mt-2 text-2xl font-extrabold uppercase tracking-wide sm:text-3xl">
-                  Booking Created Successfully
+                  {translate("Đặt lịch thành công!", "Booking Created Successfully", language)}
                 </h1>
                 <p className="mt-4 max-w-md text-center text-sm leading-relaxed text-emerald-50">
-                  We sent a confirmation email to{" "}
-                  <span className="font-semibold underline">{customerEmail}</span>. Please check your inbox for the booking details.
+                  {translate(
+                    <>Chúng tôi đã gửi email xác nhận đến <span className="font-semibold underline">{customerEmail}</span>. Vui lòng kiểm tra hộp thư.</>,
+                    <>We sent a confirmation email to <span className="font-semibold underline">{customerEmail}</span>. Please check your inbox for the booking details.</>,
+                    language,
+                  )}
                 </p>
               </div>
             </div>
@@ -154,18 +160,18 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
               <CardHeader>
                 <div className="flex items-center gap-3 text-emerald-800">
                   <Mail className="h-5 w-5" />
-                  <CardTitle>Confirmation email sent</CardTitle>
+                  <CardTitle>{translate("Email xác nhận đã gửi", "Confirmation email sent", language)}</CardTitle>
                 </div>
                 <CardDescription>
-                  Your booking is saved and ready for check-in at the scheduled time.
+                  {translate("Đặt lịch đã được lưu và sẵn sàng để nhận xe vào thời gian đã hẹn.", "Your booking is saved and ready for check-in at the scheduled time.", language)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
                 <Button type="button" variant="outline" onClick={() => void bookingQuery.refetch()}>
-                  Refresh booking
+                  {translate("Làm mới đặt lịch", "Refresh booking", language)}
                 </Button>
                 <Button asChild>
-                  <Link href={`/customer/bookings/${booking.bookingId}`}>View booking detail</Link>
+                  <Link href={`/customer/bookings/${booking.bookingId}`}>{translate("Xem chi tiết đặt lịch", "View booking detail", language)}</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -175,16 +181,16 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h3 className="text-lg font-semibold leading-7 text-slate-950">
-                      Booking <span className="font-mono text-emerald-600">#{booking.confirmationNumber}</span>
+                      {translate("Đặt lịch", "Booking")} <span className="font-mono text-emerald-600">#{booking.confirmationNumber}</span>
                     </h3>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      Placed on <span className="font-semibold text-slate-800">{placedDate}</span>. Status:{" "}
+                      {translate("Tạo vào", "Placed on", language)} <span className="font-semibold text-slate-800">{placedDate}</span>. {translate("Trạng thái:", "Status:", language)}{" "}
                       <span className="font-semibold text-slate-800">{humanizeCode(booking.status)}</span>.
                     </p>
                   </div>
                   <span className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    Email confirmation
+                    {translate("Xác nhận qua email", "Email confirmation", language)}
                   </span>
                 </div>
 
@@ -216,17 +222,17 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 <div className="flex flex-col gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Expected wash time
+                      {translate("Thời gian rửa dự kiến", "Expected wash time", language)}
                     </div>
                     <div className="mt-1 text-sm font-semibold text-slate-900">
-                      {expectedDate} at {booking.scheduling.bookingTime}
+                      {expectedDate} {translate("lúc", "at", language)} {booking.scheduling.bookingTime}
                     </div>
                   </div>
                   <Link
                     href={`/customer/bookings/${booking.bookingId}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 transition hover:border-indigo-200 hover:bg-indigo-100"
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-700 transition hover:border-sky-200 hover:bg-sky-100"
                   >
-                    Track Your Booking <ArrowRight className="h-4 w-4" />
+                    {translate("Theo dõi đặt lịch", "Track Your Booking", language)} <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </CardContent>
@@ -234,13 +240,13 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
 
             <div className="flex flex-wrap gap-4 pt-2">
               <Button asChild className="rounded-xl px-5 py-2.5 font-semibold">
-                <Link href={`/customer/bookings/${booking.bookingId}`}>View Booking Detail</Link>
+                <Link href={`/customer/bookings/${booking.bookingId}`}>{translate("Xem chi tiết đặt lịch", "View Booking Detail", language)}</Link>
               </Button>
               <Button asChild variant="outline" className="rounded-xl border-slate-200 bg-white px-5 py-2.5 font-semibold text-slate-700 hover:bg-slate-50">
-                <Link href="/customer/bookings">Back to Bookings List</Link>
+                <Link href="/customer/bookings">{translate("Danh sách đặt lịch", "Back to Bookings List", language)}</Link>
               </Button>
               <Button asChild variant="ghost" className="rounded-xl font-semibold text-slate-500 hover:text-slate-700">
-                <Link href="/customer/bookings/new">Book Another Service</Link>
+                <Link href="/customer/bookings/new">{translate("Đặt dịch vụ khác", "Book Another Service", language)}</Link>
               </Button>
             </div>
           </div>
@@ -251,7 +257,7 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Order Detail
+                      {translate("Chi tiết đơn hàng", "Order Detail", language)}
                     </span>
                     <h2 className="mt-0.5 text-xl font-extrabold text-slate-900">#{booking.confirmationNumber}</h2>
                   </div>
@@ -260,11 +266,11 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                     className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
                   >
                     <Download className="h-3 w-3" />
-                    <span>Receipt</span>
+                    <span>{translate("Biên lai", "Receipt", language)}</span>
                   </button>
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-slate-200/60 pt-3 text-xs text-slate-500">
-                  <span>Method: {getPaymentMethodLabel(booking.payment.method)}</span>
+                  <span>{translate("Phương thức", "Method", language)}: {getPaymentMethodLabel(booking.payment.method)}</span>
                   <span className="rounded bg-emerald-50 px-2 py-0.5 font-bold uppercase tracking-wide text-emerald-700">
                     {getPaymentStatusLabel(booking.payment.status)}
                   </span>
@@ -272,22 +278,22 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
               </div>
 
               <div className="space-y-6 p-6">
-                <SidebarBlock icon={<Car className="h-4 w-4" />} title="Vehicle Details">
+                <SidebarBlock icon={<Car className="h-4 w-4" />} title={translate("Thông tin xe", "Vehicle Details", language)}>
                   <h4 className="text-sm font-bold text-slate-800">
                     {booking.vehicleBrand} {booking.vehicleModel}
                   </h4>
                   <p className="font-mono text-xs uppercase tracking-wider text-slate-500">
-                    Plate: {booking.vehiclePlate}
+                    {translate("Biển số", "Plate", language)}: {booking.vehiclePlate}
                   </p>
                 </SidebarBlock>
 
-                <SidebarBlock icon={<Calendar className="h-4 w-4" />} title="Schedule Details">
-                  <DetailLine label="Date" value={booking.scheduling.bookingDate} />
-                  <DetailLine label="Time Window" value={booking.scheduling.bookingTime} />
-                  <DetailLine label="Est. Duration" value={`${booking.scheduling.estimatedDuration} mins`} />
+                <SidebarBlock icon={<Calendar className="h-4 w-4" />} title={translate("Chi tiết lịch hẹn", "Schedule Details", language)}>
+                  <DetailLine label={translate("Ngày", "Date", language)} value={booking.scheduling.bookingDate} />
+                  <DetailLine label={translate("Khung giờ", "Time Window", language)} value={booking.scheduling.bookingTime} />
+                  <DetailLine label={translate("Thời lượng ước tính", "Est. Duration", language)} value={`${booking.scheduling.estimatedDuration} ${translate("phút", "mins", language)}`} />
                 </SidebarBlock>
 
-                <SidebarBlock icon={<User className="h-4 w-4" />} title="Contact Details">
+                <SidebarBlock icon={<User className="h-4 w-4" />} title={translate("Thông tin liên hệ", "Contact Details", language)}>
                   <div className="font-semibold text-slate-800">{customerName}</div>
                   <p className="flex items-center gap-1.5 text-xs text-slate-500">
                     <Phone className="h-3 w-3" />
@@ -299,8 +305,8 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                   </p>
                 </SidebarBlock>
 
-                <SidebarBlock icon={<FileText className="h-4 w-4" />} title="Order Summary">
-                  <SummaryLine label={booking.packageName ?? "Service"} value={formatBookingCurrency(booking.pricing.basePrice)} />
+                <SidebarBlock icon={<FileText className="h-4 w-4" />} title={translate("Tóm tắt đơn hàng", "Order Summary", language)}>
+                  <SummaryLine label={booking.packageName ?? translate("Dịch vụ", "Service", language)} value={formatBookingCurrency(booking.pricing.basePrice)} />
                   {bookingOptions.map((addon) => (
                     <SummaryLine
                       key={addon.addonId}
@@ -309,11 +315,11 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                       muted
                     />
                   ))}
-                  <SummaryLine label="Subtotal" value={formatBookingCurrency(booking.pricing.subtotal)} muted />
+                  <SummaryLine label={translate("Tạm tính", "Subtotal", language)} value={formatBookingCurrency(booking.pricing.subtotal)} muted />
                   {booking.pricing.voucherDiscount > 0 ? (
-                    <SummaryLine label="Voucher Discount" value={`-${formatBookingCurrency(booking.pricing.voucherDiscount)}`} muted />
+                    <SummaryLine label={translate("Giảm voucher", "Voucher Discount", language)} value={`-${formatBookingCurrency(booking.pricing.voucherDiscount)}`} muted />
                   ) : null}
-                  <SummaryLine label="Total" value={formatBookingCurrency(booking.pricing.finalAmount)} strong />
+                  <SummaryLine label={translate("Tổng cộng", "Total", language)} value={formatBookingCurrency(booking.pricing.finalAmount)} strong />
                 </SidebarBlock>
               </div>
             </Card>

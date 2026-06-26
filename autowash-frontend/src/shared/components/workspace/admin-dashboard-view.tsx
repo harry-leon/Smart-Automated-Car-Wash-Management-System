@@ -21,15 +21,16 @@ import { WorkspacePage } from "@/shared/components/workspace/workspace-page";
 import { getOperationsQueue } from "@/features/staff/operations/lib/operations-service";
 import { useAdminDashboardMetrics } from "@/features/admin/dashboard/hooks/use-admin-dashboard-metrics";
 import { cn } from "@/shared/lib/utils";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 const QUICK_LINKS = [
-  { href: "/admin/operations", label: "Operations", icon: Droplets, color: "text-blue-600 bg-blue-50" },
-  { href: "/admin/bookings", label: "Bookings", icon: CalendarDays, color: "text-indigo-600 bg-indigo-50" },
-  { href: "/admin/accounts", label: "Accounts", icon: Users, color: "text-emerald-600 bg-emerald-50" },
-  { href: "/admin/services", label: "Services", icon: Package, color: "text-rose-600 bg-rose-50" },
-  { href: "/admin/offers?tab=promotions", label: "Promotions", icon: BadgePercent, color: "text-purple-600 bg-purple-50" },
-  { href: "/admin/offers?tab=vouchers", label: "Vouchers", icon: Ticket, color: "text-pink-600 bg-pink-50" },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3, color: "text-teal-600 bg-teal-50" },
+  { href: "/admin/operations", labelVi: "Vận hành", labelEn: "Operations", icon: Droplets, color: "text-blue-600 bg-blue-50" },
+  { href: "/admin/bookings", labelVi: "Đặt lịch", labelEn: "Bookings", icon: CalendarDays, color: "text-indigo-600 bg-indigo-50" },
+  { href: "/admin/accounts", labelVi: "Tài khoản", labelEn: "Accounts", icon: Users, color: "text-emerald-600 bg-emerald-50" },
+  { href: "/admin/services", labelVi: "Dịch vụ", labelEn: "Services", icon: Package, color: "text-rose-600 bg-rose-50" },
+  { href: "/admin/offers?tab=promotions", labelVi: "Khuyến mãi", labelEn: "Promotions", icon: BadgePercent, color: "text-purple-600 bg-purple-50" },
+  { href: "/admin/offers?tab=vouchers", labelVi: "Vouchers", labelEn: "Vouchers", icon: Ticket, color: "text-pink-600 bg-pink-50" },
+  { href: "/admin/reports", labelVi: "Báo cáo", labelEn: "Reports", icon: BarChart3, color: "text-teal-600 bg-teal-50" },
 ];
 
 function formatRevenue(amount: number): string {
@@ -43,6 +44,7 @@ function formatRevenue(amount: number): string {
 }
 
 export function AdminDashboardView() {
+  const { language } = useLanguageStore();
   const queueQuery = useQuery({
     queryKey: ["admin-dashboard", "queue"],
     queryFn: getOperationsQueue,
@@ -62,30 +64,30 @@ export function AdminDashboardView() {
 
   const kpiCards = [
     {
-      label: "Total bookings",
+      label: translate(language, "Tổng số đặt lịch", "Total bookings"),
       value: `${metrics?.totalBookings ?? 0}`,
-      delta: "All booking requests",
+      delta: translate(language, "Tất cả yêu cầu đặt lịch", "All booking requests"),
       icon: CalendarDays,
       tone: "text-sky-700 bg-sky-50",
     },
     {
-      label: "Revenue (VND)",
+      label: translate(language, "Doanh thu (VNĐ)", "Revenue (VND)"),
       value: `${formatRevenue(metrics?.totalRevenue ?? 0)}`,
-      delta: "Paid bookings",
+      delta: translate(language, "Các lịch đã thanh toán", "Paid bookings"),
       icon: DollarSign,
       tone: "text-emerald-700 bg-emerald-50",
     },
     {
-      label: "Customers",
+      label: translate(language, "Khách hàng", "Customers"),
       value: `${metrics?.totalCustomers ?? 0}`,
-      delta: "Total customer accounts",
+      delta: translate(language, "Tổng số tài khoản khách", "Total customer accounts"),
       icon: Users,
       tone: "text-violet-700 bg-violet-50",
     },
     {
-      label: "Active promotions",
+      label: translate(language, "Khuyến mãi đang chạy", "Active promotions"),
       value: `${metrics?.activePromotions ?? 0}`,
-      delta: "Currently running campaigns",
+      delta: translate(language, "Các chiến dịch đang diễn ra", "Currently running campaigns"),
       icon: BadgePercent,
       tone: "text-orange-700 bg-orange-50",
     },
@@ -93,16 +95,16 @@ export function AdminDashboardView() {
 
   const liveCards = [
     {
-      label: "Current queue",
+      label: translate(language, "Hàng đợi hiện tại", "Current queue"),
       value: `${summary.pending + summary.checkedIn + summary.inProgress}`,
-      delta: "Live sessions in progress",
+      delta: translate(language, "Phiên rửa xe đang diễn ra", "Live sessions in progress"),
       icon: Droplets,
       tone: "text-blue-700 bg-blue-50",
     },
     {
-      label: "Completed today",
+      label: translate(language, "Hoàn thành hôm nay", "Completed today"),
       value: `${summary.completed}`,
-      delta: "Live wash sessions",
+      delta: translate(language, "Các phiên đã rửa", "Live wash sessions"),
       icon: TrendingUp,
       tone: "text-teal-700 bg-teal-50",
     },
@@ -113,12 +115,12 @@ export function AdminDashboardView() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Overview metrics
+            {translate(language, "Chỉ số tổng quan", "Overview metrics")}
           </h2>
           {metricsQuery.isError && (
             <span className="flex items-center gap-1 text-xs text-rose-600">
               <AlertCircle className="h-3.5 w-3.5" />
-              Failed to load metrics
+              {translate(language, "Không thể tải dữ liệu", "Failed to load metrics")}
             </span>
           )}
         </div>
@@ -132,7 +134,7 @@ export function AdminDashboardView() {
       <section>
         <div className="mb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Live operations
+            {translate(language, "Hoạt động trực tiếp", "Live operations")}
           </h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -145,7 +147,7 @@ export function AdminDashboardView() {
       <section>
         <Card className="border-border/70 bg-card/95 p-8 shadow-sm">
           <div className="text-center sm:text-left">
-            <h2 className="text-lg font-bold">Quick actions</h2>
+            <h2 className="text-lg font-bold">{translate(language, "Thao tác nhanh", "Quick actions")}</h2>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
             {QUICK_LINKS.map((link) => {
@@ -159,7 +161,7 @@ export function AdminDashboardView() {
                   <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", link.color)}>
                     <Icon className="h-6 w-6" />
                   </div>
-                  <span className="text-[13px] font-semibold text-slate-700 group-hover:text-slate-900">{link.label}</span>
+                  <span className="text-[13px] font-semibold text-slate-700 group-hover:text-slate-900">{translate(language, link.labelVi, link.labelEn)}</span>
                 </Link>
               );
             })}

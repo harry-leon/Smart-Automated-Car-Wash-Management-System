@@ -11,12 +11,12 @@ import { useActiveWashTracking, useCustomerBookingDetail } from "@/features/cust
 import { ApplyPointsPanel } from "@/features/customer/bookings/components/apply-points-panel";
 import type { WashTrackingSession } from "@/features/customer/bookings/booking.types";
 
-type TrackingLanguage = "vi" | "en";
+import { useLanguageStore } from "@/shared/store/language.store";
 
-const LANGUAGE_STORAGE_KEY = "customer-wash-tracking-language";
+type TrackingLanguage = "vi" | "en";
 const STEPS: Array<WashTrackingSession["status"]> = ["PENDING", "QUEUED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
 
-const STATUS_LABELS: Record<TrackingLanguage, Partial<Record<WashTrackingSession["status"], string>>> = {
+const STATUS_LABELS: Record<"vi" | "en", Partial<Record<WashTrackingSession["status"], string>>> = {
   vi: {
     PENDING: "Chờ duyệt",
     QUEUED: "Đang xếp hàng",
@@ -111,22 +111,14 @@ const COPY = {
 } as const;
 
 export function CustomerWashTrackingPage() {
-  const [language, setLanguage] = useState<TrackingLanguage>("vi");
+  const { language, setLanguage } = useLanguageStore();
   const copy = COPY[language];
   const activeQuery = useActiveWashTracking();
   const activeSession = activeQuery.data ?? null;
   const bookingQuery = useCustomerBookingDetail(activeSession?.bookingId ?? "");
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (stored === "vi" || stored === "en") {
-      setLanguage(stored);
-    }
-  }, []);
-
-  function handleLanguageChange(nextLanguage: TrackingLanguage) {
+  function handleLanguageChange(nextLanguage: "vi" | "en") {
     setLanguage(nextLanguage);
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
   }
 
   return (

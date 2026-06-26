@@ -9,8 +9,10 @@ import { AdminPromotionsPageContent } from "@/features/admin/promotions/componen
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { WorkspacePage } from "@/shared/components/workspace/workspace-page";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 export function AdminOffersManagementPage() {
+  const { language } = useLanguageStore();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab");
   const hasSelectedTab = currentTab === "promotions" || currentTab === "vouchers";
@@ -24,7 +26,7 @@ export function AdminOffersManagementPage() {
               <Gift className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle>Offers Management</CardTitle>
+              <CardTitle>{translate(language, "Quản lý Ưu đãi", "Offers Management")}</CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -35,7 +37,7 @@ export function AdminOffersManagementPage() {
               tabs={[
                 {
                   value: "promotions",
-                  label: "Promotions",
+                  label: translate(language, "Khuyến mãi", "Promotions"),
                   content: <AdminPromotionsPageContent />,
                 },
                 {
@@ -49,24 +51,22 @@ export function AdminOffersManagementPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <OfferEntryCard
                 icon={BadgePercent}
-                title="Promotions"
-                description="Open the existing promotion CRUD flow inside the new offers management shell."
+                title={translate(language, "Khuyến mãi", "Promotions")}
+                description={translate(language, "Quản lý các chương trình khuyến mãi hiện hành.", "Open the existing promotion CRUD flow inside the new offers management shell.")}
                 href="/admin/offers?tab=promotions"
-                cta="Open promotions"
+                cta={translate(language, "Mở Khuyến mãi", "Open promotions")}
               />
               <OfferEntryCard
                 icon={Ticket}
                 title="Vouchers"
-                description="Review voucher catalogue and inspect point-to-voucher redemption history for admin reconciliation."
+                description={translate(language, "Xem danh sách voucher và quản lý đổi điểm lấy voucher của khách hàng.", "Review voucher catalogue and inspect point-to-voucher redemption history for admin reconciliation.")}
                 href="/admin/offers?tab=vouchers"
-                cta="Open vouchers"
+                cta={translate(language, "Mở Vouchers", "Open vouchers")}
               />
             </div>
           )}
         </CardContent>
       </Card>
-
-
     </WorkspacePage>
   );
 }
@@ -92,7 +92,7 @@ function OfferEntryCard({
         </div>
         <div>
           <div className="text-lg font-bold text-foreground">{title}</div>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+          <p className="hidden mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
         <Button asChild type="button">
           <Link href={href}>{cta}</Link>
@@ -119,7 +119,7 @@ function SummaryCard({
         </div>
         <div>
           <div className="text-sm font-bold text-foreground">{title}</div>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
+          <p className="hidden mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
       </CardContent>
     </Card>

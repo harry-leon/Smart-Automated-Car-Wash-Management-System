@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/shared/components/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { useAdminAccountDetail, useUpdateAdminCustomerRole } from "@/features/admin/reports/hooks/use-admin-reporting";
 import type { AdminEditableAccountRole } from "@/features/admin/reports/admin-reporting.types";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 type AdminAccountDetailPageContentProps = {
   accountId: string;
@@ -18,8 +19,26 @@ type AdminAccountDetailPageContentProps = {
 
 const ROLE_OPTIONS: AdminEditableAccountRole[] = ["CUSTOMER", "STAFF", "ADMIN"];
 
+function translateEnumLabel(value: string, lang: "vi" | "en") {
+  const map: Record<string, { vi: string; en: string }> = {
+    CUSTOMER: { vi: "Khách hàng", en: "Customer" },
+    STAFF: { vi: "Nhân viên", en: "Staff" },
+    ADMIN: { vi: "Quản trị viên", en: "Admin" },
+    GUEST: { vi: "Khách vãng lai", en: "Guest" },
+    ACTIVE: { vi: "Hoạt động", en: "Active" },
+    BLOCKED: { vi: "Đã khóa", en: "Blocked" },
+    SUSPENDED: { vi: "Tạm ngưng", en: "Suspended" },
+    MEMBER: { vi: "Thành viên", en: "Member" },
+    SILVER: { vi: "Bạc", en: "Silver" },
+    GOLD: { vi: "Vàng", en: "Gold" },
+    PLATINUM: { vi: "Bạch kim", en: "Platinum" },
+  };
+  return map[value]?.[lang] || value;
+}
+
 export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailPageContentProps) {
   const router = useRouter();
+  const { language } = useLanguageStore();
   const detailQuery = useAdminAccountDetail(accountId);
   const updateRoleMutation = useUpdateAdminCustomerRole(accountId);
   const [roleDraft, setRoleDraft] = useState<AdminEditableAccountRole>("CUSTOMER");
@@ -38,19 +57,19 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
       <div className="mx-auto flex max-w-5xl flex-col gap-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Admin / Accounts</p>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">Account detail</h1>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{translate(language, "Admin / Tài khoản", "Admin / Accounts")}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-950">{translate(language, "Chi tiết tài khoản", "Account detail")}</h1>
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline" className="h-9 gap-2">
               <Link href="/admin/accounts">
                 <ArrowLeft className="h-4 w-4" />
-                Back to list
+                {translate(language, "Quay lại danh sách", "Back to list")}
               </Link>
             </Button>
             <Button type="button" variant="outline" className="h-9 gap-2" onClick={() => void detailQuery.refetch()}>
               <RefreshCcw className="h-4 w-4" />
-              Refresh
+              {translate(language, "Làm mới", "Refresh")}
             </Button>
           </div>
         </div>
@@ -58,7 +77,7 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
         {detailQuery.isPending ? (
           <Card className="rounded-md border-slate-200 bg-white shadow-sm">
             <CardContent className="p-5">
-              <LoadingInline message="Loading account..." />
+              <LoadingInline message={translate(language, "Đang tải thông tin tài khoản...", "Loading account...")} />
             </CardContent>
           </Card>
         ) : detailQuery.isError ? (
@@ -70,7 +89,7 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
         ) : !account ? (
           <Card className="rounded-md border-slate-200 bg-white shadow-sm">
             <CardContent className="p-5">
-              <EmptyInline message="Account not found." />
+              <EmptyInline message={translate(language, "Không tìm thấy tài khoản.", "Account not found.")} />
             </CardContent>
           </Card>
         ) : (
@@ -84,21 +103,21 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                   <h2 className="mt-3 text-lg font-semibold text-slate-950">{account.fullName}</h2>
                   <p className="text-sm text-slate-500">{account.phone}</p>
                   <div className="mt-3 flex flex-wrap justify-center gap-2">
-                    <StatusBadge value={account.role} />
-                    <StatusBadge value={account.status} />
-                    <StatusBadge value={account.tier} />
+                    <StatusBadge value={account.role} language={language as "vi" | "en"} />
+                    <StatusBadge value={account.status} language={language as "vi" | "en"} />
+                    <StatusBadge value={account.tier} language={language as "vi" | "en"} />
                   </div>
                 </div>
 
                 <div className="space-y-2 border-t border-slate-200 pt-4 text-sm">
-                  <InfoRow label="Email" value={account.email ?? "No email"} />
-                  <InfoRow label="Joined" value={formatDateTime(account.createdAt)} />
-                  <InfoRow label="Updated" value={formatDateTime(account.updatedAt)} />
+                  <InfoRow label="Email" value={account.email ?? translate(language, "Không có email", "No email")} />
+                  <InfoRow label={translate(language, "Ngày tham gia", "Joined")} value={formatDateTime(account.createdAt, language as "vi" | "en")} />
+                  <InfoRow label={translate(language, "Cập nhật", "Updated")} value={formatDateTime(account.updatedAt, language as "vi" | "en")} />
                 </div>
 
                 <div className="space-y-3 border-t border-slate-200 pt-4">
                   <label className="space-y-1.5">
-                    <span className="text-xs font-medium text-slate-500">Account role</span>
+                    <span className="text-xs font-medium text-slate-500">{translate(language, "Vai trò tài khoản", "Account role")}</span>
                     <select
                       className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
                       value={roleDraft}
@@ -106,7 +125,7 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                     >
                       {ROLE_OPTIONS.map((role) => (
                         <option key={role} value={role}>
-                          {formatEnumLabel(role)}
+                          {translateEnumLabel(role, language as "vi" | "en")}
                         </option>
                       ))}
                     </select>
@@ -120,7 +139,7 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                       void updateRoleMutation
                         .mutateAsync({ role: roleDraft })
                         .then((result) => {
-                          setFeedback("Role updated.");
+                          setFeedback(translate(language, "Cập nhật vai trò thành công.", "Role updated."));
                           if (result.role !== "CUSTOMER") {
                             router.replace("/admin/accounts");
                           } else {
@@ -133,7 +152,9 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                     }}
                     disabled={updateRoleMutation.isPending}
                   >
-                    {updateRoleMutation.isPending ? "Updating..." : "Update role"}
+                    {updateRoleMutation.isPending 
+                      ? translate(language, "Đang cập nhật...", "Updating...") 
+                      : translate(language, "Cập nhật vai trò", "Update role")}
                   </Button>
                   {feedback ? <p className="text-xs text-slate-600">{feedback}</p> : null}
                 </div>
@@ -142,14 +163,14 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
 
             <Card className="rounded-md border-slate-200 bg-white shadow-sm">
               <CardContent className="p-5">
-                <h2 className="text-base font-semibold text-slate-950">Account information</h2>
+                <h2 className="text-base font-semibold text-slate-950">{translate(language, "Thông tin tài khoản", "Account information")}</h2>
                 <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-                  <DetailField label="Full name" value={account.fullName} />
-                  <DetailField label="Phone number" value={account.phone} />
-                  <DetailField label="Email address" value={account.email ?? "No email"} />
-                  <DetailField label="Role" value={<StatusBadge value={account.role} />} />
-                  <DetailField label="Status" value={<StatusBadge value={account.status} />} />
-                  <DetailField label="Tier" value={<StatusBadge value={account.tier} />} />
+                  <DetailField label={translate(language, "Họ tên", "Full name")} value={account.fullName} />
+                  <DetailField label={translate(language, "Số điện thoại", "Phone number")} value={account.phone} />
+                  <DetailField label={translate(language, "Địa chỉ email", "Email address")} value={account.email ?? translate(language, "Không có email", "No email")} />
+                  <DetailField label={translate(language, "Vai trò", "Role")} value={<StatusBadge value={account.role} language={language as "vi" | "en"} />} />
+                  <DetailField label={translate(language, "Trạng thái", "Status")} value={<StatusBadge value={account.status} language={language as "vi" | "en"} />} />
+                  <DetailField label={translate(language, "Hạng thành viên", "Tier")} value={<StatusBadge value={account.tier} language={language as "vi" | "en"} />} />
                 </div>
               </CardContent>
             </Card>
@@ -178,26 +199,18 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatusBadge({ value }: { value: string }) {
+function StatusBadge({ value, language }: { value: string; language: "vi" | "en" }) {
   const tone = STATUS_TONE[value] ?? "border-slate-300 bg-slate-100 text-slate-700";
 
   return (
     <Badge className={tone} variant="outline">
-      {formatEnumLabel(value)}
+      {translateEnumLabel(value, language)}
     </Badge>
   );
 }
 
-function formatEnumLabel(value: string) {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString("en-US", {
+function formatDateTime(value: string, language: "vi" | "en") {
+  return new Date(value).toLocaleString(language === "vi" ? "vi-VN" : "en-US", {
     year: "numeric",
     month: "short",
     day: "2-digit",

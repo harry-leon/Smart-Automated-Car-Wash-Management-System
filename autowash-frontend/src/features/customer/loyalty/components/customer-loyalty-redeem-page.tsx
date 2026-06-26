@@ -10,20 +10,23 @@ import { Label } from "@/shared/components/ui/label";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { useCustomerLoyaltyAccount, useCustomerRedeemPoints } from "@/features/customer/loyalty/hooks/use-customer-loyalty";
 import type { RedeemPointsResponse } from "@/features/customer/loyalty/loyalty.types";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 const MIN_REDEEM_POINTS = 50;
 const MAX_REDEEM_POINTS = 200;
 const VND_PER_POINT = 1_000;
 
 export function CustomerLoyaltyRedeemPageContent() {
+  const { language } = useLanguageStore();
   const accountQuery = useCustomerLoyaltyAccount();
   const redeemMutation = useCustomerRedeemPoints();
   const [pointsInput, setPointsInput] = useState("50");
   const [referenceId, setReferenceId] = useState("");
   const [successVoucher, setSuccessVoucher] = useState<RedeemPointsResponse | null>(null);
+  const locale = language === "vi" ? "vi-VN" : "en-US";
 
   const points = useMemo(() => Number.parseInt(pointsInput, 10), [pointsInput]);
-  const validationMessage = getValidationMessage(pointsInput, points, accountQuery.data?.availablePoints ?? null);
+  const validationMessage = getValidationMessage(pointsInput, points, accountQuery.data?.availablePoints ?? null, language);
   const estimatedVnd = Number.isFinite(points) ? Math.max(points, 0) * VND_PER_POINT : 0;
   const remainingBalance =
     accountQuery.data && Number.isFinite(points) ? accountQuery.data.availablePoints - Math.max(points, 0) : null;
@@ -58,11 +61,11 @@ export function CustomerLoyaltyRedeemPageContent() {
         <Card className="border-slate-200 bg-white">
           <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <CardTitle>Redeem loyalty points</CardTitle>
+              <CardTitle>{translate("Đổi điểm tích lũy", "Redeem loyalty points", language)}</CardTitle>
             </div>
             <Button type="button" variant="outline" onClick={() => accountQuery.refetch()} disabled={accountQuery.isFetching}>
               <RefreshCcw className="mr-2 h-4 w-4" />
-              Refresh balance
+              {translate("Tải lại số dư", "Refresh balance", language)}
             </Button>
           </CardHeader>
         </Card>
@@ -71,7 +74,7 @@ export function CustomerLoyaltyRedeemPageContent() {
         {accountQuery.isError ? (
           <Card className="border-rose-200 bg-white">
             <CardHeader>
-              <CardTitle>Unable to load loyalty balance</CardTitle>
+              <CardTitle>{translate("Không thể tải số dư tích điểm", "Unable to load loyalty balance", language)}</CardTitle>
               <CardDescription>{getDisplayErrorMessage(accountQuery.error)}</CardDescription>
             </CardHeader>
           </Card>
@@ -81,12 +84,12 @@ export function CustomerLoyaltyRedeemPageContent() {
           <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <Card className="border-slate-200 bg-white">
               <CardHeader>
-                <CardTitle>Redeem form</CardTitle>
-                <CardDescription>Submit redemption against your current loyalty wallet balance.</CardDescription>
+                <CardTitle>{translate("Biểu mẫu đổi điểm", "Redeem form", language)}</CardTitle>
+                <CardDescription>{translate("Gửi yêu cầu đổi điểm từ ví tích lũy hiện tại của bạn.", "Submit redemption against your current loyalty wallet balance.", language)}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="redeem-points">Points to redeem</Label>
+                  <Label htmlFor="redeem-points">{translate("Số điểm muốn đổi", "Points to redeem", language)}</Label>
                   <Input
                     id="redeem-points"
                     type="number"
@@ -107,13 +110,13 @@ export function CustomerLoyaltyRedeemPageContent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="redeem-reference">Reference (optional)</Label>
+                  <Label htmlFor="redeem-reference">{translate("Tham chiếu (tuỳ chọn)", "Reference (optional)", language)}</Label>
                   <Input
                     id="redeem-reference"
                     type="text"
                     value={referenceId}
                     onChange={(event) => setReferenceId(event.target.value)}
-                    placeholder="Booking code or note"
+                    placeholder={translate("Mã đặt lịch hoặc ghi chú", "Booking code or note", language)}
                   />
                 </div>
 
@@ -131,47 +134,47 @@ export function CustomerLoyaltyRedeemPageContent() {
                   <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
                     <div className="flex items-center gap-2 font-bold">
                       <CheckCircle2 className="h-4 w-4" />
-                      Redemption successful
+                      {translate("Đổi điểm thành công", "Redemption successful", language)}
                     </div>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <SummaryRow label="Voucher code" value={successVoucher.voucherCode} />
-                      <SummaryRow label="Points redeemed" value={`${successVoucher.pointsRedeemed.toLocaleString("vi-VN")} points`} />
-                      <SummaryRow label="Voucher value" value={`${successVoucher.voucherValue.toLocaleString("vi-VN")} VND`} />
-                      <SummaryRow label="Expires" value={new Date(successVoucher.expiresAt).toLocaleDateString("vi-VN")} />
-                      <SummaryRow label="Status" value={successVoucher.status} />
-                      <SummaryRow label="New available balance" value={`${successVoucher.newBalance.toLocaleString("vi-VN")} points`} />
+                      <SummaryRow label={translate("Mã voucher", "Voucher code", language)} value={successVoucher.voucherCode} />
+                      <SummaryRow label={translate("Điểm đã đổi", "Points redeemed", language)} value={`${successVoucher.pointsRedeemed.toLocaleString(locale)} ${translate("điểm", "points", language)}`} />
+                      <SummaryRow label={translate("Giá trị voucher", "Voucher value", language)} value={`${successVoucher.voucherValue.toLocaleString(locale)} VND`} />
+                      <SummaryRow label={translate("Hết hạn", "Expires", language)} value={new Date(successVoucher.expiresAt).toLocaleDateString(locale)} />
+                      <SummaryRow label={translate("Trạng thái", "Status", language)} value={successVoucher.status} />
+                      <SummaryRow label={translate("Số dư mới", "New available balance", language)} value={`${successVoucher.newBalance.toLocaleString(locale)} ${translate("điểm", "points", language)}`} />
                     </div>
                   </div>
                 ) : null}
 
                 <Button type="submit" disabled={submitDisabled} className="w-full sm:w-auto">
-                  {redeemMutation.isPending ? "Redeeming..." : "Redeem points"}
+                  {redeemMutation.isPending ? translate("Đang đổi điểm...", "Redeeming...", language) : translate("Đổi điểm", "Redeem points", language)}
                 </Button>
               </CardContent>
             </Card>
 
             <Card className="border-slate-200 bg-white">
               <CardHeader>
-                <CardTitle>Redemption summary</CardTitle>
-                <CardDescription>Live calculation from current input.</CardDescription>
+                <CardTitle>{translate("Tóm tắt đổi điểm", "Redemption summary", language)}</CardTitle>
+                <CardDescription>{translate("Tính toán trực tiếp từ dữ liệu hiện tại.", "Live calculation from current input.", language)}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <SummaryRow label="Available points" value={`${accountQuery.data.availablePoints.toLocaleString("vi-VN")} points`} />
-                <SummaryRow label="Lifetime points" value={`${accountQuery.data.lifetimePoints.toLocaleString("vi-VN")} points`} />
-                <SummaryRow label="Redeem amount" value={`${Number.isFinite(points) ? Math.max(points, 0).toLocaleString("vi-VN") : 0} points`} />
-                <SummaryRow label="Voucher value" value={`${estimatedVnd.toLocaleString("vi-VN")} VND`} />
+                <SummaryRow label={translate("Điểm khả dụng", "Available points", language)} value={`${accountQuery.data.availablePoints.toLocaleString(locale)} ${translate("điểm", "points", language)}`} />
+                <SummaryRow label={translate("Điểm tích lũy", "Lifetime points", language)} value={`${accountQuery.data.lifetimePoints.toLocaleString(locale)} ${translate("điểm", "points", language)}`} />
+                <SummaryRow label={translate("Số điểm đổi", "Redeem amount", language)} value={`${Number.isFinite(points) ? Math.max(points, 0).toLocaleString(locale) : 0} ${translate("điểm", "points", language)}`} />
+                <SummaryRow label={translate("Giá trị voucher", "Voucher value", language)} value={`${estimatedVnd.toLocaleString(locale)} VND`} />
                 <SummaryRow
-                  label="Remaining balance"
+                  label={translate("Số dư còn lại", "Remaining balance", language)}
                   value={
                     remainingBalance == null
                       ? "N/A"
-                      : `${Math.max(remainingBalance, 0).toLocaleString("vi-VN")} points`
+                      : `${Math.max(remainingBalance, 0).toLocaleString(locale)} ${translate("điểm", "points", language)}`
                   }
                 />
 
                 <Button asChild variant="outline" className="mt-3 w-full">
                   <Link href="/customer/loyalty/history">
-                    View transaction history
+                    {translate("Xem lịch sử giao dịch", "View transaction history", language)}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -184,24 +187,24 @@ export function CustomerLoyaltyRedeemPageContent() {
   );
 }
 
-function getValidationMessage(pointsInput: string, points: number, currentBalance: number | null) {
+function getValidationMessage(pointsInput: string, points: number, currentBalance: number | null, language: "vi" | "en") {
   if (!pointsInput.trim()) {
-    return "Please enter points to redeem.";
+    return translate("Vui lòng nhập số điểm muốn đổi.", "Please enter points to redeem.", language);
   }
   if (!Number.isFinite(points)) {
-    return "Points must be a valid number.";
+    return translate("Số điểm phải là số hợp lệ.", "Points must be a valid number.", language);
   }
   if (!Number.isInteger(points)) {
-    return "Only whole points can be redeemed.";
+    return translate("Chỉ có thể đổi số điểm nguyên.", "Only whole points can be redeemed.", language);
   }
   if (points < MIN_REDEEM_POINTS) {
-    return `Minimum redemption is ${MIN_REDEEM_POINTS} points.`;
+    return translate(`Tối thiểu ${MIN_REDEEM_POINTS} điểm.`, `Minimum redemption is ${MIN_REDEEM_POINTS} points.`, language);
   }
   if (points > MAX_REDEEM_POINTS) {
-    return `Maximum redemption is ${MAX_REDEEM_POINTS} points.`;
+    return translate(`Tối đa ${MAX_REDEEM_POINTS} điểm.`, `Maximum redemption is ${MAX_REDEEM_POINTS} points.`, language);
   }
   if (currentBalance != null && points > currentBalance) {
-    return "Insufficient points for this redemption.";
+    return translate("Không đủ điểm để đổi.", "Insufficient points for this redemption.", language);
   }
   return null;
 }

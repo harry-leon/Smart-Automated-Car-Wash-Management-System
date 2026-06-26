@@ -21,6 +21,7 @@ import {
   useDeleteAdminPackage,
 } from "@/features/admin/management/hooks/use-admin-service-management";
 import type { AdminCatalogService, AdminComboForm, AdminServiceForm, AdminPackageForm } from "@/features/admin/management/management.types";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 const EMPTY_COMBO_FORM: AdminComboForm = {
   name: "",
@@ -36,6 +37,7 @@ const EMPTY_COMBO_FORM: AdminComboForm = {
 };
 
 export function AdminServiceManagementPage() {
+  const { language } = useLanguageStore();
   return (
     <WorkspacePage className="space-y-6">
       <Card className="border-border/70 bg-card/95 shadow-sm">
@@ -45,7 +47,7 @@ export function AdminServiceManagementPage() {
               <Layers3 className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle>Service Management</CardTitle>
+              <CardTitle>{translate(language, "Quản lý dịch vụ", "Service Management")}</CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -55,12 +57,12 @@ export function AdminServiceManagementPage() {
             tabs={[
               {
                 value: "services",
-                label: "Services",
+                label: translate(language, "Dịch vụ", "Services"),
                 content: <LiveServicesPanel />,
               },
               {
                 value: "packages",
-                label: "Packages",
+                label: translate(language, "Gói dịch vụ", "Packages"),
                 content: <LivePackagesPanel />,
               },
               {
@@ -77,6 +79,7 @@ export function AdminServiceManagementPage() {
 }
 
 function LiveServicesPanel() {
+  const { language } = useLanguageStore();
   const servicesQuery = useAdminCatalogServices();
   const createServiceMutation = useCreateAdminService();
   const deleteServiceMutation = useDeleteAdminService();
@@ -92,11 +95,11 @@ function LiveServicesPanel() {
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminServiceForm, string>> = {};
-    if (!form.name.trim()) errors.name = "Name is required.";
-    if (!form.price.trim() || Number(form.price) < 0) errors.price = "Price must be 0 or greater.";
-    if (!form.duration.trim() || Number(form.duration) < 1) errors.duration = "Duration must be at least 1 minute.";
+    if (!form.name.trim()) errors.name = translate(language, "Vui lòng nhập tên dịch vụ.", "Name is required.");
+    if (!form.price.trim() || Number(form.price) < 0) errors.price = translate(language, "Giá dịch vụ phải từ 0 trở lên.", "Price must be 0 or greater.");
+    if (!form.duration.trim() || Number(form.duration) < 1) errors.duration = translate(language, "Thời lượng phải tối thiểu 1 phút.", "Duration must be at least 1 minute.");
     return errors;
-  }, [form]);
+  }, [form, language]);
 
   const visibleErrors = useMemo(() => {
     if (submitted) return formErrors;
@@ -113,24 +116,24 @@ function LiveServicesPanel() {
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">Create service</CardTitle>
+          <CardTitle className="text-lg">{translate(language, "Tạo dịch vụ mới", "Create service")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
+          <FormField label={translate(language, "Tên dịch vụ", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField label="Price" value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
-            <FormField label="Duration minutes" value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
+            <FormField label={translate(language, "Giá dịch vụ (VND)", "Price")} value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
+            <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
-          <FormField label="Description" value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+          <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
           <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-800">Status</span>
+            <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
             <select
               value={form.status}
               onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
               className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
             >
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
+              <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
+              <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
             </select>
           </label>
 
@@ -156,14 +159,14 @@ function LiveServicesPanel() {
                   });
                   setTouched({});
                   setSubmitted(false);
-                  toast.success("Service created successfully.");
+                  toast.success(translate(language, "Tạo dịch vụ mới thành công.", "Service created successfully."));
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
                 }
               }}
             >
               {createServiceMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              Create service
+              {translate(language, "Tạo dịch vụ", "Create service")}
             </Button>
           </div>
         </CardContent>
@@ -172,11 +175,11 @@ function LiveServicesPanel() {
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-lg">Services catalog</CardTitle>
+            <CardTitle className="text-lg">{translate(language, "Danh mục dịch vụ", "Services catalog")}</CardTitle>
           </div>
           <Button type="button" variant="outline" onClick={() => servicesQuery.refetch()}>
             <RefreshCcw className="mr-2 h-4 w-4" />
-            Refresh
+            {translate(language, "Làm mới", "Refresh")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -195,10 +198,10 @@ function LiveServicesPanel() {
                         <div className="space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="font-bold text-slate-900">{service.name}</div>
-                            <StatusBadge active={service.status === "ACTIVE"} />
+                            <StatusBadge active={service.status === "ACTIVE"} language={language as "vi" | "en"} />
                           </div>
                           <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                            <span className="rounded-full bg-white px-2.5 py-1">{service.duration} min</span>
+                            <span className="rounded-full bg-white px-2.5 py-1">{service.duration} {translate(language, "phút", "min")}</span>
                             <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(service.price)}</span>
                           </div>
                         </div>
@@ -209,14 +212,14 @@ function LiveServicesPanel() {
                           onClick={async () => {
                             try {
                               await deleteServiceMutation.mutateAsync(service.serviceId);
-                              toast.success("Service deactivated.");
+                              toast.success(translate(language, "Đã ngưng hoạt động dịch vụ.", "Service deactivated."));
                             } catch (error) {
                               toast.error(getDisplayErrorMessage(error));
                             }
                           }}
                         >
                           {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                          Deactivate
+                          {translate(language, "Ngưng hoạt động", "Deactivate")}
                         </Button>
                       </CardContent>
                     </Card>
@@ -232,6 +235,7 @@ function LiveServicesPanel() {
 }
 
 function LivePackagesPanel() {
+  const { language } = useLanguageStore();
   const packagesQuery = useAdminCatalogPackages();
   const servicesQuery = useAdminCatalogServices();
   const createPackageMutation = useCreateAdminPackage();
@@ -251,13 +255,13 @@ function LivePackagesPanel() {
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminPackageForm, string>> = {};
-    if (!form.name.trim()) errors.name = "Name is required.";
-    if (!form.basePrice.trim() || Number(form.basePrice) < 0) errors.basePrice = "Base price must be 0 or greater.";
-    if (!form.duration.trim() || Number(form.duration) < 1) errors.duration = "Duration must be at least 1 minute.";
-    if (!form.category.trim()) errors.category = "Category is required.";
-    if (form.serviceIds.length === 0) errors.serviceIds = "Select at least one service.";
+    if (!form.name.trim()) errors.name = translate(language, "Vui lòng nhập tên gói.", "Name is required.");
+    if (!form.basePrice.trim() || Number(form.basePrice) < 0) errors.basePrice = translate(language, "Giá gói phải từ 0 trở lên.", "Base price must be 0 or greater.");
+    if (!form.duration.trim() || Number(form.duration) < 1) errors.duration = translate(language, "Thời lượng phải tối thiểu 1 phút.", "Duration must be at least 1 minute.");
+    if (!form.category.trim()) errors.category = translate(language, "Vui lòng nhập danh mục.", "Category is required.");
+    if (form.serviceIds.length === 0) errors.serviceIds = translate(language, "Chọn ít nhất một dịch vụ đi kèm.", "Select at least one service.");
     return errors;
-  }, [form]);
+  }, [form, language]);
 
   const visibleErrors = useMemo(() => {
     if (submitted) return formErrors;
@@ -274,21 +278,21 @@ function LivePackagesPanel() {
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">Create package</CardTitle>
+          <CardTitle className="text-lg">{translate(language, "Tạo gói dịch vụ mới", "Create package")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
+          <FormField label={translate(language, "Tên gói", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField label="Base price" value={form.basePrice} onChange={(value) => setForm((current) => ({ ...current, basePrice: value }))} onBlur={() => touchField("basePrice")} error={visibleErrors.basePrice} />
-            <FormField label="Duration minutes" value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
+            <FormField label={translate(language, "Giá gói (VND)", "Base price")} value={form.basePrice} onChange={(value) => setForm((current) => ({ ...current, basePrice: value }))} onBlur={() => touchField("basePrice")} error={visibleErrors.basePrice} />
+            <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
-          <FormField label="Category (e.g. Basic, Premium)" value={form.category} onChange={(value) => setForm((current) => ({ ...current, category: value }))} onBlur={() => touchField("category")} error={visibleErrors.category} />
-          <FormField label="Features (comma separated)" value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder="Vacuuming, Hand wash, Tire shine" />
-          <FormField label="Description" value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+          <FormField label={translate(language, "Danh mục (ví dụ: Tiêu chuẩn, Cao cấp)", "Category (e.g. Basic, Premium)")} value={form.category} onChange={(value) => setForm((current) => ({ ...current, category: value }))} onBlur={() => touchField("category")} error={visibleErrors.category} />
+          <FormField label={translate(language, "Tính năng nổi bật (cách nhau bởi dấu phẩy)", "Features (comma separated)")} value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder={translate(language, "Hút bụi, Rửa tay, Làm bóng lốp", "Vacuuming, Hand wash, Tire shine")} />
+          <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
 
           {/* Services multi-select dropdown */}
           <ServiceMultiSelect
-            label="Services included"
+            label={translate(language, "Các dịch vụ đi kèm", "Services included")}
             services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
             selectedIds={form.serviceIds}
             onChange={(ids) => setForm((current) => ({ ...current, serviceIds: ids }))}
@@ -296,17 +300,18 @@ function LivePackagesPanel() {
             isError={servicesQuery.isError}
             errorMessage={servicesQuery.isError ? getDisplayErrorMessage(servicesQuery.error) : undefined}
             validationError={visibleErrors.serviceIds}
+            language={language as "vi" | "en"}
           />
 
           <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-800">Status</span>
+            <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
             <select
               value={form.status}
               onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
               className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
             >
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
+              <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
+              <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
             </select>
           </label>
 
@@ -335,14 +340,14 @@ function LivePackagesPanel() {
                   });
                   setTouched({});
                   setSubmitted(false);
-                  toast.success("Package created successfully.");
+                  toast.success(translate(language, "Tạo gói dịch vụ mới thành công.", "Package created successfully."));
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
                 }
               }}
             >
               {createPackageMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              Create package
+              {translate(language, "Tạo gói dịch vụ", "Create package")}
             </Button>
           </div>
         </CardContent>
@@ -351,11 +356,11 @@ function LivePackagesPanel() {
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-lg">Packages catalog</CardTitle>
+            <CardTitle className="text-lg">{translate(language, "Danh mục các gói dịch vụ", "Packages catalog")}</CardTitle>
           </div>
           <Button type="button" variant="outline" onClick={() => packagesQuery.refetch()}>
             <RefreshCcw className="mr-2 h-4 w-4" />
-            Refresh
+            {translate(language, "Làm mới", "Refresh")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -374,11 +379,11 @@ function LivePackagesPanel() {
                         <div className="space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="font-bold text-slate-900">{pkg.name}</div>
-                            <StatusBadge active={pkg.status === "ACTIVE"} />
+                            <StatusBadge active={pkg.status === "ACTIVE"} language={language as "vi" | "en"} />
                           </div>
                           <div className="text-xs uppercase tracking-wide text-slate-500">{pkg.category}</div>
                           <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                            <span className="rounded-full bg-white px-2.5 py-1">{pkg.duration} min</span>
+                            <span className="rounded-full bg-white px-2.5 py-1">{pkg.duration} {translate(language, "phút", "min")}</span>
                             <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(pkg.basePrice)}</span>
                             {pkg.popularity ? <span className="rounded-full bg-white px-2.5 py-1">{pkg.popularity}</span> : null}
                           </div>
@@ -399,14 +404,14 @@ function LivePackagesPanel() {
                           onClick={async () => {
                             try {
                               await deletePackageMutation.mutateAsync(pkg.packageId);
-                              toast.success("Package deactivated.");
+                              toast.success(translate(language, "Đã ngưng hoạt động gói dịch vụ.", "Package deactivated."));
                             } catch (error) {
                               toast.error(getDisplayErrorMessage(error));
                             }
                           }}
                         >
                           {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                          Deactivate
+                          {translate(language, "Ngưng hoạt động", "Deactivate")}
                         </Button>
                       </CardContent>
                     </Card>
@@ -422,6 +427,7 @@ function LivePackagesPanel() {
 }
 
 function LiveCombosPanel() {
+  const { language } = useLanguageStore();
   const servicesQuery = useAdminCatalogServices();
   const combosQuery = useAdminCombosCatalog();
   const createComboMutation = useCreateAdminCombo();
@@ -432,14 +438,14 @@ function LiveCombosPanel() {
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminComboForm, string>> = {};
-    if (!form.name.trim()) errors.name = "Name is required.";
-    if (!form.price.trim() || Number(form.price) < 0) errors.price = "Price must be 0 or greater.";
-    if (!form.durationMinutes.trim() || Number(form.durationMinutes) < 1) errors.durationMinutes = "Duration must be at least 1 minute.";
-    if (form.durationDays.trim() && Number(form.durationDays) < 1) errors.durationDays = "Duration days must be at least 1.";
-    if (form.maxUsages.trim() && Number(form.maxUsages) < 1) errors.maxUsages = "Max usages must be at least 1.";
-    if (form.optionIds.length === 0) errors.optionIds = "Select at least one service.";
+    if (!form.name.trim()) errors.name = translate(language, "Vui lòng nhập tên Combo.", "Name is required.");
+    if (!form.price.trim() || Number(form.price) < 0) errors.price = translate(language, "Giá phải lớn hơn hoặc bằng 0.", "Price must be 0 or greater.");
+    if (!form.durationMinutes.trim() || Number(form.durationMinutes) < 1) errors.durationMinutes = translate(language, "Thời lượng tối thiểu là 1 phút.", "Duration must be at least 1 minute.");
+    if (form.durationDays.trim() && Number(form.durationDays) < 1) errors.durationDays = translate(language, "Số ngày hiệu lực phải tối thiểu là 1 ngày.", "Duration days must be at least 1.");
+    if (form.maxUsages.trim() && Number(form.maxUsages) < 1) errors.maxUsages = translate(language, "Số lần sử dụng tối đa phải từ 1 lần trở lên.", "Max usages must be at least 1.");
+    if (form.optionIds.length === 0) errors.optionIds = translate(language, "Vui lòng chọn ít nhất một dịch vụ.", "Select at least one service.");
     return errors;
-  }, [form]);
+  }, [form, language]);
 
   const visibleErrors = useMemo(() => {
     if (submitted) return formErrors;
@@ -456,41 +462,41 @@ function LiveCombosPanel() {
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg">Create combo</CardTitle>
+          <CardTitle className="text-lg">{translate(language, "Tạo Combo mới", "Create combo")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
-            <FormField label="Price" value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
-            <FormField label="Original price" value={form.originalPrice} onChange={(value) => setForm((current) => ({ ...current, originalPrice: value }))} />
-            <FormField label="Duration minutes" value={form.durationMinutes} onChange={(value) => setForm((current) => ({ ...current, durationMinutes: value }))} onBlur={() => touchField("durationMinutes")} error={visibleErrors.durationMinutes} />
-            <FormField label="Duration days" value={form.durationDays} onChange={(value) => setForm((current) => ({ ...current, durationDays: value }))} onBlur={() => touchField("durationDays")} error={visibleErrors.durationDays} />
-            <FormField label="Max usages" value={form.maxUsages} onChange={(value) => setForm((current) => ({ ...current, maxUsages: value }))} onBlur={() => touchField("maxUsages")} error={visibleErrors.maxUsages} />
+            <FormField label={translate(language, "Tên Combo", "Name")} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
+            <FormField label={translate(language, "Giá Combo (VND)", "Price")} value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
+            <FormField label={translate(language, "Giá gốc (VND)", "Original price")} value={form.originalPrice} onChange={(value) => setForm((current) => ({ ...current, originalPrice: value }))} />
+            <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.durationMinutes} onChange={(value) => setForm((current) => ({ ...current, durationMinutes: value }))} onBlur={() => touchField("durationMinutes")} error={visibleErrors.durationMinutes} />
+            <FormField label={translate(language, "Thời hạn áp dụng (ngày)", "Duration days")} value={form.durationDays} onChange={(value) => setForm((current) => ({ ...current, durationDays: value }))} onBlur={() => touchField("durationDays")} error={visibleErrors.durationDays} />
+            <FormField label={translate(language, "Số lần rửa tối đa", "Max usages")} value={form.maxUsages} onChange={(value) => setForm((current) => ({ ...current, maxUsages: value }))} onBlur={() => touchField("maxUsages")} error={visibleErrors.maxUsages} />
           </div>
           <FormField
-            label="Description"
+            label={translate(language, "Mô tả", "Description")}
             value={form.description}
             onChange={(value) => setForm((current) => ({ ...current, description: value }))}
           />
           <FormField
-            label="Image URL"
+            label={translate(language, "Đường dẫn hình ảnh (URL)", "Image URL")}
             value={form.imageUrl}
             onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))}
           />
           <label className="grid gap-2">
-            <span className="text-sm font-semibold text-slate-800">Status</span>
+            <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
             <select
               value={form.status}
               onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as "ACTIVE" | "INACTIVE" }))}
               className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
             >
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
+              <option value="ACTIVE">{translate(language, "Hoạt động", "Active")}</option>
+              <option value="INACTIVE">{translate(language, "Ngưng hoạt động", "Inactive")}</option>
             </select>
           </label>
 
           <ServiceMultiSelect
-            label="Services included"
+            label={translate(language, "Dịch vụ đi kèm trong Combo", "Services included")}
             services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
             selectedIds={form.optionIds}
             onChange={(ids) => setForm((current) => ({ ...current, optionIds: ids }))}
@@ -498,6 +504,7 @@ function LiveCombosPanel() {
             isError={servicesQuery.isError}
             errorMessage={servicesQuery.isError ? getDisplayErrorMessage(servicesQuery.error) : undefined}
             validationError={visibleErrors.optionIds}
+            language={language as "vi" | "en"}
           />
 
           {createComboMutation.isError ? (
@@ -516,14 +523,14 @@ function LiveCombosPanel() {
                   setForm(EMPTY_COMBO_FORM);
                   setTouched({});
                   setSubmitted(false);
-                  toast.success("Combo created successfully.");
+                  toast.success(translate(language, "Tạo Combo thành công.", "Combo created successfully."));
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
                 }
               }}
             >
               {createComboMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-              Create combo
+              {translate(language, "Tạo Combo", "Create combo")}
             </Button>
           </div>
         </CardContent>
@@ -532,11 +539,11 @@ function LiveCombosPanel() {
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-lg">Live combo catalog</CardTitle>
+            <CardTitle className="text-lg">{translate(language, "Danh mục các Combo", "Live combo catalog")}</CardTitle>
           </div>
           <Button type="button" variant="outline" onClick={() => combosQuery.refetch()}>
             <RefreshCcw className="mr-2 h-4 w-4" />
-            Refresh
+            {translate(language, "Làm mới", "Refresh")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -546,7 +553,7 @@ function LiveCombosPanel() {
             <ErrorPanel message={getDisplayErrorMessage(combosQuery.error)} />
           ) : !combosQuery.data || combosQuery.data.length === 0 ? (
             <Card className="border-slate-200 bg-slate-50/50">
-              <CardContent className="p-5 text-sm text-slate-500">No combos found.</CardContent>
+              <CardContent className="p-5 text-sm text-slate-500">{translate(language, "Không tìm thấy Combo nào.", "No combos found.")}</CardContent>
             </Card>
           ) : (
             combosQuery.data.map((combo) => {
@@ -560,7 +567,7 @@ function LiveCombosPanel() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <div className="text-lg font-bold text-slate-900">{combo.name}</div>
-                          <StatusBadge active={combo.isActive} />
+                          <StatusBadge active={combo.isActive} language={language as "vi" | "en"} />
                         </div>
                       </div>
                       <Button
@@ -570,20 +577,20 @@ function LiveCombosPanel() {
                         onClick={async () => {
                           try {
                             await deleteComboMutation.mutateAsync(combo.comboId);
-                            toast.success("Combo deactivated.");
+                            toast.success(translate(language, "Đã ngưng hoạt động Combo.", "Combo deactivated."));
                           } catch (error) {
                             toast.error(getDisplayErrorMessage(error));
                           }
                         }}
                       >
                         {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                        Deactivate
+                        {translate(language, "Ngưng hoạt động", "Deactivate")}
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
                       <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(combo.basePrice)}</span>
-                      <span className="rounded-full bg-white px-2.5 py-1">{combo.durationDays} days</span>
-                      <span className="rounded-full bg-white px-2.5 py-1">{combo.maxServices} services</span>
+                      <span className="rounded-full bg-white px-2.5 py-1">{combo.durationDays} {translate(language, "ngày", "days")}</span>
+                      <span className="rounded-full bg-white px-2.5 py-1">{combo.maxServices} {translate(language, "dịch vụ", "services")}</span>
                     </div>
                     {combo.benefits.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
@@ -627,7 +634,7 @@ function SummaryEntryCard({
           </div>
           <div>
             <div className="text-lg font-bold text-foreground">{title}</div>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+            <p className="hidden mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
           </div>
         </div>
         <Button asChild type="button" className="mt-4 w-full">
@@ -638,10 +645,10 @@ function SummaryEntryCard({
   );
 }
 
-function StatusBadge({ active }: { active: boolean }) {
+function StatusBadge({ active, language }: { active: boolean; language: "vi" | "en" }) {
   return (
     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
-      {active ? "Active" : "Inactive"}
+      {active ? translate(language, "Hoạt động", "Active") : translate(language, "Ngưng hoạt động", "Inactive")}
     </span>
   );
 }
@@ -664,6 +671,7 @@ function ServiceMultiSelect({
   isError,
   errorMessage,
   validationError,
+  language,
 }: {
   label: string;
   services: AdminCatalogService[];
@@ -673,6 +681,7 @@ function ServiceMultiSelect({
   isError?: boolean;
   errorMessage?: string;
   validationError?: string;
+  language: "vi" | "en";
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -704,11 +713,11 @@ function ServiceMultiSelect({
 
       {isLoading ? (
         <div className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading services…
+          <Loader2 className="h-4 w-4 animate-spin" /> {translate(language, "Đang tải danh mục dịch vụ...", "Loading services...")}
         </div>
       ) : isError ? (
         <div className="flex h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 text-sm text-rose-600">
-          {errorMessage ?? "Failed to load services"}
+          {errorMessage ?? translate(language, "Lỗi tải danh mục dịch vụ", "Failed to load services")}
         </div>
       ) : (
         <div className="relative">
@@ -721,7 +730,7 @@ function ServiceMultiSelect({
             } bg-white`}
           >
             {selectedServices.length === 0 ? (
-              <span className="text-slate-400">Select services…</span>
+              <span className="text-slate-400">{translate(language, "Chọn các dịch vụ...", "Select services...")}</span>
             ) : (
               selectedServices.map((s) => (
                 <span
@@ -747,7 +756,7 @@ function ServiceMultiSelect({
           {open && (
             <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
               {services.length === 0 ? (
-                <div className="px-3 py-3 text-sm text-slate-400">No active services available.</div>
+                <div className="px-3 py-3 text-sm text-slate-400">{translate(language, "Không có dịch vụ hoạt động.", "No active services available.")}</div>
               ) : (
                 <ul className="max-h-52 overflow-auto py-1">
                   {services.map((service) => {
@@ -768,7 +777,7 @@ function ServiceMultiSelect({
                           </span>
                           <div className="min-w-0">
                             <div className="truncate text-sm font-semibold text-slate-900">{service.name}</div>
-                            <div className="text-xs text-slate-500">{service.duration} min · {formatCurrency(service.price)}</div>
+                            <div className="text-xs text-slate-500">{service.duration} {translate(language, "phút", "min")} · {formatCurrency(service.price)}</div>
                           </div>
                         </button>
                       </li>
@@ -817,9 +826,11 @@ function FormField({
 }
 
 function LoadingPanel() {
+  const { language } = useLanguageStore();
   return (
     <div className="flex min-h-48 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
       <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+      <span className="ml-2 text-sm text-slate-400">{translate(language, "Đang tải...", "Loading...")}</span>
     </div>
   );
 }
