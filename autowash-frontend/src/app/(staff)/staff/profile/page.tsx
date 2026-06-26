@@ -131,9 +131,6 @@ export default function StaffProfilePage() {
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
                   Quản lý hồ sơ tài khoản
                 </h1>
-                <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                  Trang này hiển thị và cập nhật hồ sơ nhân viên hiện tại. Thông tin trên thanh đầu trang sẽ đồng bộ sau khi lưu.
-                </p>
               </div>
             </div>
 
