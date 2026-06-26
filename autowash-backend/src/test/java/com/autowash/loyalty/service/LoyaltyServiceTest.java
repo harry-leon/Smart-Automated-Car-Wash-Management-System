@@ -179,13 +179,11 @@ class LoyaltyServiceTest {
                 true
         ));
 
-        // Use seeded package UUID to satisfy the FK constraint packages(id)
-        UUID seededPackageId = UUID.fromString("12345678-1234-1234-1234-123456789012");
         Booking booking = new Booking(
                 UUID.randomUUID(),
                 user,
                 vehicle,
-                seededPackageId,
+                null,
                 null,
                 null,
                 Instant.now().plusSeconds(86400),
@@ -202,7 +200,6 @@ class LoyaltyServiceTest {
         WashSession session = washSessionRepository.saveAndFlush(WashSession.create(booking, "Loyalty service test", null));
         return new TestData(user, booking, session);
     }
-
 
     private record TestData(User customer, Booking booking, WashSession session) {
     }

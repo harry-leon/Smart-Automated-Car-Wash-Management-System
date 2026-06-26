@@ -1,89 +1,5 @@
-CREATE TYPE "user_role" AS ENUM (
-  'CUSTOMER',
-  'STAFF',
-  'ADMIN'
-);
 
 
-CREATE TYPE "vehicle_status" AS ENUM (
-  'ACTIVE',
-  'INACTIVE',
-  'DELETED'
-);
-
-CREATE TYPE "active_status" AS ENUM (
-  'ACTIVE',
-  'INACTIVE'
-);
-
-CREATE TYPE "discount_type" AS ENUM (
-  'PERCENT',
-  'FIXED_AMOUNT'
-);
-
-CREATE TYPE "loyalty_tier" AS ENUM (
-  'MEMBER',
-  'SILVER',
-  'GOLD',
-  'PLATINUM'
-);
-
-CREATE TYPE "promotion_targeting_mode" AS ENUM (
-  'ALL_TIERS',
-  'SPECIFIC_TIERS'
-);
-
-CREATE TYPE "booking_type" AS ENUM (
-  'PACKAGE',
-  'COMBO'
-);
-
-CREATE TYPE "booking_status" AS ENUM (
-  'PENDING',
-  'CONFIRMED',
-  'CHECKED_IN',
-  'IN_PROGRESS',
-  'COMPLETED',
-  'CANCELLED',
-  'NO_SHOW'
-);
-
-CREATE TYPE "payment_method" AS ENUM (
-  'CASH_AT_COUNTER',
-  'BANK_TRANSFER',
-  'E_WALLET'
-);
-
-CREATE TYPE "payment_status" AS ENUM (
-  'UNPAID',
-  'PENDING_PAYMENT',
-  'PAID',
-  'FAILED',
-  'REFUNDED'
-);
-
-CREATE TYPE "wash_session_status" AS ENUM (
-  'PENDING',
-  'QUEUED',
-  'CHECKED_IN',
-  'IN_PROGRESS',
-  'COMPLETED',
-  'CANCELLED'
-);
-
-CREATE TYPE "point_transaction_type" AS ENUM (
-  'EARN',
-  'REDEEM',
-  'EXPIRE',
-  'ADJUST'
-);
-
-CREATE TYPE "customer_combo_status" AS ENUM (
-  'ACTIVE',
-  'EXPIRED',
-  'USED_UP',
-  'CANCELLED'
-);
 CREATE TABLE "users" (
   "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "full_name" varchar(100) NOT NULL,
@@ -91,7 +7,7 @@ CREATE TABLE "users" (
   "email" varchar(255) UNIQUE,
   "password_hash" varchar(255),
   "role" varchar(20) NOT NULL CHECK ("role" IN ('CUSTOMER', 'STAFF', 'ADMIN')),
-  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('PENDING', 'PENDING_VERIFY', 'ACTIVE', 'BLOCKED', 'SUSPENDED', 'INACTIVE', 'DELETED')),
+  "status" varchar(20) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'ACTIVE', 'BLOCKED', 'SUSPENDED', 'INACTIVE')),
   "avatar_url" varchar(500),
   "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
@@ -520,7 +436,7 @@ CREATE INDEX "idx_point_transactions_loyalty_account_id" ON "point_transactions"
 
 CREATE INDEX "idx_point_transactions_booking_id" ON "point_transactions" ("booking_id");
 
-CREATE UNIQUE INDEX "uk_point_transactions_booking_type" ON "point_transactions" ("booking_id", "type");
+CREATE UNIQUE INDEX uk_point_transactions_booking_type ON point_transactions (booking_id, type);
 
 CREATE INDEX "idx_tier_histories_loyalty_account_id" ON "tier_histories" ("loyalty_account_id");
 
