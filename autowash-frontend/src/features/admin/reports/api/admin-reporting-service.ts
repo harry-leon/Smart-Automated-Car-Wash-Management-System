@@ -17,7 +17,6 @@ import type {
   AdminTierHistoryPage,
   AdminWashHistoryItem,
   AdminWashHistoryPage,
-  CreateAdminStaffPayload,
   ReportAnalysisGroup,
   ReportRangeKey,
   UpdateAdminCustomerRolePayload,
@@ -200,14 +199,6 @@ export function updateAdminCustomerRole(
   return apiRequest<UpdateAdminCustomerRoleResult, UpdateAdminCustomerRolePayload>({
     method: "PUT",
     url: `/admin/customers/${customerId}/role`,
-    data: payload,
-  });
-}
-
-export function createAdminStaff(payload: CreateAdminStaffPayload) {
-  return apiRequest<AdminAccount, CreateAdminStaffPayload>({
-    method: "POST",
-    url: "/admin/staff",
     data: payload,
   });
 }

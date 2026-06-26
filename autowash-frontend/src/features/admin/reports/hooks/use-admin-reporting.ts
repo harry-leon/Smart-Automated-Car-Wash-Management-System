@@ -12,7 +12,6 @@ import {
   adminCustomerWashHistoryQueryKey,
 } from "@/features/admin/reports/hooks/admin-reporting-query";
 import {
-  createAdminStaff,
   getAdminAccountDetail,
   getAdminCustomerDetail,
   listAdminAccounts,
@@ -37,7 +36,6 @@ import type {
   AdminPointTransactionsPage,
   AdminTierHistoryPage,
   AdminWashHistoryPage,
-  CreateAdminStaffPayload,
   UpdateAdminCustomerRolePayload,
   UpdateAdminCustomerRoleResult,
   UpdateAdminCustomerStatusPayload,
@@ -171,18 +169,6 @@ export function useUpdateAdminCustomerRole(customerId: string) {
 
   return useMutation<UpdateAdminCustomerRoleResult, ApiErrorResponse, UpdateAdminCustomerRolePayload>({
     mutationFn: (payload) => updateAdminCustomerRole(customerId, payload),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminReportingScope(userId) });
-    },
-  });
-}
-
-export function useCreateAdminStaff() {
-  const queryClient = useQueryClient();
-  const { userId } = useAdminReportingContext();
-
-  return useMutation<AdminAccount, ApiErrorResponse, CreateAdminStaffPayload>({
-    mutationFn: createAdminStaff,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: adminReportingScope(userId) });
     },

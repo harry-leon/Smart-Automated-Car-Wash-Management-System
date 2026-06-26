@@ -166,6 +166,7 @@ export function AdminCustomerDetailPageContent({ customerId }: AdminCustomerDeta
             <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
               {profile?.fullName ?? "Customer detail"}
             </h1>
+            <p className="text-sm text-slate-500">Track profile, bookings, wash sessions, and loyalty activity.</p>
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline" className="h-9 gap-2">

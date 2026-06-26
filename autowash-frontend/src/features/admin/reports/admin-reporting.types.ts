@@ -143,13 +143,6 @@ export type AdminAccountsPage = {
   pagination: PaginationMeta;
 };
 
-export type CreateAdminStaffPayload = {
-  fullName: string;
-  phone: string;
-  email: string;
-  password: string;
-};
-
 export type AdminCustomerDetail = {
   customerId: string;
   profile: {
