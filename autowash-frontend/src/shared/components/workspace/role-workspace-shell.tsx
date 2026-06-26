@@ -9,23 +9,24 @@ import {
   ChevronDown,
   ClipboardList,
   History,
-  Languages,
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
   RefreshCw,
   Settings2,
   ShieldCheck,
-  Sparkles,
+  Sun,
   UserCog,
   UserRound,
   Wrench,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTheme } from "next-themes";
 import { useCustomerLogout } from "@/features/auth/hooks/use-auth";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { cn } from "@/shared/lib/utils";
@@ -48,6 +49,7 @@ import {
 import { useLanguageStore } from "@/shared/store/language.store";
 import { useQuery } from "@tanstack/react-query";
 import { getEligibleSessionBookings, getOperationsQueue } from "@/features/staff/operations/lib/operations-service";
+import { useCustomerNotifications } from "@/features/customer/notifications/hooks/use-customer-notifications";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -84,38 +86,6 @@ const translateHeaderTitle = (title: string, lang: "vi" | "en") => {
   return translations[title] || title;
 };
 
-const translateHeaderSubtitle = (subtitle: string, lang: "vi" | "en") => {
-  if (lang === "en") return subtitle;
-  const translations: Record<string, string> = {
-    "Arrivals, queue health, and assigned actions": "Lịch hẹn đến, tình trạng hàng chờ và công việc được giao",
-    "Move wash sessions through the service lifecycle": "Quản lý tiến trình dịch vụ các phiên rửa xe",
-    "Confirm bookings and start the wash flow": "Xác nhận lịch hẹn và bắt đầu quy trình rửa xe",
-    "Review completed sessions by day, month, or year": "Xem các phiên rửa xe đã hoàn thành theo ngày, tháng, năm",
-    "Inspect session detail, timing, and next action": "Xem thông tin chi tiết, thời gian và hành động tiếp theo của phiên rửa",
-    "Manage bookings, vehicles, rewards, and account activity": "Quản lý đặt lịch, phương tiện, phần thưởng và hoạt động tài khoản",
-    "Manage check-ins, wash sessions, and daily operations": "Quản lý check-in, phiên rửa xe và vận hành hàng ngày",
-    "Monitor system health, customers, services, and operations": "Theo dõi sức khỏe hệ thống, khách hàng, dịch vụ và vận hành",
-    "Points, bookings, vehicles, and quick actions": "Điểm thưởng, lịch đặt, phương tiện và thao tác nhanh",
-    "Account information and profile preferences": "Thông tin tài khoản và thiết lập cá nhân",
-    "Manage registered vehicles and primary vehicle status": "Quản lý phương tiện đã đăng ký và thiết lập xe chính",
-    "Create and track wash appointments": "Tạo mới và theo dõi cuộc hẹn rửa xe",
-    "Track live wash progress and current session status": "Theo dõi trực tiếp tiến độ rửa xe và trạng thái phiên hiện tại",
-    "Review past sessions and wash progress": "Xem lại các phiên rửa xe cũ và tiến trình",
-    "Track points, tier progress, and redemption options": "Theo dõi điểm tích lũy, cấp bậc thành viên và phần thưởng",
-    "Browse active campaigns and reward offers": "Duyệt danh sách các chương trình khuyến mãi và ưu đãi",
-    "Review customer tools, notifications, and preferences": "Xem các công cụ cho khách hàng, thông báo và thiết lập",
-    "KPIs, bookings, customer activity, and operational health": "Chỉ số KPI, lịch đặt xe, hoạt động khách hàng và vận hành",
-    "Review booking volume, status, and assignment flow": "Quản lý số lượng, trạng thái lịch hẹn và phân công",
-    "Customer, staff, and admin account directory": "Danh bạ tài khoản khách hàng, nhân viên và quản trị",
-    "Monitor active sessions and service capacity": "Theo dõi phiên hoạt động và công suất dịch vụ",
-    "Revenue, service performance, and customer trends": "Doanh thu, hiệu suất dịch vụ và xu hướng khách hàng",
-    "Organize packages, add-ons, and combos by service offering": "Quản lý các gói dịch vụ, phụ kiện đi kèm và combo",
-    "Review promotions, vouchers, and redemption oversight": "Quản lý chương trình khuyến mãi, voucher và đổi thưởng",
-    "Configure services, promotions, staff, and workspace settings": "Cấu hình dịch vụ, khuyến mãi, nhân sự và thiết lập hệ thống",
-  };
-  return translations[subtitle] || subtitle;
-};
-
 export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -127,8 +97,9 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { language, setLanguage } = useLanguageStore();
+  const { theme, setTheme } = useTheme();
 
-  // Local state for seen lists and notification alerts
+  // Trạng thái popup thông báo
   const [lastBookingIds, setLastBookingIds] = useState<string[]>([]);
   const [lastSessionIds, setLastSessionIds] = useState<string[]>([]);
   const [alertNotification, setAlertNotification] = useState<{
@@ -146,6 +117,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   });
 
   const isStaff = requiredRole === "STAFF";
+  const isCustomer = requiredRole === "CUSTOMER";
 
   const eligibleQuery = useQuery({
     queryKey: ["staff-notifications", "eligible"],
@@ -161,6 +133,13 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     refetchInterval: 10_000,
   });
 
+  // Thông báo khách hàng cho icon chuông
+  const customerNotificationsQuery = useCustomerNotifications();
+  const unreadCustomerNotifications = useMemo(() => {
+    if (!isCustomer || !customerNotificationsQuery.data) return 0;
+    return customerNotificationsQuery.data.filter((n) => !n.isRead).length;
+  }, [isCustomer, customerNotificationsQuery.data]);
+
   const eligibleCount = eligibleQuery.data?.length ?? 0;
   const pendingSessions = useMemo(() => {
     if (!queueQuery.data) return [];
@@ -172,12 +151,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const totalNotifications = eligibleCount + pendingSessionsCount;
 
   const isExcluded = SHELL_EXCLUDED_PATHS.includes(pathname);
-  const theme = WORKSPACE_THEMES[requiredRole];
+  const workspaceTheme = WORKSPACE_THEMES[requiredRole];
   const navItems = navForRole(requiredRole);
   const mobileItems = mobileNavForRole(requiredRole);
   const headerMeta = getWorkspaceHeaderMeta(pathname);
 
-  // Sync initial language preference on client mount
+  // Đồng bộ ngôn ngữ từ localStorage khi mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("aura-lang") as "vi" | "en";
@@ -195,7 +174,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  // Monitor for new items to trigger top-right alert popup
+  // Theo dõi thông báo mới cho nhân viên
   useEffect(() => {
     if (!isStaff || !isMounted) return;
 
@@ -217,7 +196,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       const target = newBookings[0];
       setAlertNotification({
         show: true,
-        title: language === "vi" ? "Lịch hẹn mới chờ duyệt!" : "New Appointment Waiting!",
+        title: "Lịch hẹn mới chờ duyệt!",
         message: `${target.customerName} - ${target.customerPhone}`,
         plate: target.vehiclePlate,
         path: "/staff/check-in",
@@ -227,7 +206,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       const target = newSessions[0];
       setAlertNotification({
         show: true,
-        title: language === "vi" ? "Phiên rửa xe chờ duyệt!" : "New Pending Wash Session!",
+        title: "Phiên rửa xe chờ duyệt!",
         message: `${target.customerName} - ${target.customerPhone}`,
         plate: target.vehiclePlate,
         path: `/staff/check-in?sessionId=${target.sessionId}`,
@@ -239,7 +218,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
     }
   }, [eligibleQuery.data, pendingSessions, isStaff, isMounted, language]);
 
-  // Dismiss notification popup automatically after 8 seconds
+  // Tự động ẩn popup thông báo sau 8 giây
   useEffect(() => {
     if (alertNotification.show) {
       const timer = setTimeout(() => {
@@ -269,15 +248,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   }
 
   if (!isMounted) {
-    return <WorkspaceGate message={language === "vi" ? "Đang tải khu vực làm việc..." : "Loading workspace..."} />;
+    return <WorkspaceGate message="Đang tải khu vực làm việc..." />;
   }
 
   if (!accessToken || !user) {
-    return <WorkspaceGate message={language === "vi" ? "Đang chuyển đến trang đăng nhập..." : "Redirecting to sign in..."} />;
+    return <WorkspaceGate message="Đang chuyển đến trang đăng nhập..." />;
   }
 
   if (user.role !== requiredRole) {
-    return <WorkspaceGate message={language === "vi" ? "Đang chuyển đến khu vực phù hợp..." : "Redirecting to your workspace..."} />;
+    return <WorkspaceGate message="Đang chuyển đến khu vực phù hợp..." />;
   }
 
   const handleLogout = () => {
@@ -300,7 +279,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(180deg,hsl(var(--background))_0%,#fff_55%,hsl(var(--muted))_100%)]" />
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--card))_55%,hsl(var(--muted))_100%)]" />
 
       <aside
         className={cn(
@@ -310,7 +289,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
       >
         <SidebarBrand
           collapsed={sidebarCollapsed}
-          theme={theme}
+          theme={workspaceTheme}
           onToggle={() => setSidebarCollapsed((value) => !value)}
         />
 
@@ -322,7 +301,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 item={item}
                 pathname={pathname}
                 collapsed={sidebarCollapsed}
-                activeClassName={theme.activeNav}
+                activeClassName={workspaceTheme.activeNav}
               />
             ))}
           </ul>
@@ -332,13 +311,13 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           {!sidebarCollapsed ? (
             <div className="rounded-xl border border-border/70 bg-background/70 p-3">
               <div className="flex items-start gap-3">
-                <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", theme.accent)}>
+                <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
                   <Phone className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold">{language === "vi" ? "Hỗ trợ" : "Support"}</div>
+                  <div className="text-xs font-bold">Hỗ trợ</div>
                   <div className="mt-0.5 text-sm font-extrabold tracking-tight">1900 1234</div>
-                  <div className="mt-1 text-[10px] text-muted-foreground">8:00 - 20:00 {language === "vi" ? "hằng ngày" : "daily"}</div>
+                  <div className="mt-1 text-[10px] text-muted-foreground">8:00 - 20:00 hằng ngày</div>
                 </div>
               </div>
             </div>
@@ -352,9 +331,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             <LogOut className="h-4 w-4" />
             {!sidebarCollapsed ? (
               <span>
-                {logoutMutation.isPending 
-                  ? (language === "vi" ? "Đang đăng xuất..." : "Signing out...") 
-                  : (language === "vi" ? "Đăng xuất" : "Sign out")}
+                {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
               </span>
             ) : null}
           </button>
@@ -369,7 +346,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-card lg:hidden"
                 onClick={() => setMobileMenuOpen(true)}
-                aria-label={language === "vi" ? "Mở menu điều hướng" : "Open navigation menu"}
+                aria-label="Mở menu điều hướng"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -378,10 +355,10 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <p
                   className={cn(
                     "mb-1 inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                    theme.accentSoft,
+                    workspaceTheme.accentSoft,
                   )}
                 >
-                  {language === "vi" ? theme.labelVi : theme.label}
+                  {language === "vi" ? workspaceTheme.labelVi : workspaceTheme.label}
                 </p>
                 <h1 className="truncate text-xl font-bold tracking-tight lg:text-2xl">
                   {translateHeaderTitle(headerMeta.title, language)}
@@ -390,7 +367,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              {/* Language Switcher Button Group */}
+              {/* Bộ chuyển ngôn ngữ */}
               <div className="inline-flex items-center rounded-xl border border-border/70 bg-card/90 p-0.5 shadow-sm backdrop-blur-sm">
                 <button
                   type="button"
@@ -399,7 +376,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     "rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
                     language === "en"
                       ? "bg-teal-600 text-white shadow-sm font-black"
-                      : "text-slate-500 hover:text-slate-900 font-semibold"
+                      : "text-muted-foreground hover:text-foreground font-semibold"
                   )}
                 >
                   EN
@@ -411,27 +388,41 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     "rounded-lg px-2 sm:px-2.5 py-1 text-[10px] sm:text-xs font-bold transition-all",
                     language === "vi"
                       ? "bg-teal-600 text-white shadow-sm font-black"
-                      : "text-slate-500 hover:text-slate-900 font-semibold"
+                      : "text-muted-foreground hover:text-foreground font-semibold"
                   )}
                 >
                   VN
                 </button>
               </div>
 
-              {/* Notification Bell Dropdown (Specifically for Staff) */}
+              {/* Nút chuyển chế độ sáng/tối */}
+              <button
+                type="button"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/90 transition hover:border-teal-500/30 hover:bg-card"
+                aria-label="Chuyển chế độ sáng/tối"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4 text-yellow-400" />
+                ) : (
+                  <Moon className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+
+              {/* Chuông thông báo dành cho Nhân viên */}
               {isStaff && (
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
                       className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/90 transition hover:border-teal-500/30 hover:bg-card"
-                      aria-label={language === "vi" ? "Thông báo nghiệp vụ" : "Operations Notifications"}
+                      aria-label="Thông báo nghiệp vụ"
                     >
-                      <Bell className={cn("h-4.5 w-4.5", totalNotifications > 0 ? "animate-swing text-teal-600" : "text-muted-foreground")} />
+                      <Bell className={cn("h-4 w-4", totalNotifications > 0 ? "text-teal-600" : "text-muted-foreground")} />
                       {totalNotifications > 0 && (
                         <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
                           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-50" />
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
                         </span>
                       )}
                     </button>
@@ -439,37 +430,37 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                   <PopoverContent
                     align="end"
                     sideOffset={10}
-                    className="w-80 rounded-2xl border-border/70 bg-white/95 p-3 text-slate-950 shadow-[0_22px_60px_rgba(15,118,110,0.12)] backdrop-blur-xl"
+                    className="w-80 rounded-2xl border-border/70 bg-card/95 p-3 shadow-[0_22px_60px_rgba(15,118,110,0.12)] backdrop-blur-xl"
                   >
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
-                      <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                        {language === "vi" ? "Thông báo nghiệp vụ" : "Operations Alerts"}
+                    <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
+                      <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                        Thông báo nghiệp vụ
                       </h3>
                       {totalNotifications > 0 && (
-                        <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-black text-teal-700">
-                          {totalNotifications} new
+                        <span className="rounded-full bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 text-[10px] font-black text-teal-700 dark:text-teal-400">
+                          {totalNotifications} mới
                         </span>
                       )}
                     </div>
                     {totalNotifications === 0 ? (
                       <div className="py-6 text-center text-xs font-semibold text-muted-foreground">
-                        {language === "vi" ? "Không có thông báo mới" : "No new notifications"}
+                        Không có thông báo mới
                       </div>
                     ) : (
                       <div className="max-h-64 overflow-y-auto space-y-3">
                         {eligibleCount > 0 && (
                           <div className="space-y-1.5">
-                            <h4 className="text-[11px] font-bold text-slate-400 px-1">
-                              {language === "vi" ? "Lịch hẹn chờ check-in" : "Pre-booked Arrivals"}
+                            <h4 className="text-[11px] font-bold text-muted-foreground px-1">
+                              Lịch hẹn chờ check-in
                             </h4>
                             {eligibleQuery.data?.slice(0, 5).map((booking) => (
                               <Link
                                 key={booking.bookingId}
-                                href={`/staff/check-in`}
-                                className="flex flex-col gap-0.5 rounded-xl bg-teal-50/50 hover:bg-teal-50 p-2 text-[11px] transition"
+                                href="/staff/check-in"
+                                className="flex flex-col gap-0.5 rounded-xl bg-teal-50/50 dark:bg-teal-900/20 hover:bg-teal-50 dark:hover:bg-teal-900/30 p-2 text-[11px] transition"
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="font-black text-teal-950 font-mono">{booking.vehiclePlate}</span>
+                                  <span className="font-black text-teal-950 dark:text-teal-200 font-mono">{booking.vehiclePlate}</span>
                                   <span className="font-semibold text-muted-foreground">{booking.bookingTime}</span>
                                 </div>
                                 <div className="text-[10px] text-muted-foreground truncate">
@@ -481,22 +472,20 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                         )}
 
                         {pendingSessionsCount > 0 && (
-                          <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                            <h4 className="text-[11px] font-bold text-slate-400 px-1">
-                              {language === "vi" ? "Phiên rửa xe chờ duyệt" : "Pending Wash Sessions"}
+                          <div className="space-y-1.5 pt-2 border-t border-border/50">
+                            <h4 className="text-[11px] font-bold text-muted-foreground px-1">
+                              Phiên rửa xe chờ duyệt
                             </h4>
                             {pendingSessions.slice(0, 5).map((session) => (
                               <Link
                                 key={session.sessionId}
                                 href={`/staff/check-in?sessionId=${session.sessionId}`}
-                                className="flex flex-col gap-0.5 rounded-xl bg-orange-50/50 hover:bg-orange-50 p-2 text-[11px] transition"
+                                className="flex flex-col gap-0.5 rounded-xl bg-orange-50/50 dark:bg-orange-900/20 hover:bg-orange-50 dark:hover:bg-orange-900/30 p-2 text-[11px] transition"
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="font-black text-orange-950 font-mono">{session.vehiclePlate}</span>
-                                  <span className="rounded-full bg-white px-1.5 py-0.5 text-[9px] font-black text-orange-700 shadow-sm border border-orange-100">
-                                    {session.status === "PENDING"
-                                      ? (language === "vi" ? "Chờ duyệt" : "Pending")
-                                      : (language === "vi" ? "Chờ check-in" : "Checked-in")}
+                                  <span className="font-black text-orange-950 dark:text-orange-200 font-mono">{session.vehiclePlate}</span>
+                                  <span className="rounded-full bg-card px-1.5 py-0.5 text-[9px] font-black text-orange-700 dark:text-orange-400 shadow-sm border border-orange-100 dark:border-orange-800">
+                                    {session.status === "PENDING" ? "Chờ duyệt" : "Chờ check-in"}
                                   </span>
                                 </div>
                                 <div className="text-[10px] text-muted-foreground truncate">
@@ -506,13 +495,13 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                             ))}
                           </div>
                         )}
-                        
-                        <div className="pt-2 border-t border-slate-100">
+
+                        <div className="pt-2 border-t border-border/50">
                           <Link
                             href="/staff/check-in"
-                            className="flex w-full items-center justify-center rounded-xl bg-slate-50 py-2 text-center text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition"
+                            className="flex w-full items-center justify-center rounded-xl bg-muted py-2 text-center text-[11px] font-bold text-foreground hover:bg-accent transition"
                           >
-                            {language === "vi" ? "Xem tất cả check-in" : "View all check-in"}
+                            Xem tất cả check-in
                           </Link>
                         </div>
                       </div>
@@ -521,21 +510,38 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 </Popover>
               )}
 
-              {/* Profile Popover */}
+              {/* Chuông thông báo dành cho Khách hàng */}
+              {isCustomer && (
+                <Link
+                  href="/customer/notifications"
+                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/90 transition hover:border-teal-500/30 hover:bg-card"
+                  aria-label="Thông báo"
+                >
+                  <Bell className={cn("h-4 w-4", unreadCustomerNotifications > 0 ? "text-teal-600" : "text-muted-foreground")} />
+                  {unreadCustomerNotifications > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+                    </span>
+                  )}
+                </Link>
+              )}
+
+              {/* Popover hồ sơ người dùng */}
               <Popover>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
                     className="group flex max-w-[12rem] items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-2 py-1.5 text-left transition hover:border-primary/30 hover:bg-card sm:max-w-none sm:px-3"
-                    aria-label={language === "vi" ? "Mở menu hồ sơ" : "Open profile menu"}
+                    aria-label="Mở menu hồ sơ"
                   >
-                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", theme.accentSoft)}>
+                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", workspaceTheme.accentSoft)}>
                       <UserRound className="h-4 w-4" />
                     </div>
                     <div className="hidden min-w-0 sm:block">
                       <div className="truncate text-sm font-bold">{user.fullName}</div>
                       <div className="truncate text-[11px] font-semibold text-muted-foreground">
-                        {requiredRole === "CUSTOMER" ? (user.tier ?? "MEMBER") : user.role}
+                        {requiredRole === "CUSTOMER" ? (user.tier ?? "THÀNH VIÊN") : user.role}
                       </div>
                     </div>
                     <ChevronDown className="hidden h-4 w-4 text-muted-foreground transition group-data-[state=open]:rotate-180 sm:block" />
@@ -544,31 +550,31 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 <PopoverContent
                   align="end"
                   sideOffset={10}
-                  className="w-72 rounded-2xl border-border/70 bg-white/95 p-2 text-slate-950 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+                  className="w-72 rounded-2xl border-border/70 bg-card/95 p-2 shadow-[0_22px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl"
                 >
                   <div className="px-2 py-2">
                     <div className="flex items-center gap-3">
-                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-full border", theme.accentSoft)}>
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-full border", workspaceTheme.accentSoft)}>
                         <UserRound className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-extrabold text-slate-950">{user.fullName}</div>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        <div className="truncate text-sm font-extrabold">{user.fullName}</div>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                           <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                          {requiredRole === "CUSTOMER" ? (user.tier ?? "MEMBER") : user.role}
+                          {requiredRole === "CUSTOMER" ? (user.tier ?? "THÀNH VIÊN") : user.role}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="my-1 h-px bg-slate-100" />
+                  <div className="my-1 h-px bg-border" />
 
                   <Link
                     href={profileHref}
-                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-slate-50"
+                    className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
                   >
-                      <UserCog className="h-4 w-4 text-primary" />
-                      {language === "vi" ? "Hồ sơ cá nhân" : "Profile"}
+                    <UserCog className="h-4 w-4 text-primary" />
+                    Hồ sơ cá nhân
                   </Link>
 
                   {quickActions.map((action) => {
@@ -577,35 +583,33 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                       <Link
                         key={action.href}
                         href={action.href}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-slate-50"
+                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
                       >
-                        <Icon className="h-4 w-4 text-slate-500" />
-                        {language === "vi" ? action.labelVi : action.label}
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        {action.labelVi}
                       </Link>
                     );
                   })}
 
-                  <div className="my-1 h-px bg-slate-100" />
+                  <div className="my-1 h-px bg-border" />
 
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-accent"
                     onClick={() => router.refresh()}
                   >
-                    <RefreshCw className="h-4 w-4 text-slate-500" />
-                    {language === "vi" ? "Làm mới dữ liệu" : "Refresh data"}
+                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                    Làm mới dữ liệu
                   </button>
 
                   <button
                     type="button"
                     disabled={logoutMutation.isPending}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-950/30 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={handleLogout}
                   >
                     <LogOut className="h-4 w-4" />
-                    {logoutMutation.isPending 
-                      ? (language === "vi" ? "Đang đăng xuất..." : "Signing out...") 
-                      : (language === "vi" ? "Đăng xuất" : "Sign out")}
+                    {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
                   </button>
                 </PopoverContent>
               </Popover>
@@ -615,7 +619,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 disabled={logoutMutation.isPending}
                 onClick={handleLogout}
                 className="inline-flex h-10 items-center gap-2 rounded-xl border border-border/70 px-3 text-sm font-semibold transition hover:bg-accent lg:hidden"
-                aria-label={language === "vi" ? "Đăng xuất" : "Sign out"}
+                aria-label="Đăng xuất"
               >
                 <ArrowRightFromLine className="h-4 w-4" />
               </button>
@@ -637,7 +641,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     href={item.href}
                     className={cn(
                       "flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10px] font-semibold",
-                      active ? theme.mobileActive : "text-muted-foreground",
+                      active ? workspaceTheme.mobileActive : "text-muted-foreground",
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -655,15 +659,15 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           <button
             type="button"
             className="absolute inset-0 bg-black/40"
-            aria-label={language === "vi" ? "Đóng menu điều hướng" : "Close navigation menu"}
+            aria-label="Đóng menu điều hướng"
             onClick={() => setMobileMenuOpen(false)}
           />
           <aside className="absolute left-0 top-0 flex h-full w-[min(100%,20rem)] flex-col bg-card shadow-2xl">
             <SidebarBrand
               collapsed={false}
-              theme={theme}
+              theme={workspaceTheme}
               onToggle={() => setMobileMenuOpen(false)}
-              closeLabel={language === "vi" ? "Đóng" : "Close"}
+              closeLabel="Đóng"
             />
             <nav className="flex-1 overflow-y-auto px-3 py-4">
               <ul className="space-y-1">
@@ -673,7 +677,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     item={item}
                     pathname={pathname}
                     collapsed={false}
-                    activeClassName={theme.activeNav}
+                    activeClassName={workspaceTheme.activeNav}
                     onNavigate={() => setMobileMenuOpen(false)}
                   />
                 ))}
@@ -683,46 +687,44 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         </div>
       ) : null}
 
-      {/* Dynamic top-right dismissible alert popup */}
+      {/* Popup thông báo góc trên bên phải */}
       {alertNotification.show && (
-        <div className="fixed top-20 right-6 z-[100] w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-teal-200/90 bg-white/95 p-4 shadow-[0_16px_48px_-8px_rgba(15,118,110,0.22)] backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
+        <div className="fixed top-20 right-6 z-[100] w-[22rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-teal-200/90 dark:border-teal-800/50 bg-card/95 p-4 shadow-[0_16px_48px_-8px_rgba(15,118,110,0.22)] backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-top-4 slide-in-from-right-4">
           <button
             type="button"
             onClick={() => setAlertNotification((prev) => ({ ...prev, show: false }))}
-            className="absolute right-3 top-3 rounded-lg p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground transition"
-            aria-label="Dismiss alert"
+            className="absolute right-3 top-3 rounded-lg p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition"
+            aria-label="Đóng thông báo"
           >
             <X className="h-4 w-4" />
           </button>
-          
+
           <div className="flex items-start gap-3.5 pr-6">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 shadow-sm border border-teal-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 shadow-sm border border-teal-100 dark:border-teal-800">
               <BellRing className="h-5 w-5 animate-swing" />
             </div>
-            
+
             <div className="min-w-0 flex-1">
-              <h4 className="text-xs font-black uppercase tracking-wider text-teal-700">
+              <h4 className="text-xs font-black uppercase tracking-wider text-teal-700 dark:text-teal-400">
                 {alertNotification.title}
               </h4>
-              <div className="mt-1.5 flex items-center gap-2 rounded-xl bg-slate-50/80 px-2.5 py-1.5 text-xs font-bold text-slate-800 border border-slate-100/50">
-                <span className="text-[10px] text-muted-foreground uppercase">
-                  {language === "vi" ? "Biển số" : "Plate"}
-                </span>
-                <span className="font-black tracking-wide text-teal-950 font-mono text-sm">
+              <div className="mt-1.5 flex items-center gap-2 rounded-xl bg-muted/80 px-2.5 py-1.5 text-xs font-bold border border-border/50">
+                <span className="text-[10px] text-muted-foreground uppercase">Biển số</span>
+                <span className="font-black tracking-wide text-teal-950 dark:text-teal-200 font-mono text-sm">
                   {alertNotification.plate}
                 </span>
               </div>
               <p className="mt-2 text-xs font-semibold text-muted-foreground truncate">
                 {alertNotification.message}
               </p>
-              
+
               <div className="mt-3 flex justify-end">
                 <Link
                   href={alertNotification.path}
                   onClick={() => setAlertNotification((prev) => ({ ...prev, show: false }))}
                   className="inline-flex items-center justify-center rounded-xl bg-teal-600 hover:bg-teal-700 px-4 py-2 text-center text-xs font-bold text-white shadow-sm shadow-teal-600/10 hover:shadow-teal-600/20 transition hover:-translate-y-0.5"
                 >
-                  {language === "vi" ? "Duyệt ngay" : "Process now"}
+                  Duyệt ngay
                 </Link>
               </div>
             </div>
@@ -786,8 +788,8 @@ function SidebarBrand({
           <button
             type="button"
             onClick={onToggle}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/15 bg-white text-primary shadow-[0_12px_30px_rgba(124,58,237,0.16)] transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_16px_36px_rgba(124,58,237,0.22)]"
-            aria-label="M? r?ng thanh bên"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/15 bg-card text-primary shadow-[0_12px_30px_rgba(124,58,237,0.16)] transition hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_16px_36px_rgba(124,58,237,0.22)]"
+            aria-label="Mở rộng thanh bên"
           >
             <PanelLeftOpen className="h-5 w-5" />
           </button>
@@ -816,7 +818,7 @@ function SidebarBrand({
           type="button"
           onClick={onToggle}
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition hover:bg-accent"
-          aria-label={closeLabel ?? (collapsed ? "M? r?ng thanh bên" : "Thu g?n thanh bên")}
+          aria-label={closeLabel ?? (collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên")}
         >
           {closeLabel ? (
             <X className="h-4 w-4" />
@@ -875,4 +877,3 @@ function isNavActive(pathname: string, item: WorkspaceNavItem) {
   }
   return pathname === itemPathname || pathname.startsWith(`${itemPathname}/`);
 }
-
