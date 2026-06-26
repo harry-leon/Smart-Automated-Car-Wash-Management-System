@@ -87,7 +87,7 @@ export function RegisterForm() {
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               placeholder="Nguyen Van A"
-              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+              className="h-12 w-full rounded-md border border-slate-200 bg-white/80 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/10"
             />
             <div className="absolute left-4 flex items-center justify-center text-slate-400">
               <UserRound className="h-4 w-4" />
@@ -112,7 +112,7 @@ export function RegisterForm() {
               value={phone}
               onChange={(event) => setPhone(event.target.value.replace(/\s/g, ""))}
               placeholder="0901234567"
-              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+              className="h-12 w-full rounded-md border border-slate-200 bg-white/80 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/10"
             />
             <div className="absolute left-4 flex items-center justify-center text-slate-400">
               <Phone className="h-4 w-4" />
@@ -136,7 +136,7 @@ export function RegisterForm() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="name@example.com"
-              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+              className="h-12 w-full rounded-md border border-slate-200 bg-white/80 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/10"
             />
             <div className="absolute left-4 flex items-center justify-center text-slate-400">
               <Mail className="h-4 w-4" />
@@ -161,7 +161,7 @@ export function RegisterForm() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="••••••••"
-              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+              className="h-12 w-full rounded-md border border-slate-200 bg-white/80 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/10"
             />
             <div className="absolute left-4 flex items-center justify-center text-slate-400">
               <LockKeyhole className="h-4 w-4" />
@@ -186,7 +186,7 @@ export function RegisterForm() {
               value={passwordConfirm}
               onChange={(event) => setPasswordConfirm(event.target.value)}
               placeholder="••••••••"
-              className="h-12 w-full rounded-2xl border border-sky-100 bg-white/70 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-500/10"
+              className="h-12 w-full rounded-md border border-slate-200 bg-white/80 pl-11 pr-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-sm transition-all duration-300 placeholder:text-slate-400 focus:border-teal-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/10"
             />
             <div className="absolute left-4 flex items-center justify-center text-slate-400">
               <LockKeyhole className="h-4 w-4" />
@@ -202,7 +202,7 @@ export function RegisterForm() {
         <Button
           type="submit"
           disabled={!canSubmit}
-          className="h-12 w-full rounded-full text-sm font-bold shadow-[0_12px_32px_rgba(37,99,235,0.24)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+          className="h-12 w-full rounded-md text-sm font-bold shadow-[0_12px_32px_rgba(15,118,110,0.20)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
         >
           {registerMutation.isPending ? (
             <>
@@ -219,7 +219,7 @@ export function RegisterForm() {
       </div>
 
       {errorMessage ? (
-        <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 text-center text-xs font-bold text-rose-600 animate-pulse">
+        <div className="animate-pulse rounded-lg border border-rose-100 bg-rose-50 p-3 text-center text-xs font-bold text-rose-600">
           {errorMessage}
         </div>
       ) : null}
