@@ -30,62 +30,58 @@ public class SmtpBookingEmailDeliveryServiceImpl implements BookingEmailDelivery
     }
 
     @Override
-    public void sendBookingOtp(Booking booking, String email, String otp, int expiresInSeconds) {
+    public void sendBookingConfirmation(Booking booking, String email) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(from, fromName);
             helper.setTo(email);
-            helper.setSubject("AURA Car Wash booking verification code");
-            helper.setText(textBody(booking, otp, expiresInSeconds), htmlBody(booking, otp, expiresInSeconds));
+            helper.setSubject("AURA Car Wash booking confirmation");
+            helper.setText(textBody(booking), htmlBody(booking));
             mailSender.send(message);
         } catch (MessagingException | UnsupportedEncodingException exception) {
-            throw new IllegalStateException("Unable to build booking OTP email", exception);
+            throw new IllegalStateException("Unable to build booking confirmation email", exception);
         }
     }
 
-    private String textBody(Booking booking, String otp, int expiresInSeconds) {
-        int minutes = Math.max(expiresInSeconds / 60, 1);
+    private String textBody(Booking booking) {
         return """
-                Your AURA Car Wash booking verification code is %s.
+                Your AURA Car Wash booking has been created successfully.
 
                 Booking ID: %s
                 Schedule: %s at %s
                 Amount: %,d VND
+                Status: %s
 
-                Enter this 6-digit code to confirm your pending booking.
-                This code expires in %d minutes and can only be used once.
-                If you did not create this booking, please ignore this email.
+                Please arrive on time so our staff can check you in.
+                If you did not create this booking, please contact AURA Car Wash support.
                 """.formatted(
-                otp,
                 booking.getId(),
                 booking.getBookingDate(),
                 booking.getBookingTime(),
                 booking.getFinalAmount(),
-                minutes
+                booking.getStatus().name()
         );
     }
 
-    private String htmlBody(Booking booking, String otp, int expiresInSeconds) {
-        int minutes = Math.max(expiresInSeconds / 60, 1);
+    private String htmlBody(Booking booking) {
         return """
                 <div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.5">
-                  <h2 style="margin:0 0 12px">AURA Car Wash booking verification</h2>
-                  <p>Use this code to confirm your pending booking:</p>
-                  <div style="font-size:28px;font-weight:700;letter-spacing:6px;margin:16px 0">%s</div>
+                  <h2 style="margin:0 0 12px">AURA Car Wash booking confirmation</h2>
+                  <p>Your booking has been created successfully.</p>
                   <p>Booking ID: <strong>%s</strong></p>
                   <p>Schedule: <strong>%s at %s</strong></p>
                   <p>Amount: <strong>%,d VND</strong></p>
-                  <p>This code expires in %d minutes and can only be used once.</p>
-                  <p style="color:#64748b">If you did not create this booking, please ignore this email.</p>
+                  <p>Status: <strong>%s</strong></p>
+                  <p>Please arrive on time so our staff can check you in.</p>
+                  <p style="color:#64748b">If you did not create this booking, please contact AURA Car Wash support.</p>
                 </div>
                 """.formatted(
-                otp,
                 booking.getId(),
                 booking.getBookingDate(),
                 booking.getBookingTime(),
                 booking.getFinalAmount(),
-                minutes
+                booking.getStatus().name()
         );
     }
 }

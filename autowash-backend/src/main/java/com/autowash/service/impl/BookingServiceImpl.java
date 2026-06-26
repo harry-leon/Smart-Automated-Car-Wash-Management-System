@@ -38,6 +38,7 @@ import com.autowash.service.LoyaltyService;
 import com.autowash.service.PromotionService;
 import com.autowash.shared.dto.PaginationMeta;
 import com.autowash.shared.exception.ApiException;
+import com.autowash.service.BookingEmailDeliveryService;
 import com.autowash.service.CurrentUserService;
 import com.autowash.repository.WashSessionRepository;
 import com.autowash.entity.Vehicle;
@@ -54,11 +55,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BookingServiceImpl implements BookingService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingServiceImpl.class);
 
     private static final Set<BookingStatus> ACTIVE_BOOKING_STATUSES = Set.of(
             BookingStatus.CONFIRMED,
@@ -83,6 +90,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingPromotionRepository bookingPromotionRepository;
     private final PaymentRepository paymentRepository;
     private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
+    private final BookingEmailDeliveryService bookingEmailDeliveryService;
     private final PromotionService promotionService;
     private final LocalTime operatingStartTime;
     private final LocalTime operatingEndTime;
@@ -102,6 +110,7 @@ public class BookingServiceImpl implements BookingService {
             BookingPromotionRepository bookingPromotionRepository,
             PaymentRepository paymentRepository,
             BookingStatusHistoryRepository bookingStatusHistoryRepository,
+            BookingEmailDeliveryService bookingEmailDeliveryService,
             PromotionService promotionService,
             @Value("${autowash.booking.operating-hours.start:08:00}") String operatingStartTime,
             @Value("${autowash.booking.operating-hours.end:20:00}") String operatingEndTime,
@@ -120,6 +129,7 @@ public class BookingServiceImpl implements BookingService {
         this.bookingPromotionRepository = bookingPromotionRepository;
         this.paymentRepository = paymentRepository;
         this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
+        this.bookingEmailDeliveryService = bookingEmailDeliveryService;
         this.promotionService = promotionService;
         this.operatingStartTime = LocalTime.parse(operatingStartTime);
         this.operatingEndTime = LocalTime.parse(operatingEndTime);
@@ -235,6 +245,7 @@ public class BookingServiceImpl implements BookingService {
             }
             customerComboService.recordUsage(ownedCombo, booking.getId().toString(), request.bookingDate());
         }
+        sendBookingConfirmationEmailAfterCommit(booking);
 
         return new CreateBookingResponse(
                 booking.getId().toString(),
@@ -589,6 +600,32 @@ public class BookingServiceImpl implements BookingService {
             return currentUserService.getCurrentUser();
         } catch (ApiException exception) {
             return null;
+        }
+    }
+
+    private void sendBookingConfirmationEmailAfterCommit(Booking booking) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    sendBookingConfirmationEmail(booking);
+                }
+            });
+            return;
+        }
+        sendBookingConfirmationEmail(booking);
+    }
+
+    private void sendBookingConfirmationEmail(Booking booking) {
+        String email = booking.getCustomer().getEmail();
+        if (email == null || email.isBlank()) {
+            LOGGER.warn("Skipping booking confirmation email because customer email is empty: bookingId={}", booking.getId());
+            return;
+        }
+        try {
+            bookingEmailDeliveryService.sendBookingConfirmation(booking, email);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Failed to send booking confirmation email: bookingId={}, to={}", booking.getId(), email, exception);
         }
     }
 
