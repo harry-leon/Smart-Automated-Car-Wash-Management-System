@@ -44,6 +44,17 @@ public class PackageService {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    public PackageService(UUID packageId, UUID optionId, String optionName, String optionDescription, long optionPrice, int optionDurationMinutes, int quantity, int sortOrder) {
+        this.packageId = packageId;
+        this.optionId = optionId;
+        this.optionName = optionName;
+        this.optionDescription = optionDescription;
+        this.optionPrice = optionPrice;
+        this.optionDurationMinutes = optionDurationMinutes;
+        this.quantity = quantity;
+        this.sortOrder = sortOrder;
+    }
+
     @Getter
     @NoArgsConstructor
     public static class PackageServiceId implements Serializable {

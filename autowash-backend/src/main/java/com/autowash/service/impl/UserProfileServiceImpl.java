@@ -47,6 +47,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
+    @Transactional
     public UserProfileResponse getCurrentUserProfile() {
         User user = currentUserService.getCurrentUser();
         UserPreference preference = loadOrCreatePreference(user);
@@ -106,6 +107,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     }
 
     @Override
+    @Transactional
     public UserPreferencesDto getCurrentUserPreferences() {
         User user = currentUserService.getCurrentUser();
         UserPreference preference = loadOrCreatePreference(user);

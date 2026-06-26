@@ -102,8 +102,8 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
             select session from WashSession session
             where session.booking.customer = :customer
               and session.status = :status
-              and (:dateFrom is null or session.completedAt >= :dateFrom)
-              and (:dateTo is null or session.completedAt <= :dateTo)
+              and (cast(:dateFrom as timestamp) is null or session.completedAt >= :dateFrom)
+              and (cast(:dateTo as timestamp) is null or session.completedAt <= :dateTo)
             """)
     Page<WashSession> searchCustomerCompletedSessions(
             @Param("customer") User customer,
@@ -117,8 +117,8 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     @Query("""
             select session from WashSession session
             where session.booking.customer = :customer
-              and (:dateFrom is null or session.createdAt >= :dateFrom)
-              and (:dateTo is null or session.createdAt <= :dateTo)
+              and (cast(:dateFrom as timestamp) is null or session.createdAt >= :dateFrom)
+              and (cast(:dateTo as timestamp) is null or session.createdAt <= :dateTo)
             """)
     Page<WashSession> searchCustomerSessions(
             @Param("customer") User customer,

@@ -7,107 +7,44 @@ import type {
   AdminComboForm,
 } from "@/features/admin/management/management.types";
 
-function getMockServices(): AdminCatalogService[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem("mock_admin_services");
-  return stored ? JSON.parse(stored) : [];
-}
-
-function saveMockServices(services: AdminCatalogService[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("mock_admin_services", JSON.stringify(services));
-}
-
-function getDeletedServiceIds(): string[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem("mock_deleted_services");
-  return stored ? JSON.parse(stored) : [];
-}
-
-function saveDeletedServiceIds(ids: string[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("mock_deleted_services", JSON.stringify(ids));
-}
-
-function getMockPackages(): AdminCatalogPackage[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem("mock_admin_packages");
-  return stored ? JSON.parse(stored) : [];
-}
-
-function saveMockPackages(packages: AdminCatalogPackage[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("mock_admin_packages", JSON.stringify(packages));
-}
-
-function getDeletedPackageIds(): string[] {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem("mock_deleted_packages");
-  return stored ? JSON.parse(stored) : [];
-}
-
-function saveDeletedPackageIds(ids: string[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("mock_deleted_packages", JSON.stringify(ids));
-}
-
 export async function listAdminCatalogServices() {
-  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogService[]>>("/services");
-  const backendServices = response.data.data;
-  const added = getMockServices();
-  const deletedIds = getDeletedServiceIds();
-  return [
-    ...backendServices.filter((s) => !deletedIds.includes(s.serviceId)),
-    ...added,
-  ];
+  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogService[]>>("/admin/services");
+  return response.data.data;
 }
 
 export async function listAdminCatalogPackages() {
-  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogPackage[]>>("/packages");
-  const backendPackages = response.data.data;
-  const added = getMockPackages();
-  const deletedIds = getDeletedPackageIds();
-  return [
-    ...backendPackages.filter((p) => !deletedIds.includes(p.packageId)),
-    ...added,
-  ];
+  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogPackage[]>>("/admin/packages");
+  return response.data.data;
 }
 
-export async function createAdminService(payload: {
+export function createAdminService(payload: {
   name: string;
   description: string;
   price: number;
   duration: number;
   status: string;
 }) {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  const newService: AdminCatalogService = {
-    serviceId: `mock-srv-${Date.now()}`,
-    name: payload.name,
-    description: payload.description,
-    price: payload.price,
-    duration: payload.duration,
-    status: payload.status,
-  };
-  const current = getMockServices();
-  saveMockServices([...current, newService]);
-  return newService;
+  return apiRequest<AdminCatalogService, Record<string, unknown>>({
+    method: "POST",
+    url: "/admin/services",
+    data: {
+      name: payload.name,
+      description: payload.description,
+      price: Number(payload.price),
+      durationMinutes: Number(payload.duration),
+      status: payload.status,
+    },
+  });
 }
 
-export async function deleteAdminService(serviceId: string) {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  if (serviceId.startsWith("mock-srv-")) {
-    const current = getMockServices();
-    saveMockServices(current.filter((s) => s.serviceId !== serviceId));
-  } else {
-    const currentDeleted = getDeletedServiceIds();
-    if (!currentDeleted.includes(serviceId)) {
-      saveDeletedServiceIds([...currentDeleted, serviceId]);
-    }
-  }
+export function deleteAdminService(serviceId: string) {
+  return apiRequest<AdminCatalogService>({
+    method: "DELETE",
+    url: `/admin/services/${serviceId}`,
+  });
 }
 
-export async function createAdminPackage(payload: {
+export function createAdminPackage(payload: {
   name: string;
   description: string;
   basePrice: number;
@@ -115,36 +52,32 @@ export async function createAdminPackage(payload: {
   category: string;
   features: string[];
   status: string;
+  serviceIds: string[];
 }) {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  const newPkg: AdminCatalogPackage = {
-    packageId: `mock-pkg-${Date.now()}`,
-    name: payload.name,
-    description: payload.description,
-    basePrice: payload.basePrice,
-    duration: payload.duration,
-    category: payload.category,
-    features: payload.features,
-    image: null,
-    status: payload.status,
-    popularity: null,
-  };
-  const current = getMockPackages();
-  saveMockPackages([...current, newPkg]);
-  return newPkg;
+  return apiRequest<AdminCatalogPackage, Record<string, unknown>>({
+    method: "POST",
+    url: "/admin/packages",
+    data: {
+      name: payload.name,
+      description: payload.description,
+      basePrice: Number(payload.basePrice),
+      durationMinutes: Number(payload.duration),
+      imageUrl: null,
+      status: payload.status,
+      options: payload.serviceIds.map((serviceId, index) => ({
+        optionId: serviceId,
+        quantity: 1,
+        sortOrder: index + 1,
+      })),
+    },
+  });
 }
 
-export async function deleteAdminPackage(packageId: string) {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  if (packageId.startsWith("mock-pkg-")) {
-    const current = getMockPackages();
-    saveMockPackages(current.filter((p) => p.packageId !== packageId));
-  } else {
-    const currentDeleted = getDeletedPackageIds();
-    if (!currentDeleted.includes(packageId)) {
-      saveDeletedPackageIds([...currentDeleted, packageId]);
-    }
-  }
+export function deleteAdminPackage(packageId: string) {
+  return apiRequest<AdminCatalogPackage>({
+    method: "DELETE",
+    url: `/admin/packages/${packageId}`,
+  });
 }
 
 export async function listAdminCombos() {

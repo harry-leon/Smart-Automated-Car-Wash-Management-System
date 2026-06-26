@@ -63,4 +63,5 @@ export type AdminPackageForm = {
   category: string;
   features: string;
   status: "ACTIVE" | "INACTIVE";
+  serviceIds: string[];
 };

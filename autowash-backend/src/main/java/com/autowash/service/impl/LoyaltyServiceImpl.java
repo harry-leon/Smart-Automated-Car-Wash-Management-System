@@ -298,9 +298,6 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     private User requireCustomer(UUID customerId) {
         User customer = UserRepository.findById(customerId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND"));
-        if (customer.getRole() != UserRole.CUSTOMER) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Customer not found", "RESOURCE_NOT_FOUND");
-        }
         return customer;
     }
 

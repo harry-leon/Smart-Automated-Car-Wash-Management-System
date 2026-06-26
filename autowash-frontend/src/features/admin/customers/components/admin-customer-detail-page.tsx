@@ -656,8 +656,12 @@ function BookingsTab({
           <TableBody>
             {query.data.items.map((booking) => (
               <TableRow key={booking.bookingId}>
-                <TableCell>{booking.bookingId}</TableCell>
-                <TableCell>{booking.servicePackageName ?? booking.servicePackageId ?? "N/A"}</TableCell>
+                <TableCell>
+                  <Link href={`/admin/bookings/${booking.bookingId}`} className="text-sky-700 hover:underline font-medium">
+                    {shortId(booking.bookingId)}
+                  </Link>
+                </TableCell>
+                <TableCell>{booking.servicePackageName ?? "N/A"}</TableCell>
                 <TableCell>
                   {booking.bookingDate} {booking.bookingTime}
                 </TableCell>
@@ -780,7 +784,6 @@ function WashHistoryTab({
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <StatusBadge value={item.status} />
-                            <span className="text-xs text-slate-500">{shortId(item.sessionId)}</span>
                           </div>
                           <WashProgress status={item.status} startedAt={item.startedAt} completedAt={item.completedAt} />
                           <div className="text-xs text-slate-500">{durationLabel(item.startedAt, item.completedAt)}</div>

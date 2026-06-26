@@ -102,7 +102,9 @@ export function CustomerHistoryPageContent() {
                     <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-black text-slate-900">{booking.bookingId}</h3>
+                          <h3 className="text-base font-black text-slate-900">
+                            {booking.packageName ?? "Booking"}
+                          </h3>
                           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                             {getBookingStatusLabel(booking.status)}
                           </span>
@@ -110,7 +112,7 @@ export function CustomerHistoryPageContent() {
                         <div className="grid gap-1 text-sm text-slate-600 md:grid-cols-2">
                           <p>Vehicle: <span className="font-medium text-slate-900">{booking.vehiclePlate}</span></p>
                           <p>Service: <span className="font-medium text-slate-900">{booking.packageName ?? "--"}</span></p>
-                          <p>Schedule: <span className="font-medium text-slate-900">{booking.bookingDate} {booking.bookingTime}</span></p>
+                          <p>Schedule: <span className="font-medium text-slate-900">{formatSchedule(booking.bookingDate, booking.bookingTime)}</span></p>
                           <p>Wash: <span className="font-medium text-slate-900">{booking.washStatus ? humanizeCode(booking.washStatus) : "Not started"}</span></p>
                         </div>
                       </div>
@@ -140,16 +142,18 @@ export function CustomerHistoryPageContent() {
                     <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-black text-slate-900">{wash.bookingId}</h3>
+                          <h3 className="text-base font-black text-slate-900">
+                            {wash.packageName ?? "Wash session"}
+                          </h3>
                           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                            {wash.status}
+                            {humanizeCode(wash.status)}
                           </span>
                         </div>
                         <div className="grid gap-1 text-sm text-slate-600 md:grid-cols-2">
                           <p>Vehicle: <span className="font-medium text-slate-900">{wash.vehiclePlate}</span></p>
                           <p>Service: <span className="font-medium text-slate-900">{wash.packageName ?? "--"}</span></p>
-                          <p>Booked for: <span className="font-medium text-slate-900">{wash.bookingDate} {wash.bookingTime}</span></p>
-                          <p>Completed: <span className="font-medium text-slate-900">{new Date(wash.completedAt).toLocaleString("vi-VN")}</span></p>
+                          <p>Booked for: <span className="font-medium text-slate-900">{formatSchedule(wash.bookingDate, wash.bookingTime)}</span></p>
+                          <p>Completed: <span className="font-medium text-slate-900">{formatDateTime(wash.completedAt)}</span></p>
                         </div>
                       </div>
                       <div className="space-y-2 text-right">
@@ -185,7 +189,7 @@ export function CustomerHistoryPageContent() {
                         <div className="text-base font-black text-slate-900">{formatLoyaltyTransactionType(item.type)}</div>
                         <div className="mt-1 text-sm text-slate-600">{item.description}</div>
                         <div className="mt-2 text-xs text-slate-500">
-                          {item.bookingId} • {new Date(item.createdAt).toLocaleString("vi-VN")}
+                          {new Date(item.createdAt).toLocaleString("vi-VN")}
                         </div>
                       </div>
                       <div className={item.points >= 0 ? "text-right text-lg font-black text-emerald-700" : "text-right text-lg font-black text-rose-700"}>
@@ -201,6 +205,29 @@ export function CustomerHistoryPageContent() {
       </div>
     </div>
   );
+}
+
+/** Format "2026-06-24" + "09:02:24.787450" → "24/06/2026 09:02" */
+function formatSchedule(date: string, time: string) {
+  const [year, month, day] = date.split("-");
+  const timePart = time.split(":").slice(0, 2).join(":");
+  return `${day}/${month}/${year} ${timePart}`;
+}
+
+/** Format ISO timestamp → "24/06/2026 09:02" */
+function formatDateTime(iso: string) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
 }
 
 function TabButton({

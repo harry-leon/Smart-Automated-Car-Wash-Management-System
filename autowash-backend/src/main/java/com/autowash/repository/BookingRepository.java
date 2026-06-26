@@ -69,12 +69,12 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
             select booking from Booking booking
-            where (:statusFilter = false or booking.status in :statuses)
-              and (:customerId is null or booking.customer.id = :customerId)
-              and (:dateFrom is null or booking.scheduledAt >= :dateFrom)
-              and (:dateTo is null or booking.scheduledAt <= :dateTo)
+            where (:#{#statusFilter == false} = true or booking.status in :statuses)
+              and (:#{#customerId == null} = true or booking.customer.id = :customerId)
+              and (:#{#dateFrom == null} = true or booking.scheduledAt >= :dateFrom)
+              and (:#{#dateTo == null} = true or booking.scheduledAt <= :dateTo)
               and (
-                    :searchLike is null
+                    :#{#searchLike == null} = true
                     or lower(str(booking.id)) like :searchLike
                     or lower(booking.customer.fullName) like :searchLike
                     or lower(booking.customer.phone) like :searchLike
@@ -115,9 +115,9 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("""
             select booking from Booking booking
             where booking.assignedStaff = :staff
-              and (:statusFilter = false or booking.status in :statuses)
-              and (:dateFrom is null or booking.scheduledAt >= :dateFrom)
-              and (:dateTo is null or booking.scheduledAt <= :dateTo)
+              and (:#{#statusFilter == false} = true or booking.status in :statuses)
+              and (:#{#dateFrom == null} = true or booking.scheduledAt >= :dateFrom)
+              and (:#{#dateTo == null} = true or booking.scheduledAt <= :dateTo)
             """)
     Page<Booking> searchAssignedStaffBookings(
             @Param("staff") User staff,

@@ -42,4 +42,29 @@ public class Service {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    public Service(String name, String description, long price, int durationMinutes, ActiveStatus status) {
+        this.id = UUID.randomUUID();
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.durationMinutes = durationMinutes;
+        this.status = status;
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    public void update(String name, String description, long price, int durationMinutes, ActiveStatus status) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.durationMinutes = durationMinutes;
+        this.status = status;
+        this.updatedAt = Instant.now();
+    }
+
+    public void deactivate() {
+        this.status = ActiveStatus.INACTIVE;
+        this.updatedAt = Instant.now();
+    }
 }

@@ -10,4 +10,6 @@ public interface PackageServiceRepository extends JpaRepository<PackageService, 
     List<PackageService> findByPackageIdOrderBySortOrderAsc(UUID packageId);
 
     List<PackageService> findByPackageIdAndOptionIdIn(UUID packageId, Collection<UUID> optionIds);
+
+    void deleteByPackageId(UUID packageId);
 }

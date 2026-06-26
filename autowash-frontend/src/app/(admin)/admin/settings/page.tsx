@@ -1,12 +1,5 @@
-import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
+import { AdminSettingsPage } from "@/features/admin/settings/components/admin-settings-page";
 
-export default function AdminSettingsPage() {
-  return (
-    <WorkspacePlaceholder
-      workspace="Admin"
-      title="System settings"
-      description="System settings shell for admin configuration."
-      endpoints={["GET /admin/settings", "PUT /admin/settings"]}
-    />
-  );
+export default function AdminSettingsRoute() {
+  return <AdminSettingsPage />;
 }

@@ -139,6 +139,7 @@ export function useCreateAdminPackage() {
         category: form.category,
         features,
         status: form.status,
+        serviceIds: form.serviceIds,
       });
     },
     onSuccess: async () => {

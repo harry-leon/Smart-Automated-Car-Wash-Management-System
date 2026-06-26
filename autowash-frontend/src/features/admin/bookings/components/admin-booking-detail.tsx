@@ -190,7 +190,6 @@ export function AdminBookingDetail({ bookingId }: { bookingId: string }) {
                 <div className="mt-4 pt-4 border-t flex justify-between items-center">
                   <div>
                     <p className="text-sm font-medium">Wash Session Status</p>
-                    <p className="text-xs text-slate-500">ID: {booking.washSessionId}</p>
                   </div>
                   <Badge variant="secondary">{booking.washStatus}</Badge>
                 </div>

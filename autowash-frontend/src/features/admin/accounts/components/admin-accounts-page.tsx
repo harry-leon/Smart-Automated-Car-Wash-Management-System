@@ -331,7 +331,6 @@ export function AdminAccountsPageContent() {
                         >
                           <TableCell>
                             <div className="font-medium text-slate-950">{account.fullName}</div>
-                            <div className="text-xs text-slate-500">{shortId(account.accountId)}</div>
                           </TableCell>
                           <TableCell className="text-slate-600">{account.email ?? "No email"}</TableCell>
                           <TableCell className="font-medium text-slate-700">{account.phone}</TableCell>

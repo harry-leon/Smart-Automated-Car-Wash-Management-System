@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Droplets, Layers3, Loader2, Package, Plus, RefreshCcw, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Droplets, Layers3, Loader2, Package, Plus, RefreshCcw, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
@@ -20,7 +20,7 @@ import {
   useCreateAdminPackage,
   useDeleteAdminPackage,
 } from "@/features/admin/management/hooks/use-admin-service-management";
-import type { AdminComboForm, AdminServiceForm, AdminPackageForm } from "@/features/admin/management/management.types";
+import type { AdminCatalogService, AdminComboForm, AdminServiceForm, AdminPackageForm } from "@/features/admin/management/management.types";
 
 const EMPTY_COMBO_FORM: AdminComboForm = {
   name: "",
@@ -87,6 +87,8 @@ function LiveServicesPanel() {
     duration: "",
     status: "ACTIVE",
   });
+  const [touched, setTouched] = useState<Partial<Record<keyof AdminServiceForm, boolean>>>({});
+  const [submitted, setSubmitted] = useState(false);
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminServiceForm, string>> = {};
@@ -96,6 +98,17 @@ function LiveServicesPanel() {
     return errors;
   }, [form]);
 
+  const visibleErrors = useMemo(() => {
+    if (submitted) return formErrors;
+    return Object.fromEntries(
+      Object.entries(formErrors).filter(([key]) => touched[key as keyof AdminServiceForm])
+    ) as Partial<Record<keyof AdminServiceForm, string>>;
+  }, [formErrors, touched, submitted]);
+
+  function touchField(field: keyof AdminServiceForm) {
+    setTouched((current) => ({ ...current, [field]: true }));
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
       <Card className="border-slate-200 bg-white shadow-sm">
@@ -103,10 +116,10 @@ function LiveServicesPanel() {
           <CardTitle className="text-lg">Create service</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} error={formErrors.name} />
+          <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField label="Price" value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} error={formErrors.price} />
-            <FormField label="Duration minutes" value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} error={formErrors.duration} />
+            <FormField label="Price" value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
+            <FormField label="Duration minutes" value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
           <FormField label="Description" value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
           <label className="grid gap-2">
@@ -128,8 +141,10 @@ function LiveServicesPanel() {
           <div className="flex justify-end">
             <Button
               type="button"
-              disabled={Object.keys(formErrors).length > 0 || createServiceMutation.isPending}
+              disabled={createServiceMutation.isPending}
               onClick={async () => {
+                setSubmitted(true);
+                if (Object.keys(formErrors).length > 0) return;
                 try {
                   await createServiceMutation.mutateAsync(form);
                   setForm({
@@ -139,6 +154,8 @@ function LiveServicesPanel() {
                     duration: "",
                     status: "ACTIVE",
                   });
+                  setTouched({});
+                  setSubmitted(false);
                   toast.success("Service created successfully.");
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
@@ -216,6 +233,7 @@ function LiveServicesPanel() {
 
 function LivePackagesPanel() {
   const packagesQuery = useAdminCatalogPackages();
+  const servicesQuery = useAdminCatalogServices();
   const createPackageMutation = useCreateAdminPackage();
   const deletePackageMutation = useDeleteAdminPackage();
   const [form, setForm] = useState<AdminPackageForm>({
@@ -226,7 +244,10 @@ function LivePackagesPanel() {
     category: "",
     features: "",
     status: "ACTIVE",
+    serviceIds: [],
   });
+  const [touched, setTouched] = useState<Partial<Record<keyof AdminPackageForm, boolean>>>({});
+  const [submitted, setSubmitted] = useState(false);
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminPackageForm, string>> = {};
@@ -234,8 +255,20 @@ function LivePackagesPanel() {
     if (!form.basePrice.trim() || Number(form.basePrice) < 0) errors.basePrice = "Base price must be 0 or greater.";
     if (!form.duration.trim() || Number(form.duration) < 1) errors.duration = "Duration must be at least 1 minute.";
     if (!form.category.trim()) errors.category = "Category is required.";
+    if (form.serviceIds.length === 0) errors.serviceIds = "Select at least one service.";
     return errors;
   }, [form]);
+
+  const visibleErrors = useMemo(() => {
+    if (submitted) return formErrors;
+    return Object.fromEntries(
+      Object.entries(formErrors).filter(([key]) => touched[key as keyof AdminPackageForm])
+    ) as Partial<Record<keyof AdminPackageForm, string>>;
+  }, [formErrors, touched, submitted]);
+
+  function touchField(field: keyof AdminPackageForm) {
+    setTouched((current) => ({ ...current, [field]: true }));
+  }
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
@@ -244,14 +277,27 @@ function LivePackagesPanel() {
           <CardTitle className="text-lg">Create package</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} error={formErrors.name} />
+          <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField label="Base price" value={form.basePrice} onChange={(value) => setForm((current) => ({ ...current, basePrice: value }))} error={formErrors.basePrice} />
-            <FormField label="Duration minutes" value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} error={formErrors.duration} />
+            <FormField label="Base price" value={form.basePrice} onChange={(value) => setForm((current) => ({ ...current, basePrice: value }))} onBlur={() => touchField("basePrice")} error={visibleErrors.basePrice} />
+            <FormField label="Duration minutes" value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
-          <FormField label="Category (e.g. Basic, Premium)" value={form.category} onChange={(value) => setForm((current) => ({ ...current, category: value }))} error={formErrors.category} />
+          <FormField label="Category (e.g. Basic, Premium)" value={form.category} onChange={(value) => setForm((current) => ({ ...current, category: value }))} onBlur={() => touchField("category")} error={visibleErrors.category} />
           <FormField label="Features (comma separated)" value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder="Vacuuming, Hand wash, Tire shine" />
           <FormField label="Description" value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+
+          {/* Services multi-select dropdown */}
+          <ServiceMultiSelect
+            label="Services included"
+            services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
+            selectedIds={form.serviceIds}
+            onChange={(ids) => setForm((current) => ({ ...current, serviceIds: ids }))}
+            isLoading={servicesQuery.isPending}
+            isError={servicesQuery.isError}
+            errorMessage={servicesQuery.isError ? getDisplayErrorMessage(servicesQuery.error) : undefined}
+            validationError={visibleErrors.serviceIds}
+          />
+
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-slate-800">Status</span>
             <select
@@ -271,8 +317,10 @@ function LivePackagesPanel() {
           <div className="flex justify-end">
             <Button
               type="button"
-              disabled={Object.keys(formErrors).length > 0 || createPackageMutation.isPending}
+              disabled={createPackageMutation.isPending}
               onClick={async () => {
+                setSubmitted(true);
+                if (Object.keys(formErrors).length > 0) return;
                 try {
                   await createPackageMutation.mutateAsync(form);
                   setForm({
@@ -283,7 +331,10 @@ function LivePackagesPanel() {
                     category: "",
                     features: "",
                     status: "ACTIVE",
+                    serviceIds: [],
                   });
+                  setTouched({});
+                  setSubmitted(false);
                   toast.success("Package created successfully.");
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
@@ -376,6 +427,8 @@ function LiveCombosPanel() {
   const createComboMutation = useCreateAdminCombo();
   const deleteComboMutation = useDeleteAdminCombo();
   const [form, setForm] = useState<AdminComboForm>(EMPTY_COMBO_FORM);
+  const [touched, setTouched] = useState<Partial<Record<keyof AdminComboForm, boolean>>>({});
+  const [submitted, setSubmitted] = useState(false);
 
   const formErrors = useMemo(() => {
     const errors: Partial<Record<keyof AdminComboForm, string>> = {};
@@ -388,23 +441,31 @@ function LiveCombosPanel() {
     return errors;
   }, [form]);
 
+  const visibleErrors = useMemo(() => {
+    if (submitted) return formErrors;
+    return Object.fromEntries(
+      Object.entries(formErrors).filter(([key]) => touched[key as keyof AdminComboForm])
+    ) as Partial<Record<keyof AdminComboForm, string>>;
+  }, [formErrors, touched, submitted]);
+
+  function touchField(field: keyof AdminComboForm) {
+    setTouched((current) => ({ ...current, [field]: true }));
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
       <Card className="border-slate-200 bg-white shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Create combo</CardTitle>
-          <CardDescription>
-            `POST /api/v1/admin/combos` is wired. Each selected service is sent as a combo option with quantity 1.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} error={formErrors.name} />
-            <FormField label="Price" value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} error={formErrors.price} />
+            <FormField label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} onBlur={() => touchField("name")} error={visibleErrors.name} />
+            <FormField label="Price" value={form.price} onChange={(value) => setForm((current) => ({ ...current, price: value }))} onBlur={() => touchField("price")} error={visibleErrors.price} />
             <FormField label="Original price" value={form.originalPrice} onChange={(value) => setForm((current) => ({ ...current, originalPrice: value }))} />
-            <FormField label="Duration minutes" value={form.durationMinutes} onChange={(value) => setForm((current) => ({ ...current, durationMinutes: value }))} error={formErrors.durationMinutes} />
-            <FormField label="Duration days" value={form.durationDays} onChange={(value) => setForm((current) => ({ ...current, durationDays: value }))} error={formErrors.durationDays} />
-            <FormField label="Max usages" value={form.maxUsages} onChange={(value) => setForm((current) => ({ ...current, maxUsages: value }))} error={formErrors.maxUsages} />
+            <FormField label="Duration minutes" value={form.durationMinutes} onChange={(value) => setForm((current) => ({ ...current, durationMinutes: value }))} onBlur={() => touchField("durationMinutes")} error={visibleErrors.durationMinutes} />
+            <FormField label="Duration days" value={form.durationDays} onChange={(value) => setForm((current) => ({ ...current, durationDays: value }))} onBlur={() => touchField("durationDays")} error={visibleErrors.durationDays} />
+            <FormField label="Max usages" value={form.maxUsages} onChange={(value) => setForm((current) => ({ ...current, maxUsages: value }))} onBlur={() => touchField("maxUsages")} error={visibleErrors.maxUsages} />
           </div>
           <FormField
             label="Description"
@@ -428,42 +489,16 @@ function LiveCombosPanel() {
             </select>
           </label>
 
-          <div className="grid gap-2">
-            <div className="text-sm font-semibold text-slate-800">Services included</div>
-            {servicesQuery.isPending ? (
-              <LoadingPanel />
-            ) : servicesQuery.isError ? (
-              <ErrorPanel message={getDisplayErrorMessage(servicesQuery.error)} />
-            ) : (
-              <div className="grid max-h-64 gap-2 overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                {servicesQuery.data?.map((service) => {
-                  const checked = form.optionIds.includes(service.serviceId);
-                  return (
-                    <label key={service.serviceId} className="flex items-start gap-3 rounded-xl border border-white bg-white px-3 py-3">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            optionIds: event.target.checked
-                              ? [...current.optionIds, service.serviceId]
-                              : current.optionIds.filter((item) => item !== service.serviceId),
-                          }))
-                        }
-                        className="mt-1 h-4 w-4"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-slate-900">{service.name}</div>
-                        <div className="text-xs text-slate-500">{service.duration} min · {formatCurrency(service.price)}</div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-            {formErrors.optionIds ? <p className="text-sm text-rose-600">{formErrors.optionIds}</p> : null}
-          </div>
+          <ServiceMultiSelect
+            label="Services included"
+            services={servicesQuery.data?.filter((s) => s.status === "ACTIVE") ?? []}
+            selectedIds={form.optionIds}
+            onChange={(ids) => setForm((current) => ({ ...current, optionIds: ids }))}
+            isLoading={servicesQuery.isPending}
+            isError={servicesQuery.isError}
+            errorMessage={servicesQuery.isError ? getDisplayErrorMessage(servicesQuery.error) : undefined}
+            validationError={visibleErrors.optionIds}
+          />
 
           {createComboMutation.isError ? (
             <ErrorPanel message={getDisplayErrorMessage(createComboMutation.error)} />
@@ -472,11 +507,15 @@ function LiveCombosPanel() {
           <div className="flex justify-end">
             <Button
               type="button"
-              disabled={Object.keys(formErrors).length > 0 || createComboMutation.isPending}
+              disabled={createComboMutation.isPending}
               onClick={async () => {
+                setSubmitted(true);
+                if (Object.keys(formErrors).length > 0) return;
                 try {
                   await createComboMutation.mutateAsync(form);
                   setForm(EMPTY_COMBO_FORM);
+                  setTouched({});
+                  setSubmitted(false);
                   toast.success("Combo created successfully.");
                 } catch (error) {
                   toast.error(getDisplayErrorMessage(error));
@@ -616,16 +655,149 @@ function BackendGapNotice({ message }: { message: string }) {
   );
 }
 
+function ServiceMultiSelect({
+  label,
+  services,
+  selectedIds,
+  onChange,
+  isLoading,
+  isError,
+  errorMessage,
+  validationError,
+}: {
+  label: string;
+  services: AdminCatalogService[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+  isLoading?: boolean;
+  isError?: boolean;
+  errorMessage?: string;
+  validationError?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedServices = services.filter((s) => selectedIds.includes(s.serviceId));
+
+  function toggle(id: string) {
+    onChange(selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]);
+  }
+
+  function removeTag(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    onChange(selectedIds.filter((x) => x !== id));
+  }
+
+  // Close when clicking outside
+  useState(() => {
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  });
+
+  return (
+    <div className="grid gap-2" ref={containerRef}>
+      <span className="text-sm font-semibold text-slate-800">{label}</span>
+
+      {isLoading ? (
+        <div className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-400">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading services…
+        </div>
+      ) : isError ? (
+        <div className="flex h-11 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 text-sm text-rose-600">
+          {errorMessage ?? "Failed to load services"}
+        </div>
+      ) : (
+        <div className="relative">
+          {/* Trigger */}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className={`flex min-h-11 w-full flex-wrap items-center gap-1.5 rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+              open ? "border-teal-400 ring-2 ring-teal-100" : "border-slate-200"
+            } bg-white`}
+          >
+            {selectedServices.length === 0 ? (
+              <span className="text-slate-400">Select services…</span>
+            ) : (
+              selectedServices.map((s) => (
+                <span
+                  key={s.serviceId}
+                  className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-medium text-teal-700"
+                >
+                  {s.name}
+                  <button
+                    type="button"
+                    onClick={(e) => removeTag(s.serviceId, e)}
+                    className="ml-0.5 rounded-full hover:text-teal-900"
+                    aria-label={`Remove ${s.name}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))
+            )}
+            <ChevronDown className={`ml-auto h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+          </button>
+
+          {/* Dropdown panel */}
+          {open && (
+            <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg">
+              {services.length === 0 ? (
+                <div className="px-3 py-3 text-sm text-slate-400">No active services available.</div>
+              ) : (
+                <ul className="max-h-52 overflow-auto py-1">
+                  {services.map((service) => {
+                    const checked = selectedIds.includes(service.serviceId);
+                    return (
+                      <li key={service.serviceId}>
+                        <button
+                          type="button"
+                          onClick={() => toggle(service.serviceId)}
+                          className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50 ${checked ? "bg-teal-50/60" : ""}`}
+                        >
+                          <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "border-teal-500 bg-teal-500 text-white" : "border-slate-300"}`}>
+                            {checked && (
+                              <svg viewBox="0 0 10 8" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M1 4l3 3 5-6" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-slate-900">{service.name}</div>
+                            <div className="text-xs text-slate-500">{service.duration} min · {formatCurrency(service.price)}</div>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {validationError ? <p className="text-sm text-rose-600">{validationError}</p> : null}
+    </div>
+  );
+}
+
 function FormField({
   label,
   value,
   onChange,
+  onBlur,
   error,
   placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   error?: string;
   placeholder?: string;
 }) {
@@ -635,6 +807,7 @@ function FormField({
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none"
       />

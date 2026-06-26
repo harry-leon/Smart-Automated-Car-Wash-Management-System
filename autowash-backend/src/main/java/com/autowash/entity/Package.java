@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -38,4 +39,37 @@ public class Package {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ActiveStatus status;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    public Package(String name, String description, long basePrice, int durationMinutes, String imageUrl, ActiveStatus status) {
+        this.id = UUID.randomUUID();
+        this.name = name;
+        this.description = description;
+        this.basePrice = basePrice;
+        this.durationMinutes = durationMinutes;
+        this.imageUrl = imageUrl;
+        this.status = status;
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    public void update(String name, String description, long basePrice, int durationMinutes, String imageUrl, ActiveStatus status) {
+        this.name = name;
+        this.description = description;
+        this.basePrice = basePrice;
+        this.durationMinutes = durationMinutes;
+        this.imageUrl = imageUrl;
+        this.status = status;
+        this.updatedAt = Instant.now();
+    }
+
+    public void deactivate() {
+        this.status = ActiveStatus.INACTIVE;
+        this.updatedAt = Instant.now();
+    }
 }

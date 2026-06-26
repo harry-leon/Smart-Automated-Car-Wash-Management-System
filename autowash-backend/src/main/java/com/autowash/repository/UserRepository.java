@@ -27,10 +27,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     @Query("""
             SELECT account FROM User account
-            WHERE (:role IS NULL OR account.role = :role)
-              AND (:status IS NULL OR account.status = :status)
+            WHERE (:#{#role == null} = true OR account.role = :role)
+              AND (:#{#status == null} = true OR account.status = :status)
               AND (
-                :searchLike IS NULL
+                :#{#searchLike == null} = true
                 OR LOWER(account.fullName) LIKE :searchLike
                 OR LOWER(account.phone) LIKE :searchLike
                 OR LOWER(COALESCE(account.email, '')) LIKE :searchLike
