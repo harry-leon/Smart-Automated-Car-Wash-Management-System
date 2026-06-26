@@ -1,5 +1,13 @@
-import { redirect } from "next/navigation";
+import { WorkspacePlaceholder } from "@/app/_components/workspace-placeholder";
 
 export default function AdminLoginPage() {
-  redirect("/?auth=login");
+  return (
+    <WorkspacePlaceholder
+      workspace="Auth"
+      title="Admin login"
+      description="Admin sign-in shell using the shared auth contract."
+      endpoints={["POST /auth/login"]}
+      links={[{ href: "/login", label: "Shared login" }]}
+    />
+  );
 }

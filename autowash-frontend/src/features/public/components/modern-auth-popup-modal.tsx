@@ -54,70 +54,70 @@ const OTP_LENGTH = 6;
 
 const AUTH_COPY = {
   vi: {
-    badge: "Chuẩn chăm sóc Aura",
+    badge: "Chuáº©n chÄƒm sÃ³c Aura",
     heroEyebrow: "",
-    heroTitleA: "Hệ thống quản lý",
-    heroTitleB: "rửa xe thông minh",
+    heroTitleA: "Há»‡ thá»‘ng quáº£n lÃ½",
+    heroTitleB: "rá»­a xe thÃ´ng minh",
     heroTitleC: "",
-    heroDescription: "Nhanh chóng. Minh bạch. Hiện đại.",
-    featureA: "Đặt lịch thông minh",
-    featureB: "Theo dõi thời gian thực",
-    featureC: "Nhanh chóng & minh bạch",
-    close: "Đóng",
-    language: "Ngôn ngữ",
-    loginTitle: "Đăng nhập",
-    loginDescription: "Chào mừng bạn quay lại. Tiếp tục hành trình chăm sóc xe của bạn.",
-    identifierLabel: "Số điện thoại hoặc email",
-    identifierPlaceholder: "0901234567 hoặc you@gmail.com",
-    passwordLabel: "Mật khẩu",
-    passwordPlaceholder: "Nhập mật khẩu",
-    forgotPassword: "Quên mật khẩu?",
-    loginButton: "Đăng nhập ngay",
-    loggingIn: "Đang đăng nhập...",
-    googleLoginButton: "Đăng nhập bằng Google",
-    googleRegisterButton: "Đăng ký bằng Google",
-    quickDivider: "Tiếp tục nhanh với",
-    noAccount: "Chưa có tài khoản?",
-    registerLink: "Đăng ký ngay",
-    loginPasswordError: "Mật khẩu tối thiểu 8 ký tự.",
-    registerTitle: "Đăng ký thành viên",
-    registerDescription: "Tạo tài khoản để đặt lịch nhanh, quản lý xe và nhận ưu đãi riêng.",
-    nameLabel: "Họ và tên",
-    namePlaceholder: "Nguyễn Văn A",
-    phoneLabel: "Số điện thoại",
+    heroDescription: "Nhanh chÃ³ng. Minh báº¡ch. Hiá»‡n Ä‘áº¡i.",
+    featureA: "Äáº·t lá»‹ch thÃ´ng minh",
+    featureB: "Theo dÃµi thá»i gian thá»±c",
+    featureC: "Nhanh chÃ³ng & minh báº¡ch",
+    close: "ÄÃ³ng",
+    language: "NgÃ´n ngá»¯",
+    loginTitle: "ÄÄƒng nháº­p",
+    loginDescription: "ChÃ o má»«ng báº¡n quay láº¡i. Tiáº¿p tá»¥c hÃ nh trÃ¬nh chÄƒm sÃ³c xe cá»§a báº¡n.",
+    identifierLabel: "Sá»‘ Ä‘iá»‡n thoáº¡i hoáº·c email",
+    identifierPlaceholder: "0901234567 hoáº·c you@gmail.com",
+    passwordLabel: "Máº­t kháº©u",
+    passwordPlaceholder: "Nháº­p máº­t kháº©u",
+    forgotPassword: "QuÃªn máº­t kháº©u?",
+    loginButton: "ÄÄƒng nháº­p ngay",
+    loggingIn: "Äang Ä‘Äƒng nháº­p...",
+    googleLoginButton: "ÄÄƒng nháº­p báº±ng Google",
+    googleRegisterButton: "Ðang ký b?ng Google",
+    quickDivider: "Tiáº¿p tá»¥c nhanh vá»›i",
+    noAccount: "ChÆ°a cÃ³ tÃ i khoáº£n?",
+    registerLink: "ÄÄƒng kÃ½ thÃ nh viÃªn",
+    loginPasswordError: "Máº­t kháº©u tá»‘i thiá»ƒu 8 kÃ½ tá»±.",
+    registerTitle: "ÄÄƒng kÃ½ thÃ nh viÃªn",
+    registerDescription: "Táº¡o tÃ i khoáº£n Ä‘á»ƒ Ä‘áº·t lá»‹ch nhanh, quáº£n lÃ½ xe vÃ  nháº­n Æ°u Ä‘Ã£i riÃªng.",
+    nameLabel: "Há» vÃ  tÃªn",
+    namePlaceholder: "Nguyá»…n VÄƒn A",
+    phoneLabel: "Sá»‘ Ä‘iá»‡n thoáº¡i",
     phonePlaceholder: "0901234567",
     emailLabel: "Email",
-    optional: "không bắt buộc",
+    optional: "khÃ´ng báº¯t buá»™c",
     emailPlaceholder: "your@gmail.com",
-    confirmPasswordLabel: "Xác nhận mật khẩu",
-    registerButton: "Đăng ký",
-    registering: "Đang đăng ký...",
-    hasAccount: "Đã có tài khoản?",
-    backToLogin: "Đăng nhập",
-    nameError: "Vui lòng nhập họ tên.",
-    phoneError: "Số điện thoại không hợp lệ.",
-    emailError: "Email không hợp lệ.",
-    passwordRule: "Mật khẩu tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.",
-    confirmError: "Mật khẩu không khớp.",
-    otpTitle: "Xác nhận OTP",
-    otpDescription: "Nhập mã 6 chữ số đã gửi đến",
-    otpExpires: "Hết hạn sau",
-    otpCanResend: "Bạn có thể gửi lại mã.",
-    otpSending: "Đang gửi...",
-    otpSendAgain: "Gửi lại mã",
-    otpBack: "Quay lại",
-    otpVerify: "Xác thực",
-    otpVerifying: "Đang xác thực...",
-    eyebrowLogin: "Quyền truy cập AURA",
-    eyebrowRegister: "Thành viên AURA",
-    brandSubtitle: "Rửa xe và chăm sóc cao cấp",
-    brandTitleA: "Hệ thống",
-    brandTitleB: "chăm sóc",
-    brandTitleC: "xe hơi tối tân",
-    brandDesc: "",
-    otpVerifyBtn: "Xác Thực & Hoàn Tất",
-    otpBackBtn: "Trở lại",
-    orContinueWith: "Hoặc tiếp tục với",
+    confirmPasswordLabel: "XÃ¡c nháº­n",
+    registerButton: "Táº¡o tÃ i khoáº£n",
+    registering: "Äang Ä‘Äƒng kÃ½...",
+    hasAccount: "ÄÃ£ cÃ³ tÃ i khoáº£n?",
+    backToLogin: "ÄÄƒng nháº­p",
+    nameError: "Vui lÃ²ng nháº­p há» tÃªn.",
+    phoneError: "Sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng há»£p lá»‡.",
+    emailError: "Email khÃ´ng há»£p lá»‡.",
+    passwordRule: "Cáº§n chá»¯ hoa, chá»¯ thÆ°á»ng, sá»‘, kÃ½ tá»± Ä‘áº·c biá»‡t vÃ  tá»‘i thiá»ƒu 8 kÃ½ tá»±.",
+    confirmError: "Máº­t kháº©u khÃ´ng khá»›p.",
+    otpTitle: "XÃ¡c nháº­n OTP",
+    otpDescription: "Nháº­p mÃ£ 6 chá»¯ sá»‘ Ä‘Ã£ gá»­i Ä‘áº¿n",
+    otpExpires: "Háº¿t háº¡n sau",
+    otpCanResend: "Báº¡n cÃ³ thá»ƒ gá»­i láº¡i mÃ£.",
+    otpSending: "Äang gá»­i...",
+    otpSendAgain: "Gá»­i láº¡i mÃ£",
+    otpBack: "Quay láº¡i",
+    otpVerify: "XÃ¡c thá»±c",
+    otpVerifying: "Äang xÃ¡c thá»±c...",
+    eyebrowLogin: "Quyá»n truy cáº­p AURA",
+    eyebrowRegister: "ThÃ nh viÃªn AURA",
+    brandSubtitle: "Rá»­a xe vÃ  chÄƒm sÃ³c cao cáº¥p",
+    brandTitleA: "Há»‡ thá»‘ng",
+    brandTitleB: "chÄƒm sÃ³c",
+    brandTitleC: "xe hÆ¡i tá»‘i tÃ¢n",
+    brandDesc: "Rá»­a khÃ´ng cháº¡m, cháº©n Ä‘oÃ¡n gáº§m tá»± Ä‘á»™ng, gloss-sealant Ä‘áº³ng cáº¥p. Äáº·t lá»‹ch trong 30 giÃ¢y.",
+    otpVerifyBtn: "XÃ¡c Thá»±c & HoÃ n Táº¥t",
+    otpBackBtn: "Trá»Ÿ láº¡i",
+    orContinueWith: "Hoáº·c tiáº¿p tá»¥c vá»›i",
   },
   en: {
     badge: "Aura Premium Detailing",
@@ -180,7 +180,7 @@ const AUTH_COPY = {
     brandTitleA: "Ultimate",
     brandTitleB: "Car Care",
     brandTitleC: "Platform",
-    brandDesc: "",
+    brandDesc: "Touchless wash, undercarriage scan, premium gloss sealant. Book in 30 seconds.",
     otpVerifyBtn: "Verify & Complete",
     otpBackBtn: "Back",
     orContinueWith: "Or continue with",
@@ -473,7 +473,7 @@ export function ModernAuthPopupModal({
                 className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
               >
                 <GoogleIcon />
-                {copy.googleLoginButton}
+                Ðang nh?p b?ng Google
               </button>
 
               <div className="flex items-center justify-center gap-1.5 border-t border-slate-200/70 pt-4">
@@ -559,7 +559,7 @@ export function ModernAuthPopupModal({
                     className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
                   >
                     <GoogleIcon />
-                    {copy.googleRegisterButton}
+                    Ðang ký b?ng Google
                   </button>
                 </div>
 
@@ -720,11 +720,9 @@ function BrandPanel({ copy }: { copy: Record<string, string> }) {
           </span>
         </h2>
 
-        {copy.brandDesc && (
-          <p className="w-full max-w-[350px] rounded-full border border-sky-100/20 bg-white/[0.06] px-4 py-2 text-center text-[11px] font-bold uppercase tracking-[0.16em] text-sky-50/90 shadow-[0_10px_30px_rgba(8,16,40,0.18)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-700 delay-150">
-            {copy.brandDesc}
-          </p>
-        )}
+        <p className="w-full max-w-[350px] rounded-full border border-sky-100/20 bg-white/[0.06] px-4 py-2 text-center text-[11px] font-bold uppercase tracking-[0.16em] text-sky-50/90 shadow-[0_10px_30px_rgba(8,16,40,0.18)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-700 delay-150">
+          {copy.brandDesc}
+        </p>
 
         <div className="grid w-full max-w-[350px] grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-3 duration-700 delay-200">
           {[
