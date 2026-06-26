@@ -114,7 +114,7 @@ export function useDeleteAdminService() {
   const queryClient = useQueryClient();
   const { userId } = useAdminManagementContext();
 
-  return useMutation<void, ApiErrorResponse, string>({
+  return useMutation<AdminCatalogService, ApiErrorResponse, string>({
     mutationFn: deleteAdminService,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
@@ -152,7 +152,7 @@ export function useDeleteAdminPackage() {
   const queryClient = useQueryClient();
   const { userId } = useAdminManagementContext();
 
-  return useMutation<void, ApiErrorResponse, string>({
+  return useMutation<AdminCatalogPackage, ApiErrorResponse, string>({
     mutationFn: deleteAdminPackage,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: adminManagementScope(userId) });
