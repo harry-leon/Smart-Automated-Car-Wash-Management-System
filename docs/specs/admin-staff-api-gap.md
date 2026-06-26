@@ -85,10 +85,10 @@ Nguồn đối chiếu:
 - `POST /api/v1/admin/packages`
 - `PUT /api/v1/admin/packages/:id`
 - `DELETE /api/v1/admin/packages/:id`
-- `GET /api/v1/admin/add-ons`
-- `POST /api/v1/admin/add-ons`
-- `PUT /api/v1/admin/add-ons/:id`
-- `DELETE /api/v1/admin/add-ons/:id`
+- `GET /api/v1/admin/services`
+- `POST /api/v1/admin/services`
+- `PUT /api/v1/admin/services/:id`
+- `DELETE /api/v1/admin/services/:id`
 - `GET /api/v1/admin/combos`
 - `POST /api/v1/admin/combos`
 - `PUT /api/v1/admin/combos/:id`

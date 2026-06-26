@@ -21,7 +21,7 @@ Database dung chung voi Backend 1 va Backend 3. Backend nay la owner logic cua b
 
 ```text
 GET    /api/v1/packages
-GET    /api/v1/add-ons
+GET    /api/v1/services
 GET    /api/v1/combos/available
 POST   /api/v1/bookings/validate-voucher
 
@@ -123,9 +123,9 @@ Thay doi can luu y:
 ### Task 2.1 - Refactor Catalog
 
 - Doi entity/repository tu `ServicePackage` sang `Package`.
-- Doi add-on/service entity sang bang `services`.
-- Doi quan he package-add-on sang `package_services`.
-- Cap nhat API `/api/v1/packages`, `/api/v1/add-ons`, `/api/v1/combos/available`.
+- Doi service/service entity sang bang `services`.
+- Doi quan he package-service sang `package_services`.
+- Cap nhat API `/api/v1/packages`, `/api/v1/services`, `/api/v1/combos/available`.
 - Bao toan response shape neu frontend dang dung type cu.
 
 ### Task 2.2 - Refactor Voucher Va Promotion

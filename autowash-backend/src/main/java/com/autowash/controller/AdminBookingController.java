@@ -1,6 +1,6 @@
 package com.autowash.controller;
 
-import com.autowash.service.AdminBookingService;
+import com.autowash.service.AdminReportingService;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,7 +11,15 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import com.autowash.dto.AdminBookingResponse;
 
 @RestController
 @Validated
@@ -21,10 +29,32 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminBookingController {
 
-    private final AdminBookingService adminBookingService;
+    private final AdminReportingService adminReportingService;
 
-    public AdminBookingController(AdminBookingService adminBookingService) {
-        this.adminBookingService = adminBookingService;
+    public AdminBookingController(AdminReportingService adminReportingService) {
+        this.adminReportingService = adminReportingService;
+    }
+
+    @GetMapping
+    @Operation(summary = "List all bookings for admin with filters")
+    public ApiResponse<List<AdminBookingResponse>> listBookings(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) UUID customerId,
+            @RequestParam(required = false) String searchQuery,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit
+    ) {
+        AdminReportingService.BookingPage bookingPage =
+                adminReportingService.listBookings(status, dateFrom, dateTo, customerId, searchQuery, page, limit);
+        return ApiResponse.ok("Bookings retrieved", bookingPage.items(), bookingPage.pagination());
+    }
+
+    @GetMapping("/{bookingId}")
+    @Operation(summary = "Get booking detail for admin")
+    public ApiResponse<BookingDetailResponse> getBookingDetail(@PathVariable String bookingId) {
+        return ApiResponse.ok("Booking retrieved", adminReportingService.getBookingDetail(bookingId));
     }
 
 }

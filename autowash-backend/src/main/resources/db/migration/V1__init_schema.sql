@@ -1,110 +1,13 @@
-<<<<<<< HEAD
-=======
-CREATE TYPE "user_role" AS ENUM (
-  'CUSTOMER',
-  'STAFF',
-  'ADMIN'
-);
 
-CREATE TYPE "user_account_status" AS ENUM (
-  'PENDING',
-  'PENDING_VERIFY',
-  'ACTIVE',
-  'BLOCKED',
-  'SUSPENDED',
-  'INACTIVE',
-  'DELETED'
-);
 
-CREATE TYPE "vehicle_status" AS ENUM (
-  'ACTIVE',
-  'INACTIVE',
-  'DELETED'
-);
-
-CREATE TYPE "active_status" AS ENUM (
-  'ACTIVE',
-  'INACTIVE'
-);
-
-CREATE TYPE "discount_type" AS ENUM (
-  'PERCENT',
-  'FIXED_AMOUNT'
-);
-
-CREATE TYPE "loyalty_tier" AS ENUM (
-  'MEMBER',
-  'SILVER',
-  'GOLD',
-  'PLATINUM'
-);
-
-CREATE TYPE "promotion_targeting_mode" AS ENUM (
-  'ALL_TIERS',
-  'SPECIFIC_TIERS'
-);
-
-CREATE TYPE "booking_type" AS ENUM (
-  'PACKAGE',
-  'COMBO'
-);
-
-CREATE TYPE "booking_status" AS ENUM (
-  'PENDING',
-  'CONFIRMED',
-  'CHECKED_IN',
-  'IN_PROGRESS',
-  'COMPLETED',
-  'CANCELLED',
-  'NO_SHOW'
-);
-
-CREATE TYPE "payment_method" AS ENUM (
-  'CASH_AT_COUNTER',
-  'BANK_TRANSFER',
-  'E_WALLET'
-);
-
-CREATE TYPE "payment_status" AS ENUM (
-  'UNPAID',
-  'PENDING_PAYMENT',
-  'PAID',
-  'FAILED',
-  'REFUNDED'
-);
-
-CREATE TYPE "wash_session_status" AS ENUM (
-  'PENDING',
-  'QUEUED',
-  'CHECKED_IN',
-  'IN_PROGRESS',
-  'COMPLETED',
-  'CANCELLED'
-);
-
-CREATE TYPE "point_transaction_type" AS ENUM (
-  'EARN',
-  'REDEEM',
-  'EXPIRE',
-  'ADJUST'
-);
-
-CREATE TYPE "customer_combo_status" AS ENUM (
-  'ACTIVE',
-  'EXPIRED',
-  'USED_UP',
-  'CANCELLED'
-);
-
->>>>>>> e3a66a2aa4f3414b949f40ee69107af9205f4c49
 CREATE TABLE "users" (
   "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
   "full_name" varchar(100) NOT NULL,
-  "phone" varchar(20) UNIQUE NOT NULL,
+  "phone" varchar(20) UNIQUE,
   "email" varchar(255) UNIQUE,
-  "password_hash" varchar(255) NOT NULL,
+  "password_hash" varchar(255),
   "role" varchar(20) NOT NULL CHECK ("role" IN ('CUSTOMER', 'STAFF', 'ADMIN')),
-  "status" varchar(20) NOT NULL DEFAULT 'ACTIVE' CHECK ("status" IN ('ACTIVE', 'BLOCKED', 'SUSPENDED', 'INACTIVE')),
+  "status" varchar(20) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'ACTIVE', 'BLOCKED', 'SUSPENDED', 'INACTIVE')),
   "avatar_url" varchar(500),
   "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
@@ -138,6 +41,32 @@ CREATE TABLE "otp_verifications" (
   "expires_at" timestamp with time zone NOT NULL,
   "verified_at" timestamp with time zone,
   "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+);
+
+CREATE TABLE "user_oauth_accounts" (
+  "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
+  "user_id" uuid NOT NULL,
+  "provider" varchar(30) NOT NULL CHECK ("provider" IN ('GOOGLE')),
+  "provider_user_id" varchar(255) NOT NULL,
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  CONSTRAINT "uq_oauth_user_provider" UNIQUE ("user_id", "provider"),
+  CONSTRAINT "uq_oauth_provider_uid" UNIQUE ("provider", "provider_user_id")
+);
+
+CREATE TABLE "google_auth_tickets" (
+  "state" varchar(255) PRIMARY KEY,
+  "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'LINK_REQUIRED', 'READY', 'CONSUMED', 'EXPIRED')),
+  "provider_email" varchar(255),
+  "provider_full_name" varchar(150),
+  "provider_avatar_url" varchar(500),
+  "provider_subject" varchar(255),
+  "return_url" varchar(1000) NOT NULL,
+  "user_id" uuid,
+  "expires_at" timestamp with time zone NOT NULL,
+  "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  "consumed_at" timestamp with time zone
 );
 
 CREATE TABLE "vehicles" (
@@ -289,6 +218,7 @@ CREATE TABLE "bookings" (
   "package_id" uuid,
   "combo_id" uuid,
   "voucher_id" uuid,
+  "assigned_staff_id" uuid,
   "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW')),
   "scheduled_at" timestamp with time zone NOT NULL,
   "base_amount" bigint NOT NULL DEFAULT 0,
@@ -303,8 +233,8 @@ CREATE TABLE "bookings" (
   "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   "updated_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   CHECK (
-    ("booking_type" = 'PACKAGE' AND "package_id" IS NOT NULL AND "combo_id" IS NULL)
-    OR ("booking_type" = 'COMBO' AND "combo_id" IS NOT NULL AND "package_id" IS NULL)
+    ("booking_type" = 'PACKAGE' AND "combo_id" IS NULL)
+    OR ("booking_type" = 'COMBO' AND "package_id" IS NULL)
   ),
   CHECK ("base_amount" >= 0),
   CHECK ("options_amount" >= 0),
@@ -356,15 +286,17 @@ CREATE TABLE "payments" (
 
 CREATE TABLE "wash_sessions" (
   "id" uuid DEFAULT (gen_random_uuid()) PRIMARY KEY,
-  "booking_id" uuid UNIQUE NOT NULL,
+  "booking_id" uuid NOT NULL,
   "assigned_staff_id" uuid,
-  "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
+  "status" varchar(30) NOT NULL DEFAULT 'PENDING' CHECK ("status" IN ('PENDING', 'QUEUED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
   "fee_amount" bigint,
   "projected_points" int,
   "awarded_points" int,
   "checked_in_at" timestamp with time zone,
   "started_at" timestamp with time zone,
   "completed_at" timestamp with time zone,
+  "cancelled_at" timestamp with time zone,
+  "cancel_reason" varchar(500),
   "notes" text,
   "created_at" timestamp with time zone NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   CHECK ("fee_amount" IS NULL OR "fee_amount" >= 0),
@@ -446,6 +378,12 @@ CREATE INDEX "idx_refresh_tokens_user_id" ON "refresh_tokens" ("user_id");
 
 CREATE INDEX "idx_otp_verifications_user_id" ON "otp_verifications" ("user_id");
 
+CREATE INDEX "idx_oauth_user_id" ON "user_oauth_accounts" ("user_id");
+
+CREATE INDEX "idx_google_tickets_user_id" ON "google_auth_tickets" ("user_id");
+
+CREATE INDEX "idx_google_tickets_expires" ON "google_auth_tickets" ("expires_at");
+
 CREATE INDEX "idx_vehicles_customer_id" ON "vehicles" ("customer_id");
 
 CREATE INDEX "idx_package_services_package_id" ON "package_services" ("package_id");
@@ -476,6 +414,8 @@ CREATE INDEX "idx_bookings_combo_id" ON "bookings" ("combo_id");
 
 CREATE INDEX "idx_bookings_voucher_id" ON "bookings" ("voucher_id");
 
+CREATE UNIQUE INDEX "uk_bookings_customer_voucher" ON "bookings" ("customer_id", "voucher_id");
+
 CREATE INDEX "idx_booking_options_option_id" ON "booking_options" ("option_id");
 
 CREATE INDEX "idx_booking_promotions_booking_id" ON "booking_promotions" ("booking_id");
@@ -496,8 +436,7 @@ CREATE INDEX "idx_point_transactions_loyalty_account_id" ON "point_transactions"
 
 CREATE INDEX "idx_point_transactions_booking_id" ON "point_transactions" ("booking_id");
 
-CREATE UNIQUE INDEX "uk_point_transactions_booking_type" ON "point_transactions" ("booking_id", "type")
-WHERE "booking_id" IS NOT NULL AND "type" IN ('EARN', 'REDEEM');
+CREATE UNIQUE INDEX uk_point_transactions_booking_type ON point_transactions (booking_id, type);
 
 CREATE INDEX "idx_tier_histories_loyalty_account_id" ON "tier_histories" ("loyalty_account_id");
 
@@ -514,6 +453,10 @@ ALTER TABLE "user_preferences" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("
 ALTER TABLE "refresh_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
 ALTER TABLE "otp_verifications" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
+
+ALTER TABLE "user_oauth_accounts" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
+
+ALTER TABLE "google_auth_tickets" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
 ALTER TABLE "vehicles" ADD FOREIGN KEY ("customer_id") REFERENCES "users" ("id") ON DELETE CASCADE ;
 
@@ -538,6 +481,8 @@ ALTER TABLE "bookings" ADD FOREIGN KEY ("package_id") REFERENCES "packages" ("id
 ALTER TABLE "bookings" ADD FOREIGN KEY ("combo_id") REFERENCES "combos" ("id") ;
 
 ALTER TABLE "bookings" ADD FOREIGN KEY ("voucher_id") REFERENCES "vouchers" ("id") ;
+
+ALTER TABLE "bookings" ADD FOREIGN KEY ("assigned_staff_id") REFERENCES "users" ("id") ;
 
 ALTER TABLE "booking_options" ADD FOREIGN KEY ("booking_id") REFERENCES "bookings" ("id") ON DELETE CASCADE ;
 

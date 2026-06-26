@@ -4,7 +4,6 @@ export type LoyaltyTier = "MEMBER" | "SILVER" | "GOLD" | "PLATINUM";
 
 export type RegisterRequest = {
   fullName: string;
-  phone: string;
   email: string;
   password: string;
   passwordConfirm: string;
@@ -12,7 +11,6 @@ export type RegisterRequest = {
 
 export type RegisterResponseData = {
   userId: string;
-  phone: string;
   fullName: string;
   email: string;
   status: "PENDING_VERIFY";
@@ -21,19 +19,18 @@ export type RegisterResponseData = {
 };
 
 export type LoginRequest = {
-  identifier: string;
+  email: string;
   password: string;
   rememberMe?: boolean;
 };
 
 export type SendOtpRequest = {
   email: string;
-  phone?: string;
 };
 
 export type SendOtpResponseData = {
   email: string;
-  phone: string;
+  phone: string | null;
   otpExpiresIn: number;
   maskedEmail?: string;
   maskedPhone?: string;
@@ -42,14 +39,13 @@ export type SendOtpResponseData = {
 
 export type VerifyOtpRequest = {
   email: string;
-  phone?: string;
   otp: string;
 };
 
 export type AuthResponseData = {
   userId: string;
   fullName: string;
-  phone: string;
+  phone: string | null;
   email?: string;
   role: UserRole;
   status: UserStatus;

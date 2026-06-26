@@ -54,12 +54,34 @@ public interface WashSessionRepository extends JpaRepository<WashSession, UUID> 
     @EntityGraph(attributePaths = {"booking", "booking.customer", "booking.vehicle", "assignedStaff"})
     java.util.List<WashSession> findByAssignedStaffOrderByCreatedAtDesc(User assignedStaff);
 
+    @EntityGraph(attributePaths = {"booking"})
+    java.util.List<WashSession> findByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
+
     long countByAssignedStaffAndStatus(User assignedStaff, WashSessionStatus status);
 
     long countByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
 
+    boolean existsByAssignedStaffAndStatusIn(User assignedStaff, Collection<WashSessionStatus> statuses);
+
+    @Query("""
+            select count(session) from WashSession session
+            where session.assignedStaff = :assignedStaff
+              and session.status = :status
+              and session.completedAt >= :completedFrom
+              and session.completedAt < :completedTo
+            """)
+    long countByAssignedStaffAndStatusAndCompletedAtBetween(
+            @Param("assignedStaff") User assignedStaff,
+            @Param("status") WashSessionStatus status,
+            @Param("completedFrom") Instant completedFrom,
+            @Param("completedTo") Instant completedTo
+    );
+
     @EntityGraph(attributePaths = {"booking"})
     List<WashSession> findByBooking_IdIn(Collection<UUID> bookingIds);
+
+    @EntityGraph(attributePaths = {"booking"})
+    List<WashSession> findByBooking_IdAndStatusIn(UUID bookingId, Collection<WashSessionStatus> statuses);
 
     long countByBookingCustomerAndStatus(User customer, WashSessionStatus status);
 

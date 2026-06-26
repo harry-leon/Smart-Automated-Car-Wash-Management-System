@@ -16,9 +16,6 @@ import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "point_transactions")
 @Getter
@@ -38,8 +35,7 @@ public class PointTransaction {
     private Booking booking;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "point_transaction_type")
+    @Column(nullable = false)
     private PointTransactionType type;
 
     @Column(nullable = false)

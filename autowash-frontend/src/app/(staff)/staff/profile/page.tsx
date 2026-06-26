@@ -42,7 +42,7 @@ export default function StaffProfilePage() {
     setForm({
       fullName: profileQuery.data.fullName,
       email: profileQuery.data.email ?? "",
-      phone: profileQuery.data.phone,
+      phone: profileQuery.data.phone ?? "",
     });
     setShowValidation(false);
     updateProfileMutation.reset();
@@ -53,7 +53,7 @@ export default function StaffProfilePage() {
   const hasChanges = profileQuery.data
     ? form.fullName !== profileQuery.data.fullName ||
       form.email !== (profileQuery.data.email ?? "") ||
-      form.phone !== profileQuery.data.phone
+      form.phone !== (profileQuery.data.phone ?? "")
     : false;
 
   const handleFieldChange =
@@ -144,7 +144,7 @@ export default function StaffProfilePage() {
               <div>
                 <div className="text-sm font-semibold text-slate-900">{profile.fullName}</div>
                 <div className="text-xs text-slate-500">
-                  {profile.role} • {profile.phone}
+                  {profile.role} • {profile.phone ?? "Chưa cung cấp"}
                 </div>
               </div>
             </div>
@@ -161,7 +161,7 @@ export default function StaffProfilePage() {
             </CardHeader>
             <CardContent className="space-y-4 p-6">
               <InfoRow label="Họ và tên" value={profile.fullName} />
-              <InfoRow label="Số điện thoại" value={profile.phone} />
+              <InfoRow label="Số điện thoại" value={profile.phone ?? "Chưa cung cấp"} />
               <InfoRow label="Email" value={profile.email ?? "Chưa cung cấp"} />
               <InfoRow label="Vai trò" value={profile.role} />
               <InfoRow label="Trạng thái" value={profile.status} />

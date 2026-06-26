@@ -63,7 +63,6 @@ class AuthControllerIntegrationTest {
                         .content("""
                                 {
                                   "fullName": "Nguyen Van A",
-                                  "phone": "0901234568",
                                   "email": "pending@example.com",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
@@ -71,24 +70,22 @@ class AuthControllerIntegrationTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.phone").value("0901234568"))
-                .andExpect(jsonPath("$.data.status").value("INACTIVE"))
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
                 .andExpect(jsonPath("$.data.requiresOtpVerification").value(true));
 
-        User user = UserRepository.findByPhone("0901234568").orElseThrow();
+        User user = UserRepository.findByEmailIgnoreCase("pending@example.com").orElseThrow();
         Assertions.assertTrue(userPreferenceRepository.existsById(user.getId()));
         Assertions.assertTrue(loyaltyAccountRepository.findByCustomerId(user.getId()).isPresent());
     }
 
     @Test
-    void registerRejectsDuplicatePhone() throws Exception {
+    void registerRejectsDuplicateEmail() throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
                                   "fullName": "Nguyen Van A",
-                                  "phone": "0901234567",
-                                  "email": "duplicate-phone@example.com",
+                                  "email": "duplicate-email@example.com",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
@@ -100,35 +97,33 @@ class AuthControllerIntegrationTest {
                         .content("""
                                 {
                                   "fullName": "Duplicate User",
-                                  "phone": "0901234567",
-                                  "email": "dup@example.com",
+                                  "email": "duplicate-email@example.com",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_PHONE"));
+                .andExpect(jsonPath("$.errorCode").value("DUPLICATE_EMAIL"));
     }
 
     @Test
     void sendOtpReturnsDevOtpForPendingAccount() throws Exception {
-        registerCustomer("0901234569");
+        registerCustomer("0901234569@example.com");
 
         mockMvc.perform(post("/api/v1/auth/otp/send")
                         .contentType("application/json")
                         .content("""
-                                { "phone": "0901234569" }
+                                { "email": "0901234569@example.com" }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.phone").value("0901234569"))
                 .andExpect(jsonPath("$.data.otpExpiresIn").value(300))
                 .andExpect(jsonPath("$.data.devOtp").isString());
     }
 
     @Test
     void registrationOtpIsSentToEmailAndStoredHashed() throws Exception {
-        registerCustomer("0901234590");
+        registerCustomer("0901234590@example.com");
         String email = "0901234590@example.com";
         String otp = sendOtpByEmailAndExtractDevOtp(email);
 
@@ -146,7 +141,7 @@ class AuthControllerIntegrationTest {
 
     @Test
     void resendOtpIsLimitedToThreeTimesPerEmailWindow() throws Exception {
-        registerCustomer("0901234591");
+        registerCustomer("0901234591@example.com");
         String email = "0901234591@example.com";
 
         sendOtpByEmailAndExtractDevOtp(email);
@@ -163,7 +158,7 @@ class AuthControllerIntegrationTest {
 
     @Test
     void failedOtpAttemptsLockCurrentOtpButAllowNewOtp() throws Exception {
-        registerCustomer("0901234592");
+        registerCustomer("0901234592@example.com");
         String email = "0901234592@example.com";
         sendOtpByEmailAndExtractDevOtp(email);
 
@@ -196,14 +191,14 @@ class AuthControllerIntegrationTest {
 
     @Test
     void verifyOtpActivatesAccountAndReturnsTokens() throws Exception {
-        registerCustomer("0901234570");
-        String otp = sendOtpAndExtractDevOtp("0901234570");
+        registerCustomer("0901234570@example.com");
+        String otp = sendOtpByEmailAndExtractDevOtp("0901234570@example.com");
 
         mockMvc.perform(post("/api/v1/auth/otp/verify")
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "0901234570",
+                                  "email": "0901234570@example.com",
                                   "otp": "%s"
                                 }
                                 """.formatted(otp)))
@@ -217,9 +212,9 @@ class AuthControllerIntegrationTest {
 
     @Test
     void accessTokenContainsSharedUserClaims() throws Exception {
-        registerCustomer("0901234593");
-        String otp = sendOtpAndExtractDevOtp("0901234593");
-        String accessToken = verifyOtp("0901234593", otp).path("data").path("accessToken").asText();
+        registerCustomer("0901234593@example.com");
+        String otp = sendOtpByEmailAndExtractDevOtp("0901234593@example.com");
+        String accessToken = verifyOtp("0901234593@example.com", otp).path("data").path("accessToken").asText();
 
         JsonNode claims = decodeJwtPayload(accessToken);
 
@@ -230,9 +225,9 @@ class AuthControllerIntegrationTest {
 
     @Test
     void forgotPasswordRequestAndResetAllowLoginWithNewPassword() throws Exception {
-        registerCustomer("0901234594");
-        String registrationOtp = sendOtpAndExtractDevOtp("0901234594");
-        verifyOtp("0901234594", registrationOtp);
+        registerCustomer("0901234594@example.com");
+        String registrationOtp = sendOtpByEmailAndExtractDevOtp("0901234594@example.com");
+        verifyOtp("0901234594@example.com", registrationOtp);
 
         MvcResult forgotPasswordResult = mockMvc.perform(post("/api/v1/auth/forgot-password/request")
                         .contentType("application/json")
@@ -261,7 +256,7 @@ class AuthControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "identifier": "0901234594@example.com",
+                                  "email": "0901234594@example.com",
                                   "password": "NewSecurePass1!",
                                   "rememberMe": false
                                 }
@@ -271,16 +266,47 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    void forgotPasswordRequestRejectsPhoneOnlyPayload() throws Exception {
+        registerCustomer("0901234595@example.com");
+        String registrationOtp = sendOtpByEmailAndExtractDevOtp("0901234595@example.com");
+        verifyOtp("0901234595@example.com", registrationOtp);
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password/request")
+                        .contentType("application/json")
+                        .content("""
+                                { "phone": "0901234595" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void forgotPasswordResetRejectsPhoneOnlyPayload() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "phone": "0901234595",
+                                  "otp": "123456",
+                                  "newPassword": "NewSecurePass1!",
+                                  "newPasswordConfirm": "NewSecurePass1!"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     void loginReturnsTokensForActiveAccount() throws Exception {
-        registerCustomer("0901234571");
-        String otp = sendOtpAndExtractDevOtp("0901234571");
-        verifyOtp("0901234571", otp);
+        registerCustomer("0901234571@example.com");
+        String otp = sendOtpByEmailAndExtractDevOtp("0901234571@example.com");
+        verifyOtp("0901234571@example.com", otp);
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "identifier": "0901234571",
+                                  "email": "0901234571@example.com",
                                   "password": "SecurePass1!",
                                   "rememberMe": false
                                 }
@@ -291,30 +317,29 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void loginAcceptsEmailIdentifierForActiveAccount() throws Exception {
-        registerCustomer("0901234578");
-        String otp = sendOtpAndExtractDevOtp("0901234578");
-        verifyOtp("0901234578", otp);
+    void loginRejectsPhoneIdentifierForActiveAccount() throws Exception {
+        registerCustomer("0901234578@example.com");
+        String otp = sendOtpByEmailAndExtractDevOtp("0901234578@example.com");
+        verifyOtp("0901234578@example.com", otp);
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "identifier": "0901234578@example.com",
+                                  "email": "0901234578",
                                   "password": "SecurePass1!",
                                   "rememberMe": false
                                 }
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.accessToken").isString())
-                .andExpect(jsonPath("$.data.refreshToken").isString());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_ERROR"));
     }
 
     @Test
     void refreshReturnsNewAccessToken() throws Exception {
-        registerCustomer("0901234572");
-        String otp = sendOtpAndExtractDevOtp("0901234572");
-        String refreshToken = verifyOtp("0901234572", otp).path("data").path("refreshToken").asText();
+        registerCustomer("0901234572@example.com");
+        String otp = sendOtpByEmailAndExtractDevOtp("0901234572@example.com");
+        String refreshToken = verifyOtp("0901234572@example.com", otp).path("data").path("refreshToken").asText();
 
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType("application/json")
@@ -327,9 +352,9 @@ class AuthControllerIntegrationTest {
 
     @Test
     void logoutRevokesRefreshToken() throws Exception {
-        registerCustomer("0901234573");
-        String otp = sendOtpAndExtractDevOtp("0901234573");
-        String refreshToken = verifyOtp("0901234573", otp).path("data").path("refreshToken").asText();
+        registerCustomer("0901234573@example.com");
+        String otp = sendOtpByEmailAndExtractDevOtp("0901234573@example.com");
+        String refreshToken = verifyOtp("0901234573@example.com", otp).path("data").path("refreshToken").asText();
 
         mockMvc.perform(post("/api/v1/auth/logout")
                         .contentType("application/json")
@@ -349,13 +374,13 @@ class AuthControllerIntegrationTest {
 
     @Test
     void loginRejectsPendingAccount() throws Exception {
-        registerCustomer("0901234574");
+        registerCustomer("0901234574@example.com");
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "identifier": "0901234574",
+                                  "email": "0901234574@example.com",
                                   "password": "SecurePass1!",
                                   "rememberMe": false
                                 }
@@ -366,14 +391,14 @@ class AuthControllerIntegrationTest {
 
     @Test
     void sendOtpRejectsActiveAccount() throws Exception {
-        registerCustomer("0901234579");
-        String otp = sendOtpAndExtractDevOtp("0901234579");
-        verifyOtp("0901234579", otp);
+        registerCustomer("0901234579@example.com");
+        String otp = sendOtpByEmailAndExtractDevOtp("0901234579@example.com");
+        verifyOtp("0901234579@example.com", otp);
 
         mockMvc.perform(post("/api/v1/auth/otp/send")
                         .contentType("application/json")
                         .content("""
-                                { "phone": "0901234579" }
+                                { "email": "0901234579@example.com" }
                                 """))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.errorCode").value("RESOURCE_LOCKED"));
@@ -381,15 +406,15 @@ class AuthControllerIntegrationTest {
 
     @Test
     void verifyOtpRejectsActiveAccount() throws Exception {
-        registerCustomer("0901234580");
-        String otp = sendOtpAndExtractDevOtp("0901234580");
-        verifyOtp("0901234580", otp);
+        registerCustomer("0901234580@example.com");
+        String otp = sendOtpByEmailAndExtractDevOtp("0901234580@example.com");
+        verifyOtp("0901234580@example.com", otp);
 
         mockMvc.perform(post("/api/v1/auth/otp/verify")
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "0901234580",
+                                  "email": "0901234580@example.com",
                                   "otp": "%s"
                                 }
                                 """.formatted(otp)))
@@ -398,13 +423,12 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void registerRejectsInvalidPhoneWithValidationErrorShape() throws Exception {
+    void registerRejectsMissingEmailWithValidationErrorShape() throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "fullName": "Bad Phone",
-                                  "phone": "123",
+                                  "fullName": "Missing Email",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
@@ -425,32 +449,81 @@ class AuthControllerIntegrationTest {
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"));
     }
 
+    @Test
+    void googleAccountCanSetLocalPasswordThroughForgotPassword() throws Exception {
+        when(googleOAuthClient.exchangeCode(anyString()))
+                .thenReturn(new com.autowash.dto.GoogleOAuthUserInfo(
+                        "google-sub-001",
+                        "google-only@example.com",
+                        "Google User",
+                        "https://example.com/avatar.png",
+                        true
+                ));
+
+        String state = mockMvc.perform(get("/api/v1/auth/google/callback")
+                        .param("code", "google-code")
+                        .param("state", createGoogleState("http://localhost:3000/auth/google/callback")))
+                .andExpect(status().is3xxRedirection())
+                .andReturn()
+                .getResponse()
+                .getRedirectedUrl()
+                .replace("http://localhost:3000/auth/google/callback?state=", "");
+
+        mockMvc.perform(post("/api/v1/auth/google/tickets/exchange")
+                        .contentType("application/json")
+                        .content("""
+                                { "state": "%s" }
+                                """.formatted(state)))
+                .andExpect(status().isOk());
+
+        MvcResult forgotPasswordResult = mockMvc.perform(post("/api/v1/auth/forgot-password/request")
+                        .contentType("application/json")
+                        .content("""
+                                { "email": "google-only@example.com" }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String resetOtp = readJson(forgotPasswordResult).path("data").path("devOtp").asText();
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password/reset")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "email": "google-only@example.com",
+                                  "otp": "%s",
+                                  "newPassword": "NewSecurePass1!",
+                                  "newPasswordConfirm": "NewSecurePass1!"
+                                }
+                                """.formatted(resetOtp)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "email": "google-only@example.com",
+                                  "password": "NewSecurePass1!",
+                                  "rememberMe": false
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").isString());
+    }
 
 
-    private void registerCustomer(String phone) throws Exception {
+    private void registerCustomer(String email) throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
                                   "fullName": "Nguyen Van A",
-                                  "phone": "%s",
-                                  "email": "%s@example.com",
+                                  "email": "%s",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
-                                """.formatted(phone, phone)))
+                                """.formatted(email)))
                 .andExpect(status().isCreated());
-    }
-
-    private String sendOtpAndExtractDevOtp(String phone) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/v1/auth/otp/send")
-                        .contentType("application/json")
-                        .content("""
-                                { "phone": "%s" }
-                                """.formatted(phone)))
-                .andExpect(status().isOk())
-                .andReturn();
-        return readJson(result).path("data").path("devOtp").asText();
     }
 
     private String sendOtpByEmailAndExtractDevOtp(String email) throws Exception {
@@ -464,18 +537,39 @@ class AuthControllerIntegrationTest {
         return readJson(result).path("data").path("devOtp").asText();
     }
 
-    private JsonNode verifyOtp(String phone, String otp) throws Exception {
+    private JsonNode verifyOtp(String email, String otp) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/otp/verify")
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "%s",
+                                  "email": "%s",
                                   "otp": "%s"
                                 }
-                                """.formatted(phone, otp)))
+                                """.formatted(email, otp)))
                 .andExpect(status().isOk())
                 .andReturn();
         return readJson(result);
+    }
+
+    private String createGoogleState(String returnUrl) throws Exception {
+        when(googleOAuthClient.buildAuthorizationUrl(anyString(), anyString()))
+                .thenAnswer(invocation -> {
+                    String state = invocation.getArgument(0, String.class);
+                    String nextReturnUrl = invocation.getArgument(1, String.class);
+                    return "https://accounts.google.com/o/oauth2/v2/auth?state=" + state
+                            + "&redirect_uri=" + java.net.URLEncoder.encode(nextReturnUrl, java.nio.charset.StandardCharsets.UTF_8);
+                });
+
+        MvcResult result = mockMvc.perform(get("/api/v1/auth/google/start")
+                        .param("returnUrl", returnUrl))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        String location = result.getResponse().getRedirectedUrl();
+        int stateIndex = location.indexOf("state=");
+        String tail = location.substring(stateIndex + 6);
+        int separator = tail.indexOf('&');
+        return separator >= 0 ? tail.substring(0, separator) : tail;
     }
 
     private JsonNode readJson(MvcResult result) throws Exception {

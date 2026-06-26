@@ -249,18 +249,19 @@ class VehicleControllerIntegrationTest {
         return readJson(result).path("data").path("vehicleId").asText();
     }
 
-    private String registerActivateAndLogin(String phone) throws Exception {
+    private String registerActivateAndLogin(String emailLocalPart) throws Exception {
+        String email = emailLocalPart + "@example.com";
+
         MvcResult registerResult = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
                         .content("""
                                 {
                                   "fullName": "Nguyen Van A",
-                                  "phone": "%s",
-                                  "email": "%s@example.com",
+                                  "email": "%s",
                                   "password": "SecurePass1!",
                                   "passwordConfirm": "SecurePass1!"
                                 }
-                                """.formatted(phone, phone)))
+                                """.formatted(email)))
                 .andReturn();
 
         String otp = readJson(registerResult).path("data").path("devOtp").asText();
@@ -269,10 +270,10 @@ class VehicleControllerIntegrationTest {
                         .contentType("application/json")
                         .content("""
                                 {
-                                  "phone": "%s",
+                                  "email": "%s",
                                   "otp": "%s"
                                 }
-                                """.formatted(phone, otp)))
+                                """.formatted(email, otp)))
                 .andExpect(status().isOk())
                 .andReturn();
 

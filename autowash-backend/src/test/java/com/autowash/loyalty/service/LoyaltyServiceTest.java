@@ -1,8 +1,8 @@
-package com.autowash.service;
-
+package com.autowash.loyalty.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.autowash.service.LoyaltyService;
 import com.autowash.entity.User;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.repository.UserRepository;
@@ -24,7 +24,6 @@ import com.autowash.entity.Vehicle;
 import com.autowash.entity.enums.VehicleType;
 import com.autowash.repository.VehicleRepository;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;

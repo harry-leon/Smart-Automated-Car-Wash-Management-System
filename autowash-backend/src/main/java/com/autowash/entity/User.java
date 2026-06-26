@@ -18,9 +18,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 @Entity
 @Table(name = "users")
 @Getter
@@ -41,12 +38,10 @@ public class User {
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "user_role")
+    @Column(nullable = false)
     private UserRole role;
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(nullable = false, columnDefinition = "user_account_status")
+    @Column(nullable = false)
     private UserStatus status;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -74,6 +69,27 @@ public class User {
         this.newCustomer = true;
     }
 
+    /**
+     * Factory method for users created via Google OAuth.
+     * phone and passwordHash are null - user signed in with Google only.
+     */
+    public static User fromGoogle(String fullName, String email, String avatarUrl) {
+        Instant now = Instant.now();
+        User user = new User();
+        user.id = UUID.randomUUID();
+        user.fullName = (fullName != null && !fullName.isBlank()) ? fullName : email;
+        user.phone = null;
+        user.email = email;
+        user.passwordHash = null;
+        user.avatarUrl = avatarUrl;
+        user.role = UserRole.CUSTOMER;
+        user.status = UserStatus.ACTIVE;
+        user.createdAt = now;
+        user.updatedAt = now;
+        user.newCustomer = true;
+        return user;
+    }
+
     public void updateRole(UserRole role) {
         this.role = role;
         this.updatedAt = Instant.now();
@@ -81,6 +97,11 @@ public class User {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
         this.updatedAt = Instant.now();
     }
 
