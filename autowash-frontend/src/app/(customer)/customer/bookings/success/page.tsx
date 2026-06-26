@@ -3,8 +3,8 @@ import { CustomerBookingSuccessPage } from "@/features/customer/bookings/compone
 export default function BookingSuccessPage({
   searchParams,
 }: {
-  searchParams?: { bookingId?: string; otpExpiresAt?: string };
+  searchParams?: { bookingId?: string };
 }) {
   const params = searchParams ?? {};
-  return <CustomerBookingSuccessPage bookingId={params.bookingId ?? ""} initialOtpExpiresAt={params.otpExpiresAt ?? null} />;
+  return <CustomerBookingSuccessPage bookingId={params.bookingId ?? ""} />;
 }
