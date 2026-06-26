@@ -45,11 +45,11 @@ export function CustomerWorkspaceShell({
   }
 
   if (!accessToken || !user) {
-    return <main style={{ padding: 24 }}>Redirecting to login...</main>;
+    return <main style={{ padding: 24 }}>Đang chuyển đến trang đăng nhập...</main>;
   }
 
   if (user.role !== "CUSTOMER") {
-    return <main style={{ padding: 24 }}>Redirecting to your workspace...</main>;
+    return <main style={{ padding: 24 }}>Đang chuyển đến khu vực phù hợp...</main>;
   }
 
   return (
@@ -69,12 +69,12 @@ export function CustomerWorkspaceShell({
           </div>
 
           <nav className="flex flex-wrap items-center gap-2">
-            <NavLink href="/customer/home" icon={Home} label="Home" />
+            <NavLink href="/customer/home" icon={Home} label="Trang chủ" />
             <NavLink href="/customer/bookings/new" icon={PackageSearch} label="Đặt lịch" />
-            <NavLink href="/customer/history" icon={History} label="History" />
-            <NavLink href="/customer/vehicles" icon={CarFront} label="Vehicles" />
-            <NavLink href="/customer/loyalty" icon={Gift} label="Loyalty" />
-            <NavLink href="/customer/promotions" icon={Sparkles} label="Promotions" />
+            <NavLink href="/customer/history" icon={History} label="Lịch sử" />
+            <NavLink href="/customer/vehicles" icon={CarFront} label="Phương tiện" />
+            <NavLink href="/customer/loyalty" icon={Gift} label="Tích điểm" />
+            <NavLink href="/customer/promotions" icon={Sparkles} label="Khuyến mãi" />
             <NavLink href="/customer/notifications" icon={Bell} label="Thông báo" />
             <button
               disabled={logoutMutation.isPending}
@@ -85,7 +85,7 @@ export function CustomerWorkspaceShell({
                 "disabled:cursor-not-allowed disabled:opacity-60",
               )}
             >
-              {logoutMutation.isPending ? "Signing out..." : "Logout"}
+              {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
               <ArrowRightFromLine className="h-4 w-4" />
             </button>
           </nav>
