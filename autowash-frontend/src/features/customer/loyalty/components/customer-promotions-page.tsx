@@ -18,9 +18,6 @@ export function CustomerPromotionsPageContent() {
           <CardHeader className="gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <CardTitle>Available promotions</CardTitle>
-              <CardDescription>
-                Only active promotions that match your current tier are shown here.
-              </CardDescription>
             </div>
             <Button type="button" variant="outline" onClick={() => promotionsQuery.refetch()}>
               <RefreshCcw className="mr-2 h-4 w-4" />

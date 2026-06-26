@@ -22,6 +22,8 @@ import type {
   WashTrackingSession,
 } from "@/features/customer/bookings/booking.types";
 import { buildCreateBookingPayload } from "@/features/customer/bookings/lib/booking-format";
+import type { ApiSuccessResponse } from "@/shared/types/api.types";
+import type { AdminCatalogService } from "@/features/admin/management/management.types";
 
 export async function listBookingPackages(page = 1, limit = 20): Promise<BookingPackage[]> {
   const response = await apiClient.get<ApiPaginatedResponse<BookingPackage>>("/packages", {
@@ -32,8 +34,20 @@ export async function listBookingPackages(page = 1, limit = 20): Promise<Booking
 }
 
 export async function listBookingAddons(): Promise<BookingAddon[]> {
-  const response = await apiClient.get("/add-ons");
-  return response.data.data as BookingAddon[];
+  const response = await apiClient.get<ApiSuccessResponse<AdminCatalogService[]>>("/services");
+  return response.data.data
+    .filter((service) => service.status === "ACTIVE")
+    .map((service) => ({
+      addonId: service.serviceId,
+      name: service.name,
+      description: service.description,
+      price: service.price,
+      duration: service.duration,
+      category: "SERVICE",
+      image: null,
+      applicableToPackages: [],
+      status: service.status,
+    }));
 }
 
 export async function listBookingCombos(): Promise<BookingCombo[]> {
