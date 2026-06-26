@@ -14,12 +14,11 @@ public class LoggingBookingEmailDeliveryServiceImpl implements BookingEmailDeliv
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggingBookingEmailDeliveryServiceImpl.class);
 
     @Override
-    public void sendBookingOtp(Booking booking, String email, String otp, int expiresInSeconds) {
+    public void sendBookingConfirmation(Booking booking, String email) {
         LOGGER.info(
-                "Booking OTP email queued: bookingId={}, to={}, expiresInSeconds={}, template=booking-confirmation-otp",
+                "Booking confirmation email queued: bookingId={}, to={}, template=booking-confirmation",
                 booking.getId(),
-                email,
-                expiresInSeconds
+                email
         );
     }
 }
