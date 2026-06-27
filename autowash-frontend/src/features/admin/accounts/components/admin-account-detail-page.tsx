@@ -9,7 +9,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
-import { useAdminAccountDetail, useUpdateAdminCustomerRole } from "@/features/admin/reports/hooks/use-admin-reporting";
+import { useAdminAccountDetail, useUpdateAdminCustomerRole, useUpdateAdminCustomerStatus } from "@/features/admin/reports/hooks/use-admin-reporting";
 import type { AdminEditableAccountRole } from "@/features/admin/reports/admin-reporting.types";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
@@ -18,6 +18,7 @@ type AdminAccountDetailPageContentProps = {
 };
 
 const ROLE_OPTIONS: AdminEditableAccountRole[] = ["CUSTOMER", "STAFF", "ADMIN"];
+const STATUS_OPTIONS = ["ACTIVE", "BLOCKED", "SUSPENDED"];
 
 function translateEnumLabel(value: string, lang: "vi" | "en") {
   const map: Record<string, { vi: string; en: string }> = {
@@ -41,14 +42,19 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
   const { language } = useLanguageStore();
   const detailQuery = useAdminAccountDetail(accountId);
   const updateRoleMutation = useUpdateAdminCustomerRole(accountId);
+  const updateStatusMutation = useUpdateAdminCustomerStatus(accountId);
   const [roleDraft, setRoleDraft] = useState<AdminEditableAccountRole>("CUSTOMER");
+  const [statusDraft, setStatusDraft] = useState<string>("ACTIVE");
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (detailQuery.data?.role) {
       setRoleDraft(detailQuery.data.role as AdminEditableAccountRole);
     }
-  }, [detailQuery.data?.role]);
+    if (detailQuery.data?.status) {
+      setStatusDraft(detailQuery.data.status);
+    }
+  }, [detailQuery.data?.role, detailQuery.data?.status]);
 
   const account = detailQuery.data;
 
@@ -115,46 +121,76 @@ export function AdminAccountDetailPageContent({ accountId }: AdminAccountDetailP
                   <InfoRow label={translate(language, "Cập nhật", "Updated")} value={formatDateTime(account.updatedAt, language as "vi" | "en")} />
                 </div>
 
-                <div className="space-y-3 border-t border-slate-200 pt-4">
-                  <label className="space-y-1.5">
-                    <span className="text-xs font-medium text-slate-500">{translate(language, "Vai trò tài khoản", "Account role")}</span>
-                    <select
-                      className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
-                      value={roleDraft}
-                      onChange={(event) => setRoleDraft(event.target.value as AdminEditableAccountRole)}
-                    >
-                      {ROLE_OPTIONS.map((role) => (
-                        <option key={role} value={role}>
-                          {translateEnumLabel(role, language as "vi" | "en")}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                <div className="space-y-4 border-t border-slate-200 pt-4">
+                  <div className="space-y-3">
+                    <label className="block space-y-1.5">
+                      <span className="text-xs font-medium text-slate-500">{translate(language, "Vai trò tài khoản", "Account role")}</span>
+                      <select
+                        className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+                        value={roleDraft}
+                        onChange={(event) => setRoleDraft(event.target.value as AdminEditableAccountRole)}
+                      >
+                        {ROLE_OPTIONS.map((role) => (
+                          <option key={role} value={role}>
+                            {translateEnumLabel(role, language as "vi" | "en")}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block space-y-1.5">
+                      <span className="text-xs font-medium text-slate-500">{translate(language, "Trạng thái tài khoản", "Account status")}</span>
+                      <select
+                        className="h-9 w-full rounded-md border border-input bg-white px-3 text-sm shadow-sm"
+                        value={statusDraft}
+                        onChange={(event) => setStatusDraft(event.target.value)}
+                      >
+                        {STATUS_OPTIONS.map((status) => (
+                          <option key={status} value={status}>
+                            {translateEnumLabel(status, language as "vi" | "en")}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
                   <Button
                     type="button"
                     className="w-full"
                     variant="outline"
-                    onClick={() => {
+                    onClick={async () => {
                       setFeedback(null);
-                      void updateRoleMutation
-                        .mutateAsync({ role: roleDraft })
-                        .then((result) => {
-                          setFeedback(translate(language, "Cập nhật vai trò thành công.", "Role updated."));
-                          if (result.role !== "CUSTOMER") {
+                      try {
+                        const promises = [];
+                        let roleChanged = false;
+                        
+                        if (roleDraft !== account?.role) {
+                          promises.push(updateRoleMutation.mutateAsync({ role: roleDraft }).then(res => {
+                            if (res.role !== "CUSTOMER") roleChanged = true;
+                          }));
+                        }
+                        if (statusDraft !== account?.status) {
+                          promises.push(updateStatusMutation.mutateAsync({ status: statusDraft as any }));
+                        }
+                        
+                        if (promises.length > 0) {
+                          await Promise.all(promises);
+                          setFeedback(translate(language, "Cập nhật thành công.", "Successfully updated."));
+                          if (roleChanged) {
                             router.replace("/admin/accounts");
                           } else {
                             void detailQuery.refetch();
                           }
-                        })
-                        .catch((error) => {
-                          setFeedback(getDisplayErrorMessage(error));
-                        });
+                        }
+                      } catch (error) {
+                        setFeedback(getDisplayErrorMessage(error));
+                      }
                     }}
-                    disabled={updateRoleMutation.isPending}
+                    disabled={updateRoleMutation.isPending || updateStatusMutation.isPending}
                   >
-                    {updateRoleMutation.isPending 
+                    {updateRoleMutation.isPending || updateStatusMutation.isPending
                       ? translate(language, "Đang cập nhật...", "Updating...") 
-                      : translate(language, "Cập nhật vai trò", "Update role")}
+                      : translate(language, "Lưu thay đổi", "Save changes")}
                   </Button>
                   {feedback ? <p className="text-xs text-slate-600">{feedback}</p> : null}
                 </div>

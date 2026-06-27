@@ -75,8 +75,7 @@ export type CustomerPromotion = {
   description: string | null;
   promotionType: PromotionType;
   targetTiers: LoyaltyTier[];
-  discountType: "PERCENT" | "FIXED";
-  discountValue: number;
+  pointMultiplier: number;
   startDate: string;
   expiresAt: string;
   status: "ACTIVE" | "INACTIVE";

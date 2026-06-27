@@ -148,6 +148,7 @@ export type CreateAdminStaffPayload = {
   phone: string;
   email: string;
   password: string;
+  role: AdminEditableAccountRole;
 };
 
 export type AdminCustomerDetail = {

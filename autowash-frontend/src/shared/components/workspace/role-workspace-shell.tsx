@@ -137,7 +137,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const customerNotificationsQuery = useCustomerNotifications();
   const unreadCustomerNotifications = useMemo(() => {
     if (!isCustomer || !customerNotificationsQuery.data) return 0;
-    return customerNotificationsQuery.data.filter((n) => !n.isRead).length;
+    return customerNotificationsQuery.data.filter((n) => !n.read).length;
   }, [isCustomer, customerNotificationsQuery.data]);
 
   const eligibleCount = eligibleQuery.data?.length ?? 0;
@@ -499,19 +499,79 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
 
               {/* Customer notification bell */}
               {isCustomer && (
-                <Link
-                  href="/customer/notifications"
-                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/90 transition hover:border-teal-500/30 hover:bg-card"
-                  aria-label={t("Thông báo", "Notifications")}
-                >
-                  <Bell className={cn("h-4 w-4", unreadCustomerNotifications > 0 ? "text-teal-600" : "text-muted-foreground")} />
-                  {unreadCustomerNotifications > 0 && (
-                    <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
-                    </span>
-                  )}
-                </Link>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/90 transition hover:border-teal-500/30 hover:bg-card"
+                      aria-label={t("Thông báo", "Notifications")}
+                    >
+                      <Bell className={cn("h-4 w-4", unreadCustomerNotifications > 0 ? "text-teal-600" : "text-muted-foreground")} />
+                      {unreadCustomerNotifications > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+                        </span>
+                      )}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    sideOffset={10}
+                    className="w-80 rounded-2xl border-border/70 bg-card/95 p-3 shadow-[0_22px_60px_rgba(15,118,110,0.12)] backdrop-blur-xl"
+                  >
+                    <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
+                      <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                        {t("Thông báo", "Notifications")}
+                      </h3>
+                      {unreadCustomerNotifications > 0 && (
+                        <span className="rounded-full bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 text-[10px] font-black text-teal-700 dark:text-teal-400">
+                          {unreadCustomerNotifications} {t("chưa đọc", "unread")}
+                        </span>
+                      )}
+                    </div>
+
+                    {(!customerNotificationsQuery.data || customerNotificationsQuery.data.length === 0) ? (
+                      <div className="py-6 text-center text-xs font-semibold text-muted-foreground">
+                        {t("Không có thông báo nào", "No notifications")}
+                      </div>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto space-y-2">
+                        {customerNotificationsQuery.data.slice(0, 5).map((notification) => (
+                          <div
+                            key={notification.notificationId}
+                            className={cn(
+                              "flex flex-col gap-1 rounded-xl p-2 text-xs transition",
+                              notification.read 
+                                ? "bg-muted/50 hover:bg-muted" 
+                                : "bg-teal-50/50 dark:bg-teal-900/20 hover:bg-teal-50 dark:hover:bg-teal-900/30"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className={cn("font-bold", notification.read ? "text-muted-foreground" : "text-teal-950 dark:text-teal-200")}>
+                                {notification.title}
+                              </span>
+                              {!notification.read && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                              )}
+                            </div>
+                            <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground")}>
+                              {notification.message}
+                            </div>
+                          </div>
+                        ))}
+                        <div className="pt-2 border-t border-border/50">
+                          <Link
+                            href="/customer/notifications"
+                            className="flex w-full items-center justify-center rounded-xl bg-muted py-2 text-center text-[11px] font-bold text-foreground hover:bg-accent transition"
+                          >
+                            {t("Xem tất cả", "View all")}
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
               )}
 
               {/* User profile popover */}

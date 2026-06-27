@@ -162,7 +162,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
         mockMvc.perform(get("/api/v1/promotions/active")
                         .with(authenticatedCustomer(member)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data.length()").value(3))
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("All 10% Off")))
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("ALL10")));
 
@@ -174,7 +174,7 @@ class CustomerLoyaltyAndPromotionIntegrationTest {
         mockMvc.perform(get("/api/v1/promotions/active")
                         .with(authenticatedCustomer(gold)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data.length()").value(5))
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("All 10% Off")))
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("ALL10")))
                 .andExpect(jsonPath("$.data[*].promotionCode", hasItem("GOLD15")));

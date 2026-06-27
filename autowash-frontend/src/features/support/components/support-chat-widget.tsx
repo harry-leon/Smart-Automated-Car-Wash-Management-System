@@ -118,20 +118,20 @@ export function SupportChatWidget({ role }: { role: Role }) {
             aria-label="Close support chat overlay"
           />
 
-          <section className="fixed bottom-24 right-6 z-[82] flex h-[560px] w-[min(880px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+          <section className="fixed bottom-24 right-6 z-[82] flex h-[560px] w-[min(880px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
             {role !== "Customer" && (
-              <aside className="hidden w-[280px] border-r border-slate-200 bg-slate-50 lg:flex lg:flex-col dark:border-slate-800 dark:bg-slate-900">
-                <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-800">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <aside className="hidden w-[280px] border-r border-border bg-muted/40 lg:flex lg:flex-col">
+                <div className="border-b border-border px-4 py-4">
+                  <div className="text-sm font-semibold text-foreground">
                     Support inbox
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                  <div className="text-xs text-muted-foreground">
                     {threads.length} conversation(s)
                   </div>
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto p-2">
                   {threads.length === 0 ? (
-                    <div className="px-3 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                    <div className="px-3 py-8 text-center text-sm text-muted-foreground">
                       Chua co tin nhan tu customer.
                     </div>
                   ) : (
@@ -150,11 +150,11 @@ export function SupportChatWidget({ role }: { role: Role }) {
                             "mb-2 w-full rounded-xl border px-3 py-3 text-left transition",
                             activeThread?.id === thread.id
                               ? "border-primary/40 bg-primary/10"
-                              : "border-slate-200 bg-white hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900",
+                              : "border-border bg-card hover:bg-accent",
                           )}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <div className="truncate font-medium text-slate-900 dark:text-slate-100">
+                            <div className="truncate font-medium text-foreground">
                               {thread.customerName}
                             </div>
                             {thread.unreadForStaff > 0 && (
@@ -163,7 +163,7 @@ export function SupportChatWidget({ role }: { role: Role }) {
                               </span>
                             )}
                           </div>
-                          <div className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                          <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                             {lastMessage?.body ?? "No messages"}
                           </div>
                         </button>
@@ -175,9 +175,9 @@ export function SupportChatWidget({ role }: { role: Role }) {
             )}
 
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="flex items-center justify-between border-b border-slate-200 px-4 py-4 dark:border-slate-800">
+              <header className="flex items-center justify-between border-b border-border px-4 py-4">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     {role === "Customer" ? (
                       <Bell className="h-4 w-4 text-primary" />
                     ) : role === "Staff" ? (
@@ -191,7 +191,7 @@ export function SupportChatWidget({ role }: { role: Role }) {
                         ? `Chat voi ${activeThread.customerName}`
                         : "Support chat"}
                   </div>
-                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="mt-1 text-xs text-muted-foreground">
                     {role === "Customer"
                       ? "Nhan vien se thay tin nhan cua ban va co the tra loi ngay."
                       : "Tat ca staff deu co the xem va phan hoi hoi thoai nay."}
@@ -200,16 +200,16 @@ export function SupportChatWidget({ role }: { role: Role }) {
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground"
                   aria-label="Close support chat"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </header>
 
-              <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/60 px-4 py-4 dark:bg-slate-900/60">
+              <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 px-4 py-4">
                 {!activeThread ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                     {role === "Customer" ? "Dang mo ho tro..." : "Chua co tin nhan tu customer."}
                   </div>
                 ) : (
@@ -231,8 +231,8 @@ export function SupportChatWidget({ role }: { role: Role }) {
                               mine
                                 ? "bg-primary text-white"
                                 : message.senderRole === "System"
-                                  ? "border border-primary/20 bg-primary/10 text-slate-900 dark:text-slate-100"
-                                  : "border border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100",
+                                  ? "border border-primary/20 bg-primary/10 text-foreground"
+                                  : "border border-border bg-card text-foreground",
                             )}
                           >
                             <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold opacity-80">
@@ -257,7 +257,7 @@ export function SupportChatWidget({ role }: { role: Role }) {
                 )}
               </div>
 
-              <div className="border-t border-slate-200 p-4 dark:border-slate-800">
+              <div className="border-t border-border p-4">
                 <div className="flex items-end gap-3">
                   <textarea
                     value={draft}
@@ -267,7 +267,7 @@ export function SupportChatWidget({ role }: { role: Role }) {
                         ? "Nhap noi dung can ho tro..."
                         : "Nhap phan hoi cho customer..."
                     }
-                    className="min-h-[76px] flex-1 resize-none rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-0 transition focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    className="min-h-[76px] flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none ring-0 transition focus:border-primary"
                   />
                   <button
                     type="button"

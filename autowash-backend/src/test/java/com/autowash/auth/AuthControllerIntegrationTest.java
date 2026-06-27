@@ -385,8 +385,8 @@ class AuthControllerIntegrationTest {
                                   "rememberMe": false
                                 }
                                 """))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorCode").value("INVALID_CREDENTIALS"));
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errorCode").value("ACCOUNT_NOT_ACTIVE"));
     }
 
     @Test

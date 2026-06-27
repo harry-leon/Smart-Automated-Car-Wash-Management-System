@@ -57,18 +57,18 @@ export function CustomerWorkspaceShell({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_28%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] text-slate-900 dark:bg-none dark:bg-background dark:text-foreground">
-      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl dark:border-border dark:bg-card/85">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-20 border-b border-border/80 bg-card/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-sm dark:bg-primary dark:text-primary-foreground">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
               <Home className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-foreground">
+              <div className="text-sm font-semibold text-foreground">
                 {t("Khu vực khách hàng", "Customer Area")}
               </div>
-              <div className="text-xs text-slate-500 dark:text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {user.fullName} • {user.tier ?? t("THÀNH VIÊN", "MEMBER")}
               </div>
             </div>
@@ -81,14 +81,12 @@ export function CustomerWorkspaceShell({
             <NavLink href="/customer/vehicles" icon={CarFront} label={t("Phương tiện", "Vehicles")} />
             <NavLink href="/customer/loyalty" icon={Gift} label={t("Tích điểm", "Loyalty")} />
             <NavLink href="/customer/promotions" icon={Sparkles} label={t("Khuyến mãi", "Promotions")} />
-            <NavLink href="/customer/notifications" icon={Bell} label={t("Thông báo", "Notifications")} />
             <button
               disabled={logoutMutation.isPending}
               onClick={() => logoutMutation.mutate()}
               type="button"
               className={cn(
-                "inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800",
-                "dark:border-border dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90",
+                "inline-flex h-10 items-center gap-2 rounded-full border border-border bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90",
                 "disabled:cursor-not-allowed disabled:opacity-60",
               )}
             >
@@ -117,7 +115,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-sky-200 hover:text-sky-700 hover:shadow-md dark:border-border dark:bg-card dark:text-muted-foreground dark:hover:border-primary/50 dark:hover:text-primary"
+      className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-muted-foreground shadow-sm transition hover:border-primary/50 hover:text-primary"
     >
       <Icon className="h-4 w-4" />
       {label}

@@ -74,12 +74,10 @@ export function CustomerPromotionsPageContent() {
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                     <div className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                      {translate("Giảm giá", "Discount", language)}
+                      {translate("Hệ số điểm", "Point Multiplier", language)}
                     </div>
                     <div className="mt-2 text-2xl font-black text-slate-900">
-                      {promotion.discountType === "PERCENT"
-                        ? `${promotion.discountValue}%`
-                        : `${promotion.discountValue.toLocaleString(locale)} VND`}
+                      x{promotion.pointMultiplier}
                     </div>
                   </div>
 

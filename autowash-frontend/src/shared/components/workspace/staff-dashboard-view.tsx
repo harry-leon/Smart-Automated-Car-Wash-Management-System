@@ -50,8 +50,8 @@ const dashboardStatusTone: Record<WashSessionStatus, { row: string; badge: strin
     rail: "bg-emerald-400",
   },
   CANCELLED: {
-    row: "border-slate-200 from-slate-50 via-white to-white shadow-sm",
-    badge: "border-slate-200 bg-slate-50 text-slate-700",
+    row: "border-border/50 from-muted/50 via-card to-card shadow-sm",
+    badge: "border-border bg-muted text-muted-foreground",
     rail: "bg-slate-400",
   },
 };
@@ -130,7 +130,7 @@ export function StaffDashboardView() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_0.9fr]">
-        <Card className="overflow-hidden rounded-3xl border-blue-100/80 bg-white/95 shadow-[0_18px_42px_rgba(37,99,235,0.08)] backdrop-blur">
+        <Card className="overflow-hidden rounded-3xl border-blue-100/80 bg-card/95 shadow-[0_18px_42px_rgba(37,99,235,0.08)] backdrop-blur">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 bg-muted/30 px-6 py-4">
             <div>
               <h2 className="text-base font-black">Việc cần xử lý</h2>
@@ -197,7 +197,7 @@ export function StaffDashboardView() {
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <Card className="overflow-hidden rounded-3xl border-sky-100/80 bg-gradient-to-br from-sky-50/80 via-white to-violet-50/40 shadow-[0_18px_42px_rgba(14,165,233,0.12)] backdrop-blur">
-          <div className="border-b border-sky-100/80 bg-white/70 px-6 py-4">
+          <div className="border-b border-sky-100/80 bg-card/70 px-6 py-4">
             <h2 className="text-base font-black">Lịch sắp đến</h2>
             <p className="text-sm text-muted-foreground">5 phiên gần nhất cần theo dõi trong ca làm.</p>
           </div>
@@ -208,7 +208,7 @@ export function StaffDashboardView() {
                 description={getDisplayErrorMessage(queueQuery.error as unknown as ApiErrorResponse)}
               />
             ) : queueQuery.isPending ? (
-              <div className="h-48 animate-pulse rounded-3xl bg-slate-100" />
+              <div className="h-48 animate-pulse rounded-3xl bg-muted" />
             ) : nextArrivals.length === 0 ? (
               <WorkspaceEmptyState title="Chưa có lịch sắp đến" description="Hiện không có phiên nào cần theo dõi." />
             ) : (
@@ -255,7 +255,7 @@ function DashboardMetric({
   tone: string;
 }) {
   return (
-    <Card className="rounded-3xl border-white/80 bg-gradient-to-br from-white via-white to-slate-50/70 p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(37,99,235,0.10)]">
+    <Card className="rounded-3xl border-border/50 bg-gradient-to-br from-card via-card to-muted/30 p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(37,99,235,0.10)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">{label}</p>

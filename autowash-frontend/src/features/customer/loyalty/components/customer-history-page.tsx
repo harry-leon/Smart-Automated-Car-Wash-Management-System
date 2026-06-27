@@ -43,9 +43,9 @@ export function CustomerHistoryPageContent() {
   const summary = accountQuery.data ? buildLoyaltySummary(accountQuery.data) : null;
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-background px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <Card className="border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+        <Card className="border-border/70 bg-card shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:shadow-none">
           <CardHeader className="gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <CardTitle>{translate("Lịch sử khách hàng", "Customer history", language)}</CardTitle>
@@ -78,7 +78,7 @@ export function CustomerHistoryPageContent() {
         ) : null}
 
         <div className="space-y-4">
-          <div className="grid w-full max-w-xl grid-cols-3 rounded-xl bg-white/80 p-1 shadow-sm">
+          <div className="grid w-full max-w-xl grid-cols-3 rounded-xl bg-card/80 p-1 shadow-sm border border-border/50">
             <TabButton active={activeTab === "bookings"} onClick={() => setActiveTab("bookings")}>
               {translate("Đặt lịch", "Bookings", language)}
             </TabButton>
@@ -101,27 +101,27 @@ export function CustomerHistoryPageContent() {
             >
               <div className="grid gap-4">
                 {bookingsQuery.data?.items.map((booking) => (
-                  <Card key={booking.bookingId} className="border-slate-200 bg-white">
+                  <Card key={booking.bookingId} className="border-border/70 bg-card">
                     <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-black text-slate-900">
+                          <h3 className="text-base font-black text-foreground">
                             {booking.packageName ?? translate("Đặt lịch", "Booking", language)}
                           </h3>
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                          <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
                             {getBookingStatusLabel(booking.status)}
                           </span>
                         </div>
-                        <div className="grid gap-1 text-sm text-slate-600 md:grid-cols-2">
-                          <p>{translate("Xe", "Vehicle", language)}: <span className="font-medium text-slate-900">{booking.vehiclePlate}</span></p>
-                          <p>{translate("Dịch vụ", "Service", language)}: <span className="font-medium text-slate-900">{booking.packageName ?? "--"}</span></p>
-                          <p>{translate("Lịch hẹn", "Schedule", language)}: <span className="font-medium text-slate-900">{formatSchedule(booking.bookingDate, booking.bookingTime)}</span></p>
-                          <p>{translate("Rửa xe", "Wash", language)}: <span className="font-medium text-slate-900">{booking.washStatus ? humanizeCode(booking.washStatus) : translate("Chưa bắt đầu", "Not started", language)}</span></p>
+                        <div className="grid gap-1 text-sm text-muted-foreground md:grid-cols-2">
+                          <p>{translate("Xe", "Vehicle", language)}: <span className="font-medium text-foreground">{booking.vehiclePlate}</span></p>
+                          <p>{translate("Dịch vụ", "Service", language)}: <span className="font-medium text-foreground">{booking.packageName ?? "--"}</span></p>
+                          <p>{translate("Lịch hẹn", "Schedule", language)}: <span className="font-medium text-foreground">{formatSchedule(booking.bookingDate, booking.bookingTime)}</span></p>
+                          <p>{translate("Rửa xe", "Wash", language)}: <span className="font-medium text-foreground">{booking.washStatus ? humanizeCode(booking.washStatus) : translate("Chưa bắt đầu", "Not started", language)}</span></p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs uppercase tracking-[0.2em] text-slate-500">{translate("Tổng thanh toán", "Final amount", language)}</div>
-                        <div className="text-xl font-black text-slate-900">{formatBookingCurrency(booking.finalAmount)}</div>
+                        <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{translate("Tổng thanh toán", "Final amount", language)}</div>
+                        <div className="text-xl font-black text-foreground">{formatBookingCurrency(booking.finalAmount)}</div>
                       </div>
                     </CardContent>
                   </Card>
@@ -141,30 +141,30 @@ export function CustomerHistoryPageContent() {
             >
               <div className="grid gap-4">
                 {washHistoryQuery.data?.items.map((wash) => (
-                  <Card key={wash.sessionId} className="border-slate-200 bg-white">
+                  <Card key={wash.sessionId} className="border-border/70 bg-card">
                     <CardContent className="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-black text-slate-900">
+                          <h3 className="text-base font-black text-foreground">
                             {wash.packageName ?? translate("Phiên rửa xe", "Wash session", language)}
                           </h3>
-                          <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                          <span className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                             {humanizeCode(wash.status)}
                           </span>
                         </div>
-                        <div className="grid gap-1 text-sm text-slate-600 md:grid-cols-2">
-                          <p>{translate("Xe", "Vehicle", language)}: <span className="font-medium text-slate-900">{wash.vehiclePlate}</span></p>
-                          <p>{translate("Dịch vụ", "Service", language)}: <span className="font-medium text-slate-900">{wash.packageName ?? "--"}</span></p>
-                          <p>{translate("Lịch hẹn", "Booked for", language)}: <span className="font-medium text-slate-900">{formatSchedule(wash.bookingDate, wash.bookingTime)}</span></p>
-                          <p>{translate("Hoàn thành", "Completed", language)}: <span className="font-medium text-slate-900">{formatDateTime(wash.completedAt, locale)}</span></p>
+                        <div className="grid gap-1 text-sm text-muted-foreground md:grid-cols-2">
+                          <p>{translate("Xe", "Vehicle", language)}: <span className="font-medium text-foreground">{wash.vehiclePlate}</span></p>
+                          <p>{translate("Dịch vụ", "Service", language)}: <span className="font-medium text-foreground">{wash.packageName ?? "--"}</span></p>
+                          <p>{translate("Lịch hẹn", "Booked for", language)}: <span className="font-medium text-foreground">{formatSchedule(wash.bookingDate, wash.bookingTime)}</span></p>
+                          <p>{translate("Hoàn thành", "Completed", language)}: <span className="font-medium text-foreground">{formatDateTime(wash.completedAt, locale)}</span></p>
                         </div>
                       </div>
                       <div className="space-y-2 text-right">
                         <div>
-                          <div className="text-xs uppercase tracking-[0.2em] text-slate-500">{translate("Đã thanh toán", "Paid", language)}</div>
-                          <div className="text-xl font-black text-slate-900">{formatBookingCurrency(wash.finalAmount)}</div>
+                          <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{translate("Đã thanh toán", "Paid", language)}</div>
+                          <div className="text-xl font-black text-foreground">{formatBookingCurrency(wash.finalAmount)}</div>
                         </div>
-                        <div className="text-sm font-semibold text-emerald-700">
+                        <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                           +{wash.awardedPoints.toLocaleString(locale)} pts
                         </div>
                       </div>
@@ -186,16 +186,16 @@ export function CustomerHistoryPageContent() {
             >
               <div className="grid gap-4">
                 {transactionsQuery.data?.items.map((item) => (
-                  <Card key={item.transactionId} className="border-slate-200 bg-white">
+                  <Card key={item.transactionId} className="border-border/70 bg-card">
                     <CardContent className="flex flex-col gap-3 p-6 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <div className="text-base font-black text-slate-900">{formatLoyaltyTransactionType(item.type)}</div>
-                        <div className="mt-1 text-sm text-slate-600">{item.description}</div>
-                        <div className="mt-2 text-xs text-slate-500">
+                        <div className="text-base font-black text-foreground">{formatLoyaltyTransactionType(item.type)}</div>
+                        <div className="mt-1 text-sm text-muted-foreground">{item.description}</div>
+                        <div className="mt-2 text-xs text-muted-foreground">
                           {new Date(item.createdAt).toLocaleString(locale)}
                         </div>
                       </div>
-                      <div className={item.points >= 0 ? "text-right text-lg font-black text-emerald-700" : "text-right text-lg font-black text-rose-700"}>
+                      <div className={item.points >= 0 ? "text-right text-lg font-black text-emerald-600 dark:text-emerald-400" : "text-right text-lg font-black text-rose-600 dark:text-rose-400"}>
                         {formatLoyaltyPoints(item.points)}
                       </div>
                     </CardContent>
@@ -246,8 +246,8 @@ function TabButton({
       onClick={onClick}
       className={
         active
-          ? "rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm"
-          : "rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+          ? "rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background shadow-sm"
+          : "rounded-lg px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted"
       }
     >
       {children}
@@ -273,12 +273,12 @@ function HistorySection({
   children: React.ReactNode;
 }) {
   if (isPending) {
-    return <div className="h-64 animate-pulse rounded-3xl bg-slate-100" />;
+    return <div className="h-64 animate-pulse rounded-3xl bg-muted" />;
   }
 
   if (isError) {
     return (
-      <Card className="border-rose-200 bg-white">
+      <Card className="border-destructive/30 bg-card">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           <CardDescription>{getDisplayErrorMessage(error)}</CardDescription>
@@ -289,7 +289,7 @@ function HistorySection({
 
   if (isEmpty) {
     return (
-      <Card className="border-slate-200 bg-white">
+      <Card className="border-border/70 bg-card">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
@@ -303,10 +303,10 @@ function HistorySection({
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+    <Card className="border-border/70 bg-card shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:shadow-none">
       <CardContent className="p-5">
-        <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">{label}</div>
-        <div className="mt-2 text-3xl font-black tracking-tight text-slate-900">{value}</div>
+        <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">{label}</div>
+        <div className="mt-2 text-3xl font-black tracking-tight text-foreground">{value}</div>
       </CardContent>
     </Card>
   );

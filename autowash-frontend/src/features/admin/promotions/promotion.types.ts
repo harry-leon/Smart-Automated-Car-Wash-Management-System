@@ -8,8 +8,7 @@ export type Promotion = {
   promotionId: string;
   name: string;
   description: string | null;
-  discountType: PromotionDiscountType;
-  discountValue: number;
+  pointMultiplier: number;
   startDate: string;
   endDate: string;
   targetingMode: PromotionTargetingMode;
@@ -34,8 +33,7 @@ export type PromotionListPage = {
 export type PromotionRequest = {
   name: string;
   description: string | null;
-  discountType: PromotionDiscountType;
-  discountValue: number;
+  pointMultiplier: number;
   startDate: string;
   endDate: string;
   targetingMode: PromotionTargetingMode;

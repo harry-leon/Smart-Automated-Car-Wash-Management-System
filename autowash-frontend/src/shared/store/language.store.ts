@@ -19,6 +19,12 @@ export const useLanguageStore = create<LanguageState>((set) => ({
 }));
 
 // Translation helper
-export function translate(lang: Language, vi: string, en: string): string {
-  return lang === "vi" ? vi : en;
+export function translate(arg1: any, arg2: any, arg3?: any): string {
+  if (arg1 === "vi") return arg2;
+  if (arg1 === "en") return arg3;
+  if (arg3 === "vi") return arg1;
+  if (arg3 === "en") return arg2;
+  
+  // Default fallback
+  return arg2;
 }

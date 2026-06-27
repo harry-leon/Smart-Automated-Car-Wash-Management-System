@@ -3,7 +3,7 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCcw, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Plus, RefreshCcw, Search, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -40,6 +40,7 @@ const EMPTY_STAFF_FORM: CreateAdminStaffPayload = {
   phone: "",
   email: "",
   password: "",
+  role: "STAFF",
 };
 
 function translateRole(role: string, lang: "vi" | "en") {
@@ -439,9 +440,6 @@ export function AdminAccountsPageContent() {
               <DialogTitle className="text-2xl font-black tracking-tight text-slate-950">
                 {translate(language, "Thêm tài khoản nhân viên", "Add staff account")}
               </DialogTitle>
-              <DialogDescription className="text-sm leading-6 text-slate-500">
-                {translate(language, "Hệ thống hiện tại hỗ trợ tạo tài khoản nhân viên từ danh mục admin. Tài khoản mới sẽ hiển thị trong danh sách ngay sau khi tạo.", "Backend currently supports creating staff accounts from the admin directory. The new account will appear in the list right after creation.")}
-              </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -449,35 +447,42 @@ export function AdminAccountsPageContent() {
                 label={translate(language, "Họ tên", "Full name")}
                 value={createForm.fullName}
                 onChange={handleCreateFieldChange("fullName")}
-                placeholder={translate(language, "Nguyễn Văn A", "Nguyen Van A")}
+                placeholder={translate(language, "Nhập họ tên", "Enter full name")}
                 error={resolveFormError("fullName", createFormErrors.fullName, createStaffMutation.error)}
               />
               <FormField
                 label={translate(language, "Điện thoại", "Phone")}
                 value={createForm.phone}
                 onChange={handleCreateFieldChange("phone")}
-                placeholder="0901234567"
+                placeholder={translate(language, "Nhập số điện thoại", "Enter phone number")}
                 error={resolveFormError("phone", createFormErrors.phone, createStaffMutation.error)}
               />
               <FormField
                 label={translate(language, "Email", "Email")}
                 value={createForm.email}
                 onChange={handleCreateFieldChange("email")}
-                placeholder="staff@auracarcare.vn"
+                placeholder={translate(language, "Nhập email", "Enter email")}
                 error={resolveFormError("email", createFormErrors.email, createStaffMutation.error)}
               />
               <FormField
                 label={translate(language, "Mật khẩu", "Password")}
                 value={createForm.password}
                 onChange={handleCreateFieldChange("password")}
-                placeholder={translate(language, "Tối thiểu 8 ký tự", "At least 8 characters")}
+                placeholder={translate(language, "Nhập mật khẩu", "Enter password")}
                 type="password"
                 error={resolveFormError("password", createFormErrors.password, createStaffMutation.error)}
               />
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              {translate(language, "Hành động này sẽ tạo tài khoản nhân viên thực tế qua `POST /api/v1/admin/staff`.", "This action creates a live staff account through `POST /api/v1/admin/staff`.")}
+              <label className="space-y-2 sm:col-span-2">
+                <Label className="text-sm font-semibold text-slate-800">{translate(language, "Vai trò", "Role")}</Label>
+                <select
+                  className="h-11 w-full rounded-xl border-slate-200 bg-white px-3 text-sm shadow-sm"
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm(prev => ({ ...prev, role: e.target.value as any }))}
+                >
+                  <option value="STAFF">{translateRole("STAFF", language as "vi" | "en")}</option>
+                  <option value="ADMIN">{translateRole("ADMIN", language as "vi" | "en")}</option>
+                </select>
+              </label>
             </div>
 
             {createStaffMutation.isError ? (
@@ -602,18 +607,32 @@ function FormField({
   error: string | null;
   type?: "text" | "password";
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+
   return (
-    <label className="space-y-2">
+    <div className="space-y-2">
       <Label className="text-sm font-semibold text-slate-800">{label}</Label>
-      <Input
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        type={type}
-        className="h-11 rounded-xl border-slate-200 bg-white"
-      />
+      <div className="relative">
+        <Input
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          type={isPassword && showPassword ? "text" : type}
+          className={`h-11 rounded-xl border-slate-200 bg-white ${isPassword ? "pr-10" : ""}`}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        )}
+      </div>
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-    </label>
+    </div>
   );
 }
 

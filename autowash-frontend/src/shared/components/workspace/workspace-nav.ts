@@ -77,7 +77,6 @@ const CUSTOMER_NAV: WorkspaceNavItem[] = [
   { href: "/customer/history", label: "History", labelVi: "Lịch sử", icon: History },
   { href: "/customer/loyalty", label: "Loyalty", labelVi: "Tích điểm", icon: Gift },
   { href: "/customer/promotions", label: "Promotions", labelVi: "Khuyến mãi", icon: Tag },
-  { href: "/customer/notifications", label: "Notifications", labelVi: "Thông báo", icon: Bell },
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [
@@ -95,6 +94,7 @@ const ADMIN_NAV: WorkspaceNavItem[] = [
   { href: "/admin/offers?tab=promotions", label: "Offers Management", labelVi: "Ưu đãi & Voucher", icon: Gift },
   { href: "/admin/operations", label: "Operations", labelVi: "Vận hành", icon: Wrench },
   { href: "/admin/reports", label: "Reports", labelVi: "Báo cáo", icon: BarChart3 },
+  { href: "/admin/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
 ];
 
 export const SHELL_EXCLUDED_PATHS = ["/admin/login"];
