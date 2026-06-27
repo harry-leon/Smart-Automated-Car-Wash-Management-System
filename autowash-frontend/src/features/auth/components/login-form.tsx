@@ -63,7 +63,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid gap-2">
-        <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
+        <Label htmlFor="email" className="text-sm font-semibold text-foreground">
           Email
         </Label>
         <div className="relative">

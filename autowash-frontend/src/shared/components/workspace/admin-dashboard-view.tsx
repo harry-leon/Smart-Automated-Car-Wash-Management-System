@@ -156,12 +156,12 @@ export function AdminDashboardView() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-100 bg-white p-5 text-center shadow-sm transition-all hover:-translate-y-1 hover:border-slate-300 hover:shadow-md"
+                  className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-border/50 bg-card p-5 text-center shadow-sm transition-all hover:-translate-y-1 hover:border-border hover:shadow-md"
                 >
                   <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", link.color)}>
                     <Icon className="h-6 w-6" />
                   </div>
-                  <span className="text-[13px] font-semibold text-slate-700 group-hover:text-slate-900">{translate(language, link.labelVi, link.labelEn)}</span>
+                  <span className="text-[13px] font-semibold text-muted-foreground group-hover:text-foreground">{translate(language, link.labelVi, link.labelEn)}</span>
                 </Link>
               );
             })}

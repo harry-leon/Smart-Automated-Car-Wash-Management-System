@@ -17,7 +17,7 @@ export function TierBadge({ tier }: { tier: "Member" | "Silver" | "Gold" | "Plat
   }
   if (tier === "Silver") {
     return (
-      <Badge className="border-slate-300 bg-slate-200 text-slate-800 hover:bg-slate-200">
+      <Badge className="border-border bg-muted text-muted-foreground hover:bg-muted">
         Silver
       </Badge>
     );

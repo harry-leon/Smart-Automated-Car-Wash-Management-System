@@ -65,8 +65,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 type PromotionFormValues = {
   name: string;
-  discountType: PromotionDiscountType;
-  discountValue: string;
+  pointMultiplier: string;
   startDate: string;
   endDate: string;
   targetingMode: PromotionTargetingMode;
@@ -89,8 +88,7 @@ type PromotionFilters = {
 
 const EMPTY_FORM: PromotionFormValues = {
   name: "",
-  discountType: "PERCENT",
-  discountValue: "",
+  pointMultiplier: "",
   startDate: "",
   endDate: "",
   targetingMode: "ALL_TIERS",
@@ -464,7 +462,7 @@ export function AdminPromotionsPageContent() {
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, name: sanitizePromotionNameInput(event.target.value) }))
                     }
-                    placeholder="VD: SUMMER2026"
+                    placeholder={translate("Nhập tên khuyến mãi", "Enter promotion name", language)}
                     autoCapitalize="characters"
                     autoCorrect="off"
                     spellCheck={false}
@@ -476,29 +474,17 @@ export function AdminPromotionsPageContent() {
 
               <div className="grid gap-5 rounded-[24px] border border-slate-100 bg-slate-50/75 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                  {translate("Cài đặt giảm giá", "Discount Setup", language)}
+                  {translate("Cài đặt điểm thưởng", "Points Setup", language)}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField label={translate("Loại giảm giá", "Discount type", language)} error={displayErrors.discountType}>
-                    <select
-                      className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm"
-                      value={form.discountType}
-                      onChange={(event) =>
-                        setForm((prev) => ({ ...prev, discountType: event.target.value as PromotionDiscountType }))
-                      }
-                    >
-                      <option value="PERCENT">{translate("Phần trăm", "Percent", language)}</option>
-                      <option value="FIXED">{translate("Cố định", "Fixed", language)}</option>
-                    </select>
-                  </FormField>
-
-                  <FormField label={translate("Giá trị giảm giá", "Discount value", language)} error={displayErrors.discountValue}>
+                  <FormField label={translate("Hệ số điểm thưởng", "Point multiplier", language)} error={displayErrors.pointMultiplier}>
                     <Input
                       type="number"
+                      step="0.1"
                       min={1}
-                      value={form.discountValue}
-                      onChange={(event) => setForm((prev) => ({ ...prev, discountValue: event.target.value }))}
-                      placeholder={form.discountType === "PERCENT" ? "1 - 100" : translate("Số tiền VND", "VND amount", language)}
+                      value={form.pointMultiplier}
+                      onChange={(event) => setForm((prev) => ({ ...prev, pointMultiplier: event.target.value }))}
+                      placeholder={translate("Ví dụ: 2.0 cho x2 điểm", "E.g. 2.0 for x2 points", language)}
                       className="h-11 rounded-2xl border-slate-200 bg-white"
                     />
                   </FormField>
@@ -512,7 +498,7 @@ export function AdminPromotionsPageContent() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FormField label={translate("Ngày bắt đầu", "Start date", language)} error={displayErrors.startDate}>
                     <Input
-                      type="datetime-local"
+                      type="date"
                       value={form.startDate}
                       onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))}
                       className="h-11 rounded-2xl border-slate-200 bg-white"
@@ -521,7 +507,7 @@ export function AdminPromotionsPageContent() {
 
                   <FormField label={translate("Ngày kết thúc", "End date", language)} error={displayErrors.endDate}>
                     <Input
-                      type="datetime-local"
+                      type="date"
                       value={form.endDate}
                       onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))}
                       className="h-11 rounded-2xl border-slate-200 bg-white"
@@ -676,7 +662,7 @@ export function AdminPromotionsPageContent() {
                           {translate("Chiến dịch", "Campaign", language)}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
-                          {translate("Giảm giá", "Discount", language)}
+                          {translate("Hệ số điểm", "Multiplier", language)}
                         </TableHead>
                         <TableHead className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
                           {translate("Đối tượng", "Audience", language)}
@@ -705,16 +691,10 @@ export function AdminPromotionsPageContent() {
                               <Badge
                                 variant="outline"
                                 className={cn(
-                                  "rounded-full border-0 px-3 py-1 font-bold shadow-sm",
-                                  promotion.discountType === "PERCENT"
-                                    ? "bg-sky-100 text-sky-700"
-                                    : "bg-teal-100 text-teal-700",
+                                  "rounded-full border-0 px-3 py-1 font-bold shadow-sm bg-sky-100 text-sky-700"
                                 )}
                               >
-                                {promotion.discountType === "PERCENT" ? (
-                                  <Percent className="mr-1 inline h-3 w-3" />
-                                ) : null}
-                                {formatDiscount(promotion.discountType, promotion.discountValue, language)}
+                                {formatPointMultiplier(promotion.pointMultiplier, language)}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -886,16 +866,14 @@ function FormField({
 
 function validatePromotionForm(form: PromotionFormValues, language: "vi" | "en"): PromotionFormErrors {
   const errors: PromotionFormErrors = {};
-  const discountValue = Number(form.discountValue);
+  const pointMultiplier = Number(form.pointMultiplier);
   const maxUsage = form.maxUsagePerCustomer ? Number(form.maxUsagePerCustomer) : null;
 
   if (!form.name.trim()) {
     errors.name = translate("Tên là bắt buộc.", "Name is required.", language);
   }
-  if (!form.discountValue || Number.isNaN(discountValue) || discountValue < 1) {
-    errors.discountValue = translate("Giá trị giảm giá phải ít nhất là 1.", "Discount value must be at least 1.", language);
-  } else if (form.discountType === "PERCENT" && discountValue > 100) {
-    errors.discountValue = translate("Giảm giá theo % phải từ 1 đến 100.", "Percent discount must be between 1 and 100.", language);
+  if (!form.pointMultiplier || Number.isNaN(pointMultiplier) || pointMultiplier < 1) {
+    errors.pointMultiplier = translate("Hệ số điểm phải ít nhất là 1.", "Point multiplier must be at least 1.", language);
   }
 
   if (!form.startDate) errors.startDate = translate("Ngày bắt đầu là bắt buộc.", "Start date is required.", language);
@@ -953,20 +931,19 @@ function readServerFieldError(
 }
 
 function toRequestPayload(form: PromotionFormValues): PromotionRequest | null {
-  const discountValue = Number(form.discountValue);
+  const pointMultiplier = Number(form.pointMultiplier);
   const maxUsage = form.maxUsagePerCustomer ? Number(form.maxUsagePerCustomer) : null;
   const startDate = new Date(form.startDate);
   const endDate = new Date(form.endDate);
 
-  if (Number.isNaN(discountValue) || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+  if (Number.isNaN(pointMultiplier) || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
     return null;
   }
 
   return {
     name: sanitizePromotionNameInput(form.name.trim()),
     description: null,
-    discountType: form.discountType,
-    discountValue,
+    pointMultiplier,
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
     targetingMode: form.targetingMode,
@@ -979,8 +956,7 @@ function toRequestPayload(form: PromotionFormValues): PromotionRequest | null {
 function toFormValues(promotion: Promotion): PromotionFormValues {
   return {
     name: sanitizePromotionNameInput(promotion.name),
-    discountType: promotion.discountType,
-    discountValue: String(promotion.discountValue),
+    pointMultiplier: String(promotion.pointMultiplier),
     startDate: toLocalDateTimeInputValue(promotion.startDate),
     endDate: toLocalDateTimeInputValue(promotion.endDate),
     targetingMode: promotion.targetingMode,
@@ -1046,11 +1022,9 @@ function filterPromotions(items: Promotion[], filters: PromotionFilters): Promot
   });
 }
 
-function formatDiscount(type: PromotionDiscountType, value: number | undefined | null, language: "vi" | "en") {
-  if (value == null) return "0";
-  return type === "PERCENT"
-    ? `${value}%`
-    : `${value.toLocaleString(language === "vi" ? "vi-VN" : "en-US")} VND`;
+function formatPointMultiplier(value: number | undefined | null, language: "vi" | "en") {
+  if (value == null) return "x1.0";
+  return `x${value.toFixed(1)}`;
 }
 
 function getPromotionPhase(promotion: Promotion) {

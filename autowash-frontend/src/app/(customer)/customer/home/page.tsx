@@ -17,6 +17,7 @@ import { Card } from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { cn } from "@/shared/lib/utils";
 import { formatBookingCurrency } from "@/features/customer/bookings/lib/booking-format";
 import { useCustomerProfile } from "@/features/customer/profile/hooks/use-customer-profile";
@@ -30,6 +31,7 @@ type ActiveCustomerComboSummary = CustomerCombo & {
 
 export default function CustomerHomePage() {
   const user = useAuthStore((state) => state.user);
+  const { language } = useLanguageStore();
 
   const profileQuery = useCustomerProfile();
   const bookingsQuery = useCustomerBookings();
@@ -64,25 +66,25 @@ export default function CustomerHomePage() {
 
   const stats = [
     {
-      label: "Đơn đặt lịch",
+      label: translate("Đơn đặt lịch", "Bookings", language),
       value: bookingsQuery.isLoading ? "..." : String(bookingsQuery.data?.pagination.total ?? 0),
       icon: ClipboardList,
       color: "text-cyan-700 bg-cyan-50/60 border border-cyan-100",
     },
     {
-      label: "Điểm tích lũy",
+      label: translate("Điểm tích lũy", "Loyalty Points", language),
       value: profileQuery.isLoading ? "..." : (profileQuery.data?.loyaltyBalance !== undefined && profileQuery.data?.loyaltyBalance !== null ? profileQuery.data.loyaltyBalance.toLocaleString("vi-VN") : "0"),
       icon: Gift,
       color: "text-lime-700 bg-lime-50/60 border border-lime-100",
     },
     {
-      label: "Thông báo",
+      label: translate("Thông báo", "Notifications", language),
       value: "3", // Mocked as there is no backend notification center yet
       icon: Bell,
       color: "text-slate-700 bg-slate-100/80 border border-slate-200/50",
     },
     {
-      label: "Phương tiện",
+      label: translate("Phương tiện", "Vehicles", language),
       value: vehiclesQuery.isLoading ? "..." : String(vehiclesQuery.data?.pagination.total ?? 0),
       icon: CarFront,
       color: "text-cyan-800 bg-cyan-50/40 border border-cyan-100/60",
@@ -93,26 +95,26 @@ export default function CustomerHomePage() {
     {
       href: "/customer/bookings/new",
       icon: ClipboardList,
-      title: "Đặt lịch rửa xe",
-      text: "Tạo đơn đặt lịch rửa xe trực tuyến nhanh chóng.",
+      title: translate("Đặt lịch rửa xe", "Book a Wash", language),
+      text: translate("Tạo đơn đặt lịch rửa xe trực tuyến nhanh chóng.", "Quickly create an online car wash booking.", language),
     },
     {
       href: "/customer/vehicles",
       icon: CarFront,
-      title: "Quản lý xe",
-      text: "Quản lý danh sách xe và thêm phương tiện mới.",
+      title: translate("Quản lý xe", "Manage Vehicles", language),
+      text: translate("Quản lý danh sách xe và thêm phương tiện mới.", "Manage your vehicle list and add new vehicles.", language),
     },
     {
       href: "/customer/loyalty",
       icon: Gift,
-      title: "Ưu đãi thành viên",
-      text: "Theo dõi hạng thành viên, tích lũy điểm và đổi quà.",
+      title: translate("Ưu đãi thành viên", "Member Perks", language),
+      text: translate("Theo dõi hạng thành viên, tích lũy điểm và đổi quà.", "Track your membership tier, earn points, and redeem gifts.", language),
     },
     {
       href: "/customer/notifications",
       icon: Bell,
-      title: "Hộp thư thông báo",
-      text: "Xem các cập nhật trạng thái rửa xe và lịch hẹn.",
+      title: translate("Hộp thư thông báo", "Notification Inbox", language),
+      text: translate("Xem các cập nhật trạng thái rửa xe và lịch hẹn.", "View updates on wash status and appointments.", language),
     },
   ];
 
@@ -129,14 +131,14 @@ export default function CustomerHomePage() {
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50/60 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.22em] text-cyan-800 shadow-sm">
                 <Sparkles className="h-3.5 w-3.5" />
-                Khu vực khách hàng
+                {translate("Khu vực khách hàng", "Customer Portal", language)}
               </div>
               <div className="space-y-2">
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                  Chào mừng trở lại{user?.fullName ? `, ${user.fullName}` : ""}.
+                  {translate("Chào mừng trở lại", "Welcome back", language)}{user?.fullName ? `, ${user.fullName}` : ""}.
                 </h1>
                 <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                  Theo dõi tiến trình rửa xe của bạn, cập nhật thông tin tài khoản và thực hiện các dịch vụ rửa xe thông dụng nhất ngay tại đây.
+                  {translate("Theo dõi tiến trình rửa xe của bạn, cập nhật thông tin tài khoản và thực hiện các dịch vụ rửa xe thông dụng nhất ngay tại đây.", "Track your wash progress, update account details, and book our most popular wash services right here.", language)}
                 </p>
               </div>
             </div>
@@ -147,7 +149,7 @@ export default function CustomerHomePage() {
               </div>
               <div>
                 <div className="text-sm font-bold text-slate-900">
-                  {user?.fullName ?? "Khách hàng"}
+                  {user?.fullName ?? translate("Khách hàng", "Customer", language)}
                 </div>
                 <div className="text-xs font-semibold text-slate-500">
                   {user?.tier ?? "MEMBER"} • {user?.phone}
@@ -163,17 +165,17 @@ export default function CustomerHomePage() {
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-700">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Combo đăng ký
+                  {translate("Combo đăng ký", "Subscribed Combos", language)}
                 </div>
                 <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
-                  Gói combo của bạn
+                  {translate("Gói combo của bạn", "Your Combos", language)}
                 </h2>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-                  Xem nhanh gói combo đang còn hiệu lực, số lượt còn lại và các quyền lợi chính ngay tại trang chủ.
+                  {translate("Xem nhanh gói combo đang còn hiệu lực, số lượt còn lại và các quyền lợi chính ngay tại trang chủ.", "Quickly view your active combos, remaining usages, and key benefits right on the home page.", language)}
                 </p>
               </div>
               <div className="inline-flex items-center gap-2 self-start rounded-full border border-cyan-200 bg-white/80 px-3 py-1 text-xs font-bold text-cyan-700 shadow-sm">
-                {activeComboSummaries.length > 0 ? `${activeComboSummaries.length} gói đang hoạt động` : "Chưa có combo"}
+                {activeComboSummaries.length > 0 ? `${activeComboSummaries.length} ${translate("gói đang hoạt động", "active combos", language)}` : translate("Chưa có combo", "No combo", language)}
               </div>
             </div>
           </div>

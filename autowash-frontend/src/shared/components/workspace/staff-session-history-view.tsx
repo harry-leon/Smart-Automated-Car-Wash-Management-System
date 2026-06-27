@@ -105,15 +105,15 @@ export function StaffSessionHistoryView() {
       </section>
 
       <Card className="overflow-hidden rounded-[1.75rem] border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/45 to-blue-50/35 shadow-[0_18px_42px_rgba(16,185,129,0.09)] backdrop-blur">
-        <div className="border-b border-emerald-100/70 bg-white/70 px-5 py-4">
+        <div className="border-b border-emerald-100/70 dark:border-emerald-900/30 bg-card/70 px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-black text-slate-950">Bộ lọc lịch sử</h2>
+              <h2 className="text-base font-black text-foreground">Bộ lọc lịch sử</h2>
               <p className="text-sm text-muted-foreground">Tra cứu phiên hoàn thành theo thời gian, gói rửa, nhân viên hoặc thông tin xe.</p>
             </div>
             <Button
               variant="ghost"
-              className="h-8 rounded-xl px-3 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              className="h-8 rounded-xl px-3 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={() => {
                 setSearch("");
                 setPackageFilter(ALL_PACKAGE_VALUE);
@@ -132,12 +132,12 @@ export function StaffSessionHistoryView() {
         <div className="space-y-3 border-b border-emerald-100/70 p-4 lg:p-5">
           <div className="grid items-end gap-3 xl:grid-cols-[minmax(320px,1fr)_170px_190px_190px]">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Tìm mã đặt lịch, biển số, khách hàng, SĐT..."
-                className="h-11 rounded-2xl border-white/80 bg-white/85 pl-10 text-sm font-semibold shadow-sm focus:border-emerald-200 focus:bg-white"
+                className="h-11 rounded-2xl border-border/60 bg-background/85 pl-10 text-sm font-semibold shadow-sm focus:border-emerald-200 focus:bg-background"
               />
             </div>
 
@@ -165,13 +165,13 @@ export function StaffSessionHistoryView() {
             />
           </div>
 
-          <div className="grid items-end gap-3 rounded-3xl border border-white/80 bg-white/60 p-3 shadow-inner lg:grid-cols-[minmax(220px,1fr)_112px_112px_minmax(0,1fr)]">
+          <div className="grid items-end gap-3 rounded-3xl border border-border/50 bg-muted/40 p-3 shadow-inner lg:grid-cols-[minmax(220px,1fr)_112px_112px_minmax(0,1fr)]">
             <div>
               {periodMode === "day" ? (
-                <Input type="date" value={dayFilter} onChange={(event) => setDayFilter(event.target.value)} className="h-10 rounded-2xl border-white/80 bg-white shadow-sm" />
+                <Input type="date" value={dayFilter} onChange={(event) => setDayFilter(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background shadow-sm" />
               ) : null}
               {periodMode === "month" ? (
-                <Input type="month" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} className="h-10 rounded-2xl border-white/80 bg-white shadow-sm" />
+                <Input type="month" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background shadow-sm" />
               ) : null}
               {periodMode === "year" ? (
                 <Input
@@ -180,19 +180,19 @@ export function StaffSessionHistoryView() {
                   max="2100"
                   value={yearFilter}
                   onChange={(event) => setYearFilter(event.target.value)}
-                  className="h-10 rounded-2xl border-white/80 bg-white shadow-sm"
+                  className="h-10 rounded-2xl border-border/60 bg-background shadow-sm"
                 />
               ) : null}
               {periodMode === "all" ? (
-                <div className="flex h-10 items-center rounded-2xl border border-white/80 bg-white px-3 text-sm font-semibold text-slate-500 shadow-sm">
+                <div className="flex h-10 items-center rounded-2xl border border-border/50 bg-muted/50 px-3 text-sm font-semibold text-muted-foreground shadow-sm">
                   Không giới hạn ngày
                 </div>
               ) : null}
             </div>
 
-            <Input type="time" value={startHour} onChange={(event) => setStartHour(event.target.value)} className="h-10 rounded-2xl border-white/80 bg-white text-sm shadow-sm" aria-label="Từ giờ" />
-            <Input type="time" value={endHour} onChange={(event) => setEndHour(event.target.value)} className="h-10 rounded-2xl border-white/80 bg-white text-sm shadow-sm" aria-label="Đến giờ" />
-            <p className="hidden text-xs font-semibold leading-5 text-slate-500 lg:block">
+            <Input type="time" value={startHour} onChange={(event) => setStartHour(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background text-sm shadow-sm" aria-label="Từ giờ" />
+            <Input type="time" value={endHour} onChange={(event) => setEndHour(event.target.value)} className="h-10 rounded-2xl border-border/60 bg-background text-sm shadow-sm" aria-label="Đến giờ" />
+            <p className="hidden text-xs font-semibold leading-5 text-muted-foreground lg:block">
               Lọc theo thời điểm hoàn thành của phiên rửa.
             </p>
           </div>
@@ -205,7 +205,7 @@ export function StaffSessionHistoryView() {
               description={getDisplayErrorMessage(queueQuery.error as unknown as ApiErrorResponse)}
             />
           ) : queueQuery.isPending ? (
-            <div className="h-72 animate-pulse rounded-3xl bg-slate-100" />
+            <div className="h-72 animate-pulse rounded-3xl bg-muted" />
           ) : filteredSessions.length === 0 ? (
             <WorkspaceEmptyState title="Không tìm thấy phiên đã hoàn thành" description="Thử từ khóa hoặc bộ lọc khác." />
           ) : (
@@ -235,7 +235,7 @@ function HistorySelect({
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-10 w-full rounded-2xl border border-white/80 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100"
+      className="h-10 w-full rounded-2xl border border-border/60 bg-background px-3 text-sm font-semibold text-foreground shadow-sm outline-none transition focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/40"
     >
       {options.map(([optionValue, optionLabel]) => (
         <option key={optionValue} value={optionValue}>
@@ -248,7 +248,7 @@ function HistorySelect({
 
 function SummaryCard({ label, value, detail }: { label: string; value: number | string; detail: string }) {
   return (
-    <Card className="rounded-3xl border-white/80 bg-gradient-to-br from-white via-white to-emerald-50/50 p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(16,185,129,0.10)]">
+    <Card className="rounded-3xl border-border/50 bg-gradient-to-br from-card via-card to-emerald-50/20 dark:to-emerald-950/10 p-5 shadow-[0_16px_34px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_44px_rgba(16,185,129,0.10)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
@@ -298,7 +298,7 @@ function HistorySessionRow({ session }: { session: OperationsQueueSession }) {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-2xl bg-white/75 px-3 py-2 shadow-inner ring-1 ring-white/80">
+    <div className="min-w-0 rounded-2xl bg-muted/60 px-3 py-2 shadow-inner ring-1 ring-border/50">
       <p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p>
       <p className="truncate font-semibold text-foreground" title={value}>
         {value}

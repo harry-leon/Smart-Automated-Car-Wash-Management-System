@@ -850,7 +850,7 @@ function WashHistoryTab({
                       </Button>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{item.vehiclePlate}</TableCell>
-                    <TableCell>{item.servicePackage.name ?? item.servicePackage.id ?? "N/A"}</TableCell>
+                    <TableCell>{item.servicePackage?.name ?? item.servicePackage?.id ?? "N/A"}</TableCell>
                     <TableCell>
                       <div>{formatDate(item.bookingDate, language)}</div>
                       <div className="text-xs text-slate-500">{item.bookingTime}</div>

@@ -118,13 +118,23 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         if (UserRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ApiException(HttpStatus.CONFLICT, "Email already registered", "DUPLICATE_EMAIL");
         }
+        
+        UserRole assignedRole = UserRole.STAFF;
+        if (request.role() != null && !request.role().isBlank()) {
+            try {
+                assignedRole = UserRole.valueOf(request.role().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid role", "VALIDATION_ERROR");
+            }
+        }
+
         User staff = User.builder()
                 .id(UUID.randomUUID())
                 .fullName(request.fullName())
                 .phone(request.phone())
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .role(UserRole.STAFF)
+                .role(assignedRole)
                 .status(UserStatus.ACTIVE)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
