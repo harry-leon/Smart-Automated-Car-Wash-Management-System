@@ -12,7 +12,8 @@ autowash-backend/.gradle/
 autowash-backend/.env
 autowash-backend/*.log
 
-.idea/
-.vscode/
+/.idea/
+/.vscode/
 
 Task/
+docs/

@@ -1,4 +1,4 @@
-import type { AuthSession, AuthUser } from "@/features/auth/auth.types";
+import type { AuthSession, AuthUser } from "@/entities/auth";
 
 const AUTH_SESSION_STORAGE_KEY = "autowash.auth.session";
 

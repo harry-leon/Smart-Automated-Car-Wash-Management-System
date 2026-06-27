@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { AdminOffersManagementPage } from "@/features/admin/management/components/admin-offers-management-page";
+import { AdminOffersManagementPage } from "@/features/management/components/admin-offers-management-page";
 
 export default function AdminOffersPage({
   searchParams,

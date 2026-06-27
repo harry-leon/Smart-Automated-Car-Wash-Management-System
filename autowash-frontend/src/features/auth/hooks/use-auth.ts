@@ -24,7 +24,7 @@ import {
   SendOtpResponseData,
   VerifyOtpRequest,
   VerifyOtpResponseData,
-} from "@/features/auth/auth.types";
+} from "@/entities/auth";
 
 export function useCustomerLogin() {
   const router = useRouter();

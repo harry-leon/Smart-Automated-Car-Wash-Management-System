@@ -27,8 +27,8 @@ import {
   ArrowLeft,
   Lock,
 } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
-import { formatBookingCurrency } from "@/features/customer/bookings/lib/booking-format";
+import { Button } from "@/shared/ui/ui/button";
+import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import { cn } from "@/shared/lib/utils";
 import { useCustomerLogin, useCustomerRegister, useSendCustomerOtp, useVerifyCustomerOtp } from "@/features/auth/hooks/use-auth";
 import { useAuthStore } from "@/features/auth/store/auth.store";

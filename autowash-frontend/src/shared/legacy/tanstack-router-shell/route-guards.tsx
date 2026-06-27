@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { AccessDenied } from "@/shared/components/access-denied";
+import { AccessDenied } from "@/shared/ui/access-denied";
 import { getHomePath } from "@/shared/lib/auth";
 import { type Role, useCarwashStore } from "@/shared/store/carwash-store";
 

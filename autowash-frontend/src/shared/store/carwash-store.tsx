@@ -3,7 +3,7 @@ import {
   assignStaffToConfirmedBooking,
   getStaffAvailability,
   type StaffAvailability,
-} from "@/features/staff/operations/lib/staff-availability";
+} from "@/features/operations/lib/staff-availability";
 
 export type Role = "Customer" | "Staff" | "Admin";
 export type CustomerStatus = "Active" | "Inactive" | "Blocked";

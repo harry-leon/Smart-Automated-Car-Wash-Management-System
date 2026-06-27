@@ -12,7 +12,7 @@ import {
   SendOtpResponseData,
   VerifyOtpRequest,
   VerifyOtpResponseData,
-} from "@/features/auth/auth.types";
+} from "@/entities/auth";
 
 export async function registerCustomer(payload: RegisterRequest) {
   try {

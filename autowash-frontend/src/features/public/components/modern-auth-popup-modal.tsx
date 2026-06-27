@@ -27,7 +27,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/ui/ui/button";
 import { useCustomerLogin, useCustomerRegister, useSendCustomerOtp, useVerifyCustomerOtp } from "@/features/auth/hooks/use-auth";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";

@@ -3,16 +3,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PlayCircle, RefreshCcw, ShieldCheck, TimerReset } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Button } from "@/shared/ui/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import {
   createWashSession,
   getEligibleSessionBookings,
   getOperationsQueue,
-} from "@/features/staff/operations/lib/operations-service";
+} from "@/features/operations/lib/operations-service";
 import type { ApiErrorResponse } from "@/shared/types/api.types";
-import type { CreateWashSessionResponse, EligibleSessionBooking, OperationsQueue } from "@/features/staff/operations/operation.types";
+import type { CreateWashSessionResponse, EligibleSessionBooking, OperationsQueue } from "@/entities/operations";
 
 export default function AdminOperationsPage() {
   const queryClient = useQueryClient();

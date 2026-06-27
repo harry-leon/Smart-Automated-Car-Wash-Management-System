@@ -1,4 +1,4 @@
-import { StaffOperationsFlow } from "@/features/staff/operations/components/staff-operations-flow";
+import { StaffOperationsFlow } from "@/features/operations/components/staff-operations-flow";
 
 type PageProps = {
   searchParams: { sessionId?: string };

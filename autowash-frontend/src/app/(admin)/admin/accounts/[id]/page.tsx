@@ -1,10 +1,10 @@
 "use client";
 
-import { useAdminAccountDetail } from "@/features/admin/reports/hooks/use-admin-reporting";
-import { AdminCustomerDetailPageContent } from "@/features/admin/customers/components/admin-customer-detail-page";
-import { AdminAccountDetailPageContent } from "@/features/admin/accounts/components/admin-account-detail-page";
+import { useAdminAccountDetail } from "@/features/reports/hooks/use-admin-reporting";
+import { AdminCustomerDetailPageContent } from "@/features/customers/components/admin-customer-detail-page";
+import { AdminAccountDetailPageContent } from "@/features/accounts/components/admin-account-detail-page";
 import { Loader2 } from "lucide-react";
-import { Card, CardContent } from "@/shared/components/ui/card";
+import { Card, CardContent } from "@/shared/ui/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 
 export default function AdminAccountDetailPage({ params }: { params: { id: string } }) {

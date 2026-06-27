@@ -81,14 +81,13 @@ graph TD
 ```text
 CarWash/
 ├── .github/                          # Cấu hình GitHub Actions, Dependabot & PR Template
-├── autowash-frontend/                # 💻 Mã nguồn Phân hệ Frontend (Next.js)
+├── autowash-frontend/                # 💻 Mã nguồn Phân hệ Frontend (Next.js - FSD Architecture)
 │   ├── public/                       # File tĩnh (Logo, hình ảnh...)
 │   └── src/
-│       ├── app/                      # Next.js App Router (Customer, Staff, Admin)
-│       ├── features/                 # Package by feature: auth, customer, staff, admin, public, support
-│       ├── shared/                   # UI, providers, lib, store, types dùng chung
-│       ├── assets/                   # Static assets nội bộ frontend
-│       └── styles/                   # CSS/tokens dùng cho lớp handoff tĩnh
+│       ├── app/                      # Next.js App Router (Customer, Staff, Admin routing)
+│       ├── entities/                 # Các thực thể nghiệp vụ (business entities: user, booking, loyalty...)
+│       ├── features/                 # Các tính năng độc lập (auth, bookings, promotions, staff...)
+│       └── shared/                   # Các thành phần dùng chung (UI components, API, utilities, store)
 ├── autowash-backend/                 # ☕ Mã nguồn Phân hệ Backend (Spring Boot)
 │   ├── src/main/java/com/autowash/   # Package by layer: controller, service, repository, entity, dto, shared
 │   └── pom.xml                       # Quản lý dependency Maven
@@ -98,53 +97,43 @@ CarWash/
     └── specs/                        # Đặc tả hợp đồng API và hành vi Prototype
 ```
 
-### Frontend static handoff
+### Kiến trúc Frontend (Feature-Sliced Design - FSD)
 
-Frontend hien co them lop HTML/CSS/JS tach rieng de de gan voi Java Servlet/JSP sau nay:
-
-- HTML pages: `autowash-frontend/src/pages`
-- CSS tokens/components/pages: `autowash-frontend/src/styles`
-- JavaScript utils/API/store/modules: `autowash-frontend/src/scripts`
-- Assets: `autowash-frontend/src/assets`
-- React/Next.js runtime chinh nam trong `autowash-frontend/src/app`, `src/features`, `src/shared`.
-- `src/components`, `src/hooks`, `src/lib`, `src/store`, `src/types` legacy da duoc gom lai vao `src/features` va `src/shared`.
+Frontend được cấu trúc lại hoàn toàn theo chuẩn FSD nhằm dễ dàng mở rộng và bảo trì. Sơ đồ chi tiết như sau:
 
 ```text
 autowash-frontend/src/
-├── assets/
-│   ├── images/
-│   ├── icons/
-│   └── fonts/
-├── pages/
-│   ├── auth/
-│   ├── customer/
-│   ├── staff/
-│   └── admin/
-├── styles/
-│   ├── variables.css
-│   ├── components/
-│   ├── pages/
-│   └── utilities.css
-├── scripts/
-│   ├── utils/
-│   ├── api/
-│   ├── store/
-│   ├── modules/
-│   └── main.js
-├── app/
-├── features/
-│   ├── auth/
-│   ├── customer/
-│   ├── staff/
-│   ├── admin/
-│   ├── public/
-│   └── support/
-└── shared/
-    ├── components/
-    ├── lib/
-    ├── store/
-    └── types/
+├── app/                      # 1. Lớp Routing: Next.js App Router (Phân trang Customer, Staff, Admin)
+│   ├── (customer)/           # Định tuyến và Layout cho khách hàng
+│   ├── (staff)/              # Định tuyến và Layout cho nhân viên
+│   ├── (admin)/              # Định tuyến và Layout cho quản trị viên
+│   └── globals.css           # Global styles
+├── entities/                 # 2. Lớp Entities: Thực thể nghiệp vụ cốt lõi
+│   ├── loyalty/              # Model, interface liên quan đến Loyalty
+│   ├── promotions/           # Model, interface liên quan đến Promotions
+│   └── user/                 # Model, interface liên quan đến User
+├── features/                 # 3. Lớp Features: Tính năng, chức năng tương tác
+│   ├── auth/                 # Tính năng Đăng nhập/Đăng xuất
+│   ├── bookings/             # Tính năng Quản lý đặt lịch
+│   ├── loyalty/              # Tính năng Tích điểm, lịch sử
+│   ├── promotions/           # Tính năng Khuyến mãi, voucher
+│   └── ...                   # (Các tính năng độc lập khác)
+├── widgets/                  # 4. Lớp Widgets: Tổ hợp các feature thành block lớn (Header, Sidebar)
+├── views/                    # 5. Lớp Views: Thành phần tổ hợp ra màn hình page hoàn chỉnh
+├── shared/                   # 6. Lớp Shared: Thành phần tái sử dụng ở mọi nơi
+│   ├── ui/                   # Design System (Shadcn UI components)
+│   ├── lib/                  # Thư viện tiện ích (utils, API configs)
+│   ├── store/                # Global State (Zustand)
+│   └── types/                # Types dùng chung
+└── middleware.ts             # Middleware xử lý Auth và Redirects
 ```
+
+**Mô tả chi tiết các lớp:**
+- **`app/`**: Chứa các file định tuyến (routing) của Next.js, phân chia rõ theo các roles (customer, staff, admin).
+- **`entities/`**: Chứa định nghĩa kiểu dữ liệu (Types/Interfaces) và các logic lõi của các đối tượng nghiệp vụ (ví dụ: `CustomerPromotion`, `RedeemPointsRequest`).
+- **`features/`**: Chứa logic xử lý, component, hooks và call API đặc thù cho từng chức năng (ví dụ: `bookings`, `loyalty`, `promotions`).
+- **`widgets/` & `views/`**: Dùng để tổ hợp nhiều component từ features và entities thành một khối giao diện chức năng hoàn chỉnh.
+- **`shared/`**: Các thành phần tái sử dụng ở mọi nơi bao gồm Hệ thống UI Design System (Shadcn UI), thư viện gọi API trung tâm, ngôn ngữ và global state (Zustand).
 
 ---
 

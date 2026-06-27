@@ -1,4 +1,4 @@
-import { CustomerBookingSuccessPage } from "@/features/customer/bookings/components/booking-success-page";
+import { CustomerBookingSuccessPage } from "@/features/bookings/components/booking-success-page";
 
 export default function BookingSuccessPage({
   searchParams,

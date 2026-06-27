@@ -19,6 +19,7 @@ test("serializes auth session to a persisted payload", () => {
       status: "ACTIVE",
       tier: "MEMBER",
       loyaltyBalance: 10,
+      isNewCustomer: false,
     },
   });
 
@@ -37,6 +38,7 @@ test("serializes auth session to a persisted payload", () => {
       status: "ACTIVE",
       tier: "MEMBER",
       loyaltyBalance: 10,
+      isNewCustomer: false,
     },
   });
 });
@@ -57,6 +59,7 @@ test("restores persisted auth state from storage json", () => {
           status: "ACTIVE",
           tier: "MEMBER",
           loyaltyBalance: 10,
+          isNewCustomer: false,
         },
       }),
     ),
@@ -73,6 +76,7 @@ test("restores persisted auth state from storage json", () => {
         status: "ACTIVE",
         tier: "MEMBER",
         loyaltyBalance: 10,
+        isNewCustomer: false,
       },
     },
   );
