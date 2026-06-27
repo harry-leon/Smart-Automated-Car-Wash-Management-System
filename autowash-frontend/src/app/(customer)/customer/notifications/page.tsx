@@ -2,13 +2,13 @@
 
 import { Bell, BellRing, CheckCheck, Loader2, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Button } from "@/shared/ui/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import {
   useCustomerNotifications,
   useMarkCustomerNotificationAsRead,
-} from "@/features/customer/notifications/hooks/use-customer-notifications";
+} from "@/features/notifications/hooks/use-customer-notifications";
 
 export default function CustomerNotificationsPage() {
   const notificationsQuery = useCustomerNotifications();

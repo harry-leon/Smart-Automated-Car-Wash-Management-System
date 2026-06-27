@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { Loader2, RefreshCcw, Save, Settings2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Button } from "@/shared/ui/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/ui/card";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import {
   useCustomerPreferences,
   useUpdateCustomerPreferences,
-} from "@/features/customer/preferences/hooks/use-customer-preferences";
-import type { CustomerPreferences } from "@/features/customer/preferences/preferences.types";
+} from "@/features/preferences/hooks/use-customer-preferences";
+import type { CustomerPreferences } from "@/entities/preferences";
 
 export default function CustomerSettingsPage() {
   const preferencesQuery = useCustomerPreferences();

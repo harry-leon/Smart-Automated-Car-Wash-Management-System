@@ -3,7 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, LockKeyhole, Mail, UserRound } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/ui/ui/button";
 import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { useCustomerRegister } from "@/features/auth/hooks/use-auth";
 import { emailPattern, passwordPattern } from "@/shared/lib/validators";

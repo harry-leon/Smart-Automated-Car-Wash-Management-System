@@ -29,6 +29,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
+      "@/views/*": ["./src/views/*"],
+      "@/widgets/*": ["./src/widgets/*"],
+      "@/entities/*": ["./src/entities/*"],
       "@/*": [
         "./src/*"
       ]

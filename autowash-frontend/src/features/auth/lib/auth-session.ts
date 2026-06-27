@@ -3,8 +3,8 @@ import type {
   AuthSession,
   AuthUser,
   UserRole,
-} from "../auth.types.ts";
-import type { UserProfile } from "../../customer/profile/profile.types.ts";
+} from "@/entities/auth";
+import type { UserProfile } from "@/entities/users";
 
 const AUTH_REDIRECT_PATH: Record<UserRole, string> = {
   CUSTOMER: "/customer/home",

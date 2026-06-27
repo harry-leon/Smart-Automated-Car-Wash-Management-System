@@ -1,6 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
-import { AuthSession, AuthUser } from "@/features/auth/auth.types";
+import { AuthSession, AuthUser } from "@/entities/auth";
 import {
   clearPersistedAuthState,
   type PersistedAuthState,

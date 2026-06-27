@@ -1,4 +1,4 @@
-import { CustomerWashTrackingPage } from "@/features/customer/bookings/components/wash-tracking-page";
+import { CustomerWashTrackingPage } from "@/features/bookings/components/wash-tracking-page";
 
 export default function WashTrackingPage() {
   return <CustomerWashTrackingPage />;

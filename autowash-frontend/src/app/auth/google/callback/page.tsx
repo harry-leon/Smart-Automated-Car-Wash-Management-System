@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/ui/ui/button";
 import { buildAuthSession, getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import {
   confirmGoogleAuthLink,
@@ -12,7 +12,7 @@ import {
 } from "@/features/auth/lib/auth-service";
 import { getDisplayErrorMessage } from "@/shared/lib/api-errors";
 import { setAuthSession } from "@/features/auth/store/auth.store";
-import type { GoogleAuthTicketResponse } from "@/features/auth/auth.types";
+import type { GoogleAuthTicketResponse } from "@/entities/auth";
 
 export default function GoogleAuthCallbackPage() {
   return (

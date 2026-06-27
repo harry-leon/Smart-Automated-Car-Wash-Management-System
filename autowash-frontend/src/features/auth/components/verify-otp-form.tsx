@@ -11,7 +11,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/ui/ui/button";
 import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-errors";
 import { useSendCustomerOtp, useVerifyCustomerOtp } from "@/features/auth/hooks/use-auth";
 import { emailPattern, otpPattern } from "@/shared/lib/validators";

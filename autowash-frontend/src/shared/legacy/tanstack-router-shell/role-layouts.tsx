@@ -1,5 +1,5 @@
-import { AppShell } from "@/shared/components/app-shell";
-import { RequireRole } from "@/shared/components/route-guards";
+import { AppShell } from "@/shared/ui/app-shell";
+import { RequireRole } from "@/shared/ui/route-guards";
 
 export function CustomerLayout() {
   return (
