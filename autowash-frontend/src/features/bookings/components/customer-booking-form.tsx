@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckCircle2, Loader2, RefreshCcw } from "lucide-react";
@@ -81,9 +81,40 @@ function OptionPill({ children }: { children: ReactNode }) {
 
 export function CustomerBookingForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryMode = searchParams.get("mode");
+  const queryPackageId = searchParams.get("packageId");
+  const queryComboId = searchParams.get("comboId");
+  const queryAddonIds = searchParams.get("addonIds");
+  const queryServiceIds = searchParams.get("serviceIds");
+
   const hasAutoSelectedComboRef = useRef(false);
   const draft = useBookingStore((state) => state.draft);
   const updateDraft = useBookingStore((state) => state.updateDraft);
+
+  useEffect(() => {
+    const patch: Partial<BookingDraft> = {};
+    if (queryMode === "PACKAGE" || queryMode === "COMBO") {
+      patch.mode = queryMode;
+    } else if (queryMode === "SERVICE") {
+      patch.mode = "PACKAGE";
+    }
+    if (queryPackageId) {
+      patch.packageId = queryPackageId;
+    }
+    if (queryComboId) {
+      patch.comboId = queryComboId;
+    }
+    if (queryAddonIds) {
+      patch.addonIds = queryAddonIds.split(",").filter(Boolean);
+    }
+    if (queryServiceIds) {
+      patch.addonIds = queryServiceIds.split(",").filter(Boolean);
+    }
+    if (Object.keys(patch).length > 0) {
+      updateDraft(patch);
+    }
+  }, [queryAddonIds, queryComboId, queryMode, queryPackageId, queryServiceIds, updateDraft]);
   const vehiclesQuery = useCustomerVehicles();
   const packagesQuery = useBookingPackages();
   const addonsQuery = useBookingAddons();

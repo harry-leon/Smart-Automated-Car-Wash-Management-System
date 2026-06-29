@@ -102,6 +102,7 @@ export function useCreateAdminService() {
         price: Number(form.price),
         duration: Number(form.duration),
         status: form.status,
+        imageUrl: form.imageUrl || null,
       });
     },
     onSuccess: async () => {
@@ -140,6 +141,7 @@ export function useCreateAdminPackage() {
         features,
         status: form.status,
         serviceIds: form.serviceIds,
+        imageUrl: form.imageUrl || null,
       });
     },
     onSuccess: async () => {

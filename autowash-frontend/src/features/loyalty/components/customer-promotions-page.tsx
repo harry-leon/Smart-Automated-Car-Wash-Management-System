@@ -13,6 +13,17 @@ export function CustomerPromotionsPageContent() {
   const { language } = useLanguageStore();
   const promotionsQuery = useCustomerPromotions();
   const locale = language === "vi" ? "vi-VN" : "en-US";
+  const formatPromotionBenefit = (pointMultiplier: number | null | undefined) => {
+    if (typeof pointMultiplier !== "number" || Number.isNaN(pointMultiplier)) {
+      return translate(language, "Ưu đãi thành viên", "Member benefit");
+    }
+
+    if (pointMultiplier === 1) {
+      return translate(language, "Tích điểm tiêu chuẩn", "Standard points");
+    }
+
+    return translate(language, `Nhân ${pointMultiplier.toLocaleString(locale)} điểm`, `${pointMultiplier.toLocaleString(locale)}x points`);
+  };
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -74,12 +85,10 @@ export function CustomerPromotionsPageContent() {
 
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                     <div className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                      {translate(language, "Giảm giá", "Discount")}
+                      {translate(language, "Ưu đãi", "Benefit")}
                     </div>
                     <div className="mt-2 text-2xl font-black text-slate-900">
-                      {promotion.discountType === "PERCENT"
-                        ? `${promotion.discountValue}%`
-                        : `${promotion.discountValue.toLocaleString(locale)} VND`}
+                      {formatPromotionBenefit(promotion.pointMultiplier)}
                     </div>
                   </div>
 
@@ -97,7 +106,7 @@ export function CustomerPromotionsPageContent() {
                   </div>
 
                   <div className="text-sm text-slate-500">
-                    {translate(language, "Từ", "Active from")} {new Date(promotion.startDate).toLocaleDateString(locale)} · {translate(language, "Hết hạn", "Expires")} {new Date(promotion.expiresAt).toLocaleDateString(locale)}
+                    {translate(language, "Từ", "Active from")} {formatPromotionDate(promotion.startDate, locale)} · {translate(language, "Hết hạn", "Expires")} {formatPromotionDate(promotion.expiresAt, locale)}
                   </div>
                 </CardContent>
               </Card>
@@ -107,4 +116,11 @@ export function CustomerPromotionsPageContent() {
       </div>
     </div>
   );
+}
+
+function formatPromotionDate(value: string | null | undefined, locale: string) {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleDateString(locale);
 }

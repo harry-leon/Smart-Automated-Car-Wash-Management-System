@@ -10,8 +10,9 @@ import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
 import { useActiveWashTracking, useCustomerBookingDetail } from "@/features/bookings/hooks/use-bookings";
 import { ApplyPointsPanel } from "@/features/bookings/components/apply-points-panel";
 import type { WashTrackingSession } from "@/entities/bookings";
-
 import { useLanguageStore } from "@/shared/store/language.store";
+import { BookingCompletionPopup } from "@/features/bookings/components/booking-completion-popup";
+import { submitBookingReview } from "@/features/bookings/lib/review-service";
 
 type TrackingLanguage = "vi" | "en";
 const STEPS: Array<WashTrackingSession["status"]> = ["PENDING", "QUEUED", "CHECKED_IN", "IN_PROGRESS", "COMPLETED"];
@@ -117,6 +118,16 @@ export function CustomerWashTrackingPage() {
   const activeSession = activeQuery.data ?? null;
   const bookingQuery = useCustomerBookingDetail(activeSession?.bookingId ?? "");
 
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [hasShownFor, setHasShownFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeSession && activeSession.status === "COMPLETED" && hasShownFor !== activeSession.bookingId) {
+      setShowCompletion(true);
+      setHasShownFor(activeSession.bookingId);
+    }
+  }, [activeSession, hasShownFor]);
+
   function handleLanguageChange(nextLanguage: "vi" | "en") {
     setLanguage(nextLanguage);
   }
@@ -202,6 +213,22 @@ export function CustomerWashTrackingPage() {
           </div>
         )}
       </div>
+
+      {activeSession && (
+        <BookingCompletionPopup
+          bookingId={activeSession.bookingId}
+          pointsEarned={activeSession.awardedLoyaltyPoints ?? 10}
+          isOpen={showCompletion}
+          onClose={() => setShowCompletion(false)}
+          onSubmitReview={async (stars, comment) => {
+            await submitBookingReview({
+              bookingId: activeSession.bookingId,
+              rating: stars,
+              comment,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

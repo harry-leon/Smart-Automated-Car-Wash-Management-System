@@ -714,7 +714,7 @@ export function AdminPromotionsPageContent() {
                                 {promotion.discountType === "PERCENT" ? (
                                   <Percent className="mr-1 inline h-3 w-3" />
                                 ) : null}
-                                {formatDiscount(promotion.discountType, promotion.discountValue, language)}
+                                {formatDiscount(promotion.discountType || "PERCENT", promotion.discountValue, language)}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -979,7 +979,7 @@ function toRequestPayload(form: PromotionFormValues): PromotionRequest | null {
 function toFormValues(promotion: Promotion): PromotionFormValues {
   return {
     name: sanitizePromotionNameInput(promotion.name),
-    discountType: promotion.discountType,
+    discountType: promotion.discountType || "PERCENT",
     discountValue: String(promotion.discountValue),
     startDate: toLocalDateTimeInputValue(promotion.startDate),
     endDate: toLocalDateTimeInputValue(promotion.endDate),
