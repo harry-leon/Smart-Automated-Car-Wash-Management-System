@@ -475,7 +475,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt(),
-                null
+                null,
+                List.of()
         );
     }
 
