@@ -50,7 +50,7 @@ import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useQuery } from "@tanstack/react-query";
 import { MarqueeTicker } from "@/shared/ui/marquee-ticker";
 import { getEligibleSessionBookings, getOperationsQueue } from "@/features/operations/lib/operations-service";
-import { useCustomerNotifications } from "@/features/notifications/hooks/use-customer-notifications";
+import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -136,6 +136,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   });
 
   const customerNotificationsQuery = useCustomerNotifications();
+  const markCustomerNotificationAsReadMutation = useMarkCustomerNotificationAsRead();
   const unreadCustomerNotifications = useMemo(() => {
     if (!isCustomer || !customerNotificationsQuery.data) return 0;
     return customerNotificationsQuery.data.filter((n) => !n.read).length;
@@ -553,10 +554,16 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     ) : (
                       <div className="max-h-64 overflow-y-auto space-y-2">
                         {customerNotificationsQuery.data.slice(0, 5).map((notification) => (
-                          <div
+                          <button
                             key={notification.notificationId}
+                            type="button"
+                            onClick={() => {
+                              if (!notification.read) {
+                                markCustomerNotificationAsReadMutation.mutate(notification.notificationId);
+                              }
+                            }}
                             className={cn(
-                              "flex flex-col gap-1 rounded-xl p-2 text-xs transition",
+                              "flex w-full flex-col gap-1 rounded-xl p-2 text-left text-xs transition",
                               notification.read 
                                 ? "bg-muted/50 hover:bg-muted" 
                                 : "bg-teal-50/50 dark:bg-teal-900/20 hover:bg-teal-50 dark:hover:bg-teal-900/30"
@@ -573,7 +580,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                             <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground")}>
                               {notification.message}
                             </div>
-                          </div>
+                          </button>
                         ))}
                         <div className="pt-2 border-t border-border/50">
                           <Link

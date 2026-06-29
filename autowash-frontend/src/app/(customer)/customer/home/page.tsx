@@ -38,6 +38,13 @@ import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profil
 import { useCustomerBookings } from "@/features/bookings/hooks/use-bookings";
 import { useBookingPackages, useBookingCombos } from "@/features/bookings/hooks/use-bookings";
 import { formatBookingCurrency } from "@/features/bookings/lib/booking-format";
+import {
+  BookingLiveSessionCard,
+  CustomerExperienceStyles,
+  FeatureSection,
+  FloatingBookingButton,
+  MembershipFloatingCard,
+} from "@/shared/ui/customer/customer-experience";
 
 const heroSlides = [
   "/images/featured-detailing.jpg",
@@ -109,6 +116,19 @@ const mockPromo = {
   ss: 52,
 };
 
+function toLiveSessionStatus(status: string): "PENDING" | "SCHEDULED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED" {
+  if (status === "CHECKED_IN" || status === "IN_PROGRESS" || status === "COMPLETED" || status === "PENDING") {
+    return status;
+  }
+  return "SCHEDULED";
+}
+
+function toBookingDateTime(bookingDate?: string | null, bookingTime?: string | null) {
+  if (!bookingDate || !bookingTime) return null;
+  const normalizedTime = bookingTime.length === 5 ? `${bookingTime}:00` : bookingTime;
+  return `${bookingDate}T${normalizedTime}`;
+}
+
 export default function CustomerHomePage() {
   const user = useAuthStore((state) => state.user);
   const { language } = useLanguageStore();
@@ -117,6 +137,9 @@ export default function CustomerHomePage() {
   const bookingsQuery = useCustomerBookings();
   const packagesQuery = useBookingPackages();
   const combosQuery = useBookingCombos();
+  const activeBooking = bookingsQuery.data?.items?.find((booking) =>
+    ["PENDING", "SCHEDULED", "CHECKED_IN", "IN_PROGRESS", "CONFIRMED"].includes(booking.status),
+  );
 
   const [activeTab, setActiveTab] = useState<"all" | "tips" | "knowledge" | "stories" | "promo">("all");
   const [likes, setLikes] = useState<Record<string, number>>({ post1: 24, post2: 12 });
@@ -276,6 +299,8 @@ export default function CustomerHomePage() {
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-8">
         
+        <CustomerExperienceStyles />
+
         {/* Promo Timer Banner */}
         <div className="flex flex-wrap items-center justify-between gap-y-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-5 py-3 shadow-sm">
           <div className="flex items-center gap-2.5 text-[13px] font-bold text-foreground">
@@ -334,6 +359,17 @@ export default function CustomerHomePage() {
           </div>
         </section>
 
+        {activeBooking ? (
+          <BookingLiveSessionCard
+            language={language}
+            bookingCode={activeBooking.bookingId}
+            serviceName={activeBooking.packageName ?? t("Dịch vụ rửa xe", "Car wash service")}
+            status={toLiveSessionStatus(activeBooking.status)}
+            imageUrl="/images/gallery1.jpg"
+            scheduledAt={toBookingDateTime(activeBooking.bookingDate, activeBooking.bookingTime)}
+          />
+        ) : null}
+
         {/* Hero Slider & Info */}
         <section className="relative mt-2 overflow-hidden rounded-3xl border border-border/50 bg-primary shadow-xl">
           {heroSlides.map((src, i) => (
@@ -361,7 +397,7 @@ export default function CustomerHomePage() {
               </p>
               <div className="pt-2 flex flex-wrap items-center gap-3">
                 <Button asChild className="rounded-xl bg-amber-500 text-amber-950 hover:bg-amber-500/90 font-bold text-xs px-5 py-2.5 shadow-lg shadow-black/25">
-                  <Link href="/customer/services">{t("Đặt lịch ngay", "Book Detailing Now")}</Link>
+                  <Link href="/customer/booking">{t("Đặt lịch ngay", "Book Detailing Now")}</Link>
                 </Button>
                 <div className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
                   <ShieldCheck className="h-4 w-4 text-amber-500" />
@@ -493,7 +529,7 @@ export default function CustomerHomePage() {
 
                   <div className="mt-5 space-y-2">
                     <Button asChild className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs py-2.5">
-                      <Link href="/customer/services">{t("Chọn gói này", "Book Now")}</Link>
+                      <Link href={`/customer/booking?type=package&id=${s.id}`}>{t("Chọn gói này", "Book Now")}</Link>
                     </Button>
                     <div className="text-center text-[10px] text-muted-foreground font-semibold">
                       {t("Không có phí ẩn", "No Hidden Fees")}
@@ -504,6 +540,8 @@ export default function CustomerHomePage() {
             })}
           </div>
         </section>
+
+        <FeatureSection language={language} />
 
         {/* Marquee Brands */}
         <section className="mt-6 text-center border-t border-border/50 pt-8">
@@ -582,7 +620,7 @@ export default function CustomerHomePage() {
                     {t(mockStory.note.vi, mockStory.note.en)}
                   </span>
                   <Button asChild className="rounded-xl bg-amber-500 hover:bg-amber-500/90 text-amber-950 font-bold text-xs px-4">
-                    <Link href="/customer/services">{t("Đặt dịch vụ như này", "Book Like This")}</Link>
+                    <Link href="/customer/booking?type=package&id=featured-detailing">{t("Đặt dịch vụ như này", "Book Like This")}</Link>
                   </Button>
                 </div>
               </div>
@@ -767,6 +805,14 @@ export default function CustomerHomePage() {
                 </span>
               </div>
             </Card>
+
+            <MembershipFloatingCard
+              name={user?.fullName}
+              tier={user?.tier}
+              currentPoints={profileQuery.data?.loyaltyBalance ?? 0}
+              requiredPoints={1000}
+              language={language}
+            />
           </div>
         </div>
       </div>
@@ -774,10 +820,13 @@ export default function CustomerHomePage() {
       {/* Mobile Sticky Booking Floating Action Button */}
       <div className="fixed bottom-20 right-6 z-50 lg:hidden">
         <Button asChild className="rounded-full h-12 w-12 p-0 bg-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition">
-          <Link href="/customer/services" aria-label="Book detailing">
+          <Link href="/customer/booking" aria-label="Book detailing">
             <ClipboardList className="h-5 w-5" />
           </Link>
         </Button>
+      </div>
+      <div className="hidden lg:block">
+        <FloatingBookingButton language={language} />
       </div>
     </div>
   );

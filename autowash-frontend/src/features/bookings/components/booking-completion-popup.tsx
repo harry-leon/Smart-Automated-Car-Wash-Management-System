@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Star, Award, Sparkles, MessageSquare, CheckCircle2, X, Loader2 } from "lucide-react";
+import { Star, Award, Sparkles, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/ui/ui/dialog";
 import { Button } from "@/shared/ui/ui/button";
 import { toast } from "sonner";
@@ -30,7 +30,6 @@ export function BookingCompletionPopup({
   const [stars, setStars] = useState(5);
   const [hoverStars, setHoverStars] = useState<number | null>(null);
   const [comment, setComment] = useState("");
-  const [showComment, setShowComment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -216,53 +215,23 @@ export function BookingCompletionPopup({
               </div>
             </div>
 
-            {/* Collapsible comment box */}
-            <div className="space-y-3">
-              {!showComment ? (
-                <button
-                  type="button"
-                  onClick={() => setShowComment(true)}
-                  className="mx-auto flex items-center gap-2 text-xs font-bold text-primary/80 hover:text-primary transition-colors"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  <span>{translate(language, "Viết lời bình luận & Đăng ảnh (không bắt buộc)", "Add comment & photos (optional)")}</span>
-                </button>
-              ) : (
-                <div className="space-y-3 text-left">
-                  <div>
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                      {translate(language, "Lời nhắn / Góp ý", "Feedback / Comment")}
-                    </label>
-                    <textarea
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      rows={2}
-                      placeholder={translate(
-                        language,
-                        "Hãy chia sẻ cảm nhận của bạn về chất lượng rửa xe...",
-                        "Share your feedback with us..."
-                      )}
-                      className="w-full rounded-xl border border-border/50 bg-background/50 p-3 text-xs text-foreground outline-none focus:border-primary/50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider block mb-1.5">
-                      {translate(language, "Đăng ảnh trước / sau (Showcase)", "Showcase vehicle photos")}
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col items-center justify-center border border-dashed border-border/70 rounded-xl p-3 bg-background/55 cursor-pointer hover:bg-accent/10 transition">
-                        <span className="text-[10px] font-black text-muted-foreground">Before Wash</span>
-                        <span className="text-[9px] text-[#0566D9] mt-1 font-bold">Upload</span>
-                      </div>
-                      <div className="flex flex-col items-center justify-center border border-dashed border-border/70 rounded-xl p-3 bg-background/55 cursor-pointer hover:bg-accent/10 transition">
-                        <span className="text-[10px] font-black text-muted-foreground">After Detailing</span>
-                        <span className="text-[9px] text-[#0566D9] mt-1 font-bold">Upload</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* Feedback stays in the same completion popup as the star rating. */}
+            <div className="space-y-2 text-left">
+              <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <MessageSquare className="h-4 w-4 text-primary" />
+                {translate(language, "Góp ý của bạn", "Your feedback")}
+              </label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={3}
+                placeholder={translate(
+                  language,
+                  "Chia sẻ cảm nhận về tốc độ, chất lượng rửa xe hoặc thái độ phục vụ...",
+                  "Tell us about the speed, wash quality, or service attitude..."
+                )}
+                className="w-full resize-none rounded-2xl border border-border/50 bg-background/70 p-3 text-sm text-foreground outline-none transition focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+              />
             </div>
 
             {/* Action buttons */}

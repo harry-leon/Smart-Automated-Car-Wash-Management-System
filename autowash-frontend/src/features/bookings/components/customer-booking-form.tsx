@@ -45,13 +45,13 @@ function getTomorrowDate() {
 
 function optionCardClass(active: boolean, disabled = false) {
   return [
-    "group relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ease-out",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
+    "group relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     active
-      ? "border-sky-500 bg-sky-50 shadow-[0_18px_38px_rgba(14,165,233,0.18)]"
-      : "border-slate-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-[0_16px_34px_rgba(15,23,42,0.10)]",
+      ? "border-primary bg-primary/5 shadow-[0_8px_30px_rgb(0,212,255,0.12)] dark:bg-primary/10"
+      : "border-border bg-card shadow-sm hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_12px_30px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_30px_rgba(0,0,0,0.4)]",
     disabled
-      ? "cursor-not-allowed opacity-60 hover:translate-y-0 hover:border-slate-200 hover:shadow-sm"
+      ? "cursor-not-allowed opacity-50 hover:translate-y-0 hover:border-border hover:shadow-sm"
       : "",
   ].join(" ");
 }
@@ -59,10 +59,10 @@ function optionCardClass(active: boolean, disabled = false) {
 function SelectionMark({ active }: { active: boolean }) {
   return (
     <span
-      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all duration-200 ${
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
         active
-          ? "border-sky-500 bg-sky-500 text-white"
-          : "border-slate-200 bg-white text-transparent group-hover:border-sky-200"
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-muted/50 text-transparent group-hover:border-primary/50"
       }`}
       aria-hidden="true"
     >
@@ -73,7 +73,7 @@ function SelectionMark({ active }: { active: boolean }) {
 
 function OptionPill({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+    <span className="rounded-full border border-border bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm">
       {children}
     </span>
   );
@@ -87,6 +87,8 @@ export function CustomerBookingForm() {
   const queryComboId = searchParams.get("comboId");
   const queryAddonIds = searchParams.get("addonIds");
   const queryServiceIds = searchParams.get("serviceIds");
+  const queryType = searchParams.get("type");
+  const queryId = searchParams.get("id");
 
   const hasAutoSelectedComboRef = useRef(false);
   const draft = useBookingStore((state) => state.draft);
@@ -98,12 +100,16 @@ export function CustomerBookingForm() {
       patch.mode = queryMode;
     } else if (queryMode === "SERVICE") {
       patch.mode = "PACKAGE";
+    } else if (queryType === "package" || queryType === "service") {
+      patch.mode = "PACKAGE";
+    } else if (queryType === "combo") {
+      patch.mode = "COMBO";
     }
-    if (queryPackageId) {
-      patch.packageId = queryPackageId;
+    if (queryPackageId || (queryType === "package" && queryId)) {
+      patch.packageId = queryPackageId ?? queryId ?? "";
     }
-    if (queryComboId) {
-      patch.comboId = queryComboId;
+    if (queryComboId || (queryType === "combo" && queryId)) {
+      patch.comboId = queryComboId ?? queryId ?? "";
     }
     if (queryAddonIds) {
       patch.addonIds = queryAddonIds.split(",").filter(Boolean);
@@ -111,10 +117,13 @@ export function CustomerBookingForm() {
     if (queryServiceIds) {
       patch.addonIds = queryServiceIds.split(",").filter(Boolean);
     }
+    if (queryType === "service" && queryId) {
+      patch.addonIds = [queryId];
+    }
     if (Object.keys(patch).length > 0) {
       updateDraft(patch);
     }
-  }, [queryAddonIds, queryComboId, queryMode, queryPackageId, queryServiceIds, updateDraft]);
+  }, [queryAddonIds, queryComboId, queryId, queryMode, queryPackageId, queryServiceIds, queryType, updateDraft]);
   const vehiclesQuery = useCustomerVehicles();
   const packagesQuery = useBookingPackages();
   const addonsQuery = useBookingAddons();
@@ -356,8 +365,11 @@ export function CustomerBookingForm() {
   }
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_25%),linear-gradient(180deg,#f8fbff_0%,#ffffff_100%)] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.6fr,1fr]">
+    <div className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-background px-4 py-6 sm:px-6 lg:px-8">
+      {/* Decorative premium background elements */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+      
+      <div className="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.6fr,1fr]">
         <div className="space-y-6">
           <CheckoutSection step="1" title="Select vehicle">
             <CustomerBookingSelect
@@ -370,10 +382,10 @@ export function CustomerBookingForm() {
               renderValue={(option) =>
                 option ? (
                   <span className="block">
-                    <span className="block truncate font-semibold text-slate-900">
+                    <span className="block truncate font-semibold text-foreground">
                       {option.label}
                     </span>
-                    <span className="block truncate text-xs font-normal text-slate-500">
+                    <span className="block truncate text-xs font-normal text-muted-foreground mt-1">
                       {option.description}
                     </span>
                   </span>
@@ -401,10 +413,10 @@ export function CustomerBookingForm() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="text-base font-bold text-slate-950">
+                        <div className="text-base font-bold text-foreground">
                           {getModeLabel(mode)}
                         </div>
-                        <div className="mt-1 text-sm leading-6 text-slate-500">
+                        <div className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                           {mode === "PACKAGE"
                             ? "Chọn một gói rửa và dịch vụ thêm nếu cần."
                             : "Đặt trực tiếp từ danh sách combo hiện có."}
@@ -429,7 +441,7 @@ export function CustomerBookingForm() {
               })}
             </div>
             {draft.mode === "COMBO" ? (
-              <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-sm leading-6 text-slate-600">
+              <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm leading-relaxed text-primary">
                 Select a combo first. If you already own a valid combo of the same type, the combo
                 charge is skipped and the booking uses the remaining usages from that owned combo.
               </div>
@@ -456,10 +468,10 @@ export function CustomerBookingForm() {
                 renderValue={(option) =>
                   option ? (
                     <span className="block">
-                      <span className="block truncate font-semibold text-slate-900">
+                      <span className="block truncate font-semibold text-foreground">
                         {option.label}
                       </span>
-                      <span className="block truncate text-xs font-normal text-slate-500">
+                      <span className="block truncate text-xs font-normal text-muted-foreground mt-1">
                         {option.helper}
                       </span>
                     </span>
@@ -483,8 +495,8 @@ export function CustomerBookingForm() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <div className="text-lg font-bold text-slate-950">{item.name}</div>
-                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                          <div className="text-lg font-bold text-foreground">{item.name}</div>
+                          <p className="mt-2 text-sm leading-relaxed text-muted-foreground line-clamp-2">
                             {item.description}
                           </p>
                         </div>
@@ -496,7 +508,7 @@ export function CustomerBookingForm() {
                         <OptionPill>{formatBookingCurrency(item.basePrice)}</OptionPill>
                       </div>
                       {ownedCombo ? (
-                        <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+                        <p className="mt-5 inline-flex items-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                           Owned combo · {ownedCombo.remainingUsages} usages left · expires{" "}
                           {new Date(ownedCombo.expiresAt).toLocaleDateString("vi-VN")}
                         </p>
@@ -519,27 +531,29 @@ export function CustomerBookingForm() {
 
           <CheckoutSection step="4" title="Select add-ons">
             {draft.mode === "COMBO" ? (
-              <div className="space-y-3">
-                <p className="text-sm text-slate-500">
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
                   Combo bookings do not use add-ons in this simplified flow.
                 </p>
                 {selectedCustomerCombo ? (
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                    <div className="font-semibold">Owned combo applied</div>
-                    <div className="mt-1">
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5 text-sm text-emerald-600 dark:text-emerald-400">
+                    <div className="font-semibold text-emerald-700 dark:text-emerald-300">Owned combo applied</div>
+                    <div className="mt-1.5 opacity-90">
                       {selectedCustomerCombo.remainingUsages} usages left, expires on{" "}
                       {new Date(selectedCustomerCombo.expiresAt).toLocaleDateString("vi-VN")}.
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    No valid owned combo found. Completing this booking will also purchase the
-                    selected combo.
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 text-sm text-amber-600 dark:text-amber-400">
+                    <div className="font-semibold text-amber-700 dark:text-amber-300">No valid owned combo</div>
+                    <div className="mt-1.5 opacity-90">
+                      Completing this booking will also purchase the selected combo.
+                    </div>
                   </div>
                 )}
               </div>
             ) : selectedPackageAddons.length === 0 ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 No active add-ons are available for the selected package.
               </p>
             ) : (
@@ -562,8 +576,8 @@ export function CustomerBookingForm() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <div className="font-semibold text-slate-950">{addon.name}</div>
-                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                          <div className="font-semibold text-foreground">{addon.name}</div>
+                          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                             {addon.description}
                           </p>
                         </div>
@@ -583,7 +597,7 @@ export function CustomerBookingForm() {
           <CheckoutSection step="5" title="Choose schedule">
             <div className="grid gap-4 xl:grid-cols-[220px,1fr]">
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   Booking date
                 </label>
                 <input
@@ -591,23 +605,23 @@ export function CustomerBookingForm() {
                   min={getTomorrowDate()}
                   value={draft.bookingDate}
                   onChange={(event) => updateDraft({ bookingDate: event.target.value })}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
                 <FieldError message={showValidation ? errors.bookingDate : null} />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label className="mb-2 block text-sm font-medium text-foreground">
                   Booking time
                 </label>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {BOOKING_TIME_SLOTS.map((time) => (
                     <button
                       key={time}
                       type="button"
-                      className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                      className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
                         draft.bookingTime === time
-                          ? "border-slate-900 bg-slate-900 text-white"
-                          : "border-slate-300 bg-white hover:border-slate-500"
+                          ? "border-primary bg-primary text-primary-foreground shadow-md"
+                          : "border-input bg-card text-foreground hover:border-primary/50 hover:bg-muted"
                       }`}
                       onClick={() => updateDraft({ bookingTime: time })}
                     >
@@ -632,7 +646,7 @@ export function CustomerBookingForm() {
                   updateDraft({ voucherCode: nextValue });
                 }}
                 placeholder="Nhập mã giảm giá (VD: WELCOME20)"
-                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium tracking-wide"
+                className="flex-1 rounded-xl border border-input bg-background px-4 py-2.5 text-sm font-medium tracking-wide placeholder:text-muted-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 autoCapitalize="characters"
                 autoCorrect="off"
                 spellCheck={false}
@@ -662,12 +676,12 @@ export function CustomerBookingForm() {
                 Clear
               </Button>
             </div>
-            <p className="text-xs text-slate-500">{voucherCodeFormatMessage}</p>
-            <p className="text-sm text-slate-500">
+            <p className="mt-2 text-xs text-muted-foreground">{voucherCodeFormatMessage}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
               Voucher validation uses the real contract with the current subtotal.
             </p>
             {validatedVoucher ? (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                 {validatedVoucher.voucherCode} applied. Discount{" "}
                 {formatBookingCurrency(validatedVoucher.discountAmount)}.
               </div>
@@ -690,17 +704,17 @@ export function CustomerBookingForm() {
                   <button
                     key={method}
                     type="button"
-                    className={`rounded-2xl border p-4 text-left transition ${
+                    className={`rounded-2xl border p-4 text-left transition-all duration-300 ${
                       active
-                        ? "border-indigo-600 bg-indigo-50"
-                        : "border-slate-200 bg-white hover:border-slate-400"
+                        ? "border-primary bg-primary/5 shadow-md shadow-primary/5"
+                        : "border-border bg-card hover:border-primary/50 hover:-translate-y-0.5 hover:shadow-sm"
                     }`}
                     onClick={() => updateDraft({ paymentMethod: method })}
                   >
-                    <div className="font-semibold text-slate-900">
+                    <div className="font-semibold text-foreground">
                       {getPaymentMethodLabel(method)}
                     </div>
-                    <div className="mt-1 text-sm text-slate-500">
+                    <div className="mt-1.5 text-xs text-muted-foreground line-clamp-2">
                       Demo checkout only. No real bank or wallet transaction is executed.
                     </div>
                   </button>
@@ -727,8 +741,8 @@ export function CustomerBookingForm() {
           </CheckoutSection>
         </div>
 
-        <div className="lg:sticky lg:top-6 lg:self-start">
-          <Card className="border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <Card className="border-border bg-card shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
             <CardHeader>
               <CardTitle>Checkout review</CardTitle>
               <CardDescription>
@@ -786,9 +800,11 @@ export function CustomerBookingForm() {
                   />
                 </>
               ) : (
-                <p className="text-sm text-slate-500">
-                  Complete the checkout steps to build a valid booking summary.
-                </p>
+                <div className="rounded-xl border border-dashed border-border bg-muted/50 p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Complete the checkout steps to build a valid booking summary.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
