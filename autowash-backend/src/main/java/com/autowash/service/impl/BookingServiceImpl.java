@@ -1,5 +1,6 @@
 package com.autowash.service.impl;
 
+import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.User;
 import com.autowash.dto.ApplyPointsRequest;
 import com.autowash.dto.ApplyPointsResponse;
@@ -466,6 +467,18 @@ public class BookingServiceImpl implements BookingService {
         var washSession = washSessionRepository.findFirstByBooking_IdOrderByCompletedAtDesc(booking.getId())
                 .orElse(null);
         PaymentInfo payment = resolvePaymentInfo(booking);
+        List<BookingStatusHistoryItem> statusHistory = bookingStatusHistoryRepository
+            .findByBooking_IdOrderByChangedAtAsc(booking.getId())
+            .stream()
+            .map(h -> new BookingStatusHistoryItem(
+                    h.getOldStatus(),
+                    h.getNewStatus(),
+                    h.getChangedBy() == null ? null : h.getChangedBy().getFullName(),
+                    h.getReason(),
+                    h.getChangedAt()
+            ))
+            .toList();
+
         return new BookingDetailResponse(
                 booking.getId().toString(),
                 booking.getId().toString(),
@@ -510,7 +523,8 @@ public class BookingServiceImpl implements BookingService {
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
                 booking.getCreatedAt(),
-                null
+                null,
+                statusHistory
         );
     }
 
