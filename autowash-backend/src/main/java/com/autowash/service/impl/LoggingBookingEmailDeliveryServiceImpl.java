@@ -21,4 +21,14 @@ public class LoggingBookingEmailDeliveryServiceImpl implements BookingEmailDeliv
                 email
         );
     }
+
+    @Override
+    public void sendBookingConfirmationOtp(Booking booking, String email, String otp, int expiresInSeconds) {
+        LOGGER.info(
+                "Booking confirmation OTP email queued: bookingId={}, to={}, expiresInSeconds={}, template=booking-confirmation-otp",
+                booking.getId(),
+                email,
+                expiresInSeconds
+        );
+    }
 }
