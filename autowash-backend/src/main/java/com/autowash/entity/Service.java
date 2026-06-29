@@ -12,6 +12,7 @@ import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 @Entity
 @Table(name = "services")
 @Getter
@@ -43,23 +44,28 @@ public class Service {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public Service(String name, String description, long price, int durationMinutes, ActiveStatus status) {
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    public Service(String name, String description, long price, int durationMinutes, ActiveStatus status, String imageUrl) {
         this.id = UUID.randomUUID();
         this.name = name;
         this.description = description;
         this.price = price;
         this.durationMinutes = durationMinutes;
         this.status = status;
+        this.imageUrl = imageUrl;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 
-    public void update(String name, String description, long price, int durationMinutes, ActiveStatus status) {
+    public void update(String name, String description, long price, int durationMinutes, ActiveStatus status, String imageUrl) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.durationMinutes = durationMinutes;
         this.status = status;
+        this.imageUrl = imageUrl;
         this.updatedAt = Instant.now();
     }
 

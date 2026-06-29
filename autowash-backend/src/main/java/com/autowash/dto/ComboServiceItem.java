@@ -1,12 +1,11 @@
 package com.autowash.dto;
 
-public record ServiceResponse(
+public record ComboServiceItem(
         String serviceId,
         String name,
         String description,
         long price,
-        int duration,
-        String status,
-        String imageUrl
-) {
-}
+        int durationMinutes,
+        int quantity,
+        int sortOrder
+) {}
