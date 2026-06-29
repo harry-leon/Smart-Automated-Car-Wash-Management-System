@@ -16,6 +16,7 @@ import jakarta.validation.constraints.Min;
 import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -42,6 +43,12 @@ public class CatalogController {
         return ApiResponse.ok("Packages retrieved", packagePage.items(), packagePage.pagination());
     }
 
+    @GetMapping("/api/v1/packages/{packageId}")
+    @Operation(summary = "Get package detail")
+    public ApiResponse<PackageResponse> getPackage(@PathVariable String packageId) {
+        return ApiResponse.ok("Package retrieved", catalogService.getPackage(packageId));
+    }
+
     @GetMapping("/api/v1/services")
     @Operation(summary = "List available services")
     public ApiResponse<List<ServiceResponse>> getServices() {
@@ -52,6 +59,12 @@ public class CatalogController {
     @Operation(summary = "List available combo packages")
     public ApiResponse<List<ComboResponse>> getAvailableCombos() {
         return ApiResponse.ok("Available combos", catalogService.getAvailableCombos());
+    }
+
+    @GetMapping("/api/v1/combos/{comboId}")
+    @Operation(summary = "Get combo detail")
+    public ApiResponse<ComboResponse> getCombo(@PathVariable String comboId) {
+        return ApiResponse.ok("Combo retrieved", catalogService.getCombo(comboId));
     }
 
     @PostMapping("/api/v1/bookings/validate-voucher")

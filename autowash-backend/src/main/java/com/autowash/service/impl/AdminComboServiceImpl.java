@@ -138,9 +138,21 @@ public class AdminComboServiceImpl implements AdminComboService {
                 combo.getName(),
                 combo.getDescription(),
                 combo.getPrice(),
+                combo.getOriginalPrice(),
                 combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
                 services.stream().mapToInt(ComboService::getQuantity).sum(),
                 services.stream().map(ComboService::getOptionName).toList(),
+                services.stream()
+                        .map(service -> new ComboResponse.ComboServiceItem(
+                                service.getOptionId().toString(),
+                                service.getOptionName(),
+                                service.getOptionDescription(),
+                                service.getOptionPrice(),
+                                service.getOptionDurationMinutes(),
+                                service.getQuantity(),
+                                service.getSortOrder()
+                        ))
+                        .toList(),
                 combo.getImageUrl(),
                 combo.getStatus() == ActiveStatus.ACTIVE,
                 false,

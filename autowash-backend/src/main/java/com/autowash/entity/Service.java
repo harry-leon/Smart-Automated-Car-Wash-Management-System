@@ -33,6 +33,9 @@ public class Service {
     @Column(name = "duration_minutes", nullable = false)
     private int durationMinutes;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ActiveStatus status;
@@ -43,22 +46,24 @@ public class Service {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    public Service(String name, String description, long price, int durationMinutes, ActiveStatus status) {
+    public Service(String name, String description, long price, int durationMinutes, String imageUrl, ActiveStatus status) {
         this.id = UUID.randomUUID();
         this.name = name;
         this.description = description;
         this.price = price;
         this.durationMinutes = durationMinutes;
+        this.imageUrl = imageUrl;
         this.status = status;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 
-    public void update(String name, String description, long price, int durationMinutes, ActiveStatus status) {
+    public void update(String name, String description, long price, int durationMinutes, String imageUrl, ActiveStatus status) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.durationMinutes = durationMinutes;
+        this.imageUrl = imageUrl;
         this.status = status;
         this.updatedAt = Instant.now();
     }

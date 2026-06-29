@@ -100,6 +100,11 @@ public class CatalogServiceImpl implements CatalogService {
     }
 
     @Transactional(readOnly = true)
+    public PackageResponse getPackage(String packageId) {
+        return toPackageResponse(requireActivePackage(packageId));
+    }
+
+    @Transactional(readOnly = true)
     public List<ServiceResponse> getServices() {
         return serviceRepository.findByStatusOrderByIdAsc(ActiveStatus.ACTIVE).stream()
                 .map(this::toServiceResponse)
@@ -111,6 +116,11 @@ public class CatalogServiceImpl implements CatalogService {
         return ComboRepository.findByActiveTrueOrderByIdAsc().stream()
                 .map(this::toComboResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ComboResponse getCombo(String comboId) {
+        return toComboResponse(requireActiveCombo(comboId));
     }
 
     @Transactional(readOnly = true)
@@ -292,7 +302,8 @@ public class CatalogServiceImpl implements CatalogService {
                 service.getDescription(),
                 service.getPrice(),
                 service.getDurationMinutes(),
-                service.getStatus().name()
+                service.getStatus().name(),
+                service.getImageUrl()
         );
     }
 
@@ -307,9 +318,21 @@ public class CatalogServiceImpl implements CatalogService {
                 combo.getName(),
                 combo.getDescription(),
                 combo.getPrice(),
+                combo.getOriginalPrice(),
                 combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
                 maxServices,
                 benefits,
+                services.stream()
+                        .map(service -> new ComboResponse.ComboServiceItem(
+                                service.getOptionId().toString(),
+                                service.getOptionName(),
+                                service.getOptionDescription(),
+                                service.getOptionPrice(),
+                                service.getOptionDurationMinutes(),
+                                service.getQuantity(),
+                                service.getSortOrder()
+                        ))
+                        .toList(),
                 combo.getImageUrl(),
                 combo.getStatus() == ActiveStatus.ACTIVE,
                 false,

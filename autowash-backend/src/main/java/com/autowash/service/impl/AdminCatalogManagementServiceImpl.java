@@ -58,6 +58,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 request.description(),
                 request.price(),
                 request.durationMinutes(),
+                request.imageUrl(),
                 statusOrActive(request.status())
         ));
         return toServiceResponse(service);
@@ -72,6 +73,7 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 request.description(),
                 request.price(),
                 request.durationMinutes(),
+                request.imageUrl(),
                 statusOrActive(request.status())
         );
         return toServiceResponse(service);
@@ -201,7 +203,8 @@ public class AdminCatalogManagementServiceImpl implements AdminCatalogManagement
                 service.getDescription(),
                 service.getPrice(),
                 service.getDurationMinutes(),
-                service.getStatus().name()
+                service.getStatus().name(),
+                service.getImageUrl()
         );
     }
 

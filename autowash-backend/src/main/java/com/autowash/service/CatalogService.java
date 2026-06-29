@@ -13,8 +13,10 @@ import java.util.UUID;
 
 public interface CatalogService {
     PackagePage getPackages(int page, int limit);
+    PackageResponse getPackage(String packageId);
     List<ServiceResponse> getServices();
     List<ComboResponse> getAvailableCombos();
+    ComboResponse getCombo(String comboId);
     ValidateVoucherResponse validateVoucher(String voucherCode, long amount);
     Package requireActivePackage(String packageId);
     Combo requireActiveCombo(String comboId);

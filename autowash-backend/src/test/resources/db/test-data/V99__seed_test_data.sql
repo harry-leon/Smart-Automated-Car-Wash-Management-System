@@ -1,13 +1,13 @@
-INSERT INTO "packages" ("id", "name", "description", "base_price", "duration_minutes", "status") VALUES
-('12345678-1234-1234-1234-123456789012', 'Basic Wash', 'Standard exterior and interior wash', 150000, 45, 'ACTIVE'),
-('87654321-4321-4321-4321-210987654321', 'Premium Wash', 'Full detail wash', 300000, 90, 'ACTIVE');
+INSERT INTO "packages" ("id", "name", "description", "base_price", "duration_minutes", "image_url", "status") VALUES
+('12345678-1234-1234-1234-123456789012', 'Basic Wash', 'Standard exterior and interior wash', 150000, 45, 'https://cdn.example.com/packages/basic-wash.jpg', 'ACTIVE'),
+('87654321-4321-4321-4321-210987654321', 'Premium Wash', 'Full detail wash', 300000, 90, 'https://cdn.example.com/packages/premium-wash.jpg', 'ACTIVE');
 
-INSERT INTO "services" ("id", "name", "description", "price", "duration_minutes", "status") VALUES
-('33333333-1234-1234-1234-123456789012', 'Waxing', 'Apply carnauba wax', 50000, 15, 'ACTIVE'),
-('44444444-1234-1234-1234-123456789012', 'Interior Detailing', 'Deep clean interior', 100000, 30, 'ACTIVE');
+INSERT INTO "services" ("id", "name", "description", "price", "duration_minutes", "image_url", "status") VALUES
+('33333333-1234-1234-1234-123456789012', 'Waxing', 'Apply carnauba wax', 50000, 15, 'https://cdn.example.com/services/waxing.jpg', 'ACTIVE'),
+('44444444-1234-1234-1234-123456789012', 'Interior Detailing', 'Deep clean interior', 100000, 30, 'https://cdn.example.com/services/interior-detailing.jpg', 'ACTIVE');
 
-INSERT INTO "combos" ("id", "name", "description", "price", "duration_minutes", "max_usages", "status") VALUES
-('55555555-1234-1234-1234-123456789012', 'Monthly Basic Combo', '5 Basic Washes', 600000, 45, 5, 'ACTIVE');
+INSERT INTO "combos" ("id", "name", "description", "price", "original_price", "duration_minutes", "max_usages", "image_url", "status") VALUES
+('55555555-1234-1234-1234-123456789012', 'Monthly Basic Combo', '5 Basic Washes', 600000, 750000, 45, 5, 'https://cdn.example.com/combos/monthly-basic-combo.jpg', 'ACTIVE');
 
 INSERT INTO "vouchers" ("id", "code", "name", "discount_type", "discount_value", "max_discount_amount", "min_order_amount", "usage_limit", "used_count", "start_at", "end_at", "status") VALUES
 ('66666666-1234-1234-1234-123456789012', 'WELCOME20', '20% off for new customers', 'PERCENT', 20, 50000, 100000, 100, 0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE'),
@@ -19,5 +19,9 @@ INSERT INTO "promotions" ("id", "name", "description", "targeting_mode", "point_
 ('88888888-1234-1234-1234-123456789012', 'All 10% Off', '10% off for all', 'ALL_TIERS', 1.0, CURRENT_TIMESTAMP, DATEADD('DAY',30,CURRENT_TIMESTAMP), 'ACTIVE');
 
 INSERT INTO "package_services" ("package_id", "option_id", "option_name", "option_description", "option_price", "option_duration_minutes") VALUES ('12345678-1234-1234-1234-123456789012', '33333333-1234-1234-1234-123456789012', 'Waxing', 'Apply carnauba wax', 50000, 15);
+
+INSERT INTO "combo_services" ("combo_id", "option_id", "option_name", "option_description", "option_price", "option_duration_minutes", "quantity", "sort_order") VALUES
+('55555555-1234-1234-1234-123456789012', '33333333-1234-1234-1234-123456789012', 'Waxing', 'Apply carnauba wax', 50000, 15, 1, 0),
+('55555555-1234-1234-1234-123456789012', '44444444-1234-1234-1234-123456789012', 'Interior Detailing', 'Deep clean interior', 100000, 30, 1, 1);
 
 INSERT INTO "vouchers" ("id", "code", "name", "discount_type", "discount_value", "max_discount_amount", "min_order_amount", "usage_limit", "used_count", "start_at", "end_at", "status") VALUES ('99999999-1234-1234-1234-123456789012', 'OLD10', 'Expired 10% off', 'PERCENT', 10, 50000, 100000, 100, 0, DATEADD('DAY', -60, CURRENT_TIMESTAMP), DATEADD('DAY', -30, CURRENT_TIMESTAMP), 'ACTIVE');

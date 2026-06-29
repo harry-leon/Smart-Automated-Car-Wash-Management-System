@@ -22,6 +22,9 @@ public record AdminServiceRequest(
         @Min(value = 1, message = "Duration must be at least 1 minute")
         Integer durationMinutes,
 
+        @Size(max = 500, message = "Image URL must be less than 500 characters")
+        String imageUrl,
+
         ActiveStatus status
 ) {
 }

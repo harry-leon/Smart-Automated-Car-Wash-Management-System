@@ -6,6 +6,7 @@ public record ServiceResponse(
         String description,
         long price,
         int duration,
-        String status
+        String status,
+        String imageUrl
 ) {
 }
