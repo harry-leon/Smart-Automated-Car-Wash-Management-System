@@ -1,0 +1,1 @@
+ALTER TABLE "services" ADD COLUMN "image_url" varchar(500);

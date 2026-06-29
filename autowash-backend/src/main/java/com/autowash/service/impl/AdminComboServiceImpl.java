@@ -1,5 +1,6 @@
 package com.autowash.service.impl;
 
+import com.autowash.dto.ComboServiceItem;
 import com.autowash.dto.AdminComboRequest;
 import com.autowash.dto.ComboResponse;
 import com.autowash.entity.Combo;
@@ -132,21 +133,33 @@ public class AdminComboServiceImpl implements AdminComboService {
     }
 
     private ComboResponse toResponse(Combo combo) {
-        List<ComboService> services = comboServiceRepository.findByComboIdOrderBySortOrderAsc(combo.getId());
-        return new ComboResponse(
-                combo.getId().toString(),
-                combo.getName(),
-                combo.getDescription(),
-                combo.getPrice(),
-                combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
-                services.stream().mapToInt(ComboService::getQuantity).sum(),
-                services.stream().map(ComboService::getOptionName).toList(),
-                combo.getImageUrl(),
-                combo.getStatus() == ActiveStatus.ACTIVE,
-                false,
-                0L
-        );
-    }
+    List<ComboService> rows = comboServiceRepository.findByComboIdOrderBySortOrderAsc(combo.getId());
+    List<ComboServiceItem> services = rows.stream()
+            .map(s -> new ComboServiceItem(
+                    s.getOptionId().toString(),
+                    s.getOptionName(),
+                    s.getOptionDescription(),
+                    s.getOptionPrice(),
+                    s.getOptionDurationMinutes(),
+                    s.getQuantity(),
+                    s.getSortOrder()
+            ))
+            .toList();
+    return new ComboResponse(
+            combo.getId().toString(),
+            combo.getName(),
+            combo.getDescription(),
+            combo.getPrice(),
+            combo.getOriginalPrice(),
+            combo.getDurationDays() == null ? 0 : combo.getDurationDays(),
+            rows.stream().mapToInt(ComboService::getQuantity).sum(),
+            services,
+            combo.getImageUrl(),
+            combo.getStatus() == ActiveStatus.ACTIVE,
+            false,
+            0L
+    );
+}
 
     private ActiveStatus statusOrActive(ActiveStatus status) {
         return status == null ? ActiveStatus.ACTIVE : status;
