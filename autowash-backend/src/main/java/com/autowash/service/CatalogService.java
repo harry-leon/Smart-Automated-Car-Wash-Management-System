@@ -22,6 +22,8 @@ public interface CatalogService {
     List<CatalogOption> requireActiveComboOptions(Combo combo, List<String> optionIds);
     Voucher validateVoucherForBooking(String voucherCode, long amount);
     long calculateDiscountAmount(Voucher voucher, long amount);
+    PackageResponse getPackageById(String packageId);
+    ComboResponse getComboById(String comboId);
 
     record PackagePage(List<PackageResponse> items, PaginationMeta pagination) {}
     record CatalogOption(UUID optionId, String name, long price, int durationMinutes) {}

@@ -1,5 +1,6 @@
 package com.autowash.controller;
 
+import org.springframework.web.bind.annotation.PathVariable;
 import com.autowash.dto.ComboResponse;
 import com.autowash.dto.PackageResponse;
 import com.autowash.dto.ServiceResponse;
@@ -52,6 +53,18 @@ public class CatalogController {
     @Operation(summary = "List available combo packages")
     public ApiResponse<List<ComboResponse>> getAvailableCombos() {
         return ApiResponse.ok("Available combos", catalogService.getAvailableCombos());
+    }
+
+    @GetMapping("/api/v1/packages/{packageId}")
+    @Operation(summary = "Get package detail")
+    public ApiResponse<PackageResponse> getPackage(@PathVariable String packageId) {
+        return ApiResponse.ok("Package retrieved", catalogService.getPackageById(packageId));
+    }
+
+    @GetMapping("/api/v1/combos/{comboId}")
+    @Operation(summary = "Get combo detail")
+    public ApiResponse<ComboResponse> getCombo(@PathVariable String comboId) {
+        return ApiResponse.ok("Combo retrieved", catalogService.getComboById(comboId));
     }
 
     @PostMapping("/api/v1/bookings/validate-voucher")
