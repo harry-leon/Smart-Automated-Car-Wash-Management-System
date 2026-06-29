@@ -10,7 +10,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test",
+    "test": "node --import ./test/register-tsconfig-paths.mjs --test",
     "lint": "echo \"No lint configured for Next skeleton\"",
     "format": "echo \"No formatter configured for Next skeleton\""
   },

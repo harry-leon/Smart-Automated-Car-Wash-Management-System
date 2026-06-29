@@ -1,0 +1,148 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.autowash:autowash-backend >--------------------
+[INFO] Building AutoWash Backend 0.0.1-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot-maven-plugin:3.3.5:run (default-cli) > test-compile @ autowash-backend >>>
+[INFO] 
+[INFO] --- maven-resources-plugin:3.3.1:resources (default-resources) @ autowash-backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 8 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.13.0:compile (default-compile) @ autowash-backend ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 297 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- maven-resources-plugin:3.3.1:testResources (default-testResources) @ autowash-backend ---
+[INFO] Copying 2 resources from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.13.0:testCompile (default-testCompile) @ autowash-backend ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 26 source files with javac [debug parameters release 21] to target\test-classes
+[INFO] 
+[INFO] <<< spring-boot-maven-plugin:3.3.5:run (default-cli) < test-compile @ autowash-backend <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot-maven-plugin:3.3.5:run (default-cli) @ autowash-backend ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-06-29T13:35:41.699+07:00  INFO 3588 --- [autowash-backend] [           main] c.autowash.AutowashBackendApplication    : Starting AutowashBackendApplication using Java 21.0.10 with PID 3588 (D:\FPT\Semester5\SWP302\AutoCarWash_V2\Smart-Automated-Car-Wash-Management-System\autowash-backend\target\classes started by huygi in D:\FPT\Semester5\SWP302\AutoCarWash_V2\Smart-Automated-Car-Wash-Management-System\autowash-backend)
+2026-06-29T13:35:41.700+07:00  INFO 3588 --- [autowash-backend] [           main] c.autowash.AutowashBackendApplication    : The following 1 profile is active: "local"
+2026-06-29T13:35:42.157+07:00  INFO 3588 --- [autowash-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-06-29T13:35:42.232+07:00  INFO 3588 --- [autowash-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 73 ms. Found 32 JPA repository interfaces.
+2026-06-29T13:35:42.551+07:00  INFO 3588 --- [autowash-backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-06-29T13:35:42.562+07:00  INFO 3588 --- [autowash-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-29T13:35:42.562+07:00  INFO 3588 --- [autowash-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-06-29T13:35:42.595+07:00  INFO 3588 --- [autowash-backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-06-29T13:35:42.595+07:00  INFO 3588 --- [autowash-backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 871 ms
+2026-06-29T13:35:42.706+07:00  INFO 3588 --- [autowash-backend] [           main] com.zaxxer.hikari.HikariDataSource       : AutoWashPostgresPool - Starting...
+2026-06-29T13:35:42.800+07:00  INFO 3588 --- [autowash-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : AutoWashPostgresPool - Added connection org.postgresql.jdbc.PgConnection@7196a8f1
+2026-06-29T13:35:42.801+07:00  INFO 3588 --- [autowash-backend] [           main] com.zaxxer.hikari.HikariDataSource       : AutoWashPostgresPool - Start completed.
+2026-06-29T13:35:42.815+07:00  INFO 3588 --- [autowash-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/autowash (PostgreSQL 17.10)
+2026-06-29T13:35:42.820+07:00  WARN 3588 --- [autowash-backend] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 17.10 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 16.
+2026-06-29T13:35:42.832+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
+2026-06-29T13:35:42.834+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 6 migrations (execution time 00:00.009s)
+2026-06-29T13:35:42.843+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
+2026-06-29T13:35:42.915+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-06-29T13:35:42.932+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - init schema"
+2026-06-29T13:35:43.044+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "2 - add booking assigned staff index"
+2026-06-29T13:35:43.049+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "3 - backend business rules"
+2026-06-29T13:35:43.050+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "wash_sessions_booking_id_key" of relation "wash_sessions" does not exist, skipping
+2026-06-29T13:35:43.052+07:00  WARN 3588 --- [autowash-backend] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "cancelled_at" of relation "wash_sessions" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-06-29T13:35:43.052+07:00  WARN 3588 --- [autowash-backend] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "cancel_reason" of relation "wash_sessions" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-06-29T13:35:43.052+07:00  WARN 3588 --- [autowash-backend] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "uk_bookings_customer_voucher" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-06-29T13:35:43.057+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "4 - add system settings"
+2026-06-29T13:35:43.064+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "5 - add blog and reviews"
+2026-06-29T13:35:43.080+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "6 - align legacy packages schema"
+2026-06-29T13:35:43.081+07:00  WARN 3588 --- [autowash-backend] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "created_at" of relation "packages" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-06-29T13:35:43.081+07:00  WARN 3588 --- [autowash-backend] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "updated_at" of relation "packages" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-06-29T13:35:43.085+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 6 migrations to schema "public", now at version v6 (execution time 00:00.126s)
+2026-06-29T13:35:43.124+07:00  INFO 3588 --- [autowash-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-06-29T13:35:43.148+07:00  INFO 3588 --- [autowash-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-06-29T13:35:43.171+07:00  INFO 3588 --- [autowash-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-06-29T13:35:43.302+07:00  INFO 3588 --- [autowash-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-06-29T13:35:43.318+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-06-29T13:35:43.562+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000038: Composite-id class does not override equals(): com.autowash.entity.BookingOption$BookingOptionId
+2026-06-29T13:35:43.563+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000039: Composite-id class does not override hashCode(): com.autowash.entity.BookingOption$BookingOptionId
+2026-06-29T13:35:43.563+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000038: Composite-id class does not override equals(): com.autowash.entity.VoucherTier$VoucherTierId
+2026-06-29T13:35:43.563+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000039: Composite-id class does not override hashCode(): com.autowash.entity.VoucherTier$VoucherTierId
+2026-06-29T13:35:43.563+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000038: Composite-id class does not override equals(): com.autowash.entity.PromotionTier$PromotionTierId
+2026-06-29T13:35:43.563+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000039: Composite-id class does not override hashCode(): com.autowash.entity.PromotionTier$PromotionTierId
+2026-06-29T13:35:43.564+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000038: Composite-id class does not override equals(): com.autowash.entity.ComboService$ComboServiceId
+2026-06-29T13:35:43.564+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000039: Composite-id class does not override hashCode(): com.autowash.entity.ComboService$ComboServiceId
+2026-06-29T13:35:43.564+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000038: Composite-id class does not override equals(): com.autowash.entity.PackageService$PackageServiceId
+2026-06-29T13:35:43.564+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000039: Composite-id class does not override hashCode(): com.autowash.entity.PackageService$PackageServiceId
+2026-06-29T13:35:43.564+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000038: Composite-id class does not override equals(): com.autowash.entity.BookingPromotion$BookingPromotionId
+2026-06-29T13:35:43.565+07:00  WARN 3588 --- [autowash-backend] [           main] org.hibernate.mapping.RootClass          : HHH000039: Composite-id class does not override hashCode(): com.autowash.entity.BookingPromotion$BookingPromotionId
+2026-06-29T13:35:44.033+07:00  INFO 3588 --- [autowash-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-06-29T13:35:44.078+07:00  INFO 3588 --- [autowash-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-06-29T13:35:44.220+07:00  INFO 3588 --- [autowash-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-06-29T13:35:44.567+07:00  INFO 3588 --- [autowash-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/autowash (PostgreSQL 17.10)
+2026-06-29T13:35:44.568+07:00  WARN 3588 --- [autowash-backend] [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 17.10 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 16.
+2026-06-29T13:35:44.569+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_demo_history" does not exist yet
+2026-06-29T13:35:44.570+07:00  INFO 3588 --- [autowash-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 2 migrations (execution time 00:00.001s)
+2026-06-29T13:35:44.572+07:00  WARN 3588 --- [autowash-backend] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'demoDataFlywayConfig': Invocation of init method failed
+2026-06-29T13:35:44.573+07:00  INFO 3588 --- [autowash-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-06-29T13:35:44.574+07:00  INFO 3588 --- [autowash-backend] [           main] com.zaxxer.hikari.HikariDataSource       : AutoWashPostgresPool - Shutdown initiated...
+2026-06-29T13:35:44.576+07:00  INFO 3588 --- [autowash-backend] [           main] com.zaxxer.hikari.HikariDataSource       : AutoWashPostgresPool - Shutdown completed.
+2026-06-29T13:35:44.577+07:00  INFO 3588 --- [autowash-backend] [           main] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+2026-06-29T13:35:44.584+07:00  INFO 3588 --- [autowash-backend] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-06-29T13:35:44.592+07:00 ERROR 3588 --- [autowash-backend] [           main] o.s.boot.SpringApplication               : Application run failed
+
+org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'demoDataFlywayConfig': Invocation of init method failed
+	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization(InitDestroyAnnotationBeanPostProcessor.java:222) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.applyBeanPostProcessorsBeforeInitialization(AbstractAutowireCapableBeanFactory.java:422) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1798) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:600) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:337) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:335) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:200) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:975) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:971) ~[spring-context-6.1.14.jar:6.1.14]
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:625) ~[spring-context-6.1.14.jar:6.1.14]
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146) ~[spring-boot-3.3.5.jar:3.3.5]
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754) ~[spring-boot-3.3.5.jar:3.3.5]
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456) ~[spring-boot-3.3.5.jar:3.3.5]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:335) ~[spring-boot-3.3.5.jar:3.3.5]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1363) ~[spring-boot-3.3.5.jar:3.3.5]
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1352) ~[spring-boot-3.3.5.jar:3.3.5]
+	at com.autowash.AutowashBackendApplication.main(AutowashBackendApplication.java:12) ~[classes/:na]
+Caused by: org.flywaydb.core.api.FlywayException: Found non-empty schema(s) "public" but no schema history table. Use baseline() or set baselineOnMigrate to true to initialize the schema history table.
+	at org.flywaydb.core.Flyway.lambda$migrate$0(Flyway.java:192) ~[flyway-core-10.10.0.jar:na]
+	at org.flywaydb.core.FlywayExecutor.execute(FlywayExecutor.java:205) ~[flyway-core-10.10.0.jar:na]
+	at org.flywaydb.core.Flyway.migrate(Flyway.java:147) ~[flyway-core-10.10.0.jar:na]
+	at com.autowash.config.DemoDataFlywayConfig.migrateDemoData(DemoDataFlywayConfig.java:28) ~[classes/:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor$LifecycleMethod.invoke(InitDestroyAnnotationBeanPostProcessor.java:457) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor$LifecycleMetadata.invokeInitMethods(InitDestroyAnnotationBeanPostProcessor.java:401) ~[spring-beans-6.1.14.jar:6.1.14]
+	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization(InitDestroyAnnotationBeanPostProcessor.java:219) ~[spring-beans-6.1.14.jar:6.1.14]
+	... 18 common frames omitted
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  9.132 s
+[INFO] Finished at: 2026-06-29T13:35:44+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.3.5:run (default-cli) on project autowash-backend: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

@@ -23,8 +23,13 @@ import {
   humanizeCode,
 } from "@/features/bookings/lib/booking-format";
 import { useCustomerBookingDetail } from "@/features/bookings/hooks/use-bookings";
+import {
+  useCustomerLoyaltyAccount,
+  useCustomerPromotions,
+} from "@/features/loyalty/hooks/use-customer-loyalty";
 import { useCustomerProfile } from "@/features/profile/hooks/use-customer-profile";
 import type { BookingAddonSelection, BookingDetail } from "@/entities/bookings";
+import type { CustomerPromotion, LoyaltyTier } from "@/entities/loyalty";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 
 function getBookingOptions(booking: BookingDetail): BookingAddonSelection[] {
@@ -45,6 +50,8 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
   const { language } = useLanguageStore();
   const bookingQuery = useCustomerBookingDetail(bookingId);
   const profileQuery = useCustomerProfile();
+  const loyaltyAccountQuery = useCustomerLoyaltyAccount();
+  const promotionsQuery = useCustomerPromotions();
   const locale = language === "vi" ? "vi-VN" : "en-US";
 
   if (!bookingId) {
@@ -109,6 +116,11 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
     day: "numeric",
   });
   const expectedDate = formatDisplayDate(booking.scheduling.bookingDate, locale);
+  const loyaltyAccount = loyaltyAccountQuery.data ?? null;
+  const activePromotions = selectRelevantPromotions(
+    promotionsQuery.data ?? [],
+    loyaltyAccount?.tier ?? null,
+  );
 
   const progressSteps = [
     { number: 1, title: translate(language, "ĐẶT LỊCH THÀNH CÔNG", "BOOKING CREATED"), subtitle: translate(language, "Email đã gửi", "Email sent"), active: true },
@@ -172,6 +184,109 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
                 <Button asChild>
                   <Link href={`/customer/bookings/${booking.bookingId}`}>{translate(language, "Xem chi tiết đặt lịch", "View booking detail")}</Link>
                 </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
+              <CardHeader className="border-b border-slate-100 bg-[linear-gradient(135deg,#eff6ff_0%,#ecfeff_100%)]">
+                <CardTitle>
+                  {translate(language, "Quyền lợi sau đặt lịch", "Post-booking benefits")}
+                </CardTitle>
+                <CardDescription>
+                  {translate(
+                    language,
+                    "Theo dõi hạng thành viên, điểm hiện có và ưu đãi đang áp dụng cho tài khoản của bạn.",
+                    "Track your tier, available points, and promotions currently available for your account.",
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5 p-6">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <BenefitStatCard
+                    label={translate(language, "Hạng hiện tại", "Current tier")}
+                    value={formatTierLabel(loyaltyAccount?.tier, language)}
+                    helper={
+                      loyaltyAccount
+                        ? translate(
+                            language,
+                            `${loyaltyAccount.completedWashCount} lượt hoàn thành`,
+                            `${loyaltyAccount.completedWashCount} completed washes`,
+                          )
+                        : translate(language, "Chưa có dữ liệu loyalty", "Loyalty data unavailable")
+                    }
+                    accent="sky"
+                  />
+                  <BenefitStatCard
+                    label={translate(language, "Điểm khả dụng", "Available points")}
+                    value={loyaltyAccount ? loyaltyAccount.availablePoints.toString() : "--"}
+                    helper={
+                      loyaltyAccount
+                        ? translate(
+                            language,
+                            `Tích lũy toàn thời gian ${loyaltyAccount.lifetimePoints} điểm`,
+                            `${loyaltyAccount.lifetimePoints} lifetime points earned`,
+                          )
+                        : translate(language, "Sẽ cập nhật sau khi đồng bộ", "Will update after sync")
+                    }
+                    accent="emerald"
+                  />
+                  <BenefitStatCard
+                    label={translate(language, "Ưu đãi đang mở", "Active offers")}
+                    value={activePromotions.length.toString()}
+                    helper={
+                      activePromotions.length > 0
+                        ? translate(language, "Có thể dùng cho booking tiếp theo", "Available for your next booking")
+                        : translate(language, "Hiện chưa có ưu đãi phù hợp", "No matching offers right now")
+                    }
+                    accent="amber"
+                  />
+                </div>
+
+                {loyaltyAccountQuery.isPending || promotionsQuery.isPending ? (
+                  <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>
+                      {translate(
+                        language,
+                        "Đang tải dữ liệu loyalty và khuyến mãi mới nhất...",
+                        "Loading the latest loyalty and promotion data...",
+                      )}
+                    </span>
+                  </div>
+                ) : null}
+
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {activePromotions.slice(0, 2).map((promotion) => (
+                    <PromotionCard
+                      key={promotion.promotionId}
+                      promotion={promotion}
+                      language={language}
+                    />
+                  ))}
+                </div>
+
+                {activePromotions.length === 0 && !promotionsQuery.isPending ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                    {translate(
+                      language,
+                      "Chưa có khuyến mãi phù hợp với hạng hiện tại. Bạn vẫn có thể theo dõi lịch sử và tiến độ ở trang booking.",
+                      "No active promotions match your current tier yet. You can still track progress and booking history from the bookings area.",
+                    )}
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap gap-3">
+                  <Button asChild variant="outline">
+                    <Link href="/customer/loyalty">
+                      {translate(language, "Xem loyalty & ưu đãi", "View loyalty & offers")}
+                    </Link>
+                  </Button>
+                  <Button asChild variant="ghost">
+                    <Link href="/customer/bookings">
+                      {translate(language, "Xem lịch sử đặt lịch", "View booking history")}
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -324,6 +439,123 @@ export function CustomerBookingSuccessPage({ bookingId }: { bookingId: string })
             </Card>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function selectRelevantPromotions(
+  promotions: CustomerPromotion[],
+  tier: LoyaltyTier | null,
+) {
+  const now = Date.now();
+
+  return promotions
+    .filter((promotion) => promotion.status === "ACTIVE")
+    .filter((promotion) => {
+      const start = new Date(promotion.startDate).getTime();
+      const end = new Date(promotion.expiresAt).getTime();
+      return start <= now && end >= now;
+    })
+    .filter((promotion) => {
+      if (!tier) {
+        return promotion.promotionType === "ALL_TIERS";
+      }
+
+      return (
+        promotion.promotionType === "ALL_TIERS" ||
+        promotion.targetTiers.length === 0 ||
+        promotion.targetTiers.includes(tier)
+      );
+    });
+}
+
+function formatTierLabel(tier: LoyaltyTier | undefined | null, language: "vi" | "en") {
+  if (!tier) {
+    return language === "vi" ? "Chua cap nhat" : "Pending";
+  }
+
+  const labels: Record<LoyaltyTier, { vi: string; en: string }> = {
+    MEMBER: { vi: "Member", en: "Member" },
+    SILVER: { vi: "Silver", en: "Silver" },
+    GOLD: { vi: "Gold", en: "Gold" },
+    PLATINUM: { vi: "Platinum", en: "Platinum" },
+  };
+
+  return labels[tier][language];
+}
+
+function formatPromotionValue(promotion: CustomerPromotion) {
+  if (promotion.discountType === "PERCENT") {
+    return `${promotion.discountValue}%`;
+  }
+
+  return formatBookingCurrency(promotion.discountValue);
+}
+
+function BenefitStatCard({
+  label,
+  value,
+  helper,
+  accent,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  accent: "sky" | "emerald" | "amber";
+}) {
+  const accentClass = {
+    sky: "border-sky-200 bg-sky-50 text-sky-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+  }[accent];
+
+  return (
+    <div className={`rounded-2xl border p-4 ${accentClass}`}>
+      <div className="text-xs font-semibold uppercase tracking-wide">{label}</div>
+      <div className="mt-3 text-2xl font-black text-slate-950">{value}</div>
+      <div className="mt-2 text-sm text-slate-600">{helper}</div>
+    </div>
+  );
+}
+
+function PromotionCard({
+  promotion,
+  language,
+}: {
+  promotion: CustomerPromotion;
+  language: "vi" | "en";
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-base font-bold text-slate-900">{promotion.name}</div>
+          <div className="mt-1 text-sm text-slate-600">
+            {promotion.description ||
+              translate(
+                language,
+                "Ưu đãi dành cho booking tiếp theo của bạn.",
+                "Offer available for your next booking.",
+              )}
+          </div>
+        </div>
+        <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white">
+          {formatPromotionValue(promotion)}
+        </span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+          {language === "vi" ? "Hết hạn" : "Expires"}:{" "}
+          {new Date(promotion.expiresAt).toLocaleDateString(language === "vi" ? "vi-VN" : "en-US")}
+        </span>
+        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+          {promotion.targetTiers.length > 0
+            ? `${language === "vi" ? "Tier" : "Tier"}: ${promotion.targetTiers.join(", ")}`
+            : language === "vi"
+              ? "Moi hang thanh vien"
+              : "All tiers"}
+        </span>
       </div>
     </div>
   );

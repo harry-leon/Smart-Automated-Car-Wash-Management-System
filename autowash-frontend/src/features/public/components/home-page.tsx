@@ -38,6 +38,7 @@ import { getDisplayErrorMessage, getFieldErrorMessage } from "@/shared/lib/api-e
 import { getAuthRedirectPath } from "@/features/auth/lib/auth-session";
 import { getPasswordVisibilityState } from "@/features/auth/lib/password-visibility";
 import { getLoginIdentifierValidationMessage, normalizeLoginIdentifier } from "@/features/auth/lib/login-identifier";
+import { useFeaturedReviews } from "@/features/public/hooks/use-featured-reviews";
 import {
   homeCombos,
   homeGallery,
@@ -181,6 +182,7 @@ export function HomePageView() {
   const [otpEmail, setOtpEmail] = useState("");
   const { language, setLanguage } = useLanguageStore();
   const copy = HOME_COPY[language];
+  const featuredReviewsQuery = useFeaturedReviews(6);
 
   const handleOpenAuth = (mode: "login" | "register") => {
     setAuthMode(mode);
@@ -237,6 +239,24 @@ export function HomePageView() {
     });
   }, [language]);
 
+  const reviewTestimonials = useMemo(() => {
+    if (!featuredReviewsQuery.data || featuredReviewsQuery.data.length === 0) {
+      return translatedTestimonials;
+    }
+
+    return featuredReviewsQuery.data.map((review, index) => ({
+      id: review.reviewId || `review-${index}`,
+      name: review.customerName,
+      vehicle: review.bookingId,
+      content:
+        review.comment?.trim() ||
+        (language === "vi"
+          ? "Khach hang da danh gia tich cuc sau khi hoan tat dich vu."
+          : "Customer shared positive feedback after completing the service."),
+      rating: review.rating,
+    }));
+  }, [featuredReviewsQuery.data, language, translatedTestimonials]);
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_32%),linear-gradient(180deg,#f8fbff_0%,#f5f9ff_30%,#ffffff_72%,#eff6ff_100%)] text-slate-950">
       <MotionStyles />
@@ -246,7 +266,7 @@ export function HomePageView() {
       <ServicesSection onOpenAuth={handleOpenAuth} copy={copy} services={translatedServices} />
       <ResultsSection copy={copy} />
       <CombosSection onOpenAuth={handleOpenAuth} copy={copy} combos={translatedCombos} />
-      <ReviewsSection copy={copy} testimonials={translatedTestimonials} />
+      <ReviewsSection copy={copy} testimonials={reviewTestimonials} />
       <CallToActionSection onOpenAuth={handleOpenAuth} copy={copy} />
       <PublicFooter copy={copy} />
 

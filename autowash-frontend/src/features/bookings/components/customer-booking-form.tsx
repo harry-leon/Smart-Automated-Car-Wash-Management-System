@@ -79,6 +79,23 @@ function OptionPill({ children }: { children: ReactNode }) {
   );
 }
 
+const BOOKING_MODE_CONTENT = {
+  PACKAGE: {
+    title: "Build a custom wash",
+    description:
+      "Pick one wash package, then add extra services only when you need them.",
+    bullets: ["Flexible add-ons", "Best for one-time bookings", "Voucher friendly checkout"],
+    accent: "from-sky-500/15 via-cyan-500/10 to-transparent",
+  },
+  COMBO: {
+    title: "Reuse prepaid value",
+    description:
+      "Choose a combo when you want multiple washes and automatic use of remaining combo turns.",
+    bullets: ["Uses owned combo balance", "Skips add-on flow", "Great for repeat customers"],
+    accent: "from-emerald-500/15 via-teal-500/10 to-transparent",
+  },
+} as const;
+
 export function CustomerBookingForm() {
   const router = useRouter();
   const hasAutoSelectedComboRef = useRef(false);
@@ -397,6 +414,41 @@ export function CustomerBookingForm() {
                 );
               })}
             </div>
+            <div className="grid gap-4 lg:grid-cols-[1.15fr,0.85fr]">
+              <div
+                className={`rounded-3xl border border-slate-200 bg-gradient-to-br ${
+                  BOOKING_MODE_CONTENT[draft.mode].accent
+                } p-5`}
+              >
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  {draft.mode === "PACKAGE" ? "Package flow" : "Combo flow"}
+                </div>
+                <div className="mt-2 text-xl font-black text-slate-950">
+                  {BOOKING_MODE_CONTENT[draft.mode].title}
+                </div>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                  {BOOKING_MODE_CONTENT[draft.mode].description}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {BOOKING_MODE_CONTENT[draft.mode].bullets.map((item) => (
+                    <OptionPill key={item}>{item}</OptionPill>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                <div className="text-sm font-bold text-slate-900">How they differ</div>
+                <div className="mt-3 space-y-3 text-sm text-slate-600">
+                  <div className="rounded-2xl border border-white bg-white px-4 py-3 shadow-sm">
+                    <span className="font-semibold text-slate-900">Package</span> lets you choose
+                    one wash package and attach extra add-ons before checkout.
+                  </div>
+                  <div className="rounded-2xl border border-white bg-white px-4 py-3 shadow-sm">
+                    <span className="font-semibold text-slate-900">Combo</span> focuses on prepaid
+                    wash bundles, prioritizes owned combos, and can reduce the current charge.
+                  </div>
+                </div>
+              </div>
+            </div>
             {draft.mode === "COMBO" ? (
               <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-sm leading-6 text-slate-600">
                 Select a combo first. If you already own a valid combo of the same type, the combo
@@ -410,33 +462,72 @@ export function CustomerBookingForm() {
             title={draft.mode === "PACKAGE" ? "Select wash package" : "Select combo"}
           >
             {draft.mode === "PACKAGE" ? (
-              <CustomerBookingSelect
-                options={packageOptions}
-                value={draft.packageId}
-                onValueChange={(packageId) => updateDraft({
-                  packageId,
-                  addonIds: [],
-                  voucherCode: "",
-                })}
-                placeholder="Select a package"
-                searchPlaceholder="Search package name..."
-                emptyText="No packages found."
-                className="border-slate-300 bg-white"
-                renderValue={(option) =>
-                  option ? (
-                    <span className="block">
-                      <span className="block truncate font-semibold text-slate-900">
-                        {option.label}
+              <div className="space-y-4">
+                <CustomerBookingSelect
+                  options={packageOptions}
+                  value={draft.packageId}
+                  onValueChange={(packageId) =>
+                    updateDraft({
+                      packageId,
+                      addonIds: [],
+                      voucherCode: "",
+                    })
+                  }
+                  placeholder="Select a package"
+                  searchPlaceholder="Search package name..."
+                  emptyText="No packages found."
+                  className="border-slate-300 bg-white"
+                  renderValue={(option) =>
+                    option ? (
+                      <span className="block">
+                        <span className="block truncate font-semibold text-slate-900">
+                          {option.label}
+                        </span>
+                        <span className="block truncate text-xs font-normal text-slate-500">
+                          {option.helper}
+                        </span>
                       </span>
-                      <span className="block truncate text-xs font-normal text-slate-500">
-                        {option.helper}
-                      </span>
-                    </span>
-                  ) : (
-                    "Select a package"
-                  )
-                }
-              />
+                    ) : (
+                      "Select a package"
+                    )
+                  }
+                />
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {packages.map((item) => {
+                    const active = draft.packageId === item.packageId;
+
+                    return (
+                      <button
+                        key={item.packageId}
+                        type="button"
+                        className={optionCardClass(active)}
+                        onClick={() =>
+                          updateDraft({
+                            packageId: item.packageId,
+                            addonIds: [],
+                            voucherCode: "",
+                          })
+                        }
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="text-lg font-bold text-slate-950">{item.name}</div>
+                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                              {item.description}
+                            </p>
+                          </div>
+                          <SelectionMark active={active} />
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <OptionPill>{item.duration} min</OptionPill>
+                          <OptionPill>{formatBookingCurrency(item.basePrice)}</OptionPill>
+                          <OptionPill>{addons.length} add-ons available</OptionPill>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             ) : (
               <div className="grid gap-3">
                 {combos.map((item) => {
