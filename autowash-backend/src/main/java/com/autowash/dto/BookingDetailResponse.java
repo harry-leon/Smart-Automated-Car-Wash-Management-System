@@ -28,7 +28,8 @@ public record BookingDetailResponse(
         String washStatus,
         String notes,
         Instant createdAt,
-        String devOtp
+        String devOtp,
+        List<BookingStatusHistoryItem> statusHistory
 ) {
     public record Pricing(
             long basePrice,
