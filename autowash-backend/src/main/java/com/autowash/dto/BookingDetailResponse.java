@@ -27,6 +27,7 @@ public record BookingDetailResponse(
         String staffName,
         String washStatus,
         String notes,
+        List<BookingStatusHistoryItem> statusHistory,
         Instant createdAt,
         String devOtp
 ) {
@@ -54,5 +55,13 @@ public record BookingDetailResponse(
             String status,
             String transactionId,
             Instant paidAt
+    ) {}
+
+    public record BookingStatusHistoryItem(
+            String oldStatus,
+            String newStatus,
+            String changedByName,
+            String reason,
+            Instant changedAt
     ) {}
 }

@@ -22,6 +22,7 @@ import com.autowash.entity.Booking;
 import com.autowash.entity.enums.PaymentMethod;
 import com.autowash.entity.enums.PaymentStatus;
 import com.autowash.repository.BookingRepository;
+import com.autowash.repository.BookingStatusHistoryRepository;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.repository.PaymentRepository;
@@ -85,6 +86,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
     private final VehicleRepository VehicleRepository;
     private final PasswordEncoder passwordEncoder;
     private final PaymentRepository paymentRepository;
+    private final BookingStatusHistoryRepository bookingStatusHistoryRepository;
 
     public AdminReportingServiceImpl(
             BookingRepository bookingRepository,
@@ -96,7 +98,8 @@ public class AdminReportingServiceImpl implements AdminReportingService {
             PointTransactionRepository pointTransactionRepository,
             VehicleRepository VehicleRepository,
             PasswordEncoder passwordEncoder,
-            PaymentRepository paymentRepository
+            PaymentRepository paymentRepository,
+            BookingStatusHistoryRepository bookingStatusHistoryRepository
     ) {
         this.bookingRepository = bookingRepository;
         this.washSessionRepository = washSessionRepository;
@@ -108,6 +111,7 @@ public class AdminReportingServiceImpl implements AdminReportingService {
         this.VehicleRepository = VehicleRepository;
         this.passwordEncoder = passwordEncoder;
         this.paymentRepository = paymentRepository;
+        this.bookingStatusHistoryRepository = bookingStatusHistoryRepository;
     }
 
     @Transactional
@@ -474,6 +478,15 @@ public class AdminReportingServiceImpl implements AdminReportingService {
                 null,
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
+                bookingStatusHistoryRepository.findByBooking_IdOrderByChangedAtAsc(booking.getId()).stream()
+                        .map(history -> new com.autowash.dto.BookingDetailResponse.BookingStatusHistoryItem(
+                                history.getOldStatus(),
+                                history.getNewStatus(),
+                                history.getChangedBy() == null ? null : history.getChangedBy().getFullName(),
+                                history.getReason(),
+                                history.getChangedAt()
+                        ))
+                        .toList(),
                 booking.getCreatedAt(),
                 null
         );

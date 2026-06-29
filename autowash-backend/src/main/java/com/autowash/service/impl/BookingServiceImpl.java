@@ -509,6 +509,15 @@ public class BookingServiceImpl implements BookingService {
                 resolveAssignedStaffName(booking, washSession),
                 washSession == null ? null : washSession.getStatus().name(),
                 washSession == null ? null : washSession.getNotes(),
+                bookingStatusHistoryRepository.findByBooking_IdOrderByChangedAtAsc(booking.getId()).stream()
+                        .map(history -> new BookingDetailResponse.BookingStatusHistoryItem(
+                                history.getOldStatus(),
+                                history.getNewStatus(),
+                                history.getChangedBy() == null ? null : history.getChangedBy().getFullName(),
+                                history.getReason(),
+                                history.getChangedAt()
+                        ))
+                        .toList(),
                 booking.getCreatedAt(),
                 null
         );

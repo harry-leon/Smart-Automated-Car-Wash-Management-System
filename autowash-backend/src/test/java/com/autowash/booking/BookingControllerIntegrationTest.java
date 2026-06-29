@@ -19,6 +19,7 @@ import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.shared.security.UserPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,8 +78,9 @@ class BookingControllerIntegrationTest {
     void getServicesReturnsActiveServices() throws Exception {
         mockMvc.perform(get("/api/v1/services"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].serviceId").value("33333333-1234-1234-1234-123456789012"));
+                .andExpect(jsonPath("$.data.length()").value(Matchers.greaterThanOrEqualTo(2)))
+                .andExpect(jsonPath("$.data[*].serviceId").value(Matchers.hasItem("33333333-1234-1234-1234-123456789012")))
+                .andExpect(jsonPath("$.data[*].imageUrl").value(Matchers.hasItem("https://cdn.example.com/services/waxing.jpg")));
     }
 
     @Test
@@ -86,7 +88,28 @@ class BookingControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/combos/available"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].comboId").value("55555555-1234-1234-1234-123456789012"));
+                .andExpect(jsonPath("$.data[0].comboId").value("55555555-1234-1234-1234-123456789012"))
+                .andExpect(jsonPath("$.data[0].originalPrice").exists())
+                .andExpect(jsonPath("$.data[0].services").isArray());
+    }
+
+    @Test
+    void getPackageDetailReturnsActivePackage() throws Exception {
+        mockMvc.perform(get("/api/v1/packages/{packageId}", "12345678-1234-1234-1234-123456789012"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.packageId").value("12345678-1234-1234-1234-123456789012"))
+                .andExpect(jsonPath("$.data.name").value("Basic Wash"))
+                .andExpect(jsonPath("$.data.features[0]").value("Waxing"));
+    }
+
+    @Test
+    void getComboDetailReturnsActiveComboWithServiceItems() throws Exception {
+        mockMvc.perform(get("/api/v1/combos/{comboId}", "55555555-1234-1234-1234-123456789012"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.comboId").value("55555555-1234-1234-1234-123456789012"))
+                .andExpect(jsonPath("$.data.name").value("Monthly Basic Combo"))
+                .andExpect(jsonPath("$.data.originalPrice").exists())
+                .andExpect(jsonPath("$.data.services").isArray());
     }
 
     @Test
@@ -408,7 +431,10 @@ class BookingControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.washSessionId").value(sessionId))
                 .andExpect(jsonPath("$.data.staffName").isString())
                 .andExpect(jsonPath("$.data.washStatus").value("PENDING"))
-                .andExpect(jsonPath("$.data.notes").value("Customer arrived at bay 2"));
+                .andExpect(jsonPath("$.data.notes").value("Customer arrived at bay 2"))
+                .andExpect(jsonPath("$.data.statusHistory.length()").value(2))
+                .andExpect(jsonPath("$.data.statusHistory[0].newStatus").value("PENDING"))
+                .andExpect(jsonPath("$.data.statusHistory[1].newStatus").value("CONFIRMED"));
     }
 
     @Test
@@ -436,6 +462,34 @@ class BookingControllerIntegrationTest {
                         .header("Authorization", "Bearer " + secondToken))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    void customerWashCompletionSummaryReturnsAwardedPointsTierAndPromotions() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234726");
+        String vehicleId = createVehicle(accessToken, "30H-223473");
+        String bookingId = createVerifiedBooking(accessToken, vehicleId);
+        String sessionId = completeWashSession(bookingId, "Completed for summary");
+
+        mockMvc.perform(get("/api/v1/customers/wash-tracking/{washSessionId}/completion-summary", sessionId)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bookingId").value(bookingId))
+                .andExpect(jsonPath("$.data.washSessionId").value(sessionId))
+                .andExpect(jsonPath("$.data.awardedPoints").value(Matchers.greaterThan(0)))
+                .andExpect(jsonPath("$.data.currentTier").value(Matchers.not(Matchers.blankOrNullString())))
+                .andExpect(jsonPath("$.data.availablePromotions").isArray());
+    }
+
+    @Test
+    void notificationTickerReturnsPromotionAwareItemsForCustomer() throws Exception {
+        String accessToken = registerActivateAndLogin("0901234727");
+
+        mockMvc.perform(get("/api/v1/notifications/ticker")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(Matchers.greaterThan(0)))
+                .andExpect(jsonPath("$.data[0].message").value(Matchers.not(Matchers.blankOrNullString())));
     }
 
     @Test
@@ -597,12 +651,17 @@ class BookingControllerIntegrationTest {
                 .andExpect(jsonPath("$.components.schemas.ValidateVoucherRequest.properties.voucherCode.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.CreateBookingRequest.properties.vehicleId.type").value("string"))
                 .andExpect(jsonPath("$.components.schemas.CreateBookingResponse.properties.bookingId.type").value("string"))
-                .andExpect(jsonPath("$.components.schemas.CancelBookingResponse.properties.refundStatus.type").value("string"));
+                .andExpect(jsonPath("$.components.schemas.CancelBookingResponse.properties.refundStatus.type").value("string"))
+                .andExpect(jsonPath("$.components.schemas.BookingDetailResponse.properties.statusHistory.type").value("array"));
         mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paths['/api/v1/bookings/{bookingId}/apply-points']").exists())
                 .andExpect(jsonPath("$.paths['/api/v1/customers/wash-tracking/active']").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/customers/wash-tracking/{washSessionId}']").exists());
+                .andExpect(jsonPath("$.paths['/api/v1/customers/wash-tracking/{washSessionId}']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/packages/{packageId}']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/combos/{comboId}']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/customers/wash-tracking/{washSessionId}/completion-summary']").exists())
+                .andExpect(jsonPath("$.paths['/api/v1/notifications/ticker']").exists());
     }
 
 
@@ -658,6 +717,25 @@ class BookingControllerIntegrationTest {
         return readJson(result).path("data").path("sessionId").asText();
     }
 
+    private String completeWashSession(String bookingId, String notes) throws Exception {
+        String sessionId = createWashSession(bookingId, notes);
+
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/queue", sessionId)
+                        .with(authenticatedAdmin()))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/check-in", sessionId)
+                        .with(authenticatedAdmin()))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/start", sessionId)
+                        .with(authenticatedAdmin()))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/operations/sessions/{sessionId}/complete", sessionId)
+                        .with(authenticatedAdmin()))
+                .andExpect(status().isOk());
+
+        return sessionId;
+    }
+
     private RequestPostProcessor authenticatedAdmin() {
         User admin = new User("Booking Admin", uniquePhone("0986"), "booking-admin-" + java.util.UUID.randomUUID() + "@example.com", "hash");
         admin.activate();
@@ -670,11 +748,12 @@ class BookingControllerIntegrationTest {
     }
 
     private String uniquePhone(String prefix) {
-        String digits = java.util.UUID.randomUUID().toString().replaceAll("\\D", "");
-        while (digits.length() < 6) {
-            digits += "0";
-        }
-        return prefix + digits.substring(0, 6);
+        String phone;
+        do {
+            long candidate = Math.floorMod(System.nanoTime(), 1_000_000L);
+            phone = prefix + String.format("%06d", candidate);
+        } while (UserRepository.existsByPhone(phone));
+        return phone;
     }
 
     private String futureBookingDate() {

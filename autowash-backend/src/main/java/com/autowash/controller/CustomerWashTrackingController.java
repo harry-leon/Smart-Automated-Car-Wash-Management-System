@@ -1,5 +1,6 @@
 package com.autowash.controller;
 
+import com.autowash.dto.CompletionSummaryResponse;
 import com.autowash.dto.CustomerWashTrackingResponse;
 import com.autowash.service.CustomerWashTrackingService;
 import com.autowash.shared.dto.ApiResponse;
@@ -40,5 +41,11 @@ public class CustomerWashTrackingController {
     @Operation(summary = "Get customer wash session detail")
     public ApiResponse<CustomerWashTrackingResponse> getSession(@PathVariable UUID washSessionId) {
         return ApiResponse.ok("Wash session retrieved", washTrackingService.getSession(washSessionId));
+    }
+
+    @GetMapping("/{washSessionId}/completion-summary")
+    @Operation(summary = "Get completion summary for a completed wash session")
+    public ApiResponse<CompletionSummaryResponse> getCompletionSummary(@PathVariable UUID washSessionId) {
+        return ApiResponse.ok("Completion summary retrieved", washTrackingService.getCompletionSummary(washSessionId));
     }
 }

@@ -4,9 +4,12 @@ import com.autowash.service.*;
 import com.autowash.entity.User;
 import com.autowash.entity.Booking;
 import com.autowash.entity.Combo;
+import com.autowash.entity.LoyaltyAccount;
 import com.autowash.entity.Package;
 import com.autowash.repository.ComboRepository;
+import com.autowash.repository.LoyaltyAccountRepository;
 import com.autowash.repository.PackageRepository;
+import com.autowash.dto.CompletionSummaryResponse;
 import com.autowash.dto.CustomerWashTrackingResponse;
 import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.WashSessionStatus;
@@ -33,17 +36,23 @@ public class CustomerWashTrackingServiceImpl implements CustomerWashTrackingServ
     private final WashSessionRepository washSessionRepository;
     private final PackageRepository PackageRepository;
     private final ComboRepository ComboRepository;
+    private final LoyaltyAccountRepository loyaltyAccountRepository;
+    private final PromotionService promotionService;
 
     public CustomerWashTrackingServiceImpl(
             CurrentUserService currentUserService,
             WashSessionRepository washSessionRepository,
             PackageRepository PackageRepository,
-            ComboRepository ComboRepository
+            ComboRepository ComboRepository,
+            LoyaltyAccountRepository loyaltyAccountRepository,
+            PromotionService promotionService
     ) {
         this.currentUserService = currentUserService;
         this.washSessionRepository = washSessionRepository;
         this.PackageRepository = PackageRepository;
         this.ComboRepository = ComboRepository;
+        this.loyaltyAccountRepository = loyaltyAccountRepository;
+        this.promotionService = promotionService;
     }
 
     @Transactional(readOnly = true)
@@ -60,6 +69,30 @@ public class CustomerWashTrackingServiceImpl implements CustomerWashTrackingServ
         WashSession session = washSessionRepository.findByIdAndBookingCustomer(washSessionId, customer)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
         return toResponse(session);
+    }
+
+    @Transactional(readOnly = true)
+    public CompletionSummaryResponse getCompletionSummary(UUID washSessionId) {
+        User customer = currentUserService.getCurrentUser();
+        WashSession session = washSessionRepository.findByIdAndBookingCustomer(washSessionId, customer)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
+        if (session.getStatus() != WashSessionStatus.COMPLETED) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Wash session is not completed yet", "BUSINESS_RULE_VIOLATION");
+        }
+
+        LoyaltyAccount account = loyaltyAccountRepository.findByCustomerId(customer.getId())
+                .orElseGet(() -> new LoyaltyAccount(customer));
+
+        return new CompletionSummaryResponse(
+                session.getBooking().getId().toString(),
+                session.getId().toString(),
+                session.getStatus().name(),
+                session.getAwardedLoyaltyPoints() == null ? 0 : session.getAwardedLoyaltyPoints(),
+                account.getCurrentPoints(),
+                account.getTier().name(),
+                session.getCompletedAt(),
+                promotionService.listActiveLegacyForCurrentCustomer()
+        );
     }
 
     private CustomerWashTrackingResponse toResponse(WashSession session) {

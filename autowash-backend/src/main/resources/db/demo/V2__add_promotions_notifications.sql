@@ -1,8 +1,41 @@
--- Insert Demo Promotions using fixed UUIDs to avoid procedural blocks
-INSERT INTO promotions (id, name, description, point_multiplier, targeting_mode, start_at, end_at, status)
+-- Legacy local databases may miss timestamp defaults on promotions, so seed them explicitly.
+INSERT INTO promotions (
+  id,
+  name,
+  description,
+  point_multiplier,
+  targeting_mode,
+  start_at,
+  end_at,
+  status,
+  created_at,
+  updated_at
+)
 VALUES 
-('11111111-1111-1111-1111-111111111111', 'SUMMER SALE 2026', 'X2 points for all washes this summer', 2.00, 'ALL_TIERS', CURRENT_TIMESTAMP - INTERVAL '1' DAY, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 'ACTIVE'),
-('22222222-2222-2222-2222-222222222222', 'GOLD EXCLUSIVE', 'X3 points exclusively for Gold and Platinum members', 3.00, 'SPECIFIC_TIERS', CURRENT_TIMESTAMP - INTERVAL '5' DAY, CURRENT_TIMESTAMP + INTERVAL '15' DAY, 'ACTIVE');
+(
+  '11111111-1111-1111-1111-111111111111',
+  'SUMMER SALE 2026',
+  'X2 points for all washes this summer',
+  2.00,
+  'ALL_TIERS',
+  CURRENT_TIMESTAMP - INTERVAL '1' DAY,
+  CURRENT_TIMESTAMP + INTERVAL '30' DAY,
+  'ACTIVE',
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+),
+(
+  '22222222-2222-2222-2222-222222222222',
+  'GOLD EXCLUSIVE',
+  'X3 points exclusively for Gold and Platinum members',
+  3.00,
+  'SPECIFIC_TIERS',
+  CURRENT_TIMESTAMP - INTERVAL '5' DAY,
+  CURRENT_TIMESTAMP + INTERVAL '15' DAY,
+  'ACTIVE',
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+);
 
 -- Insert Promotion Tiers
 INSERT INTO promotion_tiers (promotion_id, tier) VALUES
