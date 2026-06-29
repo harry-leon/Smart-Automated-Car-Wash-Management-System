@@ -253,6 +253,16 @@ public class CatalogServiceImpl implements CatalogService {
         }
     }
 
+    @Transactional(readOnly = true)
+public PackageResponse getPackageById(String packageId) {
+    return toPackageResponse(requireActivePackage(packageId));
+}
+
+@Transactional(readOnly = true)
+public ComboResponse getComboById(String comboId) {
+    return toComboResponse(requireActiveCombo(comboId));
+}
+
     private LoyaltyTier currentCustomerTier() {
         return loyaltyAccountRepository.findByCustomerId(currentUserService.getCurrentUser().getId())
                 .map(LoyaltyAccount::getTier)
