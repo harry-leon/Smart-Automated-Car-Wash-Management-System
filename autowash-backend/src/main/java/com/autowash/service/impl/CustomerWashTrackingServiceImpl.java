@@ -8,6 +8,8 @@ import com.autowash.entity.Package;
 import com.autowash.repository.ComboRepository;
 import com.autowash.repository.PackageRepository;
 import com.autowash.dto.CustomerWashTrackingResponse;
+import com.autowash.dto.WashCompletionSummaryResponse;
+import com.autowash.repository.PaymentRepository;
 import com.autowash.entity.WashSession;
 import com.autowash.entity.enums.WashSessionStatus;
 import com.autowash.repository.WashSessionRepository;
@@ -33,17 +35,20 @@ public class CustomerWashTrackingServiceImpl implements CustomerWashTrackingServ
     private final WashSessionRepository washSessionRepository;
     private final PackageRepository PackageRepository;
     private final ComboRepository ComboRepository;
+    private final PaymentRepository paymentRepository;
 
     public CustomerWashTrackingServiceImpl(
             CurrentUserService currentUserService,
             WashSessionRepository washSessionRepository,
             PackageRepository PackageRepository,
-            ComboRepository ComboRepository
+            ComboRepository ComboRepository,
+            PaymentRepository paymentRepository
     ) {
         this.currentUserService = currentUserService;
         this.washSessionRepository = washSessionRepository;
         this.PackageRepository = PackageRepository;
         this.ComboRepository = ComboRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -61,6 +66,33 @@ public class CustomerWashTrackingServiceImpl implements CustomerWashTrackingServ
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
         return toResponse(session);
     }
+
+    @Transactional(readOnly = true)
+public WashCompletionSummaryResponse getCompletionSummary(UUID washSessionId) {
+    User customer = currentUserService.getCurrentUser();
+    WashSession session = washSessionRepository.findByIdAndBookingCustomer(washSessionId, customer)
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Wash session not found", "RESOURCE_NOT_FOUND"));
+    if (session.getStatus() != WashSessionStatus.COMPLETED) {
+        throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "Session is not completed", "BUSINESS_RULE_VIOLATION");
+    }
+    Booking booking = session.getBooking();
+    var payment = paymentRepository.findByBooking(booking).orElse(null);
+    return new WashCompletionSummaryResponse(
+            session.getId().toString(),
+            booking.getId().toString(),
+            session.getStatus().name(),
+            resolveServiceName(booking),
+            booking.getVehicle().getPlate(),
+            booking.getFinalAmount(),
+            payment == null ? null : payment.getMethod().name(),
+            payment == null ? null : payment.getStatus().name(),
+            session.getAwardedLoyaltyPoints(),
+            session.getProjectedLoyaltyPoints(),
+            session.getCompletedAt(),
+            session.getAssignedStaff() == null ? null : session.getAssignedStaff().getFullName(),
+            session.getNotes()
+    );
+}
 
     private CustomerWashTrackingResponse toResponse(WashSession session) {
         Booking booking = session.getBooking();
