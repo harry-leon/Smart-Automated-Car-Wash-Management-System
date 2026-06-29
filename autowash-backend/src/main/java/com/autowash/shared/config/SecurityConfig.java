@@ -45,6 +45,7 @@ public class SecurityConfig {
                                 "/api/v1/packages",
                                 "/api/v1/services",
                                 "/api/v1/combos/available",
+                                "/api/v1/notifications/ticker",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",

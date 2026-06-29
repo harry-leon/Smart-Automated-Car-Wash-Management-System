@@ -2,6 +2,8 @@ package com.autowash.service.impl;
 
 import com.autowash.service.*;
 import com.autowash.dto.NotificationResponse;
+import com.autowash.dto.NotificationTickerItem;
+import com.autowash.dto.NotificationTickerResponse;
 import com.autowash.entity.User;
 import com.autowash.entity.Notification;
 import com.autowash.repository.NotificationRepository;
@@ -44,6 +46,20 @@ public class NotificationServiceImpl implements NotificationService {
         }
         notification.markAsRead();
         return toResponse(notification);
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationTickerResponse getTicker() {
+    List<NotificationTickerItem> items = notificationRepository.findTop20ByOrderByCreatedAtDesc()
+            .stream()
+            .map(n -> new NotificationTickerItem(
+                    n.getId().toString(),
+                    n.getMessage(),
+                    n.getType(),
+                    n.getCreatedAt()
+            ))
+            .toList();
+        return new NotificationTickerResponse(items);
     }
 
     private NotificationResponse toResponse(Notification notification) {
