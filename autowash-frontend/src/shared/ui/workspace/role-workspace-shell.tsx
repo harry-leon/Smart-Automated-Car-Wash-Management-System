@@ -21,7 +21,6 @@ import {
   ShieldCheck,
   Sun,
   UserCog,
-  UserRound,
   Wrench,
   X,
 } from "lucide-react";
@@ -46,6 +45,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/shared/ui/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/ui/avatar";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useQuery } from "@tanstack/react-query";
 import { MarqueeTicker } from "@/shared/ui/marquee-ticker";
@@ -604,9 +604,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     className="group flex max-w-[12rem] items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-2 py-1.5 text-left transition hover:border-primary/30 hover:bg-card sm:max-w-none sm:px-3"
                     aria-label={t("Mở menu hồ sơ", "Open profile menu")}
                   >
-                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-full border", workspaceTheme.accentSoft)}>
-                      <UserRound className="h-4 w-4" />
-                    </div>
+                    <Avatar className={cn("h-9 w-9 border", workspaceTheme.accentSoft)}>
+                      <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
+                      <AvatarFallback className={cn("text-xs font-semibold", workspaceTheme.accentSoft)}>
+                        {getUserInitials(user.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="hidden min-w-0 sm:block">
                       <div className="truncate text-sm font-bold">{user.fullName}</div>
                       <div className="truncate text-[11px] font-semibold text-muted-foreground">
@@ -623,9 +626,12 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                 >
                   <div className="px-2 py-2">
                     <div className="flex items-center gap-3">
-                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-full border", workspaceTheme.accentSoft)}>
-                        <UserRound className="h-4 w-4" />
-                      </div>
+                      <Avatar className={cn("h-10 w-10 border", workspaceTheme.accentSoft)}>
+                        <AvatarImage src={user.avatarUrl ?? undefined} alt={user.fullName} className="object-cover" />
+                        <AvatarFallback className={cn("text-xs font-semibold", workspaceTheme.accentSoft)}>
+                          {getUserInitials(user.fullName)}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="min-w-0">
                         <div className="truncate text-sm font-extrabold">{user.fullName}</div>
                         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -966,4 +972,15 @@ function isNavActive(pathname: string, item: WorkspaceNavItem) {
   const itemPath = item.href.split("?")[0];
   if (item.exact) return pathname === itemPath;
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+}
+
+function getUserInitials(fullName: string) {
+  const initials = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+
+  return initials || "U";
 }
