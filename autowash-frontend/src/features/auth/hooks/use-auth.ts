@@ -11,17 +11,23 @@ import {
   loginCustomer,
   logoutCustomer,
   registerCustomer,
+  requestForgotPassword,
+  resetForgotPassword,
   sendCustomerOtp,
+  verifyForgotPasswordOtp,
   verifyCustomerOtp,
 } from "@/features/auth/lib/auth-service";
 import { clearAuthSession, getRefreshToken, setAuthSession } from "@/features/auth/store/auth.store";
 import {
+  ForgotPasswordRequest,
   LoginRequest,
   LoginResponseData,
   RegisterRequest,
   RegisterResponseData,
+  ResetPasswordRequest,
   SendOtpRequest,
   SendOtpResponseData,
+  VerifyForgotPasswordOtpRequest,
   VerifyOtpRequest,
   VerifyOtpResponseData,
 } from "@/entities/auth";
@@ -69,6 +75,24 @@ export function useVerifyCustomerOtp() {
         clearAuthSession();
       }
     }
+  });
+}
+
+export function useForgotPasswordRequest() {
+  return useMutation<SendOtpResponseData, AuthApiError, ForgotPasswordRequest>({
+    mutationFn: requestForgotPassword,
+  });
+}
+
+export function useVerifyForgotPasswordOtp() {
+  return useMutation<void, AuthApiError, VerifyForgotPasswordOtpRequest>({
+    mutationFn: verifyForgotPasswordOtp,
+  });
+}
+
+export function useForgotPasswordReset() {
+  return useMutation<void, AuthApiError, ResetPasswordRequest>({
+    mutationFn: resetForgotPassword,
   });
 }
 

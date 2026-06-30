@@ -93,6 +93,16 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/forgot-password/verify")
+    @Operation(summary = "Verify OTP for password reset")
+    public ApiResponse<Void> verifyForgotPassword(
+            @Valid @RequestBody VerifyOtpRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        authService.verifyForgotPasswordOtp(request.email(), request.otp(), metadata(servletRequest));
+        return ApiResponse.ok("Password reset OTP verified", null);
+    }
+
     @PostMapping("/forgot-password/reset")
     @Operation(summary = "Reset password with OTP")
     public ApiResponse<Void> resetForgotPassword(
