@@ -15,6 +15,7 @@ public interface AuthService {
     LoginResponse verifyRegistrationOtp(String email, String otp, RequestMetadata metadata);
     LoginResponse login(LoginRequest request);
     SendOtpResponse requestForgotPassword(String email, RequestMetadata metadata);
+    void verifyForgotPasswordOtp(String email, String otp, RequestMetadata metadata);
     void resetForgotPassword(String email, String otp, String newPassword, String newPasswordConfirm, RequestMetadata metadata);
     RefreshTokenResponse refresh(String token);
     void logout(String token);

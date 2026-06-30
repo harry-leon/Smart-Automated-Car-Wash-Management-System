@@ -83,9 +83,14 @@ export function LoginForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="password" className="text-sm font-semibold text-slate-700">
-          Mat khau
-        </Label>
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="password" className="text-sm font-semibold text-slate-700">
+            Mat khau
+          </Label>
+          <Link href="/forgot-password" className="text-xs font-bold text-sky-700 transition hover:text-sky-900 hover:underline">
+            Quen mat khau?
+          </Link>
+        </div>
         <div className="relative">
           <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input

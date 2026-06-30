@@ -2,14 +2,17 @@ import { toAuthApiError } from "@/shared/lib/api-errors";
 import { apiRequest } from "@/shared/lib/api";
 import { ApiErrorResponse } from "@/shared/types/api.types";
 import {
+  ForgotPasswordRequest,
   GoogleAuthTicketResponse,
   LoginRequest,
   LoginResponseData,
   LogoutRequest,
   RegisterRequest,
   RegisterResponseData,
+  ResetPasswordRequest,
   SendOtpRequest,
   SendOtpResponseData,
+  VerifyForgotPasswordOtpRequest,
   VerifyOtpRequest,
   VerifyOtpResponseData,
 } from "@/entities/auth";
@@ -95,6 +98,42 @@ export async function verifyCustomerOtp(payload: VerifyOtpRequest) {
     return await apiRequest<VerifyOtpResponseData, VerifyOtpRequest>({
       method: "POST",
       url: "/auth/otp/verify",
+      data: payload
+    });
+  } catch (error) {
+    throw toAuthApiError(error as ApiErrorResponse);
+  }
+}
+
+export async function requestForgotPassword(payload: ForgotPasswordRequest) {
+  try {
+    return await apiRequest<SendOtpResponseData, ForgotPasswordRequest>({
+      method: "POST",
+      url: "/auth/forgot-password/request",
+      data: payload
+    });
+  } catch (error) {
+    throw toAuthApiError(error as ApiErrorResponse);
+  }
+}
+
+export async function verifyForgotPasswordOtp(payload: VerifyForgotPasswordOtpRequest) {
+  try {
+    await apiRequest<null, VerifyForgotPasswordOtpRequest>({
+      method: "POST",
+      url: "/auth/forgot-password/verify",
+      data: payload
+    });
+  } catch (error) {
+    throw toAuthApiError(error as ApiErrorResponse);
+  }
+}
+
+export async function resetForgotPassword(payload: ResetPasswordRequest) {
+  try {
+    await apiRequest<null, ResetPasswordRequest>({
+      method: "POST",
+      url: "/auth/forgot-password/reset",
       data: payload
     });
   } catch (error) {

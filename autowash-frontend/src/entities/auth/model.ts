@@ -35,11 +35,25 @@ export type SendOtpResponseData = {
   maskedEmail?: string;
   maskedPhone?: string;
   message?: string;
+  devOtp?: string;
 };
 
 export type VerifyOtpRequest = {
   email: string;
   otp: string;
+};
+
+export type VerifyForgotPasswordOtpRequest = VerifyOtpRequest;
+
+export type ForgotPasswordRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  email: string;
+  otp: string;
+  newPassword: string;
+  newPasswordConfirm: string;
 };
 
 export type AuthResponseData = {

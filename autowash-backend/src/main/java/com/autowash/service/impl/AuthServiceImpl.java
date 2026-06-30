@@ -208,6 +208,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Transactional(noRollbackFor = ApiException.class)
+    public void verifyForgotPasswordOtp(String email, String otp, RequestMetadata metadata) {
+        User user = resolveEmailUser(email)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Account not found", "RESOURCE_NOT_FOUND"));
+        requireActiveUser(user);
+        verifyOtpForPurpose(user, OtpPurpose.PASSWORD_RESET, otp);
+    }
+
+    @Transactional(noRollbackFor = ApiException.class)
     public void resetForgotPassword(
             String email,
             String otp,
