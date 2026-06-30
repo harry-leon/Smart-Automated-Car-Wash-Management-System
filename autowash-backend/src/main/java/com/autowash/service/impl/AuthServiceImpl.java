@@ -349,7 +349,11 @@ public class AuthServiceImpl implements AuthService {
         );
         OtpVerificationRepository.save(OtpVerification);
         try {
-            emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
+            if (purpose == OtpPurpose.PASSWORD_RESET) {
+                emailDeliveryService.sendPasswordResetOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
+            } else {
+                emailDeliveryService.sendRegistrationOtp(user.getEmail(), user.getFullName(), code, (int) otpExpirationSeconds);
+            }
         } catch (RuntimeException exception) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Unable to send OTP email", "OTP_SEND_FAILED");
         }

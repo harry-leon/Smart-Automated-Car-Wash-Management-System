@@ -21,4 +21,14 @@ public class LoggingEmailDeliveryServiceImpl implements EmailDeliveryService {
                 expiresInSeconds
         );
     }
+
+    @Override
+    public void sendPasswordResetOtp(String email, String fullName, String otp, int expiresInSeconds) {
+        LOGGER.info(
+                "Password reset OTP email queued: to={}, name={}, expiresInSeconds={}, template=password-reset-otp",
+                email,
+                fullName,
+                expiresInSeconds
+        );
+    }
 }
