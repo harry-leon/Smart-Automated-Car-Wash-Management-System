@@ -48,8 +48,9 @@ import {
 } from "@/shared/ui/ui/popover";
 import { useLanguageStore, translate } from "@/shared/store/language.store";
 import { useQuery } from "@tanstack/react-query";
+import { MarqueeTicker } from "@/shared/ui/marquee-ticker";
 import { getEligibleSessionBookings, getOperationsQueue } from "@/features/operations/lib/operations-service";
-import { useCustomerNotifications } from "@/features/notifications/hooks/use-customer-notifications";
+import { useCustomerNotifications, useMarkCustomerNotificationAsRead } from "@/features/notifications/hooks/use-customer-notifications";
 
 type RoleWorkspaceShellProps = {
   requiredRole: UserRole;
@@ -135,6 +136,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   });
 
   const customerNotificationsQuery = useCustomerNotifications();
+  const markCustomerNotificationAsReadMutation = useMarkCustomerNotificationAsRead();
   const unreadCustomerNotifications = useMemo(() => {
     if (!isCustomer || !customerNotificationsQuery.data) return 0;
     return customerNotificationsQuery.data.filter((n) => !n.read).length;
@@ -256,31 +258,36 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
   const quickActions = getProfileQuickActions(requiredRole);
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--card))_55%,hsl(var(--muted))_100%)]" />
+    <div className="flex flex-col min-h-screen">
+      {requiredRole === "CUSTOMER" && <MarqueeTicker />}
+      <div className={cn("flex flex-1 text-foreground relative", requiredRole === "CUSTOMER" ? "bg-[#fdf7ff]" : "bg-background")}>
+        <div 
+          className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--card))_55%,hsl(var(--muted))_100%)]" 
+          style={requiredRole === "CUSTOMER" ? { background: "radial-gradient(circle at top left, #f5efff, #fdf7ff 70%)" } : undefined}
+        />
 
       {/* ── Sidebar ── */}
       <aside
         className={cn(
           "sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-border/70 bg-card/85 backdrop-blur-xl transition-all duration-300 lg:flex",
-          sidebarCollapsed ? "w-[5.25rem]" : "w-72",
+          requiredRole === "CUSTOMER" ? "w-64 bg-white/95 shadow-[0_4px_20px_rgba(0,0,0,0.02)]" : (sidebarCollapsed ? "w-[5.25rem]" : "w-72"),
         )}
       >
         <SidebarBrand
-          collapsed={sidebarCollapsed}
+          collapsed={requiredRole === "CUSTOMER" ? false : sidebarCollapsed}
           theme={workspaceTheme}
           language={language}
           onToggle={() => setSidebarCollapsed((v) => !v)}
         />
 
-        <nav className={cn("min-h-0 flex-1 overflow-y-auto", sidebarCollapsed ? "px-2 py-4" : "px-3 py-4")}>
-          <ul className={cn(sidebarCollapsed ? "space-y-3" : "space-y-1")}>
+        <nav className={cn("min-h-0 flex-1 overflow-y-auto", (requiredRole === "CUSTOMER" || !sidebarCollapsed) ? "px-3 py-4" : "px-2 py-4")}>
+          <ul className={cn((requiredRole === "CUSTOMER" || !sidebarCollapsed) ? "space-y-1" : "space-y-3")}>
             {navItems.map((item) => (
               <SidebarNavLink
                 key={item.href}
                 item={item}
                 pathname={pathname}
-                collapsed={sidebarCollapsed}
+                collapsed={requiredRole === "CUSTOMER" ? false : sidebarCollapsed}
                 activeClassName={workspaceTheme.activeNav}
                 language={language}
               />
@@ -289,7 +296,16 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
         </nav>
 
         <div className="mt-auto space-y-3 border-t border-border/70 p-4">
-          {!sidebarCollapsed && (
+          {requiredRole === "CUSTOMER" && (
+            <Link
+              href="/customer/bookings/new"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0566D9] text-white px-4 py-3 text-sm font-bold shadow-[0_12px_24px_rgba(5,102,217,0.22)] transition hover:bg-[#0455B6] hover:-translate-y-0.5"
+            >
+              {t("Đặt lịch mới", "Book New Service")}
+            </Link>
+          )}
+
+          {requiredRole !== "CUSTOMER" && !sidebarCollapsed && (
             <div className="rounded-xl border border-border/70 bg-background/70 p-3">
               <div className="flex items-start gap-3">
                 <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", workspaceTheme.accent)}>
@@ -312,7 +328,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2.5 text-sm font-semibold transition hover:bg-accent"
           >
             <LogOut className="h-4 w-4" />
-            {!sidebarCollapsed && (
+            {(requiredRole === "CUSTOMER" || !sidebarCollapsed) && (
               <span>
                 {logoutMutation.isPending
                   ? t("Đang đăng xuất...", "Signing out...")
@@ -538,10 +554,16 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                     ) : (
                       <div className="max-h-64 overflow-y-auto space-y-2">
                         {customerNotificationsQuery.data.slice(0, 5).map((notification) => (
-                          <div
+                          <button
                             key={notification.notificationId}
+                            type="button"
+                            onClick={() => {
+                              if (!notification.read) {
+                                markCustomerNotificationAsReadMutation.mutate(notification.notificationId);
+                              }
+                            }}
                             className={cn(
-                              "flex flex-col gap-1 rounded-xl p-2 text-xs transition",
+                              "flex w-full flex-col gap-1 rounded-xl p-2 text-left text-xs transition",
                               notification.read 
                                 ? "bg-muted/50 hover:bg-muted" 
                                 : "bg-teal-50/50 dark:bg-teal-900/20 hover:bg-teal-50 dark:hover:bg-teal-900/30"
@@ -558,7 +580,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
                             <div className={cn("line-clamp-2 text-[11px]", notification.read ? "text-muted-foreground" : "text-foreground")}>
                               {notification.message}
                             </div>
-                          </div>
+                          </button>
                         ))}
                         <div className="pt-2 border-t border-border/50">
                           <Link
@@ -788,6 +810,7 @@ export function RoleWorkspaceShell({ requiredRole, children }: RoleWorkspaceShel
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -840,9 +863,12 @@ function SidebarBrand({
   onToggle: () => void;
   closeIcon?: boolean;
 }) {
+  const user = useAuthStore((state) => state.user);
   const description = language === "vi"
     ? (theme.descriptionVi ?? theme.description)
     : theme.description;
+
+  const isCustomer = user?.role === "CUSTOMER";
 
   if (collapsed) {
     return (
@@ -866,13 +892,21 @@ function SidebarBrand({
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-3">
           <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[10px] font-black tracking-tighter", theme.accent)}>
-            AC
+            {isCustomer ? "AR" : "AC"}
           </div>
           <div className="min-w-0 animate-in fade-in">
-            <div className="truncate font-bold tracking-tight">AURA CAR CARE</div>
-            <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {description}
+            <div className="font-black tracking-[-0.02em] text-lg text-slate-900">
+              {isCustomer ? "AURA CAR CARE" : "AURA CAR CARE"}
             </div>
+            {isCustomer ? (
+              <span className="inline-flex items-center rounded-full bg-[#0566D9]/10 px-2 py-0.5 text-[9px] font-bold text-[#0566D9] shadow-[0_0_15px_rgba(5,102,217,0.15)] mt-0.5">
+                Diamond Member
+              </span>
+            ) : (
+              <div className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {description}
+              </div>
+            )}
           </div>
         </div>
         <button

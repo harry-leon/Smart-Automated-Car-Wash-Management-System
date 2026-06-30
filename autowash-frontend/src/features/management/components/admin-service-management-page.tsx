@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ChevronDown, Droplets, Layers3, Loader2, Package, Plus, RefreshCcw, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -89,6 +89,7 @@ function LiveServicesPanel() {
     price: "",
     duration: "",
     status: "ACTIVE",
+    imageUrl: "",
   });
   const [touched, setTouched] = useState<Partial<Record<keyof AdminServiceForm, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -125,6 +126,7 @@ function LiveServicesPanel() {
             <FormField label={translate(language, "Thời lượng (phút)", "Duration minutes")} value={form.duration} onChange={(value) => setForm((current) => ({ ...current, duration: value }))} onBlur={() => touchField("duration")} error={visibleErrors.duration} />
           </div>
           <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+          <FormField label={translate(language, "Đường dẫn ảnh dịch vụ", "Service Image URL")} value={form.imageUrl || ""} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} placeholder="https://example.com/image.jpg" />
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-slate-800">{translate(language, "Trạng thái", "Status")}</span>
             <select
@@ -156,6 +158,7 @@ function LiveServicesPanel() {
                     price: "",
                     duration: "",
                     status: "ACTIVE",
+                    imageUrl: "",
                   });
                   setTouched({});
                   setSubmitted(false);
@@ -195,14 +198,23 @@ function LiveServicesPanel() {
                   return (
                     <Card key={service.serviceId} className="border-slate-200 bg-slate-50/50">
                       <CardContent className="p-5 flex items-start justify-between gap-3">
-                        <div className="space-y-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="font-bold text-slate-900">{service.name}</div>
-                            <StatusBadge active={service.status === "ACTIVE"} language={language as "vi" | "en"} />
-                          </div>
-                          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                            <span className="rounded-full bg-white px-2.5 py-1">{service.duration} {translate(language, "phút", "min")}</span>
-                            <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(service.price)}</span>
+                        <div className="flex items-start gap-4">
+                          {service.imageUrl && (
+                            <img
+                              src={service.imageUrl}
+                              alt={service.name}
+                              className="h-14 w-14 rounded-lg object-cover border border-slate-200"
+                            />
+                          )}
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="font-bold text-slate-900">{service.name}</div>
+                              <StatusBadge active={service.status === "ACTIVE"} language={language as "vi" | "en"} />
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                              <span className="rounded-full bg-white px-2.5 py-1">{service.duration} {translate(language, "phút", "min")}</span>
+                              <span className="rounded-full bg-white px-2.5 py-1">{formatCurrency(service.price)}</span>
+                            </div>
                           </div>
                         </div>
                         <Button
@@ -249,6 +261,7 @@ function LivePackagesPanel() {
     features: "",
     status: "ACTIVE",
     serviceIds: [],
+    imageUrl: "",
   });
   const [touched, setTouched] = useState<Partial<Record<keyof AdminPackageForm, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -289,6 +302,7 @@ function LivePackagesPanel() {
           <FormField label={translate(language, "Danh mục (ví dụ: Tiêu chuẩn, Cao cấp)", "Category (e.g. Basic, Premium)")} value={form.category} onChange={(value) => setForm((current) => ({ ...current, category: value }))} onBlur={() => touchField("category")} error={visibleErrors.category} />
           <FormField label={translate(language, "Tính năng nổi bật (cách nhau bởi dấu phẩy)", "Features (comma separated)")} value={form.features} onChange={(value) => setForm((current) => ({ ...current, features: value }))} placeholder={translate(language, "Hút bụi, Rửa tay, Làm bóng lốp", "Vacuuming, Hand wash, Tire shine")} />
           <FormField label={translate(language, "Mô tả", "Description")} value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+          <FormField label={translate(language, "Đường dẫn ảnh gói dịch vụ", "Package Image URL")} value={form.imageUrl || ""} onChange={(value) => setForm((current) => ({ ...current, imageUrl: value }))} placeholder="https://example.com/image.jpg" />
 
           {/* Services multi-select dropdown */}
           <ServiceMultiSelect
@@ -337,6 +351,7 @@ function LivePackagesPanel() {
                     features: "",
                     status: "ACTIVE",
                     serviceIds: [],
+                    imageUrl: "",
                   });
                   setTouched({});
                   setSubmitted(false);
@@ -376,7 +391,15 @@ function LivePackagesPanel() {
                   return (
                     <Card key={pkg.packageId} className="border-slate-200 bg-slate-50/50">
                       <CardContent className="p-5 flex items-start justify-between gap-3">
-                        <div className="space-y-3">
+                        <div className="flex items-start gap-4">
+                          {pkg.image && (
+                            <img
+                              src={pkg.image}
+                              alt={pkg.name}
+                              className="h-16 w-16 rounded-xl object-cover border border-slate-200"
+                            />
+                          )}
+                          <div className="space-y-3">
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="font-bold text-slate-900">{pkg.name}</div>
                             <StatusBadge active={pkg.status === "ACTIVE"} language={language as "vi" | "en"} />
@@ -397,7 +420,8 @@ function LivePackagesPanel() {
                             </div>
                           ) : null}
                         </div>
-                        <Button
+                      </div>
+                      <Button
                           type="button"
                           variant="outline"
                           disabled={pkg.status !== "ACTIVE" || isDeleting}
@@ -564,10 +588,19 @@ function LiveCombosPanel() {
                 <Card key={combo.comboId} className="border-slate-200 bg-slate-50/50">
                   <CardContent className="space-y-4 p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-lg font-bold text-slate-900">{combo.name}</div>
-                          <StatusBadge active={combo.isActive} language={language as "vi" | "en"} />
+                      <div className="flex items-start gap-4">
+                        {(combo.image || (combo as any).imageUrl) && (
+                          <img
+                            src={combo.image || (combo as any).imageUrl}
+                            alt={combo.name}
+                            className="h-16 w-16 rounded-xl object-cover border border-slate-200"
+                          />
+                        )}
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="text-lg font-bold text-slate-900">{combo.name}</div>
+                            <StatusBadge active={combo.isActive} language={language as "vi" | "en"} />
+                          </div>
                         </div>
                       </div>
                       <Button
@@ -697,7 +730,7 @@ function ServiceMultiSelect({
   }
 
   // Close when clicking outside
-  useState(() => {
+  useEffect(() => {
     function handler(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
@@ -705,7 +738,7 @@ function ServiceMultiSelect({
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  });
+  }, []);
 
   return (
     <div className="grid gap-2" ref={containerRef}>

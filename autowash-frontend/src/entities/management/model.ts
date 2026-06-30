@@ -5,6 +5,7 @@ export type AdminCatalogService = {
   price: number;
   duration: number;
   status: string;
+  imageUrl?: string | null;
 };
 
 export type AdminCatalogPackage = {
@@ -53,6 +54,7 @@ export type AdminServiceForm = {
   price: string;
   duration: string;
   status: "ACTIVE" | "INACTIVE";
+  imageUrl?: string;
 };
 
 export type AdminPackageForm = {
@@ -64,5 +66,6 @@ export type AdminPackageForm = {
   features: string;
   status: "ACTIVE" | "INACTIVE";
   serviceIds: string[];
+  imageUrl?: string;
 };
 

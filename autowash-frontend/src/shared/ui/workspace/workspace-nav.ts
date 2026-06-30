@@ -38,14 +38,14 @@ export type WorkspaceTheme = {
 
 export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
   CUSTOMER: {
-    label: "Customer Portal",
-    labelVi: "Cổng khách hàng",
-    description: "Bookings and wash tracking",
-    descriptionVi: "Đặt lịch & Theo dõi rửa xe",
-    accent: "bg-teal-600 text-white shadow-teal-600/20",
-    accentSoft: "border-teal-200 bg-teal-50 text-teal-700",
-    activeNav: "bg-teal-600 text-white shadow-sm shadow-teal-600/20",
-    mobileActive: "bg-teal-50 text-teal-700",
+    label: "AURA CAR CARE",
+    labelVi: "AURA CAR CARE",
+    description: "Detailing Customer Portal",
+    descriptionVi: "Cổng khách hàng Detailing",
+    accent: "bg-[#0566D9] text-white shadow-[#0566D9]/20",
+    accentSoft: "border-[#0566D9]/20 bg-[#fdf7ff] text-[#0566D9]",
+    activeNav: "bg-[#0566D9] text-white shadow-sm shadow-[#0566D9]/20",
+    mobileActive: "bg-[#fdf7ff] text-[#0566D9]",
   },
   STAFF: {
     label: "Staff Operations",
@@ -70,13 +70,11 @@ export const WORKSPACE_THEMES: Record<UserRole, WorkspaceTheme> = {
 };
 
 const CUSTOMER_NAV: WorkspaceNavItem[] = [
-  { href: "/customer/home", label: "Home", labelVi: "Trang chủ", icon: LayoutDashboard, exact: true },
-  { href: "/customer/bookings", label: "Bookings", labelVi: "Lịch đặt", icon: ClipboardList },
-  { href: "/customer/wash-tracking", label: "Wash Tracking", labelVi: "Theo dõi rửa xe", icon: Radar },
-  { href: "/customer/vehicles", label: "Vehicles", labelVi: "Phương tiện", icon: CarFront },
-  { href: "/customer/history", label: "History", labelVi: "Lịch sử", icon: History },
-  { href: "/customer/loyalty", label: "Loyalty", labelVi: "Tích điểm", icon: Gift },
-  { href: "/customer/promotions", label: "Promotions", labelVi: "Khuyến mãi", icon: Tag },
+  { href: "/customer/home", label: "Home Feed", labelVi: "Bản tin", icon: LayoutDashboard, exact: true },
+  { href: "/customer/services", label: "Service Catalog", labelVi: "Danh mục dịch vụ", icon: Wrench },
+  { href: "/customer/bookings", label: "Booking Tracker", labelVi: "Theo dõi đơn đặt", icon: ClipboardList },
+  { href: "/customer/loyalty", label: "Member Lounge", labelVi: "Phòng chờ thành viên", icon: Gift },
+  { href: "/customer/settings", label: "Settings", labelVi: "Cài đặt", icon: Settings2 },
 ];
 
 const STAFF_NAV: WorkspaceNavItem[] = [
@@ -115,7 +113,7 @@ export function mobileNavForRole(role: UserRole): WorkspaceNavItem[] {
     );
   }
   return CUSTOMER_NAV.filter((item) =>
-    ["/customer/home", "/customer/bookings", "/customer/wash-tracking", "/customer/loyalty"].includes(
+    ["/customer/home", "/customer/services", "/customer/bookings", "/customer/loyalty"].includes(
       item.href,
     ),
   );

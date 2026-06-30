@@ -23,6 +23,7 @@ export function createAdminService(payload: {
   price: number;
   duration: number;
   status: string;
+  imageUrl?: string | null;
 }) {
   return apiRequest<AdminCatalogService, Record<string, unknown>>({
     method: "POST",
@@ -33,6 +34,7 @@ export function createAdminService(payload: {
       price: Number(payload.price),
       durationMinutes: Number(payload.duration),
       status: payload.status,
+      imageUrl: payload.imageUrl || null,
     },
   });
 }
@@ -53,6 +55,7 @@ export function createAdminPackage(payload: {
   features: string[];
   status: string;
   serviceIds: string[];
+  imageUrl?: string | null;
 }) {
   return apiRequest<AdminCatalogPackage, Record<string, unknown>>({
     method: "POST",
@@ -62,7 +65,7 @@ export function createAdminPackage(payload: {
       description: payload.description,
       basePrice: Number(payload.basePrice),
       durationMinutes: Number(payload.duration),
-      imageUrl: null,
+      imageUrl: payload.imageUrl || null,
       status: payload.status,
       options: payload.serviceIds.map((serviceId, index) => ({
         optionId: serviceId,

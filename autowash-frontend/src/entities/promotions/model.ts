@@ -8,8 +8,9 @@ export type Promotion = {
   promotionId: string;
   name: string;
   description: string | null;
-  discountType: PromotionDiscountType;
-  discountValue: number;
+  discountType?: PromotionDiscountType;
+  discountValue?: number;
+  pointMultiplier?: number | null;
   startDate: string;
   endDate: string;
   targetingMode: PromotionTargetingMode;

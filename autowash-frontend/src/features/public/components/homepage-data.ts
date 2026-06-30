@@ -118,22 +118,22 @@ export const homeTestimonials: HomeTestimonial[] = [
 
 export const homeGallery = [
   {
-    src: "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=1200&q=80&auto=format&fit=crop",
+    src: "/images/gallery0.jpg",
     alt: "Dịch vụ rửa ngoại thất chuyên nghiệp",
     label: "Rửa ngoại thất chuyên nghiệp",
   },
   {
-    src: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80&auto=format&fit=crop",
+    src: "/images/gallery1.jpg",
     alt: "Dịch vụ làm sạch nội thất chuyên sâu",
     label: "Làm sạch nội thất",
   },
   {
-    src: "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=1200&q=80&auto=format&fit=crop",
+    src: "/images/gallery2.jpg",
     alt: "Dịch vụ rửa bọt cao cấp",
     label: "Rửa bọt cao cấp",
   },
   {
-    src: "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=1200&q=80&auto=format&fit=crop",
+    src: "/images/gallery3.jpg",
     alt: "Kết quả hoàn thiện sau khi rửa xe",
     label: "Hoàn thiện sáng bóng",
   },
