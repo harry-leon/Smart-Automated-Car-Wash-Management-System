@@ -48,6 +48,10 @@ export interface Booking {
   checkoutPointsEarned?: number;
   checkoutPointsRedeemed?: number;
   checkoutPromoCode?: string;
+  /**
+   * Priority score for loyalty tier ordering. Present when Loyalty feature is enabled.
+   */
+  customerPriorityScore?: number;
 }
 
 export function useBookings() {
@@ -89,6 +93,8 @@ export function useBookings() {
       checkoutPointsEarned: booking.checkoutPointsEarned,
       checkoutPointsRedeemed: booking.checkoutPointsRedeemed,
       checkoutPromoCode: booking.checkoutPromoCode,
+      // optional priority score from backend
+      customerPriorityScore: (booking as any).customerPriorityScore,
     })),
     addBooking: store.createBookingFromLegacy,
     updateStatus: store.updateBookingStatus,

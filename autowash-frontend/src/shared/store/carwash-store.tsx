@@ -104,6 +104,7 @@ export interface Booking {
   checkoutPointsEarned?: number;
   checkoutPointsRedeemed?: number;
   checkoutPromoCode?: string;
+  customerPriorityScore?: number; // added for Loyalty tier priority
   cancelledAt?: string;
   cancelledBy?: "Customer" | "Admin";
   cancelReason?: string;
