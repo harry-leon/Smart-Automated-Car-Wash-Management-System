@@ -46,23 +46,6 @@ public class SystemSettings {
     @Column(name = "max_redemption_points", nullable = false)
     private int maxRedemptionPoints = 200;
 
-    @Column(name = "silver_threshold", nullable = false)
-    private int silverThreshold = 500;
-
-    @Column(name = "gold_threshold", nullable = false)
-    private int goldThreshold = 1_500;
-
-    @Column(name = "platinum_threshold", nullable = false)
-    private int platinumThreshold = 4_000;
-
-    @Column(name = "silver_multiplier", nullable = false)
-    private BigDecimal silverMultiplier = new BigDecimal("1.2");
-
-    @Column(name = "gold_multiplier", nullable = false)
-    private BigDecimal goldMultiplier = new BigDecimal("1.5");
-
-    @Column(name = "platinum_multiplier", nullable = false)
-    private BigDecimal platinumMultiplier = new BigDecimal("2.0");
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
@@ -76,13 +59,7 @@ public class SystemSettings {
             int earnPointsUnitAmount,
             int vndPerPoint,
             int minRedemptionPoints,
-            int maxRedemptionPoints,
-            int silverThreshold,
-            int goldThreshold,
-            int platinumThreshold,
-            BigDecimal silverMultiplier,
-            BigDecimal goldMultiplier,
-            BigDecimal platinumMultiplier
+            int maxRedemptionPoints
     ) {
         this.operatingStartTime = operatingStartTime;
         this.operatingEndTime = operatingEndTime;
@@ -93,12 +70,6 @@ public class SystemSettings {
         this.vndPerPoint = vndPerPoint;
         this.minRedemptionPoints = minRedemptionPoints;
         this.maxRedemptionPoints = maxRedemptionPoints;
-        this.silverThreshold = silverThreshold;
-        this.goldThreshold = goldThreshold;
-        this.platinumThreshold = platinumThreshold;
-        this.silverMultiplier = silverMultiplier;
-        this.goldMultiplier = goldMultiplier;
-        this.platinumMultiplier = platinumMultiplier;
         this.updatedAt = Instant.now();
     }
 }

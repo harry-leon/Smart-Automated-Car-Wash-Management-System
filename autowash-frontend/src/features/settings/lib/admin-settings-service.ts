@@ -11,12 +11,6 @@ export type SystemSettings = {
   vndPerPoint: number;
   minRedemptionPoints: number;
   maxRedemptionPoints: number;
-  silverThreshold: number;
-  goldThreshold: number;
-  platinumThreshold: number;
-  silverMultiplier: number;
-  goldMultiplier: number;
-  platinumMultiplier: number;
   updatedAt: string;
 };
 

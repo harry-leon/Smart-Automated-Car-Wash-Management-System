@@ -266,7 +266,7 @@ public ComboResponse getComboById(String comboId) {
     private LoyaltyTier currentCustomerTier() {
         return loyaltyAccountRepository.findByCustomerId(currentUserService.getCurrentUser().getId())
                 .map(LoyaltyAccount::getTier)
-                .orElse(LoyaltyTier.MEMBER);
+                .orElse(LoyaltyTier.BRONZE);
     }
 
     private ApiException businessRule(String code, String message, String action) {

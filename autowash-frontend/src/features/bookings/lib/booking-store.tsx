@@ -27,6 +27,8 @@ export interface Booking {
   customerId: string;
   customerName?: string;
   customerPhone?: string;
+  customerTier?: string;
+  customerPriorityScore?: number;
   vehiclePlate: string;
   vehicleName: string;
   vehicleType: string;

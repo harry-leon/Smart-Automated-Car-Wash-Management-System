@@ -2,8 +2,8 @@ package com.autowash.service.impl;
 
 import com.autowash.dto.BookingStatusHistoryItem;
 import com.autowash.entity.User;
-import com.autowash.dto.ApplyPointsRequest;
-import com.autowash.dto.ApplyPointsResponse;
+
+
 import com.autowash.dto.BookingOptionResponse;
 import com.autowash.dto.BookingDetailResponse;
 import com.autowash.dto.BookingListItemResponse;
@@ -34,7 +34,7 @@ import com.autowash.service.BookingService;
 import com.autowash.service.CatalogService;
 import com.autowash.dto.RedeemPointsResponse;
 import com.autowash.service.CustomerComboService;
-import com.autowash.service.LoyaltyRules;
+
 import com.autowash.service.LoyaltyService;
 import com.autowash.service.PromotionService;
 import com.autowash.shared.dto.PaginationMeta;
@@ -330,43 +330,7 @@ public class BookingServiceImpl implements BookingService {
         );
     }
 
-    @Transactional
-    public ApplyPointsResponse applyPoints(String bookingId, ApplyPointsRequest request) {
-        User user = currentUserService.getCurrentUser();
-        Booking booking = findOwnedBooking(bookingId);
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Points can only be applied before check-in",
-                    "BUSINESS_RULE_VIOLATION"
-            );
-        }
-        if (booking.getPointsRedeemed() > 0) {
-            throw new ApiException(HttpStatus.CONFLICT, "Points already applied to this booking", "POINTS_ALREADY_APPLIED");
-        }
 
-        int pointsToApply = request.pointsToApply();
-        long discountAmount = (long) pointsToApply * LoyaltyRules.VND_PER_POINT;
-        if (discountAmount > booking.getFinalAmount()) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Points discount exceeds booking amount",
-                    "BUSINESS_RULE_VIOLATION"
-            );
-        }
-
-        RedeemPointsResponse redemption = loyaltyService.applyPointsToBooking(user.getId(), pointsToApply, booking);
-        booking.applyPoints(pointsToApply, discountAmount);
-        paymentRepository.findByBooking(booking).ifPresent(payment -> payment.updateAmount(booking.getFinalAmount()));
-        return new ApplyPointsResponse(
-                booking.getId().toString(),
-                pointsToApply,
-                discountAmount,
-                booking.getFinalAmount(),
-                redemption.newBalance(),
-                "VND"
-        );
-    }
 
     @Transactional
     public PayBookingResponse payBooking(String bookingId, String transactionRef) {
@@ -643,9 +607,6 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private String generateBookingId() {
-        return "BK_" + System.currentTimeMillis();
-    }
 
     private record PaymentInfo(
             PaymentMethod method,

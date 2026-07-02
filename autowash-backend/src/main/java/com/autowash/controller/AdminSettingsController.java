@@ -56,13 +56,7 @@ public class AdminSettingsController {
                 request.earnPointsUnitAmount(),
                 request.vndPerPoint(),
                 request.minRedemptionPoints(),
-                request.maxRedemptionPoints(),
-                request.silverThreshold(),
-                request.goldThreshold(),
-                request.platinumThreshold(),
-                request.silverMultiplier(),
-                request.goldMultiplier(),
-                request.platinumMultiplier()
+                request.maxRedemptionPoints()
         );
         return ApiResponse.ok("Settings updated", toResponse(settings));
     }
@@ -87,12 +81,6 @@ public class AdminSettingsController {
                 s.getVndPerPoint(),
                 s.getMinRedemptionPoints(),
                 s.getMaxRedemptionPoints(),
-                s.getSilverThreshold(),
-                s.getGoldThreshold(),
-                s.getPlatinumThreshold(),
-                s.getSilverMultiplier(),
-                s.getGoldMultiplier(),
-                s.getPlatinumMultiplier(),
                 s.getUpdatedAt().toString()
         );
     }

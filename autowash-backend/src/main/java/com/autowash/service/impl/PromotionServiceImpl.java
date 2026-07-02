@@ -245,7 +245,7 @@ public class PromotionServiceImpl implements PromotionService {
     private LoyaltyTier tierFor(User user) {
         return loyaltyAccountRepository.findByCustomerId(user.getId())
                 .map(LoyaltyAccount::getTier)
-                .orElse(LoyaltyTier.MEMBER);
+                .orElse(LoyaltyTier.BRONZE);
     }
 
     private record ValidatedPromotion(List<LoyaltyTier> tiers) {

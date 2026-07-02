@@ -1,6 +1,5 @@
 package com.autowash.dto;
 
-import com.autowash.entity.*;
 import com.autowash.entity.enums.LoyaltyTier;
 import com.autowash.entity.enums.ActiveStatus;
 import com.autowash.entity.enums.PromotionTargetingMode;

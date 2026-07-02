@@ -1,0 +1,17 @@
+package com.autowash.dto;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
+
+
+public record TierConfigRequest(
+        @Min(value = 0, message = "Minimum points cannot be negative")
+        int minPoints,
+
+        @DecimalMin(value = "1.0", message = "Point multiplier must be at least 1.0")
+        double pointMultiplier,
+
+        @Min(value = 0, message = "Priority score cannot be negative")
+        int priorityScore
+) {
+}
