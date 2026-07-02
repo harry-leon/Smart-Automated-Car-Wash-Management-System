@@ -177,13 +177,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
             select booking from Booking booking
+            left join LoyaltyAccount la on la.customer = booking.customer
+            left join TierConfig tc on tc.tier = la.tier
             where booking.status = :status
               and not exists (
                     select session.id from WashSession session
                     where session.booking = booking
                       and session.status in :activeStatuses
               )
-            order by booking.scheduledAt asc, booking.createdAt desc
+            order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
     List<Booking> findEligibleForOperationsSession(
             @Param("status") BookingStatus status,
@@ -194,6 +196,8 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @EntityGraph(attributePaths = {"customer", "vehicle", "assignedStaff"})
     @Query("""
             select booking from Booking booking
+            left join LoyaltyAccount la on la.customer = booking.customer
+            left join TierConfig tc on tc.tier = la.tier
             where booking.status = :status
               and (booking.assignedStaff = :staff or booking.assignedStaff is null)
               and not exists (
@@ -201,7 +205,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
                     where activeSession.booking = booking
                       and activeSession.status in :activeStatuses
               )
-            order by booking.scheduledAt asc, booking.createdAt desc
+            order by tc.priorityScore desc, booking.scheduledAt asc, booking.createdAt desc
             """)
     List<Booking> findEligibleForAssignedStaffOperationsSession(
             @Param("staff") User staff,

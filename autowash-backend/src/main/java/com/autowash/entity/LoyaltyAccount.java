@@ -50,7 +50,7 @@ public class LoyaltyAccount {
         this.customer = customer;
         this.currentPoints = 0;
         this.totalEarnedPoints = 0;
-        this.tier = LoyaltyTier.MEMBER;
+        this.tier = LoyaltyTier.BRONZE;
         this.createdAt = now;
         this.updatedAt = now;
     }

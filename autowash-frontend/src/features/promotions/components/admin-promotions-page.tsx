@@ -79,7 +79,7 @@ type PromotionFormErrors = Partial<Record<keyof PromotionFormValues, string>>;
 
 const PAGE_LIMIT = 10;
 const FETCH_LIMIT = 100;
-const ALL_TIERS: LoyaltyTier[] = ["MEMBER", "SILVER", "GOLD", "PLATINUM"];
+const ALL_TIERS: LoyaltyTier[] = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND"];
 
 type PromotionFilters = {
   name: string;
